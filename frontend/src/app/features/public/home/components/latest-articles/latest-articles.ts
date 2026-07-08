@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IjButton, IjIcon } from '@/shared/ui';
-import { Article } from '../../models/home.models';
-import { SectionHeading } from '../section-heading/section-heading';
-import { MediaFrame } from '../media-frame/media-frame';
+import { Article } from '@/features/public/home/models/home.models';
+import { SectionHeading } from '@/features/public/home/components/section-heading/section-heading';
+import { MediaFrame } from '@/features/public/home/components/media-frame/media-frame';
 
 /** Sección de últimos artículos del blog. */
 @Component({

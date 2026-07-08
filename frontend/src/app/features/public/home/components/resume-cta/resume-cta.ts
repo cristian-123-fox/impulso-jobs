@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { IjButton, IjIcon } from '@/shared/ui';
-import { MediaFrame } from '../media-frame/media-frame';
+import { MediaFrame } from '@/features/public/home/components/media-frame/media-frame';
 
 /** Banner CTA: invita a subir la hoja de vida. */
 @Component({

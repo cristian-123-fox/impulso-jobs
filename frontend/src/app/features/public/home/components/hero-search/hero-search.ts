@@ -10,8 +10,8 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import { IjButton, IjIcon, TONE_SOFT } from '@/shared/ui';
-import { JobSearchCriteria, Stat } from '../../models/home.models';
-import { MediaFrame } from '../media-frame/media-frame';
+import { JobSearchCriteria, Stat } from '@/features/public/home/models/home.models';
+import { MediaFrame } from '@/features/public/home/components/media-frame/media-frame';
 
 /** Hero con titular, buscador de empleos y tarjetas flotantes de estadísticas. */
 @Component({

@@ -25,7 +25,7 @@ Both apps use pnpm. Backend on `:3000`, frontend on `:4200`.
 
 ## Tooling notes (not in AGENTS.md)
 
-- **Path alias** `@/*` → `src/*` is resolved by the Nest CLI at build time (no `tsc-alias`); Jest maps it via `moduleNameMapper`.
+- **Path aliases** use `@/` in both apps but with **different targets** — Backend: `@/*` → `src/*` (resolved by the Nest CLI at build, no `tsc-alias`; Jest via `moduleNameMapper`). Frontend: `@/*` → `src/app/*` (resolved by the Angular build from `tsconfig.json` `paths`). Prefer `@/…` over `../…` for cross-directory imports; keep `templateUrl`/`styleUrl` relative (the alias does not apply to component resource URLs).
 - **pnpm 10 blocks native build scripts.** Approved ones are pinned per app under `package.json` → `pnpm.onlyBuiltDependencies` (backend: `bcrypt`; frontend: `esbuild`, `@parcel/watcher`, `lmdb`, `msgpackr-extract`). When adding a native dep, add it there and run `pnpm rebuild <pkg>`.
 - **Frontend SSR:** `src/main.server.ts` must pass the `BootstrapContext` to `bootstrapApplication` (required since Angular 20.1) or the build fails at route extraction with `NG0401`.
 - **cPanel:** `bcrypt` is a native module — install deps *on the Linux server* so it fetches the right prebuild, or switch to `bcryptjs`. Set `DB_TYPE=mysql` with `DB_SYNCHRONIZE=false` in production.

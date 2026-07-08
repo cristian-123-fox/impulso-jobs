@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IjBadge, IjButton, TONE_SOFT } from '@/shared/ui';
-import { JobListing } from '../../models/home.models';
-import { SectionHeading } from '../section-heading/section-heading';
+import { JobListing } from '@/features/public/home/models/home.models';
+import { SectionHeading } from '@/features/public/home/components/section-heading/section-heading';
 
 /** Listado de vacantes destacadas. */
 @Component({

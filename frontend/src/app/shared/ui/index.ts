@@ -1,5 +1,5 @@
-export { IjIcon, type IconName } from './icon/icon';
-export { IjButton } from './button/button';
-export { IjBadge } from './badge/badge';
-export { IjLogo } from './logo/logo';
-export { TONE_SOFT, type Tone } from './tone';
+export { IjIcon, type IconName } from '@/shared/ui/icon/icon';
+export { IjButton } from '@/shared/ui/button/button';
+export { IjBadge } from '@/shared/ui/badge/badge';
+export { IjLogo } from '@/shared/ui/logo/logo';
+export { TONE_SOFT, type Tone } from '@/shared/ui/tone';

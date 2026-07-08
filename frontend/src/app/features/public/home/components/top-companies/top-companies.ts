@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IjButton, IjIcon } from '@/shared/ui';
-import { Company, Stat } from '../../models/home.models';
-import { SectionHeading } from '../section-heading/section-heading';
+import { Company, Stat } from '@/features/public/home/models/home.models';
+import { SectionHeading } from '@/features/public/home/components/section-heading/section-heading';
 
 /** Sección de empresas destacadas + franja de estadísticas de la plataforma. */
 @Component({

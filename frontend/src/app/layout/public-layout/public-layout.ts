@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Navbar } from './navbar/navbar';
-import { Footer } from './footer/footer';
-import { ScrollTop } from './scroll-top/scroll-top';
+import { Navbar } from '@/layout/public-layout/navbar/navbar';
+import { Footer } from '@/layout/public-layout/footer/footer';
+import { ScrollTop } from '@/layout/public-layout/scroll-top/scroll-top';
 
 /** Shell del portal público: navbar sticky + contenido enrutado + footer. */
 @Component({

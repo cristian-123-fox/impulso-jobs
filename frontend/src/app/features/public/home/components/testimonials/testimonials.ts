@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IjButton, IjIcon } from '@/shared/ui';
-import { Testimonial } from '../../models/home.models';
-import { MediaFrame } from '../media-frame/media-frame';
+import { Testimonial } from '@/features/public/home/models/home.models';
+import { MediaFrame } from '@/features/public/home/components/media-frame/media-frame';
 
 /** Sección de testimonios de clientes. */
 @Component({

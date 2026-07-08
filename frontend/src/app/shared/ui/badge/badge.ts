@@ -4,7 +4,7 @@ import {
   computed,
   input,
 } from '@angular/core';
-import { TONE_SOFT, Tone } from '../tone';
+import { TONE_SOFT, Tone } from '@/shared/ui/tone';
 
 /**
  * Etiqueta compacta (badge) del UI Kit, con tono de acento configurable.

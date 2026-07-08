@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { TONE_SOFT } from '@/shared/ui';
-import { WorkStep } from '../../models/home.models';
-import { SectionHeading } from '../section-heading/section-heading';
+import { WorkStep } from '@/features/public/home/models/home.models';
+import { SectionHeading } from '@/features/public/home/components/section-heading/section-heading';
 
 /** Sección "Cómo funciona": tres pasos numerados. */
 @Component({

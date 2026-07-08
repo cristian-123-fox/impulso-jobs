@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { IjButton, IjIcon, TONE_SOFT } from '@/shared/ui';
-import { JobCategory } from '../../models/home.models';
+import { JobCategory } from '@/features/public/home/models/home.models';
 
 /** Sección de categorías de empleo con carrusel (controles) y CTA. */
 @Component({

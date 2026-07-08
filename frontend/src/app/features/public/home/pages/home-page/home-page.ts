@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { HomeFacade } from '../../data/home.facade';
-import { JobSearchCriteria } from '../../models/home.models';
-import { HeroSearch } from '../../components/hero-search/hero-search';
-import { HowItWorks } from '../../components/how-it-works/how-it-works';
-import { JobCategories } from '../../components/job-categories/job-categories';
-import { ResumeCta } from '../../components/resume-cta/resume-cta';
-import { TopCompanies } from '../../components/top-companies/top-companies';
-import { JobListings } from '../../components/job-listings/job-listings';
-import { Testimonials } from '../../components/testimonials/testimonials';
-import { LatestArticles } from '../../components/latest-articles/latest-articles';
+import { HomeFacade } from '@/features/public/home/data/home.facade';
+import { JobSearchCriteria } from '@/features/public/home/models/home.models';
+import { HeroSearch } from '@/features/public/home/components/hero-search/hero-search';
+import { HowItWorks } from '@/features/public/home/components/how-it-works/how-it-works';
+import { JobCategories } from '@/features/public/home/components/job-categories/job-categories';
+import { ResumeCta } from '@/features/public/home/components/resume-cta/resume-cta';
+import { TopCompanies } from '@/features/public/home/components/top-companies/top-companies';
+import { JobListings } from '@/features/public/home/components/job-listings/job-listings';
+import { Testimonials } from '@/features/public/home/components/testimonials/testimonials';
+import { LatestArticles } from '@/features/public/home/components/latest-articles/latest-articles';
 
 /**
  * Container (smart) de la home. Obtiene el estado del `HomeFacade` y lo

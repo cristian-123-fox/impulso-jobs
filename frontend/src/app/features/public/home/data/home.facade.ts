@@ -7,7 +7,7 @@ import {
   Stat,
   Testimonial,
   WorkStep,
-} from '../models/home.models';
+} from '@/features/public/home/models/home.models';
 
 /**
  * Facade de la home. Único punto del feature que expone el estado hacia el
