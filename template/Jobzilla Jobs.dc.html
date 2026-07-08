@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Rubik', system-ui, sans-serif; color: #35354a; background: #fff; }
+  a { color: #2b6df4; text-decoration: none; }
+  a:hover { color: #1d51c9; }
+  h1,h2,h3,h4,h5 { margin: 0; color: #1a1a2e; font-weight: 600; }
+  p { margin: 0; }
+  input { font-family: inherit; }
+</style>
+</helmet>
+
+<div style="width:100%;overflow:hidden;background:#fff">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:22px 60px;background:#f5f7fb;">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:32px;background:#2b6df4;border-radius:13px 13px 4px 4px;position:relative;">
+        <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:#fff;"></div>
+      </div>
+      <span style="font-size:26px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;">Jobzilla</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:34px;font-size:15px;font-weight:500;color:#3a3a52;">
+      <a style="color:#3a3a52;" href="Jobzilla Home.dc.html">Home</a>
+      <a style="color:#2b6df4;" href="#">Jobs</a>
+      <a style="color:#3a3a52;" href="#">Employers</a>
+      <a style="color:#3a3a52;" href="#">Pages</a>
+      <a style="color:#3a3a52;" href="#">Candidates</a>
+      <a style="color:#3a3a52;" href="#">Blog</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:22px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a3a52" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <a style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:500;color:#3a3a52;white-space:nowrap;" href="#">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+        Sign Up
+      </a>
+      <a style="display:flex;align-items:center;gap:7px;background:#2b6df4;color:#fff;padding:12px 22px;border-radius:26px;font-size:14px;font-weight:500;white-space:nowrap;" href="#" style-hover="background:#1d51c9;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Post a job
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== PAGE BANNER ===== -->
+  <section style="position:relative;background:#f5f7fb;padding:64px 60px 72px;text-align:center;overflow:hidden;">
+    <div style="position:absolute;top:-100px;left:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(233,108,167,.14),transparent 70%);"></div>
+    <div style="position:absolute;top:-60px;right:-40px;width:420px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(43,190,220,.16),transparent 68%);"></div>
+    <div style="position:absolute;top:40px;left:44%;color:#c7ccd8;font-size:24px;">+</div>
+    <div style="position:absolute;bottom:40px;right:20%;color:#2b6df4;font-size:26px;opacity:.4;">+</div>
+    <div style="position:relative;z-index:2;">
+      <h1 style="font-size:34px;font-weight:700;margin-bottom:14px;">The Most Exciting Jobs</h1>
+      <div style="font-size:14px;color:#6b6b82;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <a style="color:#6b6b82;" href="Jobzilla Home.dc.html">Home</a> <span>-</span> <a href="#">Jobs List</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MAIN ===== -->
+  <section style="padding:44px 60px 70px;">
+    <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:290px 1fr;gap:34px;align-items:start;">
+
+      <!-- SIDEBAR -->
+      <aside style="display:flex;flex-direction:column;gap:26px;">
+        <div style="background:#fff;border:1px solid #edeff4;border-radius:12px;padding:26px 24px;box-shadow:0 14px 34px -26px rgba(0,0,0,.18);">
+          <h5 style="font-size:16px;font-weight:600;margin-bottom:12px;">Category</h5>
+          <div style="border:1px solid #e6e8ef;border-radius:8px;padding:12px 14px;font-size:14px;color:#8a8a9e;display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">All Category <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></div>
+
+          <h5 style="font-size:16px;font-weight:600;margin-bottom:12px;">Keyword</h5>
+          <div style="position:relative;margin-bottom:22px;">
+            <input placeholder="Job Title or Keyword" style="width:100%;border:1px solid #e6e8ef;border-radius:8px;padding:12px 40px 12px 14px;font-size:14px;outline:none;">
+            <svg style="position:absolute;right:14px;top:13px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+          </div>
+
+          <h5 style="font-size:16px;font-weight:600;margin-bottom:12px;">Location</h5>
+          <div style="position:relative;margin-bottom:24px;">
+            <input placeholder="Search location" style="width:100%;border:1px solid #e6e8ef;border-radius:8px;padding:12px 40px 12px 14px;font-size:14px;outline:none;">
+            <svg style="position:absolute;right:13px;top:12px;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2b6df4" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          </div>
+
+          <h5 style="font-size:16px;font-weight:600;margin-bottom:14px;">Job Type</h5>
+          <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:24px;">
+            <sc-for list="{{ jobTypes }}" as="jt" hint-placeholder-count="6">
+              <label style="display:flex;align-items:center;justify-content:space-between;font-size:14px;color:#5a5a72;cursor:pointer;">
+                <span style="display:flex;align-items:center;gap:9px;"><span style="width:16px;height:16px;border:1.5px solid #cdd2dd;border-radius:4px;display:inline-block;"></span>{{ jt.name }}</span>
+                <span style="color:#a0a0b4;font-size:13px;">{{ jt.count }}</span>
+              </label>
+            </sc-for>
+          </div>
+
+          <h5 style="font-size:16px;font-weight:600;margin-bottom:14px;">Date Posts</h5>
+          <div style="display:flex;flex-direction:column;gap:13px;">
+            <sc-for list="{{ datePosts }}" as="dp" hint-placeholder-count="6">
+              <label style="display:flex;align-items:center;gap:9px;font-size:14px;color:#5a5a72;cursor:pointer;"><span style="width:15px;height:15px;border:1.5px solid #cdd2dd;border-radius:50%;display:inline-block;"></span>{{ dp }}</label>
+            </sc-for>
+          </div>
+
+          <h5 style="font-size:16px;font-weight:600;margin:24px 0 14px;">Type of employment</h5>
+          <div style="display:flex;flex-direction:column;gap:13px;">
+            <sc-for list="{{ employment }}" as="e" hint-placeholder-count="4">
+              <label style="display:flex;align-items:center;gap:9px;font-size:14px;color:#5a5a72;cursor:pointer;"><span style="width:15px;height:15px;border:1.5px solid #cdd2dd;border-radius:50%;display:inline-block;"></span>{{ e }}</label>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin:26px 0 16px;"><span style="width:4px;height:18px;background:#2b6df4;border-radius:2px;"></span><h5 style="font-size:16px;font-weight:600;">Tags</h5></div>
+          <div style="display:flex;flex-wrap:wrap;gap:9px;">
+            <sc-for list="{{ tags }}" as="tag" hint-placeholder-count="9">
+              <span style="background:#eef2fb;color:#4a6fb0;font-size:12px;padding:6px 12px;border-radius:5px;cursor:pointer;">{{ tag }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Recruiting card (blue) -->
+        <div style="background:linear-gradient(150deg,#2b6df4,#1d51c9);border-radius:12px;padding:26px 24px;color:#fff;">
+          <h5 style="font-size:16px;font-weight:600;color:#fff;margin-bottom:16px;">Recruiting?</h5>
+          <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:22px;">
+            <sc-for list="{{ recruiting }}" as="r" hint-placeholder-count="4">
+              <label style="display:flex;align-items:center;gap:9px;font-size:14px;color:rgba(255,255,255,.9);cursor:pointer;"><span style="width:15px;height:15px;border:1.5px solid rgba(255,255,255,.7);border-radius:50%;display:inline-block;"></span>{{ r }}</label>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;"><span style="width:4px;height:18px;background:#fff;border-radius:2px;"></span><h5 style="font-size:16px;font-weight:600;color:#fff;">Tags</h5></div>
+          <div style="display:flex;flex-wrap:wrap;gap:9px;">
+            <sc-for list="{{ tags }}" as="tag" hint-placeholder-count="9">
+              <span style="background:rgba(255,255,255,.16);color:#fff;font-size:12px;padding:6px 12px;border-radius:5px;cursor:pointer;">{{ tag }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Recruiting CTA -->
+        <div style="position:relative;border-radius:12px;overflow:hidden;padding:30px 26px;color:#fff;background:linear-gradient(150deg,#2b6df4,#123a9e);">
+          <div style="position:absolute;inset:0;opacity:.25;background:radial-gradient(circle at 80% 30%,rgba(255,255,255,.4),transparent 55%);"></div>
+          <div style="position:relative;">
+            <h4 style="font-size:20px;font-weight:600;color:#fff;margin-bottom:12px;">Recruiting?</h4>
+            <p style="font-size:14px;color:rgba(255,255,255,.9);line-height:1.6;margin-bottom:24px;">Get Best Matched Jobs On your Email. Add Resume NOW!</p>
+            <button style="background:#fff;color:#2b6df4;border:none;border-radius:8px;padding:12px 26px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;">Read More</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- LISTINGS -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:14px;">
+          <p style="font-size:15px;color:#5a5a72;"><span style="font-weight:600;color:#1a1a2e;">Showing 2,150 jobs</span></p>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <span style="font-size:14px;color:#8a8a9e;">Short By</span>
+            <div style="border:1px solid #e6e8ef;border-radius:8px;padding:10px 14px;font-size:14px;color:#4a4a62;display:flex;align-items:center;gap:24px;">Most Recent <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></div>
+            <div style="border:1px solid #e6e8ef;border-radius:8px;padding:10px 14px;font-size:14px;color:#4a4a62;display:flex;align-items:center;gap:24px;">Show 10 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9a9ab0" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <sc-for list="{{ jobs }}" as="job" hint-placeholder-count="10">
+            <div style="background:#fff;border:1px solid #edeff4;border-radius:12px;box-shadow:0 14px 34px -28px rgba(0,0,0,.3);padding:22px 26px;display:flex;align-items:center;gap:22px;">
+              <div style="width:78px;height:78px;border-radius:10px;background:{{ job.logoBg }};display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;gap:3px;">
+                <div style="width:34px;height:34px;border-radius:8px;background:{{ job.logoColor }};"></div>
+                <span style="font-size:8px;font-weight:700;letter-spacing:.5px;color:{{ job.logoColor }};">{{ job.logoText }}</span>
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <h4 style="font-size:16px;font-weight:600;">{{ job.title }}</h4>
+                  <span style="font-size:12px;color:{{ job.postedColor }};font-weight:500;">/ {{ job.posted }}</span>
+                </div>
+                <p style="font-size:13px;color:#8a8a9e;margin-bottom:4px;">1363-1385 Sunset Blvd Los Angeles, CA 90026, USA</p>
+                <a style="font-size:13px;color:#2b6df4;" href="#">https://thewebmax.com</a>
+              </div>
+              <div style="text-align:right;flex:none;min-width:130px;display:flex;flex-direction:column;align-items:flex-end;gap:12px;">
+                <span style="display:inline-block;background:{{ job.badgeBg }};color:{{ job.badgeColor }};font-size:11px;font-weight:600;padding:5px 13px;border-radius:6px;">{{ job.badge }}</span>
+                <div style="font-size:15px;font-weight:700;color:#1a1a2e;">{{ job.salary }} <span style="font-size:12px;font-weight:400;color:#8a8a9e;">/ Month</span></div>
+                <a style="font-size:13px;color:#2b6df4;font-weight:500;" href="#">Browse Job</a>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Pagination -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:40px;">
+          <button style="width:38px;height:38px;border-radius:50%;border:1px solid #e6e8ef;background:#fff;color:#8a8a9e;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button style="width:38px;height:38px;border-radius:50%;border:1px solid #e6e8ef;background:#fff;color:#4a4a62;cursor:pointer;font-family:inherit;font-size:14px;">1</button>
+          <button style="width:38px;height:38px;border-radius:50%;border:none;background:#2b6df4;color:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;">2</button>
+          <button style="width:38px;height:38px;border-radius:50%;border:1px solid #e6e8ef;background:#fff;color:#4a4a62;cursor:pointer;font-family:inherit;font-size:14px;">3</button>
+          <span style="color:#a0a0b4;padding:0 4px;">•••</span>
+          <button style="width:38px;height:38px;border-radius:50%;border:1px solid #e6e8ef;background:#fff;color:#4a4a62;cursor:pointer;font-family:inherit;font-size:14px;">5</button>
+          <button style="width:38px;height:38px;border-radius:50%;border:1px solid #e6e8ef;background:#fff;color:#8a8a9e;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer style="background:#141a2e;color:#c3c8d6;padding:0 60px 40px;">
+    <div style="max-width:1120px;margin:0 auto;transform:translateY(-40px);">
+      <div style="background:#26304d;border-radius:14px;padding:34px 44px;display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap;">
+        <div style="color:#fff;font-size:20px;font-weight:600;line-height:1.4;max-width:420px;">Join our email subscription now to get updates on new jobs and notifications.</div>
+        <div style="display:flex;gap:12px;flex:1;min-width:320px;max-width:520px;">
+          <input placeholder="Enter Your Email" style="flex:1;border:none;border-radius:8px;padding:15px 18px;font-size:14px;outline:none;">
+          <button style="background:#2b6df4;color:#fff;border:none;border-radius:8px;padding:15px 26px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;">Subscribe Now</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:30px;padding-top:10px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:20px;">
+          <div style="width:24px;height:30px;background:#2b6df4;border-radius:12px 12px 4px 4px;position:relative;"><div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#fff;"></div></div>
+          <span style="font-size:24px;font-weight:700;color:#fff;">Jobzilla</span>
+        </div>
+        <p style="font-size:14px;line-height:1.7;color:#9aa0b4;margin-bottom:18px;max-width:280px;">Many desktop publishing packages and web page editors now.</p>
+        <p style="font-size:13px;line-height:1.9;color:#9aa0b4;"><span style="color:#fff;font-weight:500;">Address :</span> 65 Sunset CA 90026, USA<br><span style="color:#fff;font-weight:500;">Email :</span> example@max.com<br><span style="color:#fff;font-weight:500;">Call :</span> 555-555-1234</p>
+      </div>
+      <sc-for list="{{ footerCols }}" as="col" hint-placeholder-count="4">
+        <div>
+          <h5 style="font-size:16px;font-weight:600;color:#fff;margin-bottom:20px;">{{ col.title }}</h5>
+          <div style="display:flex;flex-direction:column;gap:11px;">
+            <sc-for list="{{ col.links }}" as="ln" hint-placeholder-count="5">
+              <a style="font-size:14px;color:#9aa0b4;" href="#" style-hover="color:#fff;">{{ ln }}</a>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="max-width:1120px;margin:40px auto 0;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;">
+      <p style="font-size:13px;color:#9aa0b4;">Copyright © 2026 by thewebmax All Rights Reserved.</p>
+      <div style="display:flex;gap:10px;">
+        <sc-for list="{{ socials }}" as="s" hint-placeholder-count="5">
+          <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:#9aa0b4;font-size:13px;font-weight:600;cursor:pointer;">{{ s }}</div>
+        </sc-for>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const green = { badge: "New", badgeBg: "#e6f7ef", badgeColor: "#1fae6a", postedColor: "#e8607a" };
+    const orange = { badge: "Intership", badgeBg: "#fef3e6", badgeColor: "#f0a04b", postedColor: "#1fae6a" };
+    const purple = { badge: "Fulltime", badgeBg: "#efeafe", badgeColor: "#7a5bd6", postedColor: "#f0a04b" };
+    const teal = { badge: "Freelancer", badgeBg: "#e6f7f5", badgeColor: "#1aa89a", postedColor: "#8a8a9e" };
+    const gold = { badge: "Temporary", badgeBg: "#f3ead0", badgeColor: "#b8912f", postedColor: "#e8607a" };
+    const base = [
+      { title: "Senior Web Designer", posted: "1 days ago", logoText: "COMPANY", logoBg: "#f5f9ff", logoColor: "#2b6df4", ...green },
+      { title: "Sr. Rolling Stock Technician", posted: "15 days ago", logoText: "BUSINESS", logoBg: "#f2fbf8", logoColor: "#1aa89a", ...orange },
+      { title: "IT Department Manager", posted: "6 Month ago", logoText: "COMPANY NAME", logoBg: "#f6f9f2", logoColor: "#7bb03a", ...purple },
+      { title: "Art Production Specialist", posted: "2 days ago", logoText: "ARROW", logoBg: "#fff7f2", logoColor: "#f0703b", ...teal },
+      { title: "Recreation & Fitness Worker", posted: "1 days ago", logoText: "VECTOR LOGO", logoBg: "#fff5f7", logoColor: "#e8607a", ...gold },
+    ];
+    const salaries = ["$2500","$2500","$2000","$1500","$800","$1000","$1500","$2500","$3000","$2000","$2000","$1800","$1000","$1000","$1000","$1000","$1000","$1000"];
+    const jobs = [];
+    for (let i = 0; i < 18; i++) {
+      jobs.push({ ...base[i % base.length], salary: salaries[i] });
+    }
+    return {
+      jobs,
+      jobTypes: [
+        { name: "Freelance", count: "09" }, { name: "Full Time", count: "07" }, { name: "Internship", count: "15" },
+        { name: "Part Time", count: "20" }, { name: "Temporary", count: "22" }, { name: "Volunteer", count: "25" },
+      ],
+      datePosts: ["Last hour", "Last 24 hours", "Last 7 days", "Last 14 days", "Last 30 days", "All"],
+      employment: ["Freelance", "Full Time", "Intership", "Part Time"],
+      recruiting: ["Freelance", "Full Time", "Intership", "Part Time"],
+      tags: ["General", "Jobs", "Payment", "Application", "Work", "Recruiting", "Employer", "Income", "Tips"],
+      footerCols: [
+        { title: "For Candidate", links: ["User Dashboard", "Alert resume", "Candidates", "Blog List", "Blog single"] },
+        { title: "For Employers", links: ["Post Jobs", "Blog Grid", "Contact", "Jobs Listing", "Jobs details"] },
+        { title: "Helpful Resources", links: ["FAQs", "Employer detail", "Profile", "404 Page", "Pricing"] },
+        { title: "Quick Links", links: ["Home", "About us", "Bookmark", "Jobs", "Employer"] },
+      ],
+      socials: ["f", "X", "in", "P", "i"],
+    };
+  }
+}
+</script>
+</body>
+</html>

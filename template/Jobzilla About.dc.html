@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="image-slot.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Rubik', system-ui, sans-serif; color: #35354a; background: #fff; }
+  a { color: #2b6df4; text-decoration: none; }
+  a:hover { color: #1d51c9; }
+  h1,h2,h3,h4,h5 { margin: 0; color: #1a1a2e; font-weight: 600; }
+  p { margin: 0; }
+  input { font-family: inherit; }
+</style>
+</helmet>
+
+<div style="width:100%;overflow:hidden;background:#fff">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:22px 60px;background:#f5f7fb;">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:32px;background:#2b6df4;border-radius:13px 13px 4px 4px;position:relative;">
+        <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:#fff;"></div>
+      </div>
+      <span style="font-size:26px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;">Jobzilla</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:34px;font-size:15px;font-weight:500;color:#3a3a52;">
+      <a style="color:#3a3a52;" href="Jobzilla Home.dc.html">Home</a>
+      <a style="color:#3a3a52;" href="Jobzilla Jobs.dc.html">Jobs</a>
+      <a style="color:#3a3a52;" href="#">Employers</a>
+      <a style="color:#2b6df4;" href="#">Pages</a>
+      <a style="color:#3a3a52;" href="#">Candidates</a>
+      <a style="color:#3a3a52;" href="#">Blog</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:22px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a3a52" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <a style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:500;color:#3a3a52;white-space:nowrap;background:#eaf1fe;padding:11px 20px;border-radius:26px;" href="#">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+        Sign Up
+      </a>
+      <a style="display:flex;align-items:center;gap:7px;background:#2b6df4;color:#fff;padding:12px 22px;border-radius:26px;font-size:14px;font-weight:500;white-space:nowrap;" href="#" style-hover="background:#1d51c9;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12v4H6zM4 6h16v16H4z"/></svg>
+        Post a job
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== PAGE BANNER ===== -->
+  <section style="position:relative;background:#f5f7fb;padding:70px 60px 78px;text-align:center;overflow:hidden;">
+    <div style="position:absolute;top:-100px;left:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(233,108,167,.14),transparent 70%);"></div>
+    <div style="position:absolute;top:-60px;right:-40px;width:440px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(43,190,220,.16),transparent 68%);"></div>
+    <div style="position:relative;z-index:2;">
+      <h1 style="font-size:34px;font-weight:700;margin-bottom:14px;">About Us</h1>
+      <div style="font-size:14px;color:#6b6b82;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <a style="color:#6b6b82;" href="Jobzilla Home.dc.html">Home</a> <span>-</span> <a href="#">About Us</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CATEGORIES ===== -->
+  <section style="background:#f4f8fe;padding:76px 60px;text-align:center;">
+    <p style="font-size:15px;font-weight:600;color:#2b6df4;margin-bottom:8px;">Jobs by Categories</p>
+    <h2 style="font-size:38px;font-weight:700;margin-bottom:46px;">Choose Your Desire Category</h2>
+    <div style="max-width:1080px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:22px;">
+      <sc-for list="{{ categories }}" as="cat" hint-placeholder-count="8">
+        <div style="background:{{ cat.cardBg }};border-radius:10px;padding:30px 20px 22px;box-shadow:0 16px 36px -26px rgba(0,0,0,.22);cursor:pointer;transition:transform .2s;" style-hover="transform:translateY(-4px);">
+          <div style="width:64px;height:64px;margin:0 auto 22px;display:flex;align-items:center;justify-content:center;color:{{ cat.iconColor }};" data-icon="{{ cat.icon }}"></div>
+          <div style="display:inline-block;background:{{ cat.pillBg }};color:{{ cat.pillColor }};font-size:12px;font-weight:500;padding:5px 14px;border-radius:14px;margin-bottom:12px;">{{ cat.jobs }}</div>
+          <div style="font-size:15px;font-weight:600;color:{{ cat.nameColor }};">{{ cat.name }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <button style="margin-top:40px;background:#2b6df4;color:#fff;border:none;border-radius:26px;padding:14px 34px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;" style-hover="background:#1d51c9;">All Categories</button>
+  </section>
+
+  <!-- ===== HOW IT WORKS STEPS ===== -->
+  <section style="padding:90px 60px;">
+    <div style="max-width:1120px;margin:0 auto;display:grid;grid-template-columns:0.85fr 1.15fr;gap:60px;align-items:center;">
+      <div>
+        <p style="font-size:15px;font-weight:600;color:#2b6df4;margin-bottom:10px;">How It Works</p>
+        <h2 style="font-size:40px;font-weight:700;line-height:1.2;margin-bottom:30px;">Follow our steps<br>we will help you.</h2>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <sc-for list="{{ bullets }}" as="b" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="width:26px;height:26px;border-radius:50%;background:#2b6df4;display:flex;align-items:center;justify-content:center;flex:none;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span>
+              <span style="font-size:15px;font-weight:500;color:#3a3a52;">{{ b }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px;">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="4">
+          <div style="position:relative;background:{{ s.bg }};border-radius:12px;padding:26px 24px 30px;{{ s.shift }}">
+            <div style="position:absolute;top:14px;right:20px;font-size:48px;font-weight:800;color:{{ s.numColor }};line-height:1;">{{ s.num }}</div>
+            <div style="width:56px;height:56px;border-radius:10px;background:#fff;box-shadow:0 10px 24px -14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;margin-bottom:18px;color:{{ s.iconColor }};" data-icon="{{ s.icon }}"></div>
+            <h4 style="font-size:17px;font-weight:600;line-height:1.3;margin-bottom:12px;color:{{ s.textColor }};">{{ s.title }}</h4>
+            <p style="font-size:13px;color:{{ s.bodyColor }};line-height:1.6;">You need to create an account to find the best and preferred job.</p>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA BANNER ===== -->
+  <section style="position:relative;padding:70px 0;overflow:hidden;background:#f6f8fb;">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(#e0e4ec 1.4px,transparent 1.4px);background-size:22px 22px;opacity:.7;"></div>
+    <div style="position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:0 60px;display:grid;grid-template-columns:0.8fr 1.2fr;gap:0;align-items:end;">
+      <div style="position:relative;height:400px;">
+        <div style="position:absolute;bottom:0;left:0;width:100%;height:100%;"><image-slot id="about-woman" shape="rect" fit="cover" placeholder="Drop photo" style="width:100%;height:100%;"></image-slot></div>
+      </div>
+      <div style="background:#2b6df4;border-radius:6px;padding:52px 48px;color:#fff;position:relative;top:-20px;">
+        <p style="font-size:14px;font-weight:500;opacity:.85;margin-bottom:14px;">Explore New Life</p>
+        <h2 style="font-size:34px;font-weight:700;color:#fff;line-height:1.25;margin-bottom:20px;">Don't just find. be found<br>put your CV in front of<br>great employers</h2>
+        <p style="font-size:14px;opacity:.85;line-height:1.7;margin-bottom:30px;max-width:460px;">Lorem Ipsum is simply dummy text of the printing and typesetting industry the standard dummy text ever since the when an printer took.</p>
+        <button style="background:#fff;color:#2b6df4;border:none;border-radius:26px;padding:14px 28px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:9px;">
+          Upload Your Resume
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V6M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TOP COMPANIES ===== -->
+  <section style="padding:70px 60px 90px;text-align:center;">
+    <p style="font-size:15px;font-weight:600;color:#2b6df4;margin-bottom:8px;">Top Companies</p>
+    <h2 style="font-size:34px;font-weight:700;margin-bottom:44px;">Get hired in top companies</h2>
+    <div style="max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:18px;justify-content:center;">
+      <button style="width:38px;height:38px;border-radius:50%;border:none;background:#2b6df4;color:#fff;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div style="flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:14px;">
+        <sc-for list="{{ companies }}" as="co" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+            <div style="width:52px;height:52px;display:flex;align-items:center;justify-content:center;color:#3a3a52;" data-icon="{{ co.icon }}"></div>
+            <span style="font-size:13px;font-weight:600;color:#1a1a2e;">{{ co.name }}</span>
+            <span style="font-size:9px;color:#a0a0b4;letter-spacing:1px;">YOUR CLEAN HERE</span>
+          </div>
+        </sc-for>
+      </div>
+      <button style="width:38px;height:38px;border-radius:50%;border:none;background:#2b6df4;color:#fff;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer style="background:#141a2e;color:#c3c8d6;padding:60px 60px 40px;">
+    <div style="max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap;padding-bottom:44px;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="color:#fff;font-size:20px;font-weight:600;line-height:1.4;max-width:420px;">Join our email subscription now to get updates on new jobs and notifications.</div>
+      <div style="display:flex;gap:0;flex:1;min-width:340px;max-width:560px;background:#fff;border-radius:10px;padding:6px;">
+        <input placeholder="Enter Your Email" style="flex:1;border:none;border-radius:8px;padding:14px 18px;font-size:14px;outline:none;">
+        <button style="background:#2b6df4;color:#fff;border:none;border-radius:8px;padding:14px 30px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;">Subscribe Now</button>
+      </div>
+    </div>
+
+    <div style="max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:30px;padding-top:48px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:20px;">
+          <div style="width:24px;height:30px;background:#2b6df4;border-radius:12px 12px 4px 4px;position:relative;"><div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#fff;"></div></div>
+          <span style="font-size:24px;font-weight:700;color:#fff;">Jobzilla</span>
+        </div>
+        <p style="font-size:14px;line-height:1.7;color:#9aa0b4;margin-bottom:18px;max-width:280px;">Many desktop publishing packages and web page editors now.</p>
+        <p style="font-size:13px;line-height:1.9;color:#9aa0b4;"><span style="color:#fff;font-weight:500;">Address :</span> 65 Sunset CA 90026, USA<br><span style="color:#fff;font-weight:500;">Email :</span> example@max.com<br><span style="color:#fff;font-weight:500;">Call :</span> 555-555-1234</p>
+      </div>
+      <sc-for list="{{ footerCols }}" as="col" hint-placeholder-count="4">
+        <div>
+          <h5 style="font-size:16px;font-weight:600;color:#fff;margin-bottom:8px;">{{ col.title }}</h5>
+          <div style="width:32px;height:3px;background:#2b6df4;border-radius:2px;margin-bottom:18px;"></div>
+          <div style="display:flex;flex-direction:column;gap:11px;">
+            <sc-for list="{{ col.links }}" as="ln" hint-placeholder-count="5">
+              <a style="font-size:14px;color:#9aa0b4;" href="#" style-hover="color:#fff;">{{ ln }}</a>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="max-width:1120px;margin:40px auto 0;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;">
+      <p style="font-size:13px;color:#9aa0b4;">Copyright © 2026 by thewebmax All Rights Reserved.</p>
+      <div style="display:flex;gap:16px;color:#2b6df4;">
+        <sc-for list="{{ socials }}" as="s" hint-placeholder-count="4">
+          <span style="font-size:15px;font-weight:600;cursor:pointer;">{{ s }}</span>
+        </sc-for>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const plain = { cardBg: "#fff", iconColor: "#2b6df4", pillBg: "#eef2fb", pillColor: "#4a6fb0", nameColor: "#1a1a2e" };
+    const hi = { cardBg: "#2b6df4", iconColor: "#fff", pillBg: "rgba(255,255,255,.2)", pillColor: "#fff", nameColor: "#fff" };
+    return {
+      categories: [
+        { ...plain, jobs: "9,185 Jobs", name: "Business Development", icon: "chart" },
+        { ...plain, jobs: "3,205 Jobs", name: "Project Management", icon: "clipboard" },
+        { ...plain, jobs: "2,100 Jobs", name: "Content Writer", icon: "pen" },
+        { ...hi, jobs: "1,500 Jobs", name: "Costomer Services", icon: "headset" },
+        { ...plain, jobs: "9,185 Jobs", name: "Finance", icon: "bank" },
+        { ...plain, jobs: "3,205 Jobs", name: "Marketing", icon: "share" },
+        { ...plain, jobs: "2,100 Jobs", name: "Design & Art", icon: "palette" },
+        { ...plain, jobs: "1,500 Jobs", name: "Web Development", icon: "code" },
+      ],
+      bullets: ["Trusted & Quality Job", "International Job", "No Extra Charge", "Top Companies"],
+      steps: [
+        { num: "01", title: "Register\nYour Account", icon: "clipboard", bg: "#dcebfd", numColor: "rgba(43,109,244,.25)", iconColor: "#2b6df4", textColor: "#1a1a2e", bodyColor: "#5a6478", shift: "" },
+        { num: "02", title: "Search\nYour Job", icon: "search", bg: "#f6d98a", numColor: "rgba(184,140,20,.4)", iconColor: "#c99a1a", textColor: "#1a1a2e", bodyColor: "#6b5a2a", shift: "transform:translateY(24px);" },
+        { num: "03", title: "Apply\nFor Dream Job", icon: "resume", bg: "#e6c9f0", numColor: "rgba(140,60,170,.35)", iconColor: "#9a4bbf", textColor: "#1a1a2e", bodyColor: "#5a3a6b", shift: "" },
+        { num: "04", title: "Upload\nYour Resume", icon: "resume", bg: "#a9e0c4", numColor: "rgba(20,150,100,.4)", iconColor: "#1aa86a", textColor: "#1a1a2e", bodyColor: "#2a6b52", shift: "transform:translateY(24px);" },
+      ],
+      companies: [
+        { name: "Green Power", icon: "leaf" }, { name: "Innovation", icon: "grid" }, { name: "Flash Tech", icon: "flash" },
+        { name: "Digital", icon: "orbit" }, { name: "Technology", icon: "flash" }, { name: "Energy", icon: "orbit" },
+      ],
+      footerCols: [
+        { title: "For Candidate", links: ["User Dashboard", "Alert resume", "Candidates", "Blog List", "Blog single"] },
+        { title: "For Employers", links: ["Post Jobs", "Blog Grid", "Contact", "Jobs Listing", "Jobs details"] },
+        { title: "Helpful Resources", links: ["FAQs", "Employer detail", "Profile", "404 Page", "Pricing"] },
+        { title: "Quick Links", links: ["Home", "About us", "Bookmark", "Jobs", "Employer"] },
+      ],
+      socials: ["f", "X", "in", "P"],
+    };
+  }
+  componentDidMount() { this.paintIcons(); }
+  componentDidUpdate() { this.paintIcons(); }
+  paintIcons() {
+    const p = {
+      chart: '<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/><circle cx="17" cy="6" r="2"/>',
+      clipboard: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>',
+      pen: '<path d="M6 3h9l3 3v15H6z"/><path d="M9 8h6M9 12h6M9 16h3"/><path d="M18 14l3 3-4 4-3 1 1-3z"/>',
+      headset: '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2" y="14" width="4" height="6" rx="2"/><rect x="18" y="14" width="4" height="6" rx="2"/><path d="M20 18v1a3 3 0 0 1-3 3h-3"/>',
+      bank: '<path d="M3 21h18M4 21V9l8-5 8 5v12M9 21v-6h6v6"/><circle cx="16" cy="6" r="2"/>',
+      share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>',
+      palette: '<rect x="4" y="14" width="16" height="7" rx="1"/><path d="M8 14V6h8v8"/><path d="M10 9h4"/>',
+      code: '<rect x="3" y="4" width="18" height="14" rx="2"/><path d="M9 21h6M12 18v3"/><path d="M8 9l-2 2 2 2M16 9l2 2-2 2"/>',
+      search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/>',
+      resume: '<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8 17c0-2 2-3 4-3s4 1 4 3"/>',
+      leaf: '<path d="M4 20c8 0 16-6 16-16-8 0-16 6-16 16z"/><path d="M4 20c4-6 8-9 12-11"/>',
+      grid: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+      flash: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
+      orbit: '<circle cx="12" cy="12" r="4"/><ellipse cx="12" cy="12" rx="10" ry="4"/>',
+    };
+    document.querySelectorAll('[data-icon]').forEach(el => {
+      const k = el.getAttribute('data-icon');
+      if (p[k] && !el.dataset.painted) {
+        el.innerHTML = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + p[k] + '</svg>';
+        el.dataset.painted = "1";
+      }
+    });
+  }
+}
+</script>
+</body>
+</html>

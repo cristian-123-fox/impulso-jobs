@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Rubik', system-ui, sans-serif; color: #35354a; background: #fff; }
+  a { color: #2b6df4; text-decoration: none; }
+  a:hover { color: #1d51c9; }
+  h1,h2,h3,h4,h5 { margin: 0; color: #1a1a2e; font-weight: 600; }
+  p { margin: 0; }
+  input, textarea { font-family: inherit; }
+  ::placeholder { color: #9a9ab0; }
+</style>
+</helmet>
+
+<div style="width:100%;overflow:hidden;background:#fff">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:22px 60px;background:#f5f7fb;">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:32px;background:#2b6df4;border-radius:13px 13px 4px 4px;position:relative;">
+        <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:#fff;"></div>
+      </div>
+      <span style="font-size:26px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;">Jobzilla</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:34px;font-size:15px;font-weight:500;color:#3a3a52;">
+      <a style="color:#3a3a52;" href="Jobzilla Home.dc.html">Home</a>
+      <a style="color:#3a3a52;" href="Jobzilla Jobs.dc.html">Jobs</a>
+      <a style="color:#3a3a52;" href="#">Employers</a>
+      <a style="color:#2b6df4;" href="#">Pages</a>
+      <a style="color:#3a3a52;" href="#">Candidates</a>
+      <a style="color:#3a3a52;" href="#">Blog</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:22px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a3a52" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <a style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:500;color:#3a3a52;white-space:nowrap;background:#eaf1fe;padding:11px 20px;border-radius:26px;" href="#">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+        Sign Up
+      </a>
+      <a style="display:flex;align-items:center;gap:7px;background:#2b6df4;color:#fff;padding:12px 22px;border-radius:26px;font-size:14px;font-weight:500;white-space:nowrap;" href="#" style-hover="background:#1d51c9;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12v4H6zM4 6h16v16H4z"/></svg>
+        Post a job
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== PAGE BANNER ===== -->
+  <section style="position:relative;background:#f5f7fb;padding:70px 60px 78px;text-align:center;overflow:hidden;">
+    <div style="position:absolute;top:-100px;left:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(233,108,167,.14),transparent 70%);"></div>
+    <div style="position:absolute;top:-60px;right:-40px;width:440px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(43,190,220,.16),transparent 68%);"></div>
+    <div style="position:relative;z-index:2;">
+      <h1 style="font-size:34px;font-weight:700;margin-bottom:14px;">Contact Us</h1>
+      <div style="font-size:14px;color:#6b6b82;display:flex;align-items:center;justify-content:center;gap:8px;">
+        <a style="color:#6b6b82;" href="Jobzilla Home.dc.html">Home</a> <span>-</span> <a href="#">Contact Us</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CONTACT ===== -->
+  <section style="padding:80px 60px 0;">
+    <div style="max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1.15fr 0.85fr;gap:50px;align-items:start;">
+
+      <!-- FORM -->
+      <div>
+        <h2 style="font-size:40px;font-weight:700;margin-bottom:16px;">Send Us a Message</h2>
+        <p style="font-size:15px;color:#6b6b82;margin-bottom:36px;">Feel free to contact us and we will get back to you as soon as we can.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <input placeholder="Name" style="background:#eff4fd;border:none;border-radius:8px;padding:17px 18px;font-size:14px;outline:none;">
+          <input placeholder="Email" style="background:#eff4fd;border:none;border-radius:8px;padding:17px 18px;font-size:14px;outline:none;">
+          <input placeholder="Phone" style="background:#eff4fd;border:none;border-radius:8px;padding:17px 18px;font-size:14px;outline:none;">
+          <input placeholder="Subject" style="background:#eff4fd;border:none;border-radius:8px;padding:17px 18px;font-size:14px;outline:none;">
+        </div>
+        <textarea placeholder="Message" rows="4" style="width:100%;background:#eff4fd;border:none;border-radius:8px;padding:17px 18px;font-size:14px;outline:none;resize:vertical;margin-top:20px;"></textarea>
+        <button style="margin-top:28px;background:#1f4fe0;color:#fff;border:none;border-radius:8px;padding:17px 36px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;" style-hover="background:#123a9e;">Submit Now</button>
+      </div>
+
+      <!-- INFO CARD -->
+      <div style="position:relative;padding-top:20px;">
+        <div style="position:absolute;top:0;right:-60px;width:calc(100% + 60px);height:100%;background:#eef4fe;border-radius:6px;"></div>
+        <div style="position:relative;background:#fff;border-radius:8px;box-shadow:0 30px 60px -34px rgba(0,0,0,.22);padding:44px 40px;display:flex;flex-direction:column;gap:36px;">
+          <sc-for list="{{ infos }}" as="info" hint-placeholder-count="3">
+            <div style="display:flex;gap:22px;align-items:flex-start;">
+              <div style="width:56px;height:56px;border-radius:10px;background:#eaf1fe;display:flex;align-items:center;justify-content:center;flex:none;color:#2b6df4;" data-icon="{{ info.icon }}"></div>
+              <div>
+                <h4 style="font-size:18px;font-weight:600;margin-bottom:10px;">{{ info.title }}</h4>
+                <p style="font-size:14px;color:#6b6b82;line-height:1.7;">{{ info.line1 }}</p>
+                <sc-if value="{{ info.line2 }}" hint-placeholder-val="{{ true }}"><p style="font-size:14px;color:#6b6b82;line-height:1.7;">{{ info.line2 }}</p></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== MAP ===== -->
+  <div style="position:relative;height:420px;margin-top:64px;background:#e8ebf0;overflow:hidden;">
+    <div style="position:absolute;inset:0;background:
+      repeating-linear-gradient(90deg,transparent 0 118px,#dfe3ea 118px 120px),
+      repeating-linear-gradient(0deg,transparent 0 88px,#dfe3ea 88px 90px);"></div>
+    <div style="position:absolute;top:38%;left:-5%;width:110%;height:26px;background:#d0d5df;transform:rotate(-6deg);"></div>
+    <div style="position:absolute;top:60%;left:-5%;width:110%;height:18px;background:#cfe3c9;transform:rotate(4deg);"></div>
+    <div style="position:absolute;top:20%;left:52%;width:8%;height:70%;background:#d0d5df;transform:rotate(10deg);"></div>
+    <div style="position:absolute;top:18px;left:24px;background:#fff;border-radius:6px;box-shadow:0 8px 20px -10px rgba(0,0,0,.3);padding:12px 16px;font-size:13px;max-width:220px;">
+      <div style="font-weight:600;color:#1a1a2e;margin-bottom:3px;">1363 Sunset Blvd</div>
+      <div style="font-size:11px;color:#8a8a9e;line-height:1.5;">1363 Sunset Blvd, Los Angeles, CA 90026, USA</div>
+    </div>
+    <svg style="position:absolute;top:42%;left:47%;" width="34" height="44" viewBox="0 0 24 32" fill="#1a1a2e"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg>
+    <div style="position:absolute;bottom:18px;right:20px;width:36px;height:36px;border-radius:50%;background:#fff;box-shadow:0 4px 12px -4px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#5a5a72;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer style="background:#141a2e;color:#c3c8d6;padding:60px 60px 40px;">
+    <div style="max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap;padding-bottom:44px;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="color:#fff;font-size:20px;font-weight:600;line-height:1.4;max-width:420px;">Join our email subscription now to get updates on new jobs and notifications.</div>
+      <div style="display:flex;gap:0;flex:1;min-width:340px;max-width:560px;background:#fff;border-radius:10px;padding:6px;">
+        <input placeholder="Enter Your Email" style="flex:1;border:none;border-radius:8px;padding:14px 18px;font-size:14px;outline:none;">
+        <button style="background:#2b6df4;color:#fff;border:none;border-radius:8px;padding:14px 30px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;">Subscribe Now</button>
+      </div>
+    </div>
+
+    <div style="max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:30px;padding-top:48px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:20px;">
+          <div style="width:24px;height:30px;background:#2b6df4;border-radius:12px 12px 4px 4px;position:relative;"><div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#fff;"></div></div>
+          <span style="font-size:24px;font-weight:700;color:#fff;">Jobzilla</span>
+        </div>
+        <p style="font-size:14px;line-height:1.7;color:#9aa0b4;margin-bottom:18px;max-width:280px;">Many desktop publishing packages and web page editors now.</p>
+        <p style="font-size:13px;line-height:1.9;color:#9aa0b4;"><span style="color:#fff;font-weight:500;">Address :</span> 65 Sunset CA 90026, USA<br><span style="color:#fff;font-weight:500;">Email :</span> example@max.com<br><span style="color:#fff;font-weight:500;">Call :</span> 555-555-1234</p>
+      </div>
+      <sc-for list="{{ footerCols }}" as="col" hint-placeholder-count="4">
+        <div>
+          <h5 style="font-size:16px;font-weight:600;color:#fff;margin-bottom:8px;">{{ col.title }}</h5>
+          <div style="width:32px;height:3px;background:#2b6df4;border-radius:2px;margin-bottom:18px;"></div>
+          <div style="display:flex;flex-direction:column;gap:11px;">
+            <sc-for list="{{ col.links }}" as="ln" hint-placeholder-count="5">
+              <a style="font-size:14px;color:#9aa0b4;" href="#" style-hover="color:#fff;">{{ ln }}</a>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="max-width:1120px;margin:40px auto 0;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;">
+      <p style="font-size:13px;color:#9aa0b4;">Copyright © 2026 by thewebmax All Rights Reserved.</p>
+      <div style="display:flex;gap:16px;color:#2b6df4;">
+        <sc-for list="{{ socials }}" as="s" hint-placeholder-count="4">
+          <span style="font-size:15px;font-weight:600;cursor:pointer;">{{ s }}</span>
+        </sc-for>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      infos: [
+        { icon: "pin", title: "In the bay area?", line1: "1363-1385 Sunset Blvd Los Angeles, CA 90026, USA", line2: "" },
+        { icon: "phone", title: "Feel free to contact us", line1: "+2 900 234 4241", line2: "+2 900 234 3219" },
+        { icon: "mail", title: "Support", line1: "infohelp@gmail.com", line2: "support12@gmail.com" },
+      ],
+      footerCols: [
+        { title: "For Candidate", links: ["User Dashboard", "Alert resume", "Candidates", "Blog List", "Blog single"] },
+        { title: "For Employers", links: ["Post Jobs", "Blog Grid", "Contact", "Jobs Listing", "Jobs details"] },
+        { title: "Helpful Resources", links: ["FAQs", "Employer detail", "Profile", "404 Page", "Pricing"] },
+        { title: "Quick Links", links: ["Home", "About us", "Bookmark", "Jobs", "Employer"] },
+      ],
+      socials: ["f", "X", "in", "P"],
+    };
+  }
+  componentDidMount() { this.paintIcons(); }
+  componentDidUpdate() { this.paintIcons(); }
+  paintIcons() {
+    const p = {
+      pin: '<path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+      phone: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/>',
+      mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 6l10 7 10-7"/>',
+    };
+    document.querySelectorAll('[data-icon]').forEach(el => {
+      const k = el.getAttribute('data-icon');
+      if (p[k] && !el.dataset.painted) {
+        el.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p[k] + '</svg>';
+        el.dataset.painted = "1";
+      }
+    });
+  }
+}
+</script>
+</body>
+</html>

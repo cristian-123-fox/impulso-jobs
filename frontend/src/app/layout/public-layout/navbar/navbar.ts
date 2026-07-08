@@ -128,7 +128,7 @@ export class Navbar {
     { label: 'Empresas', path: '/empresa' },
     { label: 'Candidatos', path: '/candidato' },
     { label: 'Planes', path: '/planes' },
-    { label: 'Blog', path: '/blog' },
+    { label: 'Contacto', path: '/contacto' },
   ];
 
   protected readonly menuOpen = signal(false);

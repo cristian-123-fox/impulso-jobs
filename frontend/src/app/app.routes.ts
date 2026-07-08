@@ -11,6 +11,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('@/features/public/home/home.routes').then((m) => m.routes),
       },
+      {
+        path: 'contacto',
+        loadChildren: () =>
+          import('@/features/public/contact/contact.routes').then((m) => m.routes),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

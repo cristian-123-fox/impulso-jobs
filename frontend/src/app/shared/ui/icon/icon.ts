@@ -10,6 +10,8 @@ export type IconName =
   | 'search'
   | 'login'
   | 'plus'
+  | 'phone'
+  | 'mail'
   | 'chevron-down'
   | 'chevron-left'
   | 'chevron-right'
@@ -77,6 +79,8 @@ const ICONS: Record<IconName, readonly IconShape[]> = {
     p('M15 12H3'),
   ],
   plus: [p('M12 5v14M5 12h14')],
+  phone: [p('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 3.5a2 2 0 0 1-.6 1.8l-2 2a16 16 0 0 0 6 6l2-2a2 2 0 0 1 1.8-.6l3.5.5a2 2 0 0 1 1.7 2z')],
+  mail: [r(3, 5, 18, 14, 2), p('M3 7l9 6 9-6')],
   'chevron-down': [p('M6 9l6 6 6-6')],
   'chevron-left': [p('M15 18l-6-6 6-6')],
   'chevron-right': [p('M9 18l6-6-6-6')],

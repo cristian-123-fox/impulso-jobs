@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Rubik', system-ui, sans-serif; color: #35354a; background: #fff; }
+  a { color: #2b6df4; text-decoration: none; }
+  a:hover { color: #1d51c9; }
+  h1,h2,h3,h4,h5 { margin: 0; color: #1a1a2e; font-weight: 600; }
+  p { margin: 0; }
+  input { font-family: inherit; }
+</style>
+</helmet>
+
+<div style="width:100%;overflow:hidden;background:#fff">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:22px 60px;background:#fff;">
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div style="width:26px;height:32px;background:#2b6df4;border-radius:13px 13px 4px 4px;position:relative;">
+        <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:#fff;"></div>
+      </div>
+      <span style="font-size:26px;font-weight:700;color:#1a1a2e;letter-spacing:-.5px;">Jobzilla</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:34px;font-size:15px;font-weight:500;color:#3a3a52;">
+      <a style="color:#3a3a52;" href="Jobzilla Home.dc.html">Home</a>
+      <a style="color:#3a3a52;" href="Jobzilla Jobs.dc.html">Jobs</a>
+      <a style="color:#3a3a52;" href="#">Employers</a>
+      <a style="color:#3a3a52;" href="#">Pages</a>
+      <a style="color:#3a3a52;" href="#">Candidates</a>
+      <a style="color:#3a3a52;" href="#">Blog</a>
+    </nav>
+    <div style="display:flex;align-items:center;gap:22px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3a3a52" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <a style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:500;color:#3a3a52;white-space:nowrap;background:#eaf1fe;padding:11px 20px;border-radius:26px;" href="#">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+        Sign Up
+      </a>
+      <a style="display:flex;align-items:center;gap:7px;background:#2b6df4;color:#fff;padding:12px 22px;border-radius:26px;font-size:14px;font-weight:500;white-space:nowrap;" href="#" style-hover="background:#1d51c9;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h12v4H6zM4 6h16v16H4z"/></svg>
+        Post a job
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== 404 CONTENT ===== -->
+  <section style="padding:70px 60px 110px;">
+    <div style="max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center;">
+
+      <!-- Illustration -->
+      <div style="display:flex;justify-content:center;">
+        <svg width="560" height="440" viewBox="0 0 560 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- clouds -->
+          <g fill="#eef1f6">
+            <ellipse cx="150" cy="70" rx="42" ry="16"/>
+            <ellipse cx="430" cy="60" rx="36" ry="13"/>
+            <ellipse cx="500" cy="120" rx="30" ry="11"/>
+            <ellipse cx="90" cy="150" rx="28" ry="10"/>
+          </g>
+          <!-- skyline -->
+          <g fill="#e9ecf2">
+            <rect x="120" y="230" width="60" height="200"/>
+            <rect x="185" y="270" width="46" height="160"/>
+            <rect x="236" y="200" width="52" height="230"/>
+            <rect x="360" y="250" width="44" height="180"/>
+            <rect x="410" y="210" width="40" height="220"/>
+          </g>
+          <!-- chimneys with smoke -->
+          <g fill="#dde1e9">
+            <rect x="300" y="300" width="26" height="130"/>
+            <rect x="332" y="320" width="22" height="110"/>
+          </g>
+          <g fill="#e4e7ee">
+            <circle cx="313" cy="285" r="10"/><circle cx="326" cy="272" r="8"/><circle cx="308" cy="268" r="7"/>
+            <circle cx="343" cy="306" r="8"/><circle cx="352" cy="296" r="6"/>
+          </g>
+          <!-- ground line -->
+          <rect x="60" y="428" width="440" height="4" rx="2" fill="#e4e7ee"/>
+          <!-- plant -->
+          <path d="M110 430v-46c-18-4-26-20-24-34 14 2 24 12 24 26 0-16 10-28 26-30 2 16-8 32-26 36v48z" fill="#c9d0dc"/>
+          <path d="M96 430l6-40h30l6 40z" fill="#2b6df4"/>
+          <!-- traffic cone -->
+          <path d="M330 430l22-70h10l22 70z" fill="#2b6df4"/>
+          <rect x="336" y="398" width="42" height="9" fill="#dfe7f9"/>
+          <rect x="342" y="378" width="30" height="8" fill="#dfe7f9"/>
+          <!-- speech bubble -->
+          <rect x="200" y="120" width="86" height="44" rx="10" fill="#dbe7fb"/>
+          <path d="M232 162l-4 16 16-14z" fill="#dbe7fb"/>
+          <text x="243" y="149" font-family="Rubik" font-size="20" font-weight="600" fill="#2b6df4" text-anchor="middle">Oops!</text>
+          <!-- person -->
+          <g>
+            <!-- legs -->
+            <path d="M243 300l-6 118h16l14-96 14 96h16l-4-118z" fill="#5a6270"/>
+            <!-- shoes -->
+            <path d="M232 416h24l2 10h-30z" fill="#1f2530"/>
+            <path d="M296 416h24l2 10h-30z" fill="#1f2530"/>
+            <!-- torso / shirt -->
+            <path d="M238 214c0-14 12-24 28-24s28 10 28 24l-4 90h-48z" fill="#a9d0f5"/>
+            <!-- arm -->
+            <path d="M288 224c14 6 22 20 20 40l-8 40-14-4 6-40z" fill="#a9d0f5"/>
+            <!-- tie -->
+            <path d="M266 214l-7 8 7 46 7-46z" fill="#2b6df4"/>
+            <!-- head -->
+            <circle cx="266" cy="176" r="24" fill="#f0c9a8"/>
+            <path d="M244 172c0-16 10-26 22-26s22 10 22 24c-6-6-14-8-22-8s-16 2-22 10z" fill="#2b3140"/>
+            <!-- sad mouth -->
+            <path d="M260 190c4-4 10-4 14 0" stroke="#b07a52" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <!-- briefcase -->
+            <rect x="296" y="300" width="52" height="40" rx="4" fill="#3a4152"/>
+            <rect x="312" y="292" width="20" height="10" rx="3" fill="#3a4152"/>
+            <!-- falling paper -->
+            <rect x="300" y="344" width="26" height="34" rx="2" fill="#dbe7fb" transform="rotate(12 313 361)"/>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Text -->
+      <div style="text-align:center;">
+        <div style="font-size:180px;font-weight:800;line-height:1;color:#1a1a2e;letter-spacing:-4px;">404</div>
+        <h2 style="font-size:24px;font-weight:600;color:#2b6df4;margin:8px 0 22px;">We Are Sorry, Page Not Found</h2>
+        <p style="font-size:15px;color:#6b6b82;line-height:1.7;max-width:440px;margin:0 auto 34px;">The page you are looking for might have been removed had its name changed or is temporarily unavailable.</p>
+        <a style="display:inline-block;background:#2b6df4;color:#fff;border-radius:8px;padding:16px 40px;font-size:15px;font-weight:600;" href="Jobzilla Home.dc.html" style-hover="background:#1d51c9;">Go To Home</a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer style="background:#141a2e;color:#c3c8d6;padding:60px 60px 40px;">
+    <div style="max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:30px;flex-wrap:wrap;padding-bottom:44px;border-bottom:1px solid rgba(255,255,255,.08);">
+      <div style="color:#fff;font-size:20px;font-weight:600;line-height:1.4;max-width:420px;">Join our email subscription now to get updates on new jobs and notifications.</div>
+      <div style="display:flex;gap:0;flex:1;min-width:340px;max-width:560px;background:#fff;border-radius:10px;padding:6px;">
+        <input placeholder="Enter Your Email" style="flex:1;border:none;border-radius:8px;padding:14px 18px;font-size:14px;outline:none;">
+        <button style="background:#2b6df4;color:#fff;border:none;border-radius:8px;padding:14px 30px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;">Subscribe Now</button>
+      </div>
+    </div>
+
+    <div style="max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr 1fr;gap:30px;padding-top:48px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:20px;">
+          <div style="width:24px;height:30px;background:#2b6df4;border-radius:12px 12px 4px 4px;position:relative;"><div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);width:7px;height:7px;border-radius:50%;background:#fff;"></div></div>
+          <span style="font-size:24px;font-weight:700;color:#fff;">Jobzilla</span>
+        </div>
+        <p style="font-size:14px;line-height:1.7;color:#9aa0b4;margin-bottom:18px;max-width:280px;">Many desktop publishing packages and web page editors now.</p>
+        <p style="font-size:13px;line-height:1.9;color:#9aa0b4;"><span style="color:#fff;font-weight:500;">Address :</span> 65 Sunset CA 90026, USA<br><span style="color:#fff;font-weight:500;">Email :</span> example@max.com<br><span style="color:#fff;font-weight:500;">Call :</span> 555-555-1234</p>
+      </div>
+      <sc-for list="{{ footerCols }}" as="col" hint-placeholder-count="4">
+        <div>
+          <h5 style="font-size:16px;font-weight:600;color:#fff;margin-bottom:8px;">{{ col.title }}</h5>
+          <div style="width:32px;height:3px;background:#2b6df4;border-radius:2px;margin-bottom:18px;"></div>
+          <div style="display:flex;flex-direction:column;gap:11px;">
+            <sc-for list="{{ col.links }}" as="ln" hint-placeholder-count="5">
+              <a style="font-size:14px;color:#9aa0b4;" href="#" style-hover="color:#fff;">{{ ln }}</a>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="max-width:1120px;margin:40px auto 0;padding-top:22px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;">
+      <p style="font-size:13px;color:#9aa0b4;">Copyright © 2026 by thewebmax All Rights Reserved.</p>
+      <div style="display:flex;gap:16px;color:#2b6df4;">
+        <sc-for list="{{ socials }}" as="s" hint-placeholder-count="4">
+          <span style="font-size:15px;font-weight:600;cursor:pointer;">{{ s }}</span>
+        </sc-for>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      footerCols: [
+        { title: "For Candidate", links: ["User Dashboard", "Alert resume", "Candidates", "Blog List", "Blog single"] },
+        { title: "For Employers", links: ["Post Jobs", "Blog Grid", "Contact", "Jobs Listing", "Jobs details"] },
+        { title: "Helpful Resources", links: ["FAQs", "Employer detail", "Profile", "404 Page", "Pricing"] },
+        { title: "Quick Links", links: ["Home", "About us", "Bookmark", "Jobs", "Employer"] },
+      ],
+      socials: ["f", "X", "in", "P"],
+    };
+  }
+}
+</script>
+</body>
+</html>
