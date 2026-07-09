@@ -26,6 +26,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('@/features/public/faq/faq.routes').then((m) => m.routes),
       },
+      {
+        path: 'planes',
+        loadChildren: () =>
+          import('@/features/public/plans/plans.routes').then((m) => m.routes),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
