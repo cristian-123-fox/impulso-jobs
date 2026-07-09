@@ -11,7 +11,7 @@ export type Tone = 'brand' | 'blue' | 'green' | 'amber' | 'pink';
 /** Fondo suave + color de acento (iconos, tarjetas de categoría, badges, logos). */
 export const TONE_SOFT: Record<Tone, string> = {
   brand: 'bg-brand-50 text-brand',
-  blue: 'bg-accent-blue-soft text-accent-blue',
+  blue: 'bg-brand-50 text-brand',
   green: 'bg-accent-green-soft text-accent-green',
   amber: 'bg-accent-amber-soft text-accent-amber',
   pink: 'bg-accent-pink-soft text-accent-pink',

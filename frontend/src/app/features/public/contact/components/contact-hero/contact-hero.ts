@@ -15,7 +15,7 @@ import { ContactHeroContent } from '@/features/public/contact/models/contact.mod
         class="absolute -left-16 -top-20 h-72 w-72 rounded-full bg-accent-pink-soft blur-3xl"
       ></div>
       <div
-        class="absolute -right-16 -top-10 h-80 w-80 rounded-full bg-accent-blue-soft blur-3xl"
+        class="absolute -right-16 -top-10 h-80 w-80 rounded-full bg-brand-50 blur-3xl"
       ></div>
 
       <div class="relative mx-auto flex max-w-[760px] flex-col items-center">

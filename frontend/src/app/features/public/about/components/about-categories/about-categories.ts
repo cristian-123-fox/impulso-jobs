@@ -9,7 +9,7 @@ import { AboutCategory } from '@/features/public/about/models/about.models';
   template: `
     <section class="bg-surface px-6 py-[76px] text-center lg:px-[60px]">
       <div class="mx-auto max-w-[1080px]">
-        <p class="mb-2 text-[15px] font-semibold text-accent-blue">
+        <p class="mb-2 text-[15px] font-semibold text-brand">
           Empleos por categoría
         </p>
         <h2 class="mb-[46px] text-[38px] font-bold leading-tight text-ink-900">
@@ -21,11 +21,11 @@ import { AboutCategory } from '@/features/public/about/models/about.models';
             <article
               class="rounded-[10px] p-[30px_20px_22px] shadow-[0_16px_36px_-26px_rgba(0,0,0,.22)] transition-transform hover:-translate-y-1"
               [class.bg-white]="!category.featured"
-              [class.bg-accent-blue]="category.featured"
+              [class.bg-brand]="category.featured"
             >
               <div
                 class="mx-auto mb-[22px] flex h-16 w-16 items-center justify-center rounded-2xl"
-                [class.text-accent-blue]="!category.featured"
+                [class.text-brand]="!category.featured"
                 [class.text-white]="category.featured"
               >
                 <ij-icon [name]="category.icon" [size]="30" [strokeWidth]="1.7" />
@@ -33,8 +33,8 @@ import { AboutCategory } from '@/features/public/about/models/about.models';
 
               <span
                 class="mb-3 inline-flex rounded-full px-[14px] py-[5px] text-xs font-medium"
-                [class.bg-[#eef2fb]]="!category.featured"
-                [class.text-[#4a6fb0]]="!category.featured"
+                [class.bg-brand-50]="!category.featured"
+                [class.text-brand]="!category.featured"
                 [class.bg-white/20]="category.featured"
                 [class.text-white]="category.featured"
               >
@@ -52,7 +52,7 @@ import { AboutCategory } from '@/features/public/about/models/about.models';
           }
         </div>
 
-        <button ij-button type="button" variant="accent" class="mt-10">
+        <button ij-button type="button" variant="primary" class="mt-10">
           Ver todas las categorías
         </button>
       </div>

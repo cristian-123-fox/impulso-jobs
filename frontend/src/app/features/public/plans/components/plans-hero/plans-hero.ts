@@ -16,7 +16,7 @@ import { PlansHeroContent } from '@/features/public/plans/models/plans.models';
       ></div>
       <div
         class="absolute -right-[40px] -top-[60px] h-[380px] w-[440px] rounded-full"
-        style="background: radial-gradient(circle, rgba(43, 190, 220, 0.16), transparent 68%);"
+        style="background: radial-gradient(circle, rgba(255, 106, 0, 0.12), transparent 68%);"
       ></div>
 
       <div class="relative z-10">
@@ -27,9 +27,9 @@ import { PlansHeroContent } from '@/features/public/plans/models/plans.models';
           aria-label="Breadcrumb"
           class="flex items-center justify-center gap-2 text-sm text-[#6b6b82]"
         >
-          <a routerLink="/" class="transition-colors hover:text-accent-blue">Inicio</a>
+          <a routerLink="/" class="transition-colors hover:text-brand">Inicio</a>
           <span>-</span>
-          <span class="text-accent-blue">{{ content().breadcrumbLabel }}</span>
+          <span class="text-brand">{{ content().breadcrumbLabel }}</span>
         </nav>
       </div>
     </section>

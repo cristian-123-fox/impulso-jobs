@@ -47,7 +47,7 @@ import { IjLogo } from '@/shared/ui';
           </p>
           <h1
             id="maintenance-title"
-            class="text-[48px] font-extrabold leading-none tracking-[-0.04em] text-accent-blue sm:text-[60px] lg:text-[66px]"
+            class="text-[48px] font-extrabold leading-none tracking-[-0.04em] text-brand sm:text-[60px] lg:text-[66px]"
           >
             <span class="block text-ink-900">{{ facade.content().titleLead }}</span>
             {{ facade.content().titleAccent }}

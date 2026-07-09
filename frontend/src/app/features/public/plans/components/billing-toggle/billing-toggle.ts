@@ -14,7 +14,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div
-      class="inline-flex flex-wrap items-center gap-2 rounded-full bg-accent-blue-soft p-1.5"
+      class="inline-flex flex-wrap items-center gap-2 rounded-full bg-brand-50 p-1.5"
       role="tablist"
       aria-label="Cambiar ciclo de facturación"
     >
@@ -23,9 +23,9 @@ import {
           type="button"
           role="tab"
           class="rounded-full px-6 py-2.5 text-sm font-medium transition-colors"
-          [class.bg-accent-blue]="activeOption() === option.id"
+          [class.bg-brand]="activeOption() === option.id"
           [class.text-white]="activeOption() === option.id"
-          [class.text-accent-blue]="activeOption() !== option.id"
+          [class.text-brand]="activeOption() !== option.id"
           [attr.aria-selected]="activeOption() === option.id"
           (click)="cycleChange.emit(option.id)"
         >

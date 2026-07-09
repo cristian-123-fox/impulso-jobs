@@ -55,7 +55,7 @@ const PRICE_FORMATTER = new Intl.NumberFormat('en-US', {
               <div class="flex items-center gap-3">
                 <span
                   class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center"
-                  [class.text-accent-blue]="feature.included"
+                  [class.text-brand]="feature.included"
                   [class.text-[#c0c4cf]]="!feature.included"
                 >
                   <ij-icon
@@ -75,7 +75,7 @@ const PRICE_FORMATTER = new Intl.NumberFormat('en-US', {
             }
           </div>
 
-          <button ij-button type="button" variant="accent" shape="rounded" size="lg">
+          <button ij-button type="button" variant="primary" shape="rounded" size="lg">
             Comprar ahora
           </button>
         </div>
@@ -101,11 +101,11 @@ export class IjPricingCard {
 
   protected readonly decoClasses = computed(() => {
     const accent =
-      this.plan().accent === 'blue'
-        ? 'bg-accent-blue-soft'
-        : this.plan().accent === 'amber'
-          ? 'bg-accent-amber-soft'
-          : 'bg-accent-pink-soft';
+      this.plan().accent === 'amber'
+        ? 'bg-accent-amber-soft'
+        : this.plan().accent === 'pink'
+          ? 'bg-accent-pink-soft'
+          : 'bg-brand-50';
 
     return [
       'absolute left-1/2 top-[-90px] h-[230px] w-[150%] -translate-x-1/2 rounded-b-[50%]',
@@ -115,11 +115,11 @@ export class IjPricingCard {
 
   protected readonly titleClasses = computed(() => {
     const accent =
-      this.plan().accent === 'blue'
-        ? 'text-accent-blue'
-        : this.plan().accent === 'amber'
-          ? 'text-accent-amber'
-          : 'text-accent-pink';
+      this.plan().accent === 'amber'
+        ? 'text-accent-amber'
+        : this.plan().accent === 'pink'
+          ? 'text-accent-pink'
+          : 'text-brand';
 
     return ['text-[20px] font-semibold', accent].join(' ');
   });

@@ -31,7 +31,7 @@ export class PlansFacade {
       monthlyPrice: 90,
       annualPrice: 972,
       recommended: false,
-      accent: 'blue',
+      accent: 'amber',
       features: [
         { label: '1 vacante activa', included: true },
         { label: 'Sin publicación destacada', included: false },

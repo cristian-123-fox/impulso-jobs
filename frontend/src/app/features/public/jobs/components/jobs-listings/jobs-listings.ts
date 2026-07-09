@@ -36,12 +36,12 @@ import { Job } from '@/features/public/jobs/models/jobs.models';
                 <span class="text-xs font-medium" [style.color]="job.postedColor">/ {{ job.posted }}</span>
               </div>
               <p class="mb-1 text-[13px] text-[#8a8a9e]">1363-1385 Sunset Blvd Los Angeles, CA 90026, USA</p>
-              <a href="#" class="text-[13px] text-[#2b6df4]">https://thewebmax.com</a>
+              <a href="#" class="text-[13px] text-brand">https://thewebmax.com</a>
             </div>
             <div class="flex min-w-[130px] flex-col gap-3 text-left sm:items-end sm:text-right">
               <span class="inline-block rounded-md px-[13px] py-[5px] text-[11px] font-semibold" [style.background-color]="job.badgeBg" [style.color]="job.badgeColor">{{ job.badge }}</span>
               <div class="text-[15px] font-bold text-[#1a1a2e]">{{ job.salary }} <span class="text-xs font-normal text-[#8a8a9e]">/ Month</span></div>
-              <a [routerLink]="['/vacantes', i + 1]" class="text-[13px] font-medium text-[#2b6df4]">Browse Job</a>
+              <a [routerLink]="['/vacantes', i + 1]" class="text-[13px] font-medium text-brand">Browse Job</a>
             </div>
           </div>
         }
@@ -53,7 +53,7 @@ import { Job } from '@/features/public/jobs/models/jobs.models';
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <button class="h-[38px] w-[38px] cursor-pointer rounded-full border border-[#e6e8ef] bg-white text-sm text-[#4a4a62]">1</button>
-        <button class="h-[38px] w-[38px] cursor-pointer rounded-full border-0 bg-[#2b6df4] text-sm font-semibold text-white">2</button>
+        <button class="h-[38px] w-[38px] cursor-pointer rounded-full border-0 bg-brand text-sm font-semibold text-white">2</button>
         <button class="h-[38px] w-[38px] cursor-pointer rounded-full border border-[#e6e8ef] bg-white text-sm text-[#4a4a62]">3</button>
         <span class="text-[#a0a0b4] px-1">•••</span>
         <button class="h-[38px] w-[38px] cursor-pointer rounded-full border border-[#e6e8ef] bg-white text-sm text-[#4a4a62]">5</button>

@@ -145,7 +145,7 @@ import { IjButton, IjIcon } from '@/shared/ui';
 
         <div class="relative pt-4">
           <div
-            class="absolute inset-y-0 -right-6 left-8 hidden rounded-[28px] bg-accent-blue-soft lg:block"
+            class="absolute inset-y-0 -right-6 left-8 hidden rounded-[28px] bg-brand-50 lg:block"
           ></div>
           <div
             class="relative flex flex-col gap-6 rounded-[28px] bg-white p-6 shadow-float sm:p-8"
@@ -153,7 +153,7 @@ import { IjButton, IjIcon } from '@/shared/ui';
             @for (item of infoCards(); track item.title) {
               <div class="flex gap-4 rounded-2xl border border-line/80 p-4 sm:gap-5 sm:p-5">
                 <div
-                  class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent-blue-soft text-accent-blue"
+                  class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand"
                 >
                   <ij-icon [name]="item.icon" [size]="24" />
                 </div>

@@ -26,7 +26,7 @@ import { JobType } from '@/features/public/jobs/models/jobs.models';
         <h5 class="text-base font-semibold mb-3">Location</h5>
         <div class="relative mb-6">
           <input placeholder="Search location" class="w-full rounded-lg border border-[#e6e8ef] px-[14px] py-3 pr-10 text-sm outline-none focus:border-brand/30 focus:ring-2 focus:ring-brand/15">
-          <svg class="absolute right-[13px] top-3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2b6df4" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <svg class="absolute right-[13px] top-3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6a00" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
         </div>
 
         <h5 class="mb-[14px] text-base font-semibold">Job Type</h5>
@@ -56,13 +56,12 @@ import { JobType } from '@/features/public/jobs/models/jobs.models';
         <div class="mb-4 mt-[26px] flex items-center gap-2"><span class="h-[18px] w-1 rounded-sm bg-brand"></span><h5 class="text-base font-semibold">Tags</h5></div>
         <div class="flex flex-wrap gap-[9px]">
           @for (tag of tags(); track tag) {
-            <span class="cursor-pointer rounded-[5px] bg-[#eef2fb] px-3 py-[6px] text-xs text-[#4a6fb0]">{{ tag }}</span>
+            <span class="cursor-pointer rounded-[5px] bg-brand-50 px-3 py-[6px] text-xs text-brand">{{ tag }}</span>
           }
         </div>
       </div>
 
-      <!-- Recruiting card (blue) -->
-      <div class="rounded-[12px] bg-gradient-to-br from-[#2b6df4] to-[#1d51c9] px-6 py-[26px] text-white">
+      <div class="rounded-[12px] bg-gradient-to-br from-brand to-brand-600 px-6 py-[26px] text-white">
         <h5 class="text-base font-semibold text-white mb-4">Recruiting?</h5>
         <div class="mb-[22px] flex flex-col gap-[13px]">
           @for (r of recruiting(); track r) {
@@ -78,7 +77,7 @@ import { JobType } from '@/features/public/jobs/models/jobs.models';
       </div>
 
       <!-- Recruiting CTA -->
-      <div class="relative overflow-hidden rounded-[12px] bg-gradient-to-br from-[#2b6df4] to-[#123a9e] px-[26px] py-[30px] text-white">
+      <div class="relative overflow-hidden rounded-[12px] bg-gradient-to-br from-brand to-brand-600 px-[26px] py-[30px] text-white">
         <div
           class="absolute inset-0 opacity-25"
           style="background: radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.4), transparent 55%);"
@@ -86,7 +85,7 @@ import { JobType } from '@/features/public/jobs/models/jobs.models';
         <div class="relative">
           <h4 class="text-xl font-semibold text-white mb-3">Recruiting?</h4>
           <p class="mb-6 text-sm leading-[1.6] text-white/90">Get Best Matched Jobs On your Email. Add Resume NOW!</p>
-          <button class="cursor-pointer rounded-lg border-0 bg-white px-[26px] py-3 text-sm font-semibold text-[#2b6df4]">Read More</button>
+          <button class="cursor-pointer rounded-lg border-0 bg-white px-[26px] py-3 text-sm font-semibold text-brand">Read More</button>
         </div>
       </div>
     </aside>

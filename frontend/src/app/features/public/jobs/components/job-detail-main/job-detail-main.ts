@@ -26,10 +26,10 @@ export class JobDetailMain {
 
   getOfficePhotoBackground(index: number): string {
     const backgrounds = [
-      'linear-gradient(135deg,#dce9f8,#f8efe6)',
-      'linear-gradient(135deg,#f8e0d4,#d7e6fb)',
-      'linear-gradient(135deg,#d9e8d9,#eef2fb)',
-      'linear-gradient(135deg,#f7e3eb,#dfe8fb)',
+      'linear-gradient(135deg,#fff2e8,#f8efe6)',
+      'linear-gradient(135deg,#f8e0d4,#fff2e8)',
+      'linear-gradient(135deg,#d9e8d9,#fef3e6)',
+      'linear-gradient(135deg,#f7e3eb,#fff2e8)',
     ];
     return backgrounds[index % backgrounds.length];
   }

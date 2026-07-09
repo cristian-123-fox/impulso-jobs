@@ -24,7 +24,7 @@ import { AboutCtaContent } from '@/features/public/about/models/about.models';
           />
         </div>
 
-        <div class="relative rounded-md bg-accent-blue px-8 py-[52px] text-white lg:-top-5 lg:px-12">
+        <div class="relative rounded-md bg-brand px-8 py-[52px] text-white lg:-top-5 lg:px-12">
           <p class="mb-[14px] text-sm font-medium opacity-85">{{ content().eyebrow }}</p>
           <h2 class="mb-5 text-[34px] font-bold leading-[1.25] text-white">
             {{ content().title }}

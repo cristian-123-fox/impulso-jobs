@@ -15,7 +15,7 @@ export class JobsFacade {
     const teal = { badge: 'Freelancer', badgeBg: '#e6f7f5', badgeColor: '#1aa89a', postedColor: '#8a8a9e' };
     const gold = { badge: 'Temporary', badgeBg: '#f3ead0', badgeColor: '#b8912f', postedColor: '#e8607a' };
     const base = [
-      { title: 'Senior Web Designer', posted: '1 days ago', logoText: 'COMPANY', logoBg: '#f5f9ff', logoColor: '#2b6df4', ...green },
+      { title: 'Senior Web Designer', posted: '1 days ago', logoText: 'COMPANY', logoBg: '#fff2e8', logoColor: '#ff6a00', ...green },
       { title: 'Sr. Rolling Stock Technician', posted: '15 days ago', logoText: 'BUSINESS', logoBg: '#f2fbf8', logoColor: '#1aa89a', ...orange },
       { title: 'IT Department Manager', posted: '6 Month ago', logoText: 'COMPANY NAME', logoBg: '#f6f9f2', logoColor: '#7bb03a', ...purple },
       { title: 'Art Production Specialist', posted: '2 days ago', logoText: 'ARROW', logoBg: '#fff7f2', logoColor: '#f0703b', ...teal },

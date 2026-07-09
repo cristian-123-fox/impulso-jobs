@@ -8,7 +8,7 @@ import { AboutCompany } from '@/features/public/about/models/about.models';
   imports: [IjButton, IjIcon],
   template: `
     <section class="px-6 pb-[90px] pt-[70px] text-center lg:px-[60px]">
-      <p class="mb-2 text-[15px] font-semibold text-accent-blue">Empresas top</p>
+      <p class="mb-2 text-[15px] font-semibold text-brand">Empresas top</p>
       <h2 class="mb-11 text-[34px] font-bold text-ink-900">
         Consigue empleo en grandes compañías
       </h2>
@@ -17,7 +17,7 @@ import { AboutCompany } from '@/features/public/about/models/about.models';
         <button
           ij-button
           type="button"
-          variant="accent"
+          variant="primary"
           shape="circle"
           size="md"
           aria-label="Anterior"
@@ -47,7 +47,7 @@ import { AboutCompany } from '@/features/public/about/models/about.models';
         <button
           ij-button
           type="button"
-          variant="accent"
+          variant="primary"
           shape="circle"
           size="md"
           aria-label="Siguiente"

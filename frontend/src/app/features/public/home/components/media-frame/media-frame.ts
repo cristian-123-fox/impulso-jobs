@@ -12,7 +12,7 @@ import { IconName, IjIcon } from '@/shared/ui';
   imports: [IjIcon],
   template: `
     <div
-      class="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-accent-blue-soft via-surface to-brand-50 text-muted"
+      class="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-brand-50 via-surface to-accent-amber-soft text-muted"
     >
       <ij-icon [name]="icon()" [size]="34" [strokeWidth]="1.5" />
       @if (label()) {
