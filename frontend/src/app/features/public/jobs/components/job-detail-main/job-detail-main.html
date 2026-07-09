@@ -1,0 +1,212 @@
+<div class="mx-auto grid max-w-[1200px] grid-cols-1 items-start gap-9 lg:grid-cols-[minmax(0,1fr)_340px]">
+  <div>
+    <div class="relative mb-3 h-[300px] overflow-hidden rounded-xl bg-[#dbe4f6]">
+      <div class="absolute inset-0 bg-[linear-gradient(135deg,rgba(14,29,74,.95),rgba(24,75,190,.75))]"></div>
+      <div class="absolute inset-y-0 right-0 w-[46%] bg-[radial-gradient(circle_at_top,rgba(58,130,246,.45),transparent_58%)]"></div>
+      <div class="absolute left-[8%] top-[18%] h-[190px] w-[34%] rounded-[18px] border border-white/15 bg-[linear-gradient(180deg,rgba(4,16,48,.82),rgba(10,38,104,.95))] shadow-[0_24px_50px_-26px_rgba(0,0,0,.8)]"></div>
+      <div class="absolute left-[46%] top-[15%] h-[168px] w-[20%] rounded-[16px] border border-white/15 bg-[linear-gradient(180deg,rgba(31,111,244,.88),rgba(18,58,158,.92))] shadow-[0_24px_50px_-26px_rgba(0,0,0,.8)]"></div>
+      <div class="absolute left-[12%] top-[26%] h-[10px] w-[18%] rounded-full bg-white/60"></div>
+      <div class="absolute left-[12%] top-[34%] h-[10px] w-[24%] rounded-full bg-white/20"></div>
+      <div class="absolute left-[12%] top-[42%] h-[10px] w-[20%] rounded-full bg-white/20"></div>
+      <div class="absolute bottom-0 right-[10%] h-[82%] w-[26%] bg-[radial-gradient(circle_at_top,rgba(255,255,255,.18),transparent_56%),linear-gradient(180deg,rgba(4,10,24,.2),rgba(4,10,24,.72))] [clip-path:polygon(38%_0,72%_0,100%_28%,100%_100%,18%_100%,0_64%)]"></div>
+      <span class="absolute left-4 top-4 z-10 rounded-md bg-accent-green px-[14px] py-[5px] text-xs font-semibold text-white">{{ jobDetail().badge }}</span>
+    </div>
+    <div class="relative z-10 -mt-[52px] flex items-center justify-between px-2">
+      <div class="flex h-[72px] w-[72px] flex-col items-center justify-center gap-[3px] rounded-xl bg-white shadow-[0_10px_24px_-12px_rgba(0,0,0,0.25)]">
+        <div class="h-[30px] w-[30px] rounded-[7px]" [style.background-color]="jobDetail().logoColor"></div>
+        <span class="text-[7px] font-bold tracking-[0.08em]" [style.color]="jobDetail().logoColor">{{ jobDetail().logoText }}</span>
+      </div>
+    </div>
+    <div class="mt-[18px] flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div class="min-w-0">
+        <div class="mb-2 flex items-center gap-2">
+          <h3 class="text-[19px] font-semibold text-ink-900">{{ jobDetail().title }}</h3>
+          <span class="text-[13px] font-medium text-accent-green">/ {{ jobDetail().posted }}</span>
+        </div>
+        <p class="mb-3 flex items-center gap-[6px] text-sm text-[#6b6b82]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2b6df4" stroke-width="2">
+            <path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/>
+            <circle cx="12" cy="10" r="2.5"/>
+          </svg>
+          {{ jobDetail().location }}
+        </p>
+      </div>
+      <button class="whitespace-nowrap rounded-lg bg-accent-blue px-7 py-[14px] text-sm font-medium text-white transition-colors hover:bg-[#1d51c9]">Apply Now</button>
+    </div>
+    <div class="mb-7 flex flex-col gap-3 border-b border-line py-[14px] pb-5 text-sm md:flex-row md:items-center md:justify-between md:gap-6">
+      <div class="text-sm">
+        <a href="#" class="text-accent-blue hover:underline">{{ jobDetail().website }}</a>
+        <span class="ml-[10px] font-semibold text-ink-900">{{ jobDetail().salary }}</span>
+        <span class="text-muted"> / Month</span>
+      </div>
+      <div class="text-sm text-[#6b6b82]">
+        Application ends: <span class="font-medium text-[#e8443b]">{{ jobDetail().deadline }}</span>
+      </div>
+    </div>
+
+    <h4 class="mb-4 text-lg font-semibold">Job Description:</h4>
+    @for (paragraph of jobDetail().description; track paragraph) {
+      <p class="mb-[18px] text-sm leading-[1.8] text-[#6b6b82]">{{ paragraph }}</p>
+    }
+
+    <h4 class="mb-[18px] text-lg font-semibold text-ink-900">Requirements:</h4>
+    <div class="mb-[30px] flex flex-col gap-[15px]">
+      @for (req of jobDetail().requirements; track req) {
+        <div class="flex items-start gap-3">
+          <svg class="mt-[2px] flex-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2b6df4" stroke-width="3">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          <p class="text-sm leading-[1.6] text-[#4a4a62]">{{ req }}</p>
+        </div>
+      }
+    </div>
+
+    <h4 class="mb-[18px] text-lg font-semibold text-ink-900">Responsibilities:</h4>
+    <div class="mb-8 flex flex-col gap-[15px]">
+      @for (resp of jobDetail().responsibilities; track resp) {
+        <div class="flex items-start gap-3">
+          <svg class="mt-[2px] flex-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2b6df4" stroke-width="3">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          <p class="text-sm leading-[1.6] text-[#4a4a62]">{{ resp }}</p>
+        </div>
+      }
+    </div>
+
+    <h4 class="mb-4 text-lg font-semibold">Share Profile</h4>
+    <div class="mb-[34px] flex flex-wrap gap-[10px]">
+      @for (share of jobDetail().shares; track share.name) {
+        <span class="cursor-pointer rounded-md px-[18px] py-[9px] text-[13px] font-medium text-white" [style.background-color]="share.bg">{{ share.name }}</span>
+      }
+    </div>
+
+    <h4 class="mb-4 text-lg font-semibold text-ink-900">Location</h4>
+    <div class="relative mb-10 h-[340px] overflow-hidden rounded-[10px] bg-[#e8ebf0]">
+      <div class="absolute inset-0" style="background: repeating-linear-gradient(90deg,transparent 0 78px,#dfe3ea 78px 80px), repeating-linear-gradient(0deg,transparent 0 58px,#dfe3ea 58px 60px);"></div>
+      <div class="absolute top-[30%] -left-[10%] h-[22px] w-[130%] -rotate-8 bg-[#d0d5df]"></div>
+      <div class="absolute top-[55%] -left-[10%] h-4 w-[130%] rotate-6 bg-[#cfe3c9]"></div>
+      <div class="absolute left-4 top-4 rounded-md bg-white px-[14px] py-[10px] text-sm shadow-[0_6px_16px_-8px_rgba(0,0,0,0.3)]">
+        <div class="mb-0.5 font-semibold text-ink-900">1363 Sunset Blvd</div>
+        <div class="text-xs text-muted">1363 Sunset Blvd, Los Angeles,...</div>
+      </div>
+      <svg class="absolute left-[40%] top-[44%]" width="34" height="44" viewBox="0 0 24 32" fill="#e8443b">
+        <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z"/>
+        <circle cx="12" cy="12" r="5" fill="#fff"/>
+      </svg>
+      <div class="absolute bottom-3 right-[14px] flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white text-[#5a5a72] shadow-[0_4px_12px_-4px_rgba(0,0,0,0.3)]">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-[34px] md:grid-cols-2">
+      <div>
+        <h4 class="mb-4 text-lg font-semibold">Office Photos</h4>
+        <div class="grid grid-cols-4 gap-2">
+          @for (photo of jobDetail().officePhotos; track $index) {
+            <div
+              class="aspect-square overflow-hidden rounded-md border border-[#eef1f6] bg-[linear-gradient(135deg,#ffffff,#e9eff9)] p-[2px]"
+              [style.background]="getOfficePhotoBackground($index)"
+            ></div>
+          }
+        </div>
+      </div>
+      <div>
+        <h4 class="mb-4 text-lg font-semibold">Video</h4>
+        <div class="relative h-[210px] overflow-hidden rounded-[10px] bg-[linear-gradient(135deg,#f4e0c8,#d9e6fb)]">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_25%_35%,rgba(255,255,255,.82),transparent_26%),linear-gradient(135deg,rgba(15,23,42,.08),rgba(30,64,175,.22))]"></div>
+          <div class="absolute bottom-0 left-[14%] h-[78%] w-[24%] rounded-t-[40px] bg-[linear-gradient(180deg,rgba(15,23,42,.14),rgba(15,23,42,.45))]"></div>
+          <div class="absolute bottom-0 left-[38%] h-[72%] w-[18%] rounded-t-[28px] bg-[linear-gradient(180deg,rgba(255,255,255,.55),rgba(15,23,42,.2))]"></div>
+          <div class="absolute bottom-0 right-[10%] h-[88%] w-[32%] rounded-tl-[90px] bg-[linear-gradient(180deg,rgba(255,255,255,.3),rgba(30,64,175,.35))]"></div>
+          <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div class="flex h-[58px] w-[58px] items-center justify-center rounded-full bg-white/90 shadow-card">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#2b6df4">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="flex flex-col gap-[26px]">
+    <div class="rounded-xl border border-[#edeff4] bg-white p-6 shadow-[0_16px_38px_-30px_rgba(0,0,0,0.3)]">
+      <h4 class="mb-5 border-b border-line pb-[14px] text-lg font-semibold text-ink-900">Job Information</h4>
+      <div class="mb-[22px] flex flex-col gap-3">
+        <div class="flex items-center gap-[10px] rounded-lg border border-line px-[14px] py-3 text-sm text-[#4a4a62]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#2b6df4">
+            <rect x="3" y="4" width="18" height="18" rx="2" opacity=".3"/>
+            <path d="M3 9h18M8 2v4M16 2v4" stroke="#2b6df4" stroke-width="2" fill="none"/>
+          </svg>
+          Date Posted
+        </div>
+        <div class="flex items-center gap-[10px] rounded-lg border border-line px-[14px] py-3 text-sm text-[#4a4a62]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2b6df4" stroke-width="2">
+            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          8160 Views
+        </div>
+        <div class="flex items-center gap-[10px] rounded-lg border border-line px-[14px] py-3 text-sm text-[#4a4a62]">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2b6df4" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6M9 15l2 2 4-4"/>
+          </svg>
+          6 Applicants
+        </div>
+      </div>
+      <div class="flex flex-col gap-[18px]">
+        @for (info of jobDetail().jobInfo; track info.label) {
+          <div class="flex items-start gap-[13px]">
+            <div class="mt-px flex-none text-accent-blue" [innerHTML]="getIconSvg(info.icon)"></div>
+            <div>
+              <div class="mb-0.5 text-xs text-[#9a9ab0]">{{ info.label }}</div>
+              <div class="text-sm font-medium text-ink-900">{{ info.value }}</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="mb-4 mt-[26px] flex items-center gap-2">
+        <span class="h-[18px] w-1 rounded-sm bg-accent-blue"></span>
+        <h4 class="text-lg font-semibold text-ink-900">Job Skills</h4>
+      </div>
+      <div class="flex flex-wrap gap-[9px]">
+        @for (skill of jobDetail().skills; track skill) {
+          <span class="cursor-pointer rounded-[5px] bg-[#eef2fb] px-[13px] py-[6px] text-xs text-[#4a6fb0]">{{ skill }}</span>
+        }
+      </div>
+    </div>
+
+    <div class="relative mt-5 rounded-xl border border-[#edeff4] bg-white px-6 pb-6 pt-[26px] shadow-[0_16px_38px_-30px_rgba(0,0,0,0.3)]">
+      <div class="absolute -top-6 left-6 flex h-[60px] w-[60px] flex-col items-center justify-center gap-[2px] rounded-xl bg-white shadow-[0_8px_20px_-10px_rgba(0,0,0,0.3)]">
+        <div class="h-[26px] w-[26px] rounded-md" [style.background-color]="jobDetail().logoColor"></div>
+        <span class="text-[6px] font-bold tracking-[0.08em]" [style.color]="jobDetail().logoColor">{{ jobDetail().logoText }}</span>
+      </div>
+      <h4 class="mb-[18px] mt-10 text-[17px] font-semibold text-ink-900">{{ jobDetail().title }}</h4>
+      <div class="mb-[22px] flex flex-col gap-4">
+        @for (contact of jobDetail().contact; track contact.label) {
+          <div class="flex items-start gap-[13px]">
+            <div class="mt-px flex-none text-accent-blue" [innerHTML]="getIconSvg(contact.icon)"></div>
+            <div>
+              <div class="mb-0.5 text-xs text-[#9a9ab0]">{{ contact.label }}</div>
+              <div class="text-[13px] font-medium leading-[1.5] text-ink-900">{{ contact.value }}</div>
+            </div>
+          </div>
+        }
+      </div>
+      <button class="w-full rounded-lg bg-accent-blue px-[14px] py-[14px] text-sm font-semibold text-white transition-colors hover:bg-[#1d51c9]">View Profile</button>
+    </div>
+
+    <div class="relative overflow-hidden rounded-xl bg-[linear-gradient(150deg,#2b6df4,#123a9e)] px-6 py-7 text-white">
+      <div class="absolute inset-0 opacity-70" style="background: radial-gradient(circle at 85% 30%,rgba(255,255,255,.4),transparent 55%);"></div>
+      <div class="relative">
+        <h4 class="mb-3 text-lg font-semibold text-white">Recruiting?</h4>
+        <p class="mb-[22px] text-sm leading-[1.6] text-white/90">Get Best Matched Jobs On your Email. Add Resume NOW!</p>
+        <button class="rounded-lg bg-white px-[26px] py-3 text-sm font-semibold text-accent-blue transition-transform hover:-translate-y-0.5">Read More</button>
+      </div>
+    </div>
+  </aside>
+</div>

@@ -6,13 +6,15 @@ import { JobDetail } from '@/features/public/jobs/models/jobs.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [],
   template: `
-    <section class="relative bg-[#f5f7fb] py-16 px-15 text-center overflow-hidden">
-      <div class="absolute -top-[100px] -left-[80px] w-[340px] h-[340px] rounded-full bg-radial-gradient(circle,rgba(233,108,167,.14),transparent 70%)"></div>
-      <div class="absolute -top-[60px] -right-[40px] w-[420px] h-[360px] rounded-full bg-radial-gradient(circle,rgba(43,190,220,.16),transparent 68%)"></div>
+    <section class="relative overflow-hidden bg-surface px-4 py-16 text-center sm:px-8 lg:px-[60px] lg:py-[64px]">
+      <div class="absolute -left-[80px] -top-[100px] h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(233,108,167,.14),transparent_70%)]"></div>
+      <div class="absolute -right-[40px] -top-[60px] h-[360px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(43,190,220,.16),transparent_68%)]"></div>
       <div class="relative z-10">
-        <h1 class="text-3xl font-bold mb-4">{{ jobDetail().title }}</h1>
-        <div class="text-sm text-[#8a8a9e] flex items-center justify-center gap-2">
-          <a href="#" class="text-[#8a8a9e]">Home</a> <span>-</span> <a href="#">Job Detail</a>
+        <h1 class="mb-[14px] text-[34px] font-bold leading-tight text-ink-900">{{ jobDetail().title }}</h1>
+        <div class="flex items-center justify-center gap-2 text-sm text-[#6b6b82]">
+          <a href="/" class="text-[#6b6b82] transition-colors hover:text-accent-blue">Home</a>
+          <span>-</span>
+          <a href="/vacantes" class="transition-colors hover:text-accent-blue">Job Detail</a>
         </div>
       </div>
     </section>

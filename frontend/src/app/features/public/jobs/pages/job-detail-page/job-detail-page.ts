@@ -9,7 +9,7 @@ import { JobDetailMain } from '@/features/public/jobs/components/job-detail-main
   imports: [JobDetailBanner, JobDetailMain],
   template: `
     <app-job-detail-banner [jobDetail]="facade.jobDetail()" />
-    <section class="py-14 px-15">
+    <section class="px-4 py-14 sm:px-8 lg:px-[60px] lg:py-[56px]">
       <app-job-detail-main [jobDetail]="facade.jobDetail()" />
     </section>
   `,
