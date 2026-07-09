@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
+    path: 'mantenimiento',
+    loadChildren: () =>
+      import('@/features/public/maintenance/maintenance.routes').then((m) => m.routes),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('@/layout/public-layout/public-layout').then((m) => m.PublicLayout),
