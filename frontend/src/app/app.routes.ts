@@ -16,6 +16,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('@/features/public/contact/contact.routes').then((m) => m.routes),
       },
+      {
+        path: 'vacantes',
+        loadChildren: () =>
+          import('@/features/public/jobs/jobs.routes').then((m) => m.routes),
+      },
     ],
   },
   { path: '**', redirectTo: '' },
