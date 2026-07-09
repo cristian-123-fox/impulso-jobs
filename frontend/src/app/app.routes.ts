@@ -16,6 +16,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('@/features/public/contact/contact.routes').then((m) => m.routes),
       },
+      {
+        path: 'faq',
+        loadChildren: () =>
+          import('@/features/public/faq/faq.routes').then((m) => m.routes),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -1,0 +1,9 @@
+<app-faq-hero [content]="facade.hero()" />
+<app-faq-accordion
+  [tabs]="facade.tabs()"
+  [activeTabId]="activeTabId()"
+  [items]="visibleItems()"
+  [openItemId]="openItemId()"
+  (tabSelected)="onTabSelected($event)"
+  (itemToggled)="onItemToggled($event)"
+/>

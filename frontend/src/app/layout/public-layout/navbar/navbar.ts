@@ -128,6 +128,7 @@ export class Navbar {
     { label: 'Empresas', path: '/empresa' },
     // { label: 'Candidatos', path: '/candidato' },
     { label: 'Planes', path: '/planes' },
+    { label: 'FAQ', path: '/faq' },
     { label: 'Contacto', path: '/contacto' },
   ];
 
