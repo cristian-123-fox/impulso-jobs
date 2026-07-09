@@ -17,6 +17,11 @@ export const routes: Routes = [
           import('@/features/public/contact/contact.routes').then((m) => m.routes),
       },
       {
+        path: 'vacantes',
+        loadChildren: () =>
+          import('@/features/public/jobs/jobs.routes').then((m) => m.routes),
+      },
+      {
         path: 'faq',
         loadChildren: () =>
           import('@/features/public/faq/faq.routes').then((m) => m.routes),
