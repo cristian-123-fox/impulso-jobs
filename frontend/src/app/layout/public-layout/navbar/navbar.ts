@@ -126,7 +126,7 @@ export class Navbar {
     { label: 'Inicio', path: '/' },
     { label: 'Empleos', path: '/vacantes' },
     { label: 'Empresas', path: '/empresa' },
-    { label: 'Candidatos', path: '/candidato' },
+    // { label: 'Candidatos', path: '/candidato' },
     { label: 'Planes', path: '/planes' },
     { label: 'Contacto', path: '/contacto' },
   ];
