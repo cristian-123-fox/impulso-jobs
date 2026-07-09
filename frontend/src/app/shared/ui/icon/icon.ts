@@ -12,6 +12,11 @@ export type IconName =
   | 'plus'
   | 'check'
   | 'x'
+  | 'chart'
+  | 'clipboard'
+  | 'pen'
+  | 'code'
+  | 'resume'
   | 'phone'
   | 'mail'
   | 'chevron-down'
@@ -83,6 +88,23 @@ const ICONS: Record<IconName, readonly IconShape[]> = {
   plus: [p('M12 5v14M5 12h14')],
   check: [p('M20 6L9 17l-5-5')],
   x: [p('M18 6L6 18M6 6l12 12')],
+  chart: [p('M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6'), c(17, 6, 2)],
+  clipboard: [r(6, 4, 12, 17, 2), p('M9 3h6v3H9zM9 11h6M9 15h4')],
+  pen: [
+    p('M6 3h9l3 3v15H6z'),
+    p('M9 8h6M9 12h6M9 16h3'),
+    p('M18 14l3 3-4 4-3 1 1-3z'),
+  ],
+  code: [
+    r(3, 4, 18, 14, 2),
+    p('M9 21h6M12 18v3'),
+    p('M8 9l-2 2 2 2M16 9l2 2-2 2'),
+  ],
+  resume: [
+    r(5, 3, 14, 18, 2),
+    c(12, 9, 2.5),
+    p('M8 17c0-2 2-3 4-3s4 1 4 3'),
+  ],
   phone: [p('M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 3.5a2 2 0 0 1-.6 1.8l-2 2a16 16 0 0 0 6 6l2-2a2 2 0 0 1 1.8-.6l3.5.5a2 2 0 0 1 1.7 2z')],
   mail: [r(3, 5, 18, 14, 2), p('M3 7l9 6 9-6')],
   'chevron-down': [p('M6 9l6 6 6-6')],

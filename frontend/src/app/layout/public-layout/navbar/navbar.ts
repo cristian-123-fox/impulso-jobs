@@ -124,6 +124,7 @@ interface NavItem {
 export class Navbar {
   protected readonly items: readonly NavItem[] = [
     { label: 'Inicio', path: '/' },
+    { label: 'Nosotros', path: '/nosotros' },
     { label: 'Empleos', path: '/vacantes' },
     { label: 'Empresas', path: '/empresa' },
     // { label: 'Candidatos', path: '/candidato' },
