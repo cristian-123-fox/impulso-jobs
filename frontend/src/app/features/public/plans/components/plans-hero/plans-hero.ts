@@ -8,7 +8,7 @@ import { PlansHeroContent } from '@/features/public/plans/models/plans.models';
   imports: [RouterLink],
   template: `
     <section
-      class="relative overflow-hidden bg-surface px-6 py-16 text-center lg:px-[60px] lg:py-[72px]"
+      class="relative overflow-hidden bg-surface px-6 py-[70px] text-center lg:px-[60px] lg:py-[78px]"
     >
       <div
         class="absolute -left-[80px] -top-[100px] h-[340px] w-[340px] rounded-full"
@@ -19,21 +19,18 @@ import { PlansHeroContent } from '@/features/public/plans/models/plans.models';
         style="background: radial-gradient(circle, rgba(43, 190, 220, 0.16), transparent 68%);"
       ></div>
 
-      <div class="relative z-10 mx-auto max-w-3xl">
-        <h1 class="mb-3 text-[34px] font-bold leading-tight text-ink-900 lg:text-[40px]">
+      <div class="relative z-10">
+        <h1 class="mb-[14px] text-[34px] font-bold leading-tight text-ink-900">
           {{ content().title }}
         </h1>
         <nav
           aria-label="Breadcrumb"
-          class="flex items-center justify-center gap-2 text-sm text-muted"
+          class="flex items-center justify-center gap-2 text-sm text-[#6b6b82]"
         >
-          <a routerLink="/" class="transition-colors hover:text-brand">Inicio</a>
+          <a routerLink="/" class="transition-colors hover:text-accent-blue">Inicio</a>
           <span>-</span>
-          <span class="text-brand">{{ content().breadcrumbLabel }}</span>
+          <span class="text-accent-blue">{{ content().breadcrumbLabel }}</span>
         </nav>
-        <p class="mx-auto mt-5 max-w-2xl text-[15px] leading-7 text-body">
-          {{ content().description }}
-        </p>
       </div>
     </section>
   `,

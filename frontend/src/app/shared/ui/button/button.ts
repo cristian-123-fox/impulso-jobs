@@ -5,12 +5,13 @@ import {
   input,
 } from '@angular/core';
 
-type ButtonVariant = 'primary' | 'white' | 'soft';
+type ButtonVariant = 'primary' | 'accent' | 'white' | 'soft';
 type ButtonShape = 'pill' | 'rounded' | 'circle';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-brand text-white hover:bg-brand-600',
+  accent: 'bg-accent-blue text-white hover:opacity-90',
   white: 'bg-white text-brand hover:bg-surface',
   soft: 'bg-brand-50 text-brand hover:bg-brand hover:text-white',
 };
