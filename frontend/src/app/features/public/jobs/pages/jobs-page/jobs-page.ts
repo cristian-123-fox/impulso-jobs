@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { JobsFacade } from '../../data/jobs.facade';
-import { JobsBanner } from '../../components/jobs-banner/jobs-banner';
-import { JobsSidebar } from '../../components/jobs-sidebar/jobs-sidebar';
-import { JobsListings } from '../../components/jobs-listings/jobs-listings';
+import { JobsBanner } from '@/features/public/jobs/components/jobs-banner/jobs-banner';
+import { JobsListings } from '@/features/public/jobs/components/jobs-listings/jobs-listings';
+import { JobsSidebar } from '@/features/public/jobs/components/jobs-sidebar/jobs-sidebar';
+import { JobsFacade } from '@/features/public/jobs/data/jobs.facade';
 
 @Component({
   selector: 'app-jobs-page',
@@ -10,8 +10,10 @@ import { JobsListings } from '../../components/jobs-listings/jobs-listings';
   imports: [JobsBanner, JobsSidebar, JobsListings],
   template: `
     <app-jobs-banner />
-    <section class="py-11 px-15">
-      <div class="max-w-6xl mx-auto grid grid-cols-[290px_1fr] gap-8.5 items-start">
+    <section class="px-6 py-11 lg:px-[60px] lg:py-[44px]">
+      <div
+        class="mx-auto grid max-w-[1200px] items-start gap-8 lg:grid-cols-[290px_minmax(0,1fr)] lg:gap-[34px]"
+      >
         <app-jobs-sidebar
           [jobTypes]="facade.jobTypes()"
           [datePosts]="facade.datePosts()"

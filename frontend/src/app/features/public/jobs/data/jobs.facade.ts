@@ -1,5 +1,10 @@
 import { Injectable, signal } from '@angular/core';
-import { Job, JobType, FooterCol, JobDetail } from '../models/jobs.models';
+import {
+  FooterCol,
+  Job,
+  JobDetail,
+  JobType,
+} from '@/features/public/jobs/models/jobs.models';
 
 @Injectable({ providedIn: 'root' })
 export class JobsFacade {
