@@ -26,7 +26,7 @@ import { JobType } from '@/features/public/jobs/models/jobs.models';
         <h5 class="text-base font-semibold mb-3">Location</h5>
         <div class="relative mb-6">
           <input placeholder="Search location" class="w-full rounded-lg border border-[#e6e8ef] px-[14px] py-3 pr-10 text-sm outline-none focus:border-brand/30 focus:ring-2 focus:ring-brand/15">
-          <svg class="absolute right-[13px] top-3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6a00" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <svg class="absolute right-[13px] top-3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e47c3f" stroke-width="2"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
         </div>
 
         <h5 class="mb-[14px] text-base font-semibold">Job Type</h5>

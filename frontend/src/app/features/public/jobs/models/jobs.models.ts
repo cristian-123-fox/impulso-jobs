@@ -6,6 +6,8 @@ export interface JobType {
 export interface Job {
   title: string;
   posted: string;
+  logoSrc: string;
+  logoAlt: string;
   logoText: string;
   logoBg: string;
   logoColor: string;

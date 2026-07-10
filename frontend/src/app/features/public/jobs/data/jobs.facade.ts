@@ -9,17 +9,62 @@ import {
 @Injectable({ providedIn: 'root' })
 export class JobsFacade {
   private readonly _jobs = signal<readonly Job[]>((() => {
-    const green = { badge: 'New', badgeBg: '#e6f7ef', badgeColor: '#1fae6a', postedColor: '#e8607a' };
-    const orange = { badge: 'Intership', badgeBg: '#fef3e6', badgeColor: '#f0a04b', postedColor: '#1fae6a' };
-    const purple = { badge: 'Fulltime', badgeBg: '#efeafe', badgeColor: '#7a5bd6', postedColor: '#f0a04b' };
+    const green = { badge: 'New', badgeBg: '#33b24a', badgeColor: '#ffffff', postedColor: '#33b24a' };
+    const orange = { badge: 'Intership', badgeBg: '#b86e2a', badgeColor: '#ffffff', postedColor: '#33b24a' };
+    const purple = { badge: 'Fulltime', badgeBg: '#8b81f8', badgeColor: '#ffffff', postedColor: '#33b24a' };
     const teal = { badge: 'Freelancer', badgeBg: '#e6f7f5', badgeColor: '#1aa89a', postedColor: '#8a8a9e' };
     const gold = { badge: 'Temporary', badgeBg: '#f3ead0', badgeColor: '#b8912f', postedColor: '#e8607a' };
     const base = [
-      { title: 'Senior Web Designer', posted: '1 days ago', logoText: 'COMPANY', logoBg: '#fff2e8', logoColor: '#ff6a00', ...green },
-      { title: 'Sr. Rolling Stock Technician', posted: '15 days ago', logoText: 'BUSINESS', logoBg: '#f2fbf8', logoColor: '#1aa89a', ...orange },
-      { title: 'IT Department Manager', posted: '6 Month ago', logoText: 'COMPANY NAME', logoBg: '#f6f9f2', logoColor: '#7bb03a', ...purple },
-      { title: 'Art Production Specialist', posted: '2 days ago', logoText: 'ARROW', logoBg: '#fff7f2', logoColor: '#f0703b', ...teal },
-      { title: 'Recreation & Fitness Worker', posted: '1 days ago', logoText: 'VECTOR LOGO', logoBg: '#fff5f7', logoColor: '#e8607a', ...gold },
+      {
+        title: 'Senior Web Designer',
+        posted: '1 days ago',
+        logoSrc: '/assets/images/WhatsApp Image 2026-07-09 at 6.04.32 PM.jpeg',
+        logoAlt: 'Logo de Company Business Tagline',
+        logoText: 'COMPANY',
+        logoBg: '#ffffff',
+        logoColor: '#e47c3f',
+        ...green,
+      },
+      {
+        title: 'Sr. Rolling Stock Technician',
+        posted: '15 days ago',
+        logoSrc: '/assets/images/WhatsApp Image 2026-07-09 at 6.04.44 PM.jpeg',
+        logoAlt: 'Logo de Business commercial property',
+        logoText: 'BUSINESS',
+        logoBg: '#ffffff',
+        logoColor: '#1aa89a',
+        ...orange,
+      },
+      {
+        title: 'IT Department Manager',
+        posted: '6 Month ago',
+        logoSrc: '/assets/images/WhatsApp Image 2026-07-09 at 6.04.57 PM.jpeg',
+        logoAlt: 'Logo de Company Name Tagline Here',
+        logoText: 'COMPANY NAME',
+        logoBg: '#ffffff',
+        logoColor: '#7bb03a',
+        ...purple,
+      },
+      {
+        title: 'Art Production Specialist',
+        posted: '2 days ago',
+        logoSrc: '',
+        logoAlt: 'Logo temporal de Arrow',
+        logoText: 'ARROW',
+        logoBg: '#fff7f2',
+        logoColor: '#f0703b',
+        ...teal,
+      },
+      {
+        title: 'Recreation & Fitness Worker',
+        posted: '1 days ago',
+        logoSrc: '',
+        logoAlt: 'Logo temporal de Vector Logo',
+        logoText: 'VECTOR LOGO',
+        logoBg: '#fff5f7',
+        logoColor: '#e8607a',
+        ...gold,
+      },
     ];
     const salaries = ['$2500', '$2500', '$2000', '$1500', '$800', '$1000', '$1500', '$2500', '$3000', '$2000', '$2000', '$1800', '$1000', '$1000', '$1000', '$1000', '$1000', '$1000'];
     const jobs: Job[] = [];
@@ -101,7 +146,7 @@ export class JobsFacade {
       { icon: 'monitor', label: 'Website', value: 'https://themeforest.net' },
       { icon: 'pin', label: 'Address', value: '1363-1385 Sunset Blvd Angeles, CA 90026 ,USA' }
     ],
-    officePhotos: ['office-1','office-2','office-3','office-4','office-5','office-6','office-7','office-8','office-9','office-10','office-11','office-12']
+    officePhotos: ['office-1', 'office-2', 'office-3', 'office-4', 'office-5', 'office-6', 'office-7', 'office-8', 'office-9', 'office-10', 'office-11', 'office-12']
   });
 
   private readonly _socials = signal<readonly string[]>(['f', 'X', 'in', 'P', 'i']);

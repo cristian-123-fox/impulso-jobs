@@ -16,7 +16,7 @@ import { AboutHeroContent } from '@/features/public/about/models/about.models';
       ></div>
       <div
         class="absolute -right-[40px] -top-[60px] h-[380px] w-[440px] rounded-full"
-        style="background: radial-gradient(circle, rgba(255, 106, 0, 0.12), transparent 68%);"
+        style="background: radial-gradient(circle, rgba(228, 124, 63, 0.12), transparent 68%);"
       ></div>
 
       <div class="relative z-10">

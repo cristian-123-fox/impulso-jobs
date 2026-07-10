@@ -27,8 +27,8 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
           <circle cx="644" cy="224" r="11" fill="#f4f6f9" />
         </g>
 
-        <rect x="330" y="300" width="360" height="300" rx="10" fill="#fff2e8" />
-        <rect x="330" y="300" width="360" height="34" rx="10" fill="#ff6a00" />
+        <rect x="330" y="300" width="360" height="300" rx="10" fill="#fbefe9" />
+        <rect x="330" y="300" width="360" height="34" rx="10" fill="#e47c3f" />
         <circle cx="350" cy="317" r="4" fill="#fff" opacity=".8" />
         <circle cx="365" cy="317" r="4" fill="#fff" opacity=".8" />
         <circle cx="380" cy="317" r="4" fill="#fff" opacity=".8" />
@@ -42,17 +42,17 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
           <rect x="352" y="384" width="46" height="8" rx="4" />
         </g>
         <circle cx="428" cy="372" r="16" fill="#fff" />
-        <circle cx="426" cy="370" r="7" fill="none" stroke="#ff6a00" stroke-width="2.5" />
-        <path d="M431 375l6 6" stroke="#ff6a00" stroke-width="2.5" />
+        <circle cx="426" cy="370" r="7" fill="none" stroke="#e47c3f" stroke-width="2.5" />
+        <path d="M431 375l6 6" stroke="#e47c3f" stroke-width="2.5" />
         <rect x="352" y="410" width="120" height="80" rx="6" fill="#fff" />
-        <path d="M400 435l22 15-22 15z" fill="#ff6a00" />
+        <path d="M400 435l22 15-22 15z" fill="#e47c3f" />
         <rect x="490" y="410" width="55" height="55" rx="6" fill="#fff" />
         <rect x="555" y="410" width="55" height="55" rx="6" fill="#fff" />
-        <g fill="#ff6a00">
+        <g fill="#e47c3f">
           <circle cx="505" cy="425" r="5" />
           <path d="M498 458l12-16 10 12 4-5 10 9v-2h-36z" />
         </g>
-        <g fill="#ff6a00">
+        <g fill="#e47c3f">
           <circle cx="570" cy="425" r="5" />
           <path d="M563 458l12-16 10 12 4-5 10 9v-2h-36z" />
         </g>
@@ -67,7 +67,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
           stroke-width="2"
           stroke-dasharray="5 5"
         />
-        <g stroke="#ff6a00" stroke-width="2.5">
+        <g stroke="#e47c3f" stroke-width="2.5">
           <path d="M366 524h20M366 534h30M366 544h16" />
         </g>
         <rect x="470" y="500" width="70" height="90" rx="4" fill="#fff" />
@@ -88,9 +88,9 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
         />
 
         <rect x="470" y="366" width="180" height="26" rx="13" fill="#fff" />
-        <circle cx="638" cy="379" r="7" fill="none" stroke="#ff6a00" stroke-width="2.5" />
-        <path d="M643 384l5 5" stroke="#ff6a00" stroke-width="2.5" />
-        <path d="M528 390l0 26 7-7 5 9 5-3-5-9 10-1z" fill="#ff6a00" />
+        <circle cx="638" cy="379" r="7" fill="none" stroke="#e47c3f" stroke-width="2.5" />
+        <path d="M643 384l5 5" stroke="#e47c3f" stroke-width="2.5" />
+        <path d="M528 390l0 26 7-7 5 9 5-3-5-9 10-1z" fill="#e47c3f" />
         <path d="M460 340l50 26M560 340l0 26" stroke="#1a1a2e" stroke-width="1.5" />
 
         <rect x="300" y="596" width="410" height="4" rx="2" fill="#c99a6a" />
@@ -99,7 +99,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
           <path d="M470 300c0-6 8-22 30-22s34 16 34 26l-10 4c-4-10-14-16-24-16s-20 6-24 16z" fill="#1a1a2e" />
           <circle cx="500" cy="266" r="18" fill="#f0c9a8" />
           <path d="M482 262c0-14 8-22 18-22s18 8 18 20c-6-4-11-6-18-6s-12 2-18 8z" fill="#1a1a2e" />
-          <path d="M486 288c4-8 30-8 34 0l6 40-46 0z" fill="#ff6a00" />
+          <path d="M486 288c4-8 30-8 34 0l6 40-46 0z" fill="#e47c3f" />
           <path d="M484 296c-8 4-12 12-10 22l30 0-4-22z" fill="#f0a04b" />
           <rect x="500" y="248" width="46" height="24" rx="4" fill="#c3c9d6" />
           <text
@@ -133,7 +133,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
           <path d="M336 504l8 44 12-2-6-42z" fill="#5a6270" />
           <ellipse cx="308" cy="550" rx="10" ry="5" fill="#1a1a2e" />
           <ellipse cx="344" cy="548" rx="10" ry="5" fill="#1a1a2e" />
-          <g fill="#ff6a00">
+          <g fill="#e47c3f">
             <rect
               x="384"
               y="500"
@@ -158,14 +158,14 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
             stroke-width="12"
             stroke-linecap="round"
           />
-          <rect x="506" y="500" width="22" height="12" rx="3" fill="#ff6a00" />
+          <rect x="506" y="500" width="22" height="12" rx="3" fill="#e47c3f" />
           <rect x="512" y="494" width="4" height="8" fill="#8a93a3" />
           <path d="M552 504l-6 44 12 0 8-36z" fill="#f0a04b" />
           <path d="M578 504l8 44 12-2-6-42z" fill="#f0a04b" />
           <ellipse cx="550" cy="550" rx="10" ry="5" fill="#1a1a2e" />
           <ellipse cx="586" cy="548" rx="10" ry="5" fill="#1a1a2e" />
-          <path d="M556 574h34l-4 20h-26z" fill="#ff6a00" />
-          <rect x="556" y="570" width="34" height="6" rx="3" fill="#e85f00" />
+          <path d="M556 574h34l-4 20h-26z" fill="#e47c3f" />
+          <rect x="556" y="570" width="34" height="6" rx="3" fill="#cf6d34" />
         </g>
 
         <g stroke="#c99a6a" stroke-width="6" stroke-linecap="round">
