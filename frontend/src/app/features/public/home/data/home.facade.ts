@@ -63,11 +63,36 @@ export class HomeFacade {
   ]);
 
   private readonly _companies = signal<readonly Company[]>([
-    { name: 'Innovación', icon: 'grid' },
-    { name: 'Flash Tech', icon: 'flash' },
-    { name: 'Digital', icon: 'orbit' },
-    { name: 'Tecnología', icon: 'flash' },
-    { name: 'Energía', icon: 'leaf' },
+    {
+      name: 'Company Business',
+      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.32%20PM.jpeg',
+      logoAlt: 'Logo de Company Business Tagline',
+      icon: 'grid',
+    },
+    {
+      name: 'Business Property',
+      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.44%20PM.jpeg',
+      logoAlt: 'Logo de Business commercial property',
+      icon: 'orbit',
+    },
+    {
+      name: 'Company Name',
+      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.57%20PM.jpeg',
+      logoAlt: 'Logo de Company Name Tagline Here',
+      icon: 'flash',
+    },
+    {
+      name: 'Business Studio',
+      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.32%20PM.jpeg',
+      logoAlt: 'Logo de Company Business Tagline',
+      icon: 'flash',
+    },
+    {
+      name: 'Creative Property',
+      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.44%20PM.jpeg',
+      logoAlt: 'Logo de Business commercial property',
+      icon: 'leaf',
+    },
   ]);
 
   private readonly _jobs = signal<readonly JobListing[]>([

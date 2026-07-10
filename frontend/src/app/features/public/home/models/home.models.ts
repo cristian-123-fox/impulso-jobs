@@ -19,7 +19,9 @@ export interface JobCategory {
 /** Empresa destacada. */
 export interface Company {
   readonly name: string;
-  readonly icon: IconName;
+  readonly icon?: IconName;
+  readonly logoSrc?: string;
+  readonly logoAlt?: string;
 }
 
 /** Vacante publicada (tarjeta de listado). */

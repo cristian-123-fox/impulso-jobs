@@ -29,11 +29,20 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
           @for (company of companies(); track company.name) {
             <div class="flex flex-col items-center gap-3">
               <div
-                class="flex h-16 w-16 items-center justify-center rounded-full bg-surface text-body"
+                class="flex h-[92px] w-[92px] items-center justify-center overflow-hidden rounded-[20px] border border-line bg-white p-3 shadow-card"
               >
-                <ij-icon [name]="company.icon" [size]="26" [strokeWidth]="1.8" />
+                @if (company.logoSrc) {
+                  <img
+                    [src]="company.logoSrc"
+                    [alt]="company.logoAlt || company.name"
+                    class="h-full w-full object-contain"
+                    loading="lazy"
+                  />
+                } @else if (company.icon) {
+                  <ij-icon [name]="company.icon" [size]="26" [strokeWidth]="1.8" />
+                }
               </div>
-              <span class="text-[13px] font-medium text-body">{{
+              <span class="text-center text-[13px] font-medium text-body">{{
                 company.name
               }}</span>
             </div>
