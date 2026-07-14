@@ -50,14 +50,13 @@ interface NavItem {
 
         <!-- Acciones (desktop) -->
         <div class="hidden items-center gap-5 lg:flex">
-          <!-- <button
+          <button
             type="button"
             class="text-body transition-colors hover:text-brand"
             aria-label="Cambiar idioma"
           >
             <ij-icon name="globe" [size]="18" />
-            </button> -->
-            <span class="h-5 w-px bg-line font-medium ml-3">ES</span>
+            </button>
           <a
             routerLink="/auth/login"
             class="flex items-center gap-1.5 text-[15px] font-medium text-body transition-colors hover:text-brand"

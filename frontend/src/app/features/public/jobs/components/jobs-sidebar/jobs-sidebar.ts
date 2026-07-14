@@ -39,12 +39,12 @@ import { JobType } from '@/features/public/jobs/models/jobs.models';
           }
         </div>
 
-        <h5 class="mb-[14px] text-base font-semibold">Date Posts</h5>
+        <!-- <h5 class="mb-[14px] text-base font-semibold">Date Posts</h5>
         <div class="flex flex-col gap-3">
           @for (dp of datePosts(); track dp) {
             <label class="flex items-center gap-[9px] text-sm text-[#5a5a72] cursor-pointer"><span class="inline-block h-[15px] w-[15px] rounded-full border-[1.5px] border-[#cdd2dd]"></span>{{ dp }}</label>
           }
-        </div>
+        </div> -->
 
         <h5 class="mb-[14px] mt-6 text-base font-semibold">Type of employment</h5>
         <div class="flex flex-col gap-3">
