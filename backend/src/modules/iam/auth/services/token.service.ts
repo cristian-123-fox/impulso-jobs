@@ -27,6 +27,12 @@ export interface ResetTokenPayload {
   jti: string;
 }
 
+export interface VerifyTokenPayload {
+  sub: string;
+  type: TokenType.VERIFY;
+  jti: string;
+}
+
 export interface IssuedToken {
   token: string;
   jti: string;
@@ -51,6 +57,8 @@ export class TokenService {
   private readonly refreshExpiresIn: string;
   private readonly resetSecret: string;
   private readonly resetExpiresIn: string;
+  private readonly verifySecret: string;
+  private readonly verifyExpiresIn: string;
 
   constructor(
     private readonly jwt: JwtService,
@@ -65,6 +73,10 @@ export class TokenService {
       config.get<string>('JWT_RESET_SECRET') ??
       config.getOrThrow<string>('JWT_ACCESS_SECRET');
     this.resetExpiresIn = config.get<string>('JWT_RESET_EXPIRES_IN') ?? '30m';
+    this.verifySecret =
+      config.get<string>('JWT_VERIFY_SECRET') ??
+      config.getOrThrow<string>('JWT_ACCESS_SECRET');
+    this.verifyExpiresIn = config.get<string>('JWT_VERIFY_EXPIRES_IN') ?? '30m';
   }
 
   newJti(): string {
@@ -130,6 +142,28 @@ export class TokenService {
   verifyReset(token: string): Promise<ResetTokenPayload> {
     return this.jwt.verifyAsync<ResetTokenPayload>(token, {
       secret: this.resetSecret,
+    });
+  }
+
+  async signEmailVerification(
+    userId: string,
+    jti: string = this.newJti(),
+  ): Promise<IssuedToken> {
+    const payload: VerifyTokenPayload = {
+      sub: userId,
+      type: TokenType.VERIFY,
+      jti,
+    };
+    const token = await this.jwt.signAsync(payload, {
+      secret: this.verifySecret,
+      expiresIn: this.verifyExpiresIn as JwtSignOptions['expiresIn'],
+    });
+    return { token, jti, expiresAt: this.expiryOf(token) };
+  }
+
+  verifyEmailVerification(token: string): Promise<VerifyTokenPayload> {
+    return this.jwt.verifyAsync<VerifyTokenPayload>(token, {
+      secret: this.verifySecret,
     });
   }
 

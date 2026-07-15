@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
+  EmailVerificationEmail,
   MailerPort,
   PasswordResetEmail,
 } from '@/modules/iam/auth/services/mailer.port';
@@ -15,6 +16,13 @@ export class ConsoleMailerAdapter implements MailerPort {
   sendPasswordReset(email: PasswordResetEmail): Promise<void> {
     this.logger.log(
       `[DEV] Recuperación de contraseña para ${email.to} (expira en ${email.expiresInMinutes} min): ${email.link}`,
+    );
+    return Promise.resolve();
+  }
+
+  sendEmailVerification(email: EmailVerificationEmail): Promise<void> {
+    this.logger.log(
+      `[DEV] Verificación de correo para ${email.to} (expira en ${email.expiresInMinutes} min): ${email.link}`,
     );
     return Promise.resolve();
   }

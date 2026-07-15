@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, timer } from 'rxjs';
+import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
@@ -19,9 +19,27 @@ export class AuthApi {
       .pipe(map((response) => response.content));
   }
 
-  /** TODO(M4): reemplazar por el endpoint real de reenvío de verificación. */
-  resendVerification(_email: string): Observable<void> {
-    return timer(900).pipe(map(() => undefined));
+  /** Reenvía el enlace de verificación de correo (respuesta siempre genérica). */
+  resendVerification(email: string): Observable<void> {
+    return this.http
+      .post<ApiSuccessResponse<unknown>>(
+        `${this.base}/auth/email-verification/resend`,
+        { email },
+      )
+      .pipe(map(() => undefined));
+  }
+
+  /** Confirma la verificación de correo con el token del magic link. */
+  confirmEmailVerification(
+    token: string,
+  ): Observable<{ alreadyVerified: boolean }> {
+    const params = new HttpParams().set('token', token);
+    return this.http
+      .get<ApiSuccessResponse<{ alreadyVerified: boolean }>>(
+        `${this.base}/auth/email-verification/confirm`,
+        { params },
+      )
+      .pipe(map((response) => response.content));
   }
 
   /** Solicita el magic link de recuperación (respuesta siempre genérica). */

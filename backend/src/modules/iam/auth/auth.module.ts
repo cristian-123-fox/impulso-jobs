@@ -5,6 +5,7 @@ import { AuditModule } from '@/modules/audit/audit.module';
 import { UsersModule } from '@/modules/iam/users/users.module';
 import { AuthController } from '@/modules/iam/auth/controllers/auth.controller';
 import { PasswordResetController } from '@/modules/iam/auth/controllers/password-reset.controller';
+import { EmailVerificationController } from '@/modules/iam/auth/controllers/email-verification.controller';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
 import { TokenService } from '@/modules/iam/auth/services/token.service';
 import { MAILER_PORT } from '@/modules/iam/auth/services/mailer.port';
@@ -17,10 +18,16 @@ import { LogoutUseCase } from '@/modules/iam/auth/use-cases/logout.use-case';
 import { RequestPasswordResetUseCase } from '@/modules/iam/auth/use-cases/request-password-reset.use-case';
 import { ValidatePasswordResetUseCase } from '@/modules/iam/auth/use-cases/validate-password-reset.use-case';
 import { ConfirmPasswordResetUseCase } from '@/modules/iam/auth/use-cases/confirm-password-reset.use-case';
+import { RequestEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/request-email-verification.use-case';
+import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/confirm-email-verification.use-case';
 
 @Module({
   imports: [PassportModule, JwtModule.register({}), UsersModule, AuditModule],
-  controllers: [AuthController, PasswordResetController],
+  controllers: [
+    AuthController,
+    PasswordResetController,
+    EmailVerificationController,
+  ],
   providers: [
     PasswordHasherService,
     TokenService,
@@ -33,6 +40,8 @@ import { ConfirmPasswordResetUseCase } from '@/modules/iam/auth/use-cases/confir
     RequestPasswordResetUseCase,
     ValidatePasswordResetUseCase,
     ConfirmPasswordResetUseCase,
+    RequestEmailVerificationUseCase,
+    ConfirmEmailVerificationUseCase,
   ],
   exports: [JwtAuthGuard],
 })

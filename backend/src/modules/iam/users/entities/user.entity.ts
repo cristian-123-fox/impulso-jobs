@@ -60,4 +60,14 @@ export class User extends BaseEntity {
     nullable: true,
   })
   passwordResetWindowStart?: Date | null;
+
+  @Column({ name: 'email_verification_attempts', type: 'int', default: 0 })
+  emailVerificationAttempts!: number;
+
+  @Column({
+    name: 'email_verification_window_start',
+    type: 'timestamp',
+    nullable: true,
+  })
+  emailVerificationWindowStart?: Date | null;
 }

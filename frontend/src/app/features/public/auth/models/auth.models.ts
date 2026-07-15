@@ -29,3 +29,9 @@ export interface ConfirmResetPayload {
   newPassword: string;
   confirmPassword: string;
 }
+
+/** Estado de la pantalla de verificación de correo (verify-email). */
+export type VerifyState = 'verifying' | 'success' | 'invalid';
+
+/** Estado del reenvío de verificación desde la pantalla de verify. */
+export type VerifyResendStatus = 'idle' | 'loading' | 'sent';
