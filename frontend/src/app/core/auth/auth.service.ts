@@ -8,9 +8,9 @@ import { AuthUser, LoginResponse } from '@/core/models/auth.models';
 import { Role } from '@/core/models/role.enum';
 import { TokenStorageService } from '@/core/auth/token-storage.service';
 
-/** Áreas de aterrizaje por rol (provisional; todas al panel autenticado). */
+/** Áreas de aterrizaje por rol (empresa/candidato al panel demo por ahora). */
 const ROLE_HOME: Record<Role, string> = {
-  [Role.ADMIN]: '/panel',
+  [Role.ADMIN]: '/admin',
   [Role.EMPLOYER]: '/panel',
   [Role.CANDIDATE]: '/panel',
 };

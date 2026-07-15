@@ -1,0 +1,113 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  output,
+} from '@angular/core';
+import {
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { IjButton } from '@/shared/ui';
+import { CreateRolePayload } from '@/features/admin/roles/models/roles.models';
+
+const INPUT_CLASS =
+  'w-full rounded-xl border border-line bg-surface px-4 py-3 text-[15px] text-body ' +
+  'outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/25';
+
+/** Formulario de creación de rol (presentacional). */
+@Component({
+  selector: 'app-role-create-form',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ReactiveFormsModule, IjButton],
+  template: `
+    <form
+      [formGroup]="form"
+      class="rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6"
+      (ngSubmit)="onSubmit()"
+    >
+      <h3 class="text-base font-bold text-ink-900">Nuevo rol</h3>
+      @if (error()) {
+        <p class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[13px] font-medium text-red-700">
+          {{ error() }}
+        </p>
+      }
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="mb-1.5 block text-sm font-semibold text-ink-900">Código</span>
+          <input formControlName="code" placeholder="CONTENT_MANAGER" [class]="inputClass" />
+          @if (invalid('code')) {
+            <span class="mt-1 block text-xs text-red-600">
+              Sólo letras, números y guion bajo (ej. CONTENT_MANAGER).
+            </span>
+          }
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-sm font-semibold text-ink-900">Nombre</span>
+          <input formControlName="name" placeholder="Gestor de contenidos" [class]="inputClass" />
+          @if (invalid('name')) {
+            <span class="mt-1 block text-xs text-red-600">El nombre es obligatorio.</span>
+          }
+        </label>
+        <label class="block sm:col-span-2">
+          <span class="mb-1.5 block text-sm font-semibold text-ink-900">Descripción (opcional)</span>
+          <input formControlName="description" [class]="inputClass" />
+        </label>
+      </div>
+      <div class="mt-5 flex justify-end gap-3">
+        <button
+          type="button"
+          class="rounded-xl border border-line bg-white px-4 py-2.5 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+          (click)="cancel.emit()"
+        >
+          Cancelar
+        </button>
+        <button
+          ij-button
+          type="submit"
+          variant="primary"
+          shape="rounded"
+          size="md"
+          [disabled]="submitting()"
+        >
+          Crear rol
+        </button>
+      </div>
+    </form>
+  `,
+})
+export class RoleCreateForm {
+  readonly submitting = input(false);
+  readonly error = input<string | null>(null);
+  readonly create = output<CreateRolePayload>();
+  readonly cancel = output<void>();
+
+  protected readonly inputClass = INPUT_CLASS;
+  private readonly fb = inject(NonNullableFormBuilder);
+
+  protected readonly form = this.fb.group({
+    code: this.fb.control('', [Validators.required, Validators.pattern(/^[A-Za-z][A-Za-z0-9_]*$/)]),
+    name: this.fb.control('', [Validators.required]),
+    description: this.fb.control(''),
+  });
+
+  protected invalid(name: 'code' | 'name'): boolean {
+    const control = this.form.controls[name];
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  protected onSubmit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+    const value = this.form.getRawValue();
+    this.create.emit({
+      code: value.code.toUpperCase(),
+      name: value.name.trim(),
+      description: value.description.trim() || undefined,
+    });
+  }
+}

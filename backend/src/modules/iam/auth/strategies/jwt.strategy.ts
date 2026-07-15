@@ -16,6 +16,10 @@ import {
   type IBlacklistTokenRepository,
   BLACKLIST_TOKEN_REPOSITORY,
 } from '@/modules/iam/users/repositories/blacklist-token.repository.interface';
+import {
+  type IUserRoleRepository,
+  USER_ROLE_REPOSITORY,
+} from '@/modules/iam/users/repositories/user-role.repository.interface';
 
 /**
  * Valida el access token: firma + expiración (Passport), tipo, no revocado
@@ -28,6 +32,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
     @Inject(BLACKLIST_TOKEN_REPOSITORY)
     private readonly blacklist: IBlacklistTokenRepository,
+    @Inject(USER_ROLE_REPOSITORY)
+    private readonly userRoles: IUserRoleRepository,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -51,10 +57,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || user.status !== UserStatus.ACTIVE) {
       throw this.unauthorized();
     }
+    const roleIds = await this.userRoles.findRoleIdsByUserId(user.id);
     return {
       userId: user.id,
       email: user.email,
       role: user.role,
+      roleIds,
       jti: payload.jti,
     };
   }

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
-import { authGuard } from '@/core/guards/auth.guard';
+import { authGuard, roleGuard } from '@/core/guards/auth.guard';
+import { Role } from '@/core/models/role.enum';
 
 export const routes: Routes = [
   {
@@ -18,6 +19,13 @@ export const routes: Routes = [
     path: 'panel',
     canMatch: [authGuard],
     loadChildren: () => import('@/features/panel/panel.routes').then((m) => m.routes),
+  },
+  {
+    path: 'admin',
+    canMatch: [roleGuard([Role.ADMIN])],
+    loadComponent: () =>
+      import('@/layout/admin-layout/admin-layout').then((m) => m.AdminLayout),
+    loadChildren: () => import('@/features/admin/admin.routes').then((m) => m.routes),
   },
   {
     path: '',

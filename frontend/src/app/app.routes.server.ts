@@ -6,6 +6,15 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Server,
   },
   {
+    // Área autenticada, con datos por API: se renderiza en cliente (no prerender).
+    path: 'admin',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'admin/**',
+    renderMode: RenderMode.Client,
+  },
+  {
     path: '**',
     renderMode: RenderMode.Prerender,
   },
