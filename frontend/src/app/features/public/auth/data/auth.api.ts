@@ -5,7 +5,11 @@ import { map } from 'rxjs/operators';
 import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import { LoginRequest, LoginResponse } from '@/core/models/auth.models';
-import { ConfirmResetPayload } from '@/features/public/auth/models/auth.models';
+import {
+  ConfirmResetPayload,
+  RegisterPayload,
+  RegisterResult,
+} from '@/features/public/auth/models/auth.models';
 
 /** Cliente HTTP del feature de autenticación (desenvuelve el envelope). */
 @Injectable({ providedIn: 'root' })
@@ -16,6 +20,16 @@ export class AuthApi {
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http
       .post<ApiSuccessResponse<LoginResponse>>(`${this.base}/auth/login`, request)
+      .pipe(map((response) => response.content));
+  }
+
+  /** Registro único empresa/candidato (discrimina por accountType). */
+  register(payload: RegisterPayload): Observable<RegisterResult> {
+    return this.http
+      .post<ApiSuccessResponse<RegisterResult>>(
+        `${this.base}/auth/register`,
+        payload,
+      )
       .pipe(map((response) => response.content));
   }
 

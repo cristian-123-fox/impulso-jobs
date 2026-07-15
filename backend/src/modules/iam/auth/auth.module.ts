@@ -43,6 +43,10 @@ import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/co
     RequestEmailVerificationUseCase,
     ConfirmEmailVerificationUseCase,
   ],
-  exports: [JwtAuthGuard],
+  exports: [
+    JwtAuthGuard,
+    PasswordHasherService,
+    RequestEmailVerificationUseCase,
+  ],
 })
 export class AuthModule {}
