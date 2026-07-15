@@ -15,6 +15,8 @@ export interface ApiErrorResponse {
   success: false;
   statusCode: number;
   message: string;
+  /** Código de error estable del contrato (ver `ErrorCode`). */
+  errorCode?: string;
   errors: ApiErrorDetail[];
 }
 

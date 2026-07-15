@@ -19,7 +19,7 @@ const dbType = (process.env.DB_TYPE ?? 'postgres') as SupportedDbType;
 
 if (dbType !== 'postgres' && dbType !== 'mysql') {
   throw new Error(
-    `Unsupported DB_TYPE "${dbType}". Use "postgres" or "mysql".`,
+    `Unsupported DB_TYPE "${dbType as string}". Use "postgres" or "mysql".`,
   );
 }
 
@@ -36,7 +36,7 @@ const dataSourceOptions: DataSourceOptions = {
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
   synchronize: process.env.DB_SYNCHRONIZE === 'true',
   migrationsRun: false,
-} as DataSourceOptions;
+};
 
 export default registerAs('typeorm', () => dataSourceOptions);
 export const AppDataSource = new DataSource(dataSourceOptions);

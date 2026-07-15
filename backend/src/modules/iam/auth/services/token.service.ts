@@ -1,0 +1,108 @@
+import { randomUUID } from 'node:crypto';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
+import { Role } from '@/common/types/role.enum';
+import { TokenType } from '@/common/types/token-type.enum';
+
+export interface AccessTokenPayload {
+  sub: string;
+  email: string;
+  role: Role;
+  type: TokenType.ACCESS;
+  jti: string;
+}
+
+export interface RefreshTokenPayload {
+  sub: string;
+  type: TokenType.REFRESH;
+  jti: string;
+}
+
+export interface IssuedToken {
+  token: string;
+  jti: string;
+  expiresAt: Date;
+}
+
+interface AccessSubject {
+  id: string;
+  email: string;
+  role: Role;
+}
+
+/**
+ * Emite y verifica JWT. Access y refresh usan secretos y expiraciones distintas
+ * (leídas de configuración) pasadas explícitamente por token.
+ */
+@Injectable()
+export class TokenService {
+  private readonly accessSecret: string;
+  private readonly accessExpiresIn: string;
+  private readonly refreshSecret: string;
+  private readonly refreshExpiresIn: string;
+
+  constructor(
+    private readonly jwt: JwtService,
+    config: ConfigService,
+  ) {
+    this.accessSecret = config.getOrThrow<string>('JWT_ACCESS_SECRET');
+    this.accessExpiresIn = config.get<string>('JWT_ACCESS_EXPIRES_IN') ?? '15m';
+    this.refreshSecret = config.getOrThrow<string>('JWT_REFRESH_SECRET');
+    this.refreshExpiresIn =
+      config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d';
+  }
+
+  newJti(): string {
+    return randomUUID();
+  }
+
+  async signAccess(
+    user: AccessSubject,
+    jti: string = this.newJti(),
+  ): Promise<IssuedToken> {
+    const payload: AccessTokenPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      type: TokenType.ACCESS,
+      jti,
+    };
+    const token = await this.jwt.signAsync(payload, {
+      secret: this.accessSecret,
+      expiresIn: this.accessExpiresIn as JwtSignOptions['expiresIn'],
+    });
+    return { token, jti, expiresAt: this.expiryOf(token) };
+  }
+
+  async signRefresh(
+    userId: string,
+    jti: string = this.newJti(),
+  ): Promise<IssuedToken> {
+    const payload: RefreshTokenPayload = {
+      sub: userId,
+      type: TokenType.REFRESH,
+      jti,
+    };
+    const token = await this.jwt.signAsync(payload, {
+      secret: this.refreshSecret,
+      expiresIn: this.refreshExpiresIn as JwtSignOptions['expiresIn'],
+    });
+    return { token, jti, expiresAt: this.expiryOf(token) };
+  }
+
+  verifyRefresh(token: string): Promise<RefreshTokenPayload> {
+    return this.jwt.verifyAsync<RefreshTokenPayload>(token, {
+      secret: this.refreshSecret,
+    });
+  }
+
+  decode<T extends object>(token: string): T | null {
+    return this.jwt.decode<T | null>(token);
+  }
+
+  private expiryOf(token: string): Date {
+    const decoded = this.jwt.decode<{ exp?: number } | null>(token);
+    return decoded?.exp ? new Date(decoded.exp * 1000) : new Date();
+  }
+}

@@ -11,16 +11,19 @@ import {
   ApiErrorDetail,
   ApiErrorResponse,
 } from '@/common/types/api-response.types';
+import { ErrorCode } from '@/common/types/error-code.enum';
 
 interface HttpExceptionResponseShape {
   message?: string | string[];
   error?: string;
   errors?: unknown;
+  errorCode?: string;
 }
 
 interface NormalizedError {
   statusCode: number;
   message: string;
+  errorCode?: string;
   errors: ApiErrorDetail[];
   exceptionName: string;
 }
@@ -35,10 +38,7 @@ function isHttpExceptionResponseObject(
   return isRecord(value);
 }
 
-function toErrorDetail(
-  item: unknown,
-  defaultCode?: string,
-): ApiErrorDetail {
+function toErrorDetail(item: unknown, defaultCode?: string): ApiErrorDetail {
   if (typeof item === 'string') {
     return { message: item, ...(defaultCode && { code: defaultCode }) };
   }
@@ -84,6 +84,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       success: false,
       statusCode: normalized.statusCode,
       message: normalized.message,
+      ...(normalized.errorCode && { errorCode: normalized.errorCode }),
       errors: normalized.errors,
     };
 
@@ -99,10 +100,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ip = request.ip ?? '-';
     const summary = `${request.method} ${request.url} ip=${ip} ua="${userAgent}" -> ${normalized.statusCode} [${normalized.exceptionName}] ${normalized.message}`;
     const stack = exception instanceof Error ? exception.stack : undefined;
+    const serverError: number = HttpStatus.INTERNAL_SERVER_ERROR;
+    const clientError: number = HttpStatus.BAD_REQUEST;
 
-    if (normalized.statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    if (normalized.statusCode >= serverError) {
       this.logger.error(summary, stack);
-    } else if (normalized.statusCode >= HttpStatus.BAD_REQUEST) {
+    } else if (normalized.statusCode >= clientError) {
       this.logger.warn(summary);
     } else {
       this.logger.log(summary);
@@ -120,6 +123,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         message,
+        errorCode: ErrorCode.INTERNAL_ERROR,
         errors: [{ message, code: exceptionName }],
         exceptionName,
       };
@@ -128,9 +132,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Internal server error',
-      errors: [
-        { message: String(exception), code: 'UnknownException' },
-      ],
+      errorCode: ErrorCode.INTERNAL_ERROR,
+      errors: [{ message: String(exception), code: 'UnknownException' }],
       exceptionName: 'UnknownException',
     };
   }
@@ -162,20 +165,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return {
         statusCode,
         message: res.error ?? 'Validation failed',
-        errors: normalizeErrors(res.message, exceptionName),
+        errorCode: ErrorCode.VALIDATION_ERROR,
+        errors: normalizeErrors(res.message, ErrorCode.VALIDATION_ERROR),
         exceptionName,
       };
     }
 
     const topMessage = res.message ?? exception.message;
-    const customErrors = normalizeErrors(res.errors, exceptionName);
+    const errorCode = res.errorCode;
+    const detailCode = errorCode ?? exceptionName;
+    const customErrors = normalizeErrors(res.errors, detailCode);
     return {
       statusCode,
       message: topMessage,
+      ...(errorCode && { errorCode }),
       errors:
         customErrors.length > 0
           ? customErrors
-          : [{ message: topMessage, code: exceptionName }],
+          : [{ message: topMessage, code: detailCode }],
       exceptionName,
     };
   }

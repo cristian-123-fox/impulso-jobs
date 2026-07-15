@@ -39,7 +39,27 @@ export type IconName =
   | 'grid'
   | 'flash'
   | 'orbit'
-  | 'leaf';
+  | 'leaf'
+  | 'eye'
+  | 'eye-off'
+  | 'alert-triangle'
+  | 'home'
+  | 'briefcase'
+  | 'users'
+  | 'tag'
+  | 'shield'
+  | 'settings'
+  | 'file'
+  | 'credit-card'
+  | 'send'
+  | 'dollar'
+  | 'award'
+  | 'clock'
+  | 'pause'
+  | 'list'
+  | 'history'
+  | 'bell'
+  | 'logout';
 
 /**
  * Forma SVG primitiva. Se modela como interfaz plana (no unión discriminada)
@@ -147,6 +167,46 @@ const ICONS: Record<IconName, readonly IconShape[]> = {
   flash: [p('M13 2L4 14h7l-1 8 9-12h-7z')],
   orbit: [c(12, 12, 4), { t: 'ellipse', cx: 12, cy: 12, rx: 10, ry: 4 }],
   leaf: [p('M4 20c8 0 16-6 16-16-8 0-16 6-16 16z'), p('M4 20c4-6 8-9 12-11')],
+  eye: [p('M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7z'), c(12, 12, 2.6)],
+  'eye-off': [
+    p('M3 3l18 18'),
+    p('M10.6 10.7a2 2 0 0 0 2.8 2.8'),
+    p('M9.4 5.2A9.6 9.6 0 0 1 12 5c5.5 0 9 5 9 7a12 12 0 0 1-2.2 3'),
+    p('M6.2 6.2C3.9 7.6 3 10.4 3 11c0 1 1.6 4.2 5 5.6'),
+  ],
+  'alert-triangle': [
+    p('M10.3 3.9 2.4 17.4A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3.1L13.7 3.9a2 2 0 0 0-3.4 0z'),
+    p('M12 9v4'),
+    p('M12 17h.01'),
+  ],
+  home: [p('M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5')],
+  briefcase: [p('M4 8h16v11H4zM9 8V5h6v3M4 13h16')],
+  users: [
+    p('M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'),
+    c(9, 6.5, 3.5),
+    p('M22 20v-2a4 4 0 0 0-3-3.8'),
+  ],
+  tag: [p('M3 12V4h8l9 9-8 8-9-9z'), p('M7.5 7.5h.01')],
+  shield: [p('M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z')],
+  settings: [
+    c(12, 12, 3),
+    p('M4.5 12a7.5 7.5 0 0 0 .1 1.3l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 2.2 1.3l.4 2.6h4l.4-2.6a7.6 7.6 0 0 0 2.2-1.3l2.4 1 2-3.4-2-1.6a7.5 7.5 0 0 0 0-2.6l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-2.2-1.3L14 2.4h-4l-.4 2.6a7.6 7.6 0 0 0-2.2 1.3l-2.4-1-2 3.4 2 1.6A7.5 7.5 0 0 0 4.5 12z'),
+  ],
+  file: [p('M6 2h8l4 4v16H6z'), p('M14 2v4h4'), p('M9 13h6M9 17h6')],
+  'credit-card': [r(2, 7, 20, 10, 2), p('M2 11h20M6 15h3')],
+  send: [p('M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z')],
+  dollar: [p('M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6')],
+  award: [c(12, 9, 6), p('M8.5 13.5 7 22l5-3 5 3-1.5-8.5')],
+  clock: [c(12, 12, 9), p('M12 7v5l3 2')],
+  pause: [p('M9 5v14M15 5v14')],
+  list: [p('M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01')],
+  history: [p('M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2')],
+  bell: [p('M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0')],
+  logout: [
+    p('M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4'),
+    p('M16 17l5-5-5-5'),
+    p('M21 12H9'),
+  ],
 };
 
 /**

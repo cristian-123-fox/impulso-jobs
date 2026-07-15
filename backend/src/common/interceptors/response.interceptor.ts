@@ -13,9 +13,10 @@ import { RESPONSE_MESSAGE_KEY } from '@/common/decorators/response-message.decor
 import { ApiSuccessResponse } from '@/common/types/api-response.types';
 
 @Injectable()
-export class ResponseInterceptor<T>
-  implements NestInterceptor<T, ApiSuccessResponse<T> | undefined>
-{
+export class ResponseInterceptor<T> implements NestInterceptor<
+  T,
+  ApiSuccessResponse<T> | undefined
+> {
   constructor(private readonly reflector: Reflector) {}
 
   intercept(
@@ -31,7 +32,8 @@ export class ResponseInterceptor<T>
 
     return next.handle().pipe(
       map((content: T): ApiSuccessResponse<T> | undefined => {
-        if (response.statusCode === HttpStatus.NO_CONTENT) {
+        const noContent: number = HttpStatus.NO_CONTENT;
+        if (response.statusCode === noContent) {
           return undefined;
         }
         return {

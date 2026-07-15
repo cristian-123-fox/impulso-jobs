@@ -1,10 +1,23 @@
 import { Routes } from '@angular/router';
+import { authGuard } from '@/core/guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: 'mantenimiento',
     loadChildren: () =>
       import('@/features/public/maintenance/maintenance.routes').then((m) => m.routes),
+  },
+  {
+    path: 'auth',
+    loadComponent: () =>
+      import('@/layout/auth-layout/auth-layout').then((m) => m.AuthLayout),
+    loadChildren: () =>
+      import('@/features/public/auth/auth.routes').then((m) => m.routes),
+  },
+  {
+    path: 'panel',
+    canMatch: [authGuard],
+    loadChildren: () => import('@/features/panel/panel.routes').then((m) => m.routes),
   },
   {
     path: '',
