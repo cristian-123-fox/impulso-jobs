@@ -34,6 +34,11 @@ export const routes: Routes = [
     children: [
       {
         path: '',
+        pathMatch: 'full',
+        redirectTo: 'vacantes',
+      },
+      {
+        path: 'inicio',
         loadChildren: () =>
           import('@/features/public/home/home.routes').then((m) => m.routes),
       },
