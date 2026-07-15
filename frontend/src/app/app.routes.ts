@@ -7,6 +7,14 @@ export const routes: Routes = [
       import('@/features/public/maintenance/maintenance.routes').then((m) => m.routes),
   },
   {
+    path: 'auth',
+    loadChildren: () => import('@/features/auth/auth.routes').then((m) => m.routes),
+  },
+  {
+    path: 'panel',
+    loadChildren: () => import('@/features/panel/panel.routes').then((m) => m.routes),
+  },
+  {
     path: '',
     loadComponent: () =>
       import('@/layout/public-layout/public-layout').then((m) => m.PublicLayout),

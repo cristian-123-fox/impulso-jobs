@@ -52,9 +52,16 @@ module.exports = {
           "0%": { transform: "translateY(-100%)" },
           "100%": { transform: "translateY(0)" },
         },
+        shake: {
+          "10%,90%": { transform: "translateX(-1px)" },
+          "20%,80%": { transform: "translateX(2px)" },
+          "30%,50%,70%": { transform: "translateX(-4px)" },
+          "40%,60%": { transform: "translateX(4px)" },
+        },
       },
       animation: {
         "header-down": "header-down .35s ease-out",
+        shake: "shake .5s",
       },
     },
   },
