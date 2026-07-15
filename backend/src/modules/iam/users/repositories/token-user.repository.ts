@@ -30,4 +30,14 @@ export class TokenUserRepository
   async revoke(jti: string, manager?: EntityManager): Promise<void> {
     await this.repo(manager).update({ id: jti }, { revoked: true });
   }
+
+  async revokeAllByUserId(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.repo(manager).update(
+      { userId, revoked: false },
+      { revoked: true },
+    );
+  }
 }

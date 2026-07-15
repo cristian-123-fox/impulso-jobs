@@ -59,7 +59,9 @@ async function main(): Promise<void> {
       if (exists) {
         console.log('El rol ADMIN ya estaba asignado en user_roles.');
       } else {
-        await userRoleRepo.save(userRoleRepo.create({ userId: user.id, roleId: adminRole.id }));
+        await userRoleRepo.save(
+          userRoleRepo.create({ userId: user.id, roleId: adminRole.id }),
+        );
         console.log('Rol ADMIN asignado en user_roles.');
       }
     }

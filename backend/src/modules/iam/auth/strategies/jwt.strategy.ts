@@ -57,6 +57,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!user || user.status !== UserStatus.ACTIVE) {
       throw this.unauthorized();
     }
+    if (
+      user.tokensValidFrom &&
+      typeof payload.iat === 'number' &&
+      payload.iat < Math.floor(user.tokensValidFrom.getTime() / 1000)
+    ) {
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AUTH_TOKEN_REVOKED,
+        'La sesión fue invalidada. Inicia sesión de nuevo.',
+      );
+    }
     const roleIds = await this.userRoles.findRoleIdsByUserId(user.id);
     return {
       userId: user.id,

@@ -7,4 +7,5 @@ export interface ITokenUserRepository {
   create(data: Partial<TokenUser>, manager?: EntityManager): Promise<TokenUser>;
   findByJti(jti: string, manager?: EntityManager): Promise<TokenUser | null>;
   revoke(jti: string, manager?: EntityManager): Promise<void>;
+  revokeAllByUserId(userId: string, manager?: EntityManager): Promise<void>;
 }

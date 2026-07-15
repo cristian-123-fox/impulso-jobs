@@ -11,3 +11,21 @@ export interface LoginCredentials {
 
 export type LoginStatus = 'idle' | 'loading' | 'success' | 'error';
 export type ResendStatus = 'idle' | 'sending' | 'sent' | 'error';
+
+/** Estado de la solicitud de enlace de recuperación (forgot-password). */
+export type ForgotStatus = 'idle' | 'loading' | 'sent';
+
+/** Estado de la pantalla de restablecimiento (reset-password). */
+export type ResetState =
+  | 'validating'
+  | 'invalid'
+  | 'form'
+  | 'submitting'
+  | 'success';
+
+/** Datos que confirman un nuevo password contra la API. */
+export interface ConfirmResetPayload {
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}

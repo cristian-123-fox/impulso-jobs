@@ -46,4 +46,18 @@ export class User extends BaseEntity {
 
   @Column({ name: 'email_verified_at', type: 'timestamp', nullable: true })
   emailVerifiedAt?: Date | null;
+
+  /** Tokens emitidos antes de esta marca se consideran inválidos (reset/logout global). */
+  @Column({ name: 'tokens_valid_from', type: 'timestamp', nullable: true })
+  tokensValidFrom?: Date | null;
+
+  @Column({ name: 'password_reset_attempts', type: 'int', default: 0 })
+  passwordResetAttempts!: number;
+
+  @Column({
+    name: 'password_reset_window_start',
+    type: 'timestamp',
+    nullable: true,
+  })
+  passwordResetWindowStart?: Date | null;
 }

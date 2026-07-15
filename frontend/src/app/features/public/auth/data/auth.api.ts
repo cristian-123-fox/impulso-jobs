@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import { LoginRequest, LoginResponse } from '@/core/models/auth.models';
+import { ConfirmResetPayload } from '@/features/public/auth/models/auth.models';
 
 /** Cliente HTTP del feature de autenticación (desenvuelve el envelope). */
 @Injectable({ providedIn: 'root' })
@@ -21,5 +22,35 @@ export class AuthApi {
   /** TODO(M4): reemplazar por el endpoint real de reenvío de verificación. */
   resendVerification(_email: string): Observable<void> {
     return timer(900).pipe(map(() => undefined));
+  }
+
+  /** Solicita el magic link de recuperación (respuesta siempre genérica). */
+  requestPasswordReset(email: string): Observable<void> {
+    return this.http
+      .post<ApiSuccessResponse<unknown>>(
+        `${this.base}/auth/password-reset/request`,
+        { email },
+      )
+      .pipe(map(() => undefined));
+  }
+
+  /** Valida que el token del enlace siga siendo utilizable. */
+  validateResetToken(token: string): Observable<void> {
+    return this.http
+      .post<ApiSuccessResponse<{ valid: boolean }>>(
+        `${this.base}/auth/password-reset/validate`,
+        { token },
+      )
+      .pipe(map(() => undefined));
+  }
+
+  /** Confirma la nueva contraseña y consume el token (un solo uso). */
+  confirmPasswordReset(payload: ConfirmResetPayload): Observable<void> {
+    return this.http
+      .post<ApiSuccessResponse<unknown>>(
+        `${this.base}/auth/password-reset/confirm`,
+        payload,
+      )
+      .pipe(map(() => undefined));
   }
 }

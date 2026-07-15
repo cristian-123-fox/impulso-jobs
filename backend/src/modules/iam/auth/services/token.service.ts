@@ -11,11 +11,19 @@ export interface AccessTokenPayload {
   role: Role;
   type: TokenType.ACCESS;
   jti: string;
+  /** Emitido (segundos epoch); lo agrega el JWT. Se usa para invalidación global. */
+  iat?: number;
 }
 
 export interface RefreshTokenPayload {
   sub: string;
   type: TokenType.REFRESH;
+  jti: string;
+}
+
+export interface ResetTokenPayload {
+  sub: string;
+  type: TokenType.RESET;
   jti: string;
 }
 
@@ -41,6 +49,8 @@ export class TokenService {
   private readonly accessExpiresIn: string;
   private readonly refreshSecret: string;
   private readonly refreshExpiresIn: string;
+  private readonly resetSecret: string;
+  private readonly resetExpiresIn: string;
 
   constructor(
     private readonly jwt: JwtService,
@@ -51,6 +61,10 @@ export class TokenService {
     this.refreshSecret = config.getOrThrow<string>('JWT_REFRESH_SECRET');
     this.refreshExpiresIn =
       config.get<string>('JWT_REFRESH_EXPIRES_IN') ?? '7d';
+    this.resetSecret =
+      config.get<string>('JWT_RESET_SECRET') ??
+      config.getOrThrow<string>('JWT_ACCESS_SECRET');
+    this.resetExpiresIn = config.get<string>('JWT_RESET_EXPIRES_IN') ?? '30m';
   }
 
   newJti(): string {
@@ -94,6 +108,28 @@ export class TokenService {
   verifyRefresh(token: string): Promise<RefreshTokenPayload> {
     return this.jwt.verifyAsync<RefreshTokenPayload>(token, {
       secret: this.refreshSecret,
+    });
+  }
+
+  async signReset(
+    userId: string,
+    jti: string = this.newJti(),
+  ): Promise<IssuedToken> {
+    const payload: ResetTokenPayload = {
+      sub: userId,
+      type: TokenType.RESET,
+      jti,
+    };
+    const token = await this.jwt.signAsync(payload, {
+      secret: this.resetSecret,
+      expiresIn: this.resetExpiresIn as JwtSignOptions['expiresIn'],
+    });
+    return { token, jti, expiresAt: this.expiryOf(token) };
+  }
+
+  verifyReset(token: string): Promise<ResetTokenPayload> {
+    return this.jwt.verifyAsync<ResetTokenPayload>(token, {
+      secret: this.resetSecret,
     });
   }
 
