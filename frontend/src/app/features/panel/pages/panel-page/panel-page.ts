@@ -3,9 +3,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
+import { AuthService } from '@/core/auth/auth.service';
 import { PanelFacade } from '@/features/panel/data/panel.facade';
 import { PanelRole } from '@/features/panel/models/panel.models';
 import { PanelSidebar } from '@/features/panel/components/panel-sidebar/panel-sidebar';
@@ -66,6 +70,7 @@ import { DataTable } from '@/features/panel/components/data-table/data-table';
           [role]="role()"
           (roleChange)="onRole($event)"
           (toggleSidebar)="toggleSidebar()"
+          (logout)="onLogout()"
         />
 
         <main class="flex-1 overflow-y-auto p-4 sm:p-7">
@@ -129,6 +134,9 @@ import { DataTable } from '@/features/panel/components/data-table/data-table';
 })
 export class PanelPage {
   private readonly facade = inject(PanelFacade);
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly role = signal<PanelRole>('admin');
   protected readonly view = signal('dashboard');
@@ -169,5 +177,12 @@ export class PanelPage {
     this.role.set(role);
     this.view.set('dashboard');
     this.page.set(0);
+  }
+
+  protected onLogout(): void {
+    this.auth
+      .logout()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => void this.router.navigateByUrl('/auth/login'));
   }
 }

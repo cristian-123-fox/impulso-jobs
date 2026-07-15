@@ -16,7 +16,8 @@
     "module": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/app/*"]
+      "@/*": ["src/app/*"],
+      "@env": ["src/environments/environment"]
     }
   },
   "angularCompilerOptions": {

@@ -74,6 +74,15 @@ interface RoleTab {
         <div class="text-[11.5px] text-muted">{{ meta().roleLabel }}</div>
       </div>
     </div>
+
+    <button
+      type="button"
+      aria-label="Cerrar sesión"
+      class="flex h-[42px] w-[42px] flex-shrink-0 items-center justify-center rounded-[11px] border border-line bg-surface text-body transition-colors hover:text-brand"
+      (click)="logout.emit()"
+    >
+      <ij-icon name="logout" [size]="19" [strokeWidth]="1.8" />
+    </button>
   `,
 })
 export class PanelHeader {
@@ -81,6 +90,7 @@ export class PanelHeader {
   readonly role = input.required<PanelRole>();
   readonly roleChange = output<PanelRole>();
   readonly toggleSidebar = output<void>();
+  readonly logout = output<void>();
 
   protected readonly roles: readonly RoleTab[] = [
     { key: 'admin', label: 'Admin' },
