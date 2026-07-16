@@ -44,7 +44,7 @@ interface RoleTab {
     </div>
 
     <div class="ml-auto flex items-center gap-1 rounded-xl border border-line bg-surface p-1">
-      @for (r of roles; track r.key) {
+      @for (r of visibleRoles(); track r.key) {
         <button type="button" [class]="segClass(r.key)" (click)="roleChange.emit(r.key)">
           {{ r.label }}
         </button>
@@ -88,6 +88,7 @@ interface RoleTab {
 export class PanelHeader {
   readonly meta = input.required<PanelMeta>();
   readonly role = input.required<PanelRole>();
+  readonly availableRoles = input<readonly PanelRole[]>(['admin', 'empresa', 'postulante']);
   readonly roleChange = output<PanelRole>();
   readonly toggleSidebar = output<void>();
   readonly logout = output<void>();
@@ -97,6 +98,11 @@ export class PanelHeader {
     { key: 'empresa', label: 'Empresa' },
     { key: 'postulante', label: 'Aspirante' },
   ];
+
+  protected visibleRoles(): readonly RoleTab[] {
+    const allowed = new Set(this.availableRoles());
+    return this.roles.filter((role) => allowed.has(role.key));
+  }
 
   protected gradient(): string {
     return AVATAR_GRADIENT[this.meta().avatar];
