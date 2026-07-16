@@ -16,6 +16,13 @@ export class CandidateProfileRepository
     super(repo);
   }
 
+  findByUserId(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<CandidateProfile | null> {
+    return this.repo(manager).findOne({ where: { userId } });
+  }
+
   async existsByDocumentNumber(
     documentNumber: string,
     manager?: EntityManager,

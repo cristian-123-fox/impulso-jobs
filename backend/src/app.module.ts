@@ -7,6 +7,7 @@ import { AuthModule } from '@/modules/iam/auth/auth.module';
 import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
 import { RolesModule } from '@/modules/iam/roles/roles.module';
 import { RegistrationModule } from '@/modules/iam/registration/registration.module';
+import { CandidatesModule } from '@/modules/candidates/candidates.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { RegistrationModule } from '@/modules/iam/registration/registration.modu
     PermissionsModule,
     RolesModule,
     RegistrationModule,
+    CandidatesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
