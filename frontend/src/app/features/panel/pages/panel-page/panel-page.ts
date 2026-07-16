@@ -23,6 +23,8 @@ import { PromoBuy } from '@/features/panel/components/promo-buy/promo-buy';
 import { JobCards } from '@/features/panel/components/job-cards/job-cards';
 import { VacancyForm } from '@/features/panel/components/vacancy-form/vacancy-form';
 import { DataTable } from '@/features/panel/components/data-table/data-table';
+import { CandidateProfileComponent } from '@/features/panel/components/candidate-profile/candidate-profile';
+import { Role } from '@/core/models/role.enum';
 
 /**
  * Contenedor del panel multi-rol. Mantiene el estado de rol/vista/página con
@@ -44,6 +46,7 @@ import { DataTable } from '@/features/panel/components/data-table/data-table';
     JobCards,
     VacancyForm,
     DataTable,
+    CandidateProfileComponent,
   ],
   template: `
     <div class="flex min-h-screen w-full bg-surface text-ink-900">
@@ -68,6 +71,7 @@ import { DataTable } from '@/features/panel/components/data-table/data-table';
         <app-panel-header
           [meta]="meta()"
           [role]="role()"
+          [availableRoles]="availableRoles()"
           (roleChange)="onRole($event)"
           (toggleSidebar)="toggleSidebar()"
           (logout)="onLogout()"
@@ -111,6 +115,9 @@ import { DataTable } from '@/features/panel/components/data-table/data-table';
             @case ('job-cards') {
               <app-job-cards />
             }
+            @case ('candidate-profile') {
+              <app-candidate-profile />
+            }
             @case ('vacancy-form') {
               <app-vacancy-form (navigate)="onNavigate($event)" />
             }
@@ -138,8 +145,12 @@ export class PanelPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly role = signal<PanelRole>('admin');
-  protected readonly view = signal('dashboard');
+  protected readonly role = signal<PanelRole>(
+    this.resolvePanelRole(this.auth.currentUser()?.role),
+  );
+  protected readonly view = signal(
+    this.auth.currentUser()?.role === Role.CANDIDATE ? 'perfil' : 'dashboard',
+  );
   protected readonly page = signal(0);
   /** Visible por defecto (escritorio); se auto-colapsa en pantallas pequeñas. */
   protected readonly sidebarOpen = signal(true);
@@ -153,6 +164,11 @@ export class PanelPage {
   protected readonly navItems = computed(() =>
     this.facade.nav(this.role(), this.view()),
   );
+  protected readonly availableRoles = computed<readonly PanelRole[]>(() => {
+    const role = this.auth.currentUser()?.role;
+    if (role === Role.ADMIN) return ['admin', 'empresa', 'postulante'];
+    return [this.resolvePanelRole(role)];
+  });
   protected readonly meta = computed(() => this.facade.meta(this.role(), this.view()));
   protected readonly kpis = computed(() => this.facade.kpis(this.role(), this.view()));
   protected readonly content = computed(() =>
@@ -174,6 +190,7 @@ export class PanelPage {
   }
 
   protected onRole(role: PanelRole): void {
+    if (!this.availableRoles().includes(role)) return;
     this.role.set(role);
     this.view.set('dashboard');
     this.page.set(0);
@@ -184,5 +201,16 @@ export class PanelPage {
       .logout()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => void this.router.navigateByUrl('/auth/login'));
+  }
+
+  private resolvePanelRole(role: Role | undefined): PanelRole {
+    switch (role) {
+      case Role.EMPLOYER:
+        return 'empresa';
+      case Role.CANDIDATE:
+        return 'postulante';
+      default:
+        return 'admin';
+    }
   }
 }

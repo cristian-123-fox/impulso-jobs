@@ -21,6 +21,7 @@ export type PanelContent =
   | 'admin-dashboard'
   | 'empresa-dashboard'
   | 'postulante-dashboard'
+  | 'candidate-profile'
   | 'plans-catalog'
   | 'promo-buy'
   | 'job-cards'

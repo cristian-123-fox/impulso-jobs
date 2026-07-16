@@ -36,6 +36,20 @@ export class CandidateProfile extends BaseEntity {
   })
   professionalTitle?: string | null;
 
+  @Column({ type: 'text', nullable: true })
+  summary?: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  address?: string | null;
+
+  @Column({
+    name: 'profile_photo_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  profilePhotoUrl?: string | null;
+
   @Column({ type: 'varchar', length: 60, default: 'MX' })
   country!: string;
 
