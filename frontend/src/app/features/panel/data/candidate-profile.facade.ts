@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { forkJoin, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { CandidateProfileApi } from '@/features/panel/data/candidate-profile.api';
+import { CandidateResumeApi } from '@/features/panel/data/candidate-resume.api';
 import {
   CandidateEducation,
   CandidateEducationPayload,
@@ -20,12 +21,14 @@ import {
 @Injectable({ providedIn: 'root' })
 export class CandidateProfileFacade {
   private readonly api = inject(CandidateProfileApi);
+  private readonly resumeApi = inject(CandidateResumeApi);
 
   private readonly profileState = signal<CandidateProfile | null>(null);
   private readonly experiencesState = signal<CandidateExperience[]>([]);
   private readonly educationsState = signal<CandidateEducation[]>([]);
   private readonly languagesState = signal<CandidateLanguage[]>([]);
   private readonly skillsState = signal<CandidateSkill[]>([]);
+  private readonly resumeCountState = signal(0);
   private readonly languageCatalogState = signal<LanguageCatalogItem[]>([]);
   private readonly loadingState = signal(false);
   private readonly errorState = signal<string | null>(null);
@@ -50,6 +53,7 @@ export class CandidateProfileFacade {
       { label: 'Educación', done: this.educationsState().length > 0 },
       { label: 'Idiomas', done: this.languagesState().length > 0 },
       { label: 'Habilidades', done: this.skillsState().length > 0 },
+      { label: 'Hoja de vida', done: this.resumeCountState() > 0 },
     ];
   });
 
@@ -62,6 +66,7 @@ export class CandidateProfileFacade {
       educations: this.api.listEducations(),
       languages: this.api.listLanguages(),
       skills: this.api.listSkills(),
+      resumes: this.resumeApi.list(),
       languageCatalog: this.api.listLanguageCatalog(),
     }).pipe(
       tap({
@@ -71,6 +76,7 @@ export class CandidateProfileFacade {
           this.educationsState.set(result.educations);
           this.languagesState.set(result.languages);
           this.skillsState.set(result.skills);
+          this.resumeCountState.set(result.resumes.length);
           this.languageCatalogState.set(result.languageCatalog);
           this.loadingState.set(false);
         },

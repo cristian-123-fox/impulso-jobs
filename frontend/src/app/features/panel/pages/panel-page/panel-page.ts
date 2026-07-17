@@ -24,6 +24,7 @@ import { JobCards } from '@/features/panel/components/job-cards/job-cards';
 import { VacancyForm } from '@/features/panel/components/vacancy-form/vacancy-form';
 import { DataTable } from '@/features/panel/components/data-table/data-table';
 import { CandidateProfileComponent } from '@/features/panel/components/candidate-profile/candidate-profile';
+import { CandidateResumesComponent } from '@/features/panel/components/candidate-resumes/candidate-resumes';
 import { Role } from '@/core/models/role.enum';
 
 /**
@@ -47,6 +48,7 @@ import { Role } from '@/core/models/role.enum';
     VacancyForm,
     DataTable,
     CandidateProfileComponent,
+    CandidateResumesComponent,
   ],
   template: `
     <div class="flex min-h-screen w-full bg-surface text-ink-900">
@@ -117,6 +119,9 @@ import { Role } from '@/core/models/role.enum';
             }
             @case ('candidate-profile') {
               <app-candidate-profile />
+            }
+            @case ('candidate-resumes') {
+              <app-candidate-resumes />
             }
             @case ('vacancy-form') {
               <app-vacancy-form (navigate)="onNavigate($event)" />

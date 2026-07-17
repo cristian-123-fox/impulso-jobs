@@ -26,6 +26,10 @@ import {
   CANDIDATE_SKILL_REPOSITORY,
 } from '@/modules/candidates/repositories/candidate-skill.repository.interface';
 import {
+  type ICandidateResumeRepository,
+  CANDIDATE_RESUME_REPOSITORY,
+} from '@/modules/candidates/repositories/candidate-resume.repository.interface';
+import {
   type ILanguageRepository,
   LANGUAGE_REPOSITORY,
 } from '@/modules/candidates/repositories/language.repository.interface';
@@ -70,6 +74,8 @@ export class CandidateProfileUseCase {
     private readonly languages: ICandidateLanguageRepository,
     @Inject(CANDIDATE_SKILL_REPOSITORY)
     private readonly skills: ICandidateSkillRepository,
+    @Inject(CANDIDATE_RESUME_REPOSITORY)
+    private readonly resumes: ICandidateResumeRepository,
     @Inject(LANGUAGE_REPOSITORY)
     private readonly languageCatalog: ILanguageRepository,
     @Inject(USER_REPOSITORY)
@@ -184,6 +190,7 @@ export class CandidateProfileUseCase {
       (await this.educations.countByProfileId(profileId)) > 0,
       (await this.languages.countByProfileId(profileId)) > 0,
       (await this.skills.countByProfileId(profileId)) > 0,
+      (await this.resumes.countByProfileId(profileId)) > 0,
     ];
     const completed = checks.filter(Boolean).length;
     return Math.round((completed / checks.length) * 100);

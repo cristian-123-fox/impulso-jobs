@@ -279,6 +279,7 @@ export class PanelFacade {
     if (role === 'empresa' && view === 'nueva-vacante') return 'vacancy-form';
     if (role === 'postulante' && view === 'buscar') return 'job-cards';
     if (role === 'postulante' && view === 'perfil') return 'candidate-profile';
+    if (role === 'postulante' && view === 'cv') return 'candidate-resumes';
     return this.table(role, view) ? 'table' : 'empty';
   }
 
