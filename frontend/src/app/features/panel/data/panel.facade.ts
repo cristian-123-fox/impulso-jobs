@@ -277,6 +277,7 @@ export class PanelFacade {
     if (role === 'admin' && view === 'planes') return 'plans-catalog';
     if (role === 'empresa' && view === 'promociones') return 'promo-buy';
     if (role === 'empresa' && view === 'nueva-vacante') return 'vacancy-form';
+    if (role === 'empresa' && view === 'perfil') return 'company-profile';
     if (role === 'postulante' && view === 'buscar') return 'job-cards';
     if (role === 'postulante' && view === 'perfil') return 'candidate-profile';
     if (role === 'postulante' && view === 'cv') return 'candidate-resumes';
@@ -686,20 +687,6 @@ export class PanelFacade {
             [a('Carla Núñez', 'CN', 0), b('OWNER', 'brand'), this.text('carla@northwind.co'), b('Activo', 'green')],
             [a('Hugo Prieto', 'HP', 1), b('ADMIN', 'blue'), this.text('hugo@northwind.co'), b('Activo', 'green')],
             [a('Sofía Lara', 'SL', 4), b('ADMIN', 'blue'), this.text('sofia@northwind.co'), b('Invitada', 'amber')],
-          ],
-        };
-      if (view === 'perfil')
-        return {
-          title: 'Datos de la empresa',
-          columns: ['Campo', 'Valor'],
-          rows: [
-            [this.muted('Razón social'), this.strong('Northwind Corp S.A.S.')],
-            [this.muted('NIT (solo lectura)'), this.text('900.123.456-7')],
-            [this.muted('Sector'), this.text('Tecnología')],
-            [this.muted('Tamaño'), this.text('120–250 empleados')],
-            [this.muted('Ubicación'), this.text('Bogotá, Colombia')],
-            [this.muted('Sitio web'), this.text('northwind.example.com')],
-            [this.muted('Año de fundación'), this.text('2016')],
           ],
         };
     }

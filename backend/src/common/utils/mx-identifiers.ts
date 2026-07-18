@@ -12,6 +12,19 @@ export const CURP_REGEX = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/;
 /** Código postal mexicano: 5 dígitos. */
 export const MX_POSTAL_CODE_REGEX = /^\d{5}$/;
 
+/** Teléfono mexicano: opcional lada país +52 y 10 dígitos nacionales. */
+export const MX_PHONE_REGEX = /^\+52\d{10}$/;
+
+/**
+ * Normaliza un teléfono a formato `+52` + 10 dígitos. Ignora espacios, guiones,
+ * paréntesis y un prefijo `+52`/`52` de lada país. Devuelve null si no quedan
+ * exactamente 10 dígitos nacionales.
+ */
+export function normalizeMxPhone(phone: string): string | null {
+  const digits = phone.replace(/[\s().-]/g, '').replace(/^\+?52/, '');
+  return /^\d{10}$/.test(digits) ? `+52${digits}` : null;
+}
+
 export function normalizeRfc(rfc: string): string {
   return rfc.trim().toUpperCase();
 }

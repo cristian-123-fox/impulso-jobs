@@ -14,6 +14,13 @@ export class CompanyUserRepository
     super(repo);
   }
 
+  findByUserId(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<CompanyUser | null> {
+    return this.repo(manager).findOne({ where: { userId } });
+  }
+
   save(member: CompanyUser, manager?: EntityManager): Promise<CompanyUser> {
     return this.repo(manager).save(member);
   }

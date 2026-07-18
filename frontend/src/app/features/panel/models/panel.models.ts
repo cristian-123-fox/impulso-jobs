@@ -24,6 +24,7 @@ export type PanelContent =
   | 'candidate-profile'
   | 'candidate-resumes'
   | 'candidate-settings'
+  | 'company-profile'
   | 'plans-catalog'
   | 'promo-buy'
   | 'job-cards'

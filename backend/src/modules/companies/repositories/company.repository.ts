@@ -18,6 +18,10 @@ export class CompanyRepository
     return (await this.repo(manager).count({ where: { rfc } })) > 0;
   }
 
+  findById(id: string, manager?: EntityManager): Promise<Company | null> {
+    return this.repo(manager).findOne({ where: { id } });
+  }
+
   save(company: Company, manager?: EntityManager): Promise<Company> {
     return this.repo(manager).save(company);
   }

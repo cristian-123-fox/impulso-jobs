@@ -26,6 +26,7 @@ import { DataTable } from '@/features/panel/components/data-table/data-table';
 import { CandidateProfileComponent } from '@/features/panel/components/candidate-profile/candidate-profile';
 import { CandidateResumesComponent } from '@/features/panel/components/candidate-resumes/candidate-resumes';
 import { CandidateSettingsComponent } from '@/features/panel/components/candidate-settings/candidate-settings';
+import { CompanyProfileComponent } from '@/features/panel/components/company-profile/company-profile';
 import { Role } from '@/core/models/role.enum';
 
 /**
@@ -51,6 +52,7 @@ import { Role } from '@/core/models/role.enum';
     CandidateProfileComponent,
     CandidateResumesComponent,
     CandidateSettingsComponent,
+    CompanyProfileComponent,
   ],
   template: `
     <div class="flex min-h-screen w-full bg-surface text-ink-900">
@@ -127,6 +129,9 @@ import { Role } from '@/core/models/role.enum';
             }
             @case ('candidate-settings') {
               <app-candidate-settings />
+            }
+            @case ('company-profile') {
+              <app-company-profile />
             }
             @case ('vacancy-form') {
               <app-vacancy-form (navigate)="onNavigate($event)" />

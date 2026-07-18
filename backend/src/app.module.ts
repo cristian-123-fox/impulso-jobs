@@ -8,6 +8,7 @@ import { PermissionsModule } from '@/modules/iam/permissions/permissions.module'
 import { RolesModule } from '@/modules/iam/roles/roles.module';
 import { RegistrationModule } from '@/modules/iam/registration/registration.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
+import { CompaniesModule } from '@/modules/companies/companies.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { CandidatesModule } from '@/modules/candidates/candidates.module';
     RolesModule,
     RegistrationModule,
     CandidatesModule,
+    CompaniesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

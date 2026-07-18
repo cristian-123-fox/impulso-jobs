@@ -67,6 +67,23 @@ export const SAT_TAX_REGIMES: readonly CatalogItem[] = [
   { code: '630', name: '630 · Enajenación de acciones en bolsa' },
 ];
 
+/** Uso de CFDI SAT (c_UsoCFDI) — usos relevantes para empresas. */
+export const SAT_CFDI_USES: readonly CatalogItem[] = [
+  { code: 'G01', name: 'G01 · Adquisición de mercancías' },
+  { code: 'G02', name: 'G02 · Devoluciones, descuentos o bonificaciones' },
+  { code: 'G03', name: 'G03 · Gastos en general' },
+  { code: 'I01', name: 'I01 · Construcciones' },
+  { code: 'I02', name: 'I02 · Mobiliario y equipo de oficina' },
+  { code: 'I03', name: 'I03 · Equipo de transporte' },
+  { code: 'I04', name: 'I04 · Equipo de cómputo y accesorios' },
+  { code: 'I05', name: 'I05 · Dados, troqueles, moldes y herramental' },
+  { code: 'I06', name: 'I06 · Comunicaciones telefónicas' },
+  { code: 'I07', name: 'I07 · Comunicaciones satelitales' },
+  { code: 'I08', name: 'I08 · Otra maquinaria y equipo' },
+  { code: 'S01', name: 'S01 · Sin efectos fiscales' },
+  { code: 'CP01', name: 'CP01 · Pagos' },
+];
+
 /** Tipo de documento de identidad. */
 export const DOCUMENT_TYPES: readonly { value: string; label: string }[] = [
   { value: 'CURP', label: 'CURP' },
