@@ -7,12 +7,18 @@ import {
 } from '@/modules/candidates/services/candidate-resume-storage.port';
 
 @Injectable()
-export class LocalCandidateResumeStorageService
-  implements ICandidateResumeStorage {
-  private readonly baseDir = resolve(process.cwd(), 'uploads', 'candidate-resumes');
+export class LocalCandidateResumeStorageService implements ICandidateResumeStorage {
+  private readonly baseDir = resolve(
+    process.cwd(),
+    'uploads',
+    'candidate-resumes',
+  );
 
   async save(file: SaveCandidateResumeFile): Promise<{ storageKey: string }> {
-    const storageKey = join(file.profileId, `${file.resumeId}.pdf`).replace(/\\/g, '/');
+    const storageKey = join(file.profileId, `${file.resumeId}.pdf`).replace(
+      /\\/g,
+      '/',
+    );
     const fullPath = this.resolvePath(storageKey);
 
     await fs.mkdir(dirname(fullPath), { recursive: true });

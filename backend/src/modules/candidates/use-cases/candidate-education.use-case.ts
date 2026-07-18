@@ -58,13 +58,17 @@ export class CandidateEducationUseCase {
     education.degreeName = command.degreeName.trim();
     education.fieldOfStudy = command.fieldOfStudy?.trim() || null;
     education.startDate = command.startDate;
-    education.endDate = command.isCurrent ? null : command.endDate?.trim() || null;
+    education.endDate = command.isCurrent
+      ? null
+      : command.endDate?.trim() || null;
     education.isCurrent = command.isCurrent;
     education.description = command.description?.trim() || null;
 
     const saved = await this.educations.save(education);
     await this.audit.record({
-      action: command.id ? 'candidate.education.update' : 'candidate.education.create',
+      action: command.id
+        ? 'candidate.education.update'
+        : 'candidate.education.create',
       actorUserId: command.userId,
       entity: 'candidate_education',
       entityId: saved.id,
@@ -148,7 +152,11 @@ export class CandidateEducationUseCase {
       );
     }
     if (isCurrent) return;
-    if (!end || Number.isNaN(end.getTime()) || end.getTime() < start.getTime()) {
+    if (
+      !end ||
+      Number.isNaN(end.getTime()) ||
+      end.getTime() < start.getTime()
+    ) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.CANDIDATE_INVALID_DATE_RANGE,

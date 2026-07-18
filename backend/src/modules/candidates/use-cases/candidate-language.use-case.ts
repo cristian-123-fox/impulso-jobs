@@ -44,7 +44,9 @@ export class CandidateLanguageUseCase {
   async list(
     userId: string,
     role: Role,
-  ): Promise<Array<{ candidateLanguage: CandidateLanguage; language: Language }>> {
+  ): Promise<
+    Array<{ candidateLanguage: CandidateLanguage; language: Language }>
+  > {
     const profileId = await this.requireProfileId(userId, role);
     const items = await this.candidateLanguages.findByProfileId(profileId);
     const catalog = await this.languages.findAll();
@@ -54,8 +56,13 @@ export class CandidateLanguageUseCase {
         const language = byCode.get(item.languageCode);
         return language ? { candidateLanguage: item, language } : null;
       })
-      .filter((item): item is { candidateLanguage: CandidateLanguage; language: Language } =>
-        Boolean(item),
+      .filter(
+        (
+          item,
+        ): item is {
+          candidateLanguage: CandidateLanguage;
+          language: Language;
+        } => Boolean(item),
       );
   }
 
@@ -102,7 +109,9 @@ export class CandidateLanguageUseCase {
 
     const saved = await this.candidateLanguages.save(candidateLanguage);
     await this.audit.record({
-      action: command.id ? 'candidate.language.update' : 'candidate.language.create',
+      action: command.id
+        ? 'candidate.language.update'
+        : 'candidate.language.create',
       actorUserId: command.userId,
       entity: 'candidate_language',
       entityId: saved.id,
@@ -149,7 +158,10 @@ export class CandidateLanguageUseCase {
     id: string,
     profileId: string,
   ): Promise<CandidateLanguage> {
-    const language = await this.candidateLanguages.findByIdAndProfileId(id, profileId);
+    const language = await this.candidateLanguages.findByIdAndProfileId(
+      id,
+      profileId,
+    );
     if (!language) {
       throw new AppException(
         HttpStatus.NOT_FOUND,

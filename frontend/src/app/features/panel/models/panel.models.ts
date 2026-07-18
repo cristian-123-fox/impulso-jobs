@@ -23,6 +23,7 @@ export type PanelContent =
   | 'postulante-dashboard'
   | 'candidate-profile'
   | 'candidate-resumes'
+  | 'candidate-settings'
   | 'plans-catalog'
   | 'promo-buy'
   | 'job-cards'

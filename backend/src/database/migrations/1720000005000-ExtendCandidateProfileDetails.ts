@@ -7,9 +7,7 @@ import {
   TableIndex,
 } from 'typeorm';
 
-export class ExtendCandidateProfileDetails1720000005000
-  implements MigrationInterface
-{
+export class ExtendCandidateProfileDetails1720000005000 implements MigrationInterface {
   name = 'ExtendCandidateProfileDetails1720000005000';
 
   private timestamps() {
@@ -107,7 +105,12 @@ export class ExtendCandidateProfileDetails1720000005000
           { name: 'institution_name', type: 'varchar', length: '160' },
           { name: 'education_level', type: 'varchar', length: '40' },
           { name: 'degree_name', type: 'varchar', length: '160' },
-          { name: 'field_of_study', type: 'varchar', length: '160', isNullable: true },
+          {
+            name: 'field_of_study',
+            type: 'varchar',
+            length: '160',
+            isNullable: true,
+          },
           { name: 'start_date', type: 'date' },
           { name: 'end_date', type: 'date', isNullable: true },
           { name: 'is_current', type: 'boolean', default: false },

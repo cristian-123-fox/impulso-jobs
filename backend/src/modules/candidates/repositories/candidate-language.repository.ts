@@ -54,7 +54,10 @@ export class CandidateLanguageRepository
     return this.repo(manager).save(language);
   }
 
-  async remove(language: CandidateLanguage, manager?: EntityManager): Promise<void> {
+  async remove(
+    language: CandidateLanguage,
+    manager?: EntityManager,
+  ): Promise<void> {
     await this.repo(manager).remove(language);
   }
 }

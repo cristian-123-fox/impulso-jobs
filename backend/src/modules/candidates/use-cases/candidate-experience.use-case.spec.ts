@@ -24,7 +24,9 @@ describe('CandidateExperienceUseCase', () => {
     profiles = {
       findByUserId: jest
         .fn()
-        .mockResolvedValue(Object.assign(new CandidateProfile(), { id: 'profile-1' })),
+        .mockResolvedValue(
+          Object.assign(new CandidateProfile(), { id: 'profile-1' }),
+        ),
       existsByDocumentNumber: jest.fn(),
       save: jest.fn(),
     };

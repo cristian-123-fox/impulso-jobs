@@ -4,7 +4,10 @@ import { CandidateProfile } from '@/modules/candidates/entities/candidate-profil
 export const CANDIDATE_PROFILE_REPOSITORY = 'CANDIDATE_PROFILE_REPOSITORY';
 
 export interface ICandidateProfileRepository {
-  findByUserId(userId: string, manager?: EntityManager): Promise<CandidateProfile | null>;
+  findByUserId(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<CandidateProfile | null>;
   existsByDocumentNumber(
     documentNumber: string,
     manager?: EntityManager,

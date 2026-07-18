@@ -43,7 +43,9 @@ export class CandidateExperienceUseCase {
     return this.experiences.findByProfileId(profileId);
   }
 
-  async save(command: CandidateExperienceCommand): Promise<CandidateExperience> {
+  async save(
+    command: CandidateExperienceCommand,
+  ): Promise<CandidateExperience> {
     const profileId = await this.requireProfileId(command.userId, command.role);
     this.assertDateRange(command.startDate, command.endDate, command.isCurrent);
 
@@ -57,12 +59,16 @@ export class CandidateExperienceUseCase {
     experience.location = command.location.trim();
     experience.startDate = command.startDate;
     experience.isCurrent = command.isCurrent;
-    experience.endDate = command.isCurrent ? null : command.endDate?.trim() || null;
+    experience.endDate = command.isCurrent
+      ? null
+      : command.endDate?.trim() || null;
     experience.responsibilities = command.responsibilities?.trim() || null;
 
     const saved = await this.experiences.save(experience);
     await this.audit.record({
-      action: command.id ? 'candidate.experience.update' : 'candidate.experience.create',
+      action: command.id
+        ? 'candidate.experience.update'
+        : 'candidate.experience.create',
       actorUserId: command.userId,
       entity: 'candidate_experience',
       entityId: saved.id,
@@ -109,7 +115,10 @@ export class CandidateExperienceUseCase {
     id: string,
     profileId: string,
   ): Promise<CandidateExperience> {
-    const experience = await this.experiences.findByIdAndProfileId(id, profileId);
+    const experience = await this.experiences.findByIdAndProfileId(
+      id,
+      profileId,
+    );
     if (!experience) {
       throw new AppException(
         HttpStatus.NOT_FOUND,
@@ -146,7 +155,11 @@ export class CandidateExperienceUseCase {
       );
     }
     if (isCurrent) return;
-    if (!end || Number.isNaN(end.getTime()) || end.getTime() < start.getTime()) {
+    if (
+      !end ||
+      Number.isNaN(end.getTime()) ||
+      end.getTime() < start.getTime()
+    ) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.CANDIDATE_INVALID_DATE_RANGE,

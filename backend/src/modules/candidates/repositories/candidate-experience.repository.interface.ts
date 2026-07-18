@@ -1,7 +1,8 @@
 import { EntityManager } from 'typeorm';
 import { CandidateExperience } from '@/modules/candidates/entities/candidate-experience.entity';
 
-export const CANDIDATE_EXPERIENCE_REPOSITORY = 'CANDIDATE_EXPERIENCE_REPOSITORY';
+export const CANDIDATE_EXPERIENCE_REPOSITORY =
+  'CANDIDATE_EXPERIENCE_REPOSITORY';
 
 export interface ICandidateExperienceRepository {
   findByProfileId(candidateProfileId: string): Promise<CandidateExperience[]>;
@@ -15,5 +16,8 @@ export interface ICandidateExperienceRepository {
     experience: CandidateExperience,
     manager?: EntityManager,
   ): Promise<CandidateExperience>;
-  remove(experience: CandidateExperience, manager?: EntityManager): Promise<void>;
+  remove(
+    experience: CandidateExperience,
+    manager?: EntityManager,
+  ): Promise<void>;
 }

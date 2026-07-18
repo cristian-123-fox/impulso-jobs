@@ -11,7 +11,8 @@ export class CandidateExperienceRepository
   implements ICandidateExperienceRepository
 {
   constructor(
-    @InjectRepository(CandidateExperience) repo: Repository<CandidateExperience>,
+    @InjectRepository(CandidateExperience)
+    repo: Repository<CandidateExperience>,
   ) {
     super(repo);
   }

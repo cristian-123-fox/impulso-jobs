@@ -48,7 +48,10 @@ export class CandidateResumeRepository
     return this.repo(manager).save(resume);
   }
 
-  async remove(resume: CandidateResume, manager?: EntityManager): Promise<void> {
+  async remove(
+    resume: CandidateResume,
+    manager?: EntityManager,
+  ): Promise<void> {
     await this.repo(manager).remove(resume);
   }
 
@@ -56,7 +59,10 @@ export class CandidateResumeRepository
     candidateProfileId: string,
     manager?: EntityManager,
   ): Promise<void> {
-    await this.repo(manager).update({ candidateProfileId }, { isDefault: false });
+    await this.repo(manager).update(
+      { candidateProfileId },
+      { isDefault: false },
+    );
   }
 
   findLatestByProfileId(

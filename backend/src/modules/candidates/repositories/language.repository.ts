@@ -6,7 +6,9 @@ import { ILanguageRepository } from '@/modules/candidates/repositories/language.
 
 @Injectable()
 export class LanguageRepository implements ILanguageRepository {
-  constructor(@InjectRepository(Language) private readonly repo: Repository<Language>) {}
+  constructor(
+    @InjectRepository(Language) private readonly repo: Repository<Language>,
+  ) {}
 
   findAll(): Promise<Language[]> {
     return this.repo.find({ order: { name: 'ASC' } });

@@ -10,7 +10,9 @@ export class CandidateSkillRepository
   extends BaseRepository<CandidateSkill>
   implements ICandidateSkillRepository
 {
-  constructor(@InjectRepository(CandidateSkill) repo: Repository<CandidateSkill>) {
+  constructor(
+    @InjectRepository(CandidateSkill) repo: Repository<CandidateSkill>,
+  ) {
     super(repo);
   }
 
@@ -33,7 +35,10 @@ export class CandidateSkillRepository
     return this.repo().count({ where: { candidateProfileId } });
   }
 
-  save(skill: CandidateSkill, manager?: EntityManager): Promise<CandidateSkill> {
+  save(
+    skill: CandidateSkill,
+    manager?: EntityManager,
+  ): Promise<CandidateSkill> {
     return this.repo(manager).save(skill);
   }
 

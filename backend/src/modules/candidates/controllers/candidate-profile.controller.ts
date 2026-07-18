@@ -66,7 +66,11 @@ export class CandidateProfileController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<CandidateProfileResponseDto> {
     const result = await this.profileUseCase.getProfile(user.userId, user.role);
-    return toCandidateProfileResponse(result.profile, result.email, result.completion);
+    return toCandidateProfileResponse(
+      result.profile,
+      result.email,
+      result.completion,
+    );
   }
 
   @Put()
@@ -84,7 +88,11 @@ export class CandidateProfileController {
       ip: client.ip,
       userAgent: client.userAgent,
     });
-    return toCandidateProfileResponse(result.profile, result.email, result.completion);
+    return toCandidateProfileResponse(
+      result.profile,
+      result.email,
+      result.completion,
+    );
   }
 
   @Patch('photo')

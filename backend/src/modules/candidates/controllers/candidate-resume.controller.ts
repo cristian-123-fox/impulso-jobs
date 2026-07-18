@@ -11,15 +11,8 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiConsumes,
-  ApiTags,
-} from '@nestjs/swagger';
-import {
-  ClientInfo,
-} from '@/common/decorators/client-info.decorator';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ClientInfo } from '@/common/decorators/client-info.decorator';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { RequirePermissions } from '@/common/decorators/require-permissions.decorator';
 import { ResponseMessage } from '@/common/decorators/response-message.decorator';
@@ -43,7 +36,7 @@ import type { Response } from 'express';
 @Controller('candidate/resumes')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class CandidateResumeController {
-  constructor(private readonly resumeUseCase: CandidateResumeUseCase) { }
+  constructor(private readonly resumeUseCase: CandidateResumeUseCase) {}
 
   @Get()
   @RequirePermissions('resumes.manage')

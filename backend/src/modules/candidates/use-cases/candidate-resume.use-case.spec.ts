@@ -35,7 +35,9 @@ describe('CandidateResumeUseCase', () => {
     profiles = {
       findByUserId: jest
         .fn()
-        .mockResolvedValue(Object.assign(new CandidateProfile(), { id: 'profile-1' })),
+        .mockResolvedValue(
+          Object.assign(new CandidateProfile(), { id: 'profile-1' }),
+        ),
       existsByDocumentNumber: jest.fn(),
       save: jest.fn(),
     };
@@ -51,7 +53,9 @@ describe('CandidateResumeUseCase', () => {
     };
 
     storage = {
-      save: jest.fn().mockResolvedValue({ storageKey: 'profile-1/resume-1.pdf' }),
+      save: jest
+        .fn()
+        .mockResolvedValue({ storageKey: 'profile-1/resume-1.pdf' }),
       delete: jest.fn().mockResolvedValue(undefined),
       openReadStream: jest.fn(),
     };
@@ -76,7 +80,8 @@ describe('CandidateResumeUseCase', () => {
         userAgent: 'jest',
         file: {
           originalname: 'cv.docx',
-          mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          mimetype:
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           size: 1024,
           buffer: Buffer.from('not-a-pdf'),
         },

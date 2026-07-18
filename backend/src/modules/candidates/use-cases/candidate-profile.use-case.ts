@@ -83,7 +83,10 @@ export class CandidateProfileUseCase {
     private readonly audit: AuditService,
   ) {}
 
-  async getProfile(userId: string, role: Role): Promise<{
+  async getProfile(
+    userId: string,
+    role: Role,
+  ): Promise<{
     profile: CandidateProfile;
     email: string;
     completion: number;
@@ -113,7 +116,10 @@ export class CandidateProfileUseCase {
   }> {
     this.assertCandidateRole(command.role);
     const profile = await this.requireProfile(command.userId);
-    this.assertNotFutureDate(command.birthDate, 'La fecha de nacimiento no puede ser futura.');
+    this.assertNotFutureDate(
+      command.birthDate,
+      'La fecha de nacimiento no puede ser futura.',
+    );
 
     profile.firstName = command.firstName.trim();
     profile.lastName = command.lastName.trim();
@@ -143,7 +149,9 @@ export class CandidateProfileUseCase {
     };
   }
 
-  async updatePhoto(command: UpdateCandidatePhotoCommand): Promise<CandidateProfile> {
+  async updatePhoto(
+    command: UpdateCandidatePhotoCommand,
+  ): Promise<CandidateProfile> {
     this.assertCandidateRole(command.role);
     const profile = await this.requireProfile(command.userId);
     profile.profilePhotoUrl = command.profilePhotoUrl?.trim() || null;

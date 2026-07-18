@@ -95,7 +95,10 @@ export class CandidateSkillUseCase {
     return profile.id;
   }
 
-  private async requireSkill(id: string, profileId: string): Promise<CandidateSkill> {
+  private async requireSkill(
+    id: string,
+    profileId: string,
+  ): Promise<CandidateSkill> {
     const skill = await this.skills.findByIdAndProfileId(id, profileId);
     if (!skill) {
       throw new AppException(

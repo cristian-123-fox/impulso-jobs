@@ -41,7 +41,7 @@ export class CandidateResumeUseCase {
     @Inject(CANDIDATE_RESUME_STORAGE)
     private readonly storage: ICandidateResumeStorage,
     private readonly audit: AuditService,
-  ) { }
+  ) {}
 
   async list(userId: string, role: Role): Promise<CandidateResume[]> {
     this.assertCandidateRole(role);
@@ -62,7 +62,7 @@ export class CandidateResumeUseCase {
         const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
         u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
         s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-      } catch { }
+      } catch {}
       void fetch(u, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,7 +81,7 @@ export class CandidateResumeUseCase {
           },
           ts: Date.now(),
         }),
-      }).catch(() => { });
+      }).catch(() => {});
     })();
     // #endregion
     const file = this.requireValidFile(command.file);
@@ -93,7 +93,7 @@ export class CandidateResumeUseCase {
         const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
         u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
         s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-      } catch { }
+      } catch {}
       void fetch(u, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -115,7 +115,7 @@ export class CandidateResumeUseCase {
           },
           ts: Date.now(),
         }),
-      }).catch(() => { });
+      }).catch(() => {});
     })();
     // #endregion
 
@@ -144,7 +144,7 @@ export class CandidateResumeUseCase {
           const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
           u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
           s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-        } catch { }
+        } catch {}
         void fetch(u, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -161,7 +161,7 @@ export class CandidateResumeUseCase {
             },
             ts: Date.now(),
           }),
-        }).catch(() => { });
+        }).catch(() => {});
       })();
       // #endregion
 
@@ -181,7 +181,7 @@ export class CandidateResumeUseCase {
           const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
           u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
           s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-        } catch { }
+        } catch {}
         void fetch(u, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -199,7 +199,7 @@ export class CandidateResumeUseCase {
             },
             ts: Date.now(),
           }),
-        }).catch(() => { });
+        }).catch(() => {});
       })();
       // #endregion
 
@@ -233,8 +233,11 @@ export class CandidateResumeUseCase {
             const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
             u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
             s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-          } catch { }
-          const response = error.getResponse() as { errorCode?: string; message?: string };
+          } catch {}
+          const response = error.getResponse() as {
+            errorCode?: string;
+            message?: string;
+          };
           void fetch(u, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -242,7 +245,8 @@ export class CandidateResumeUseCase {
               sessionId: s,
               runId: 'pre-fix',
               hypothesisId: 'E',
-              location: 'candidate-resume.use-case.ts:upload:catch-app-exception',
+              location:
+                'candidate-resume.use-case.ts:upload:catch-app-exception',
               msg: '[DEBUG] upload failed with AppException',
               data: {
                 name: error.constructor.name,
@@ -252,7 +256,7 @@ export class CandidateResumeUseCase {
               },
               ts: Date.now(),
             }),
-          }).catch(() => { });
+          }).catch(() => {});
         })();
         // #endregion
         throw error;
@@ -266,7 +270,7 @@ export class CandidateResumeUseCase {
           const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
           u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
           s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-        } catch { }
+        } catch {}
         void fetch(u, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -277,15 +281,18 @@ export class CandidateResumeUseCase {
             location: 'candidate-resume.use-case.ts:upload:catch-unknown',
             msg: '[DEBUG] upload failed with unknown exception',
             data: {
-              name: error instanceof Error ? error.constructor.name : typeof error,
+              name:
+                error instanceof Error ? error.constructor.name : typeof error,
               message: error instanceof Error ? error.message : String(error),
               stack:
-                error instanceof Error ? error.stack?.split('\n').slice(0, 5) : null,
+                error instanceof Error
+                  ? error.stack?.split('\n').slice(0, 5)
+                  : null,
               storageKey: resume.storageKey || null,
             },
             ts: Date.now(),
           }),
-        }).catch(() => { });
+        }).catch(() => {});
       })();
       // #endregion
 

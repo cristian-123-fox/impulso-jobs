@@ -280,6 +280,7 @@ export class PanelFacade {
     if (role === 'postulante' && view === 'buscar') return 'job-cards';
     if (role === 'postulante' && view === 'perfil') return 'candidate-profile';
     if (role === 'postulante' && view === 'cv') return 'candidate-resumes';
+    if (role === 'postulante' && view === 'config') return 'candidate-settings';
     return this.table(role, view) ? 'table' : 'empty';
   }
 
@@ -738,17 +739,6 @@ export class PanelFacade {
             [this.strong('CV_MariaFerreira_2026.pdf'), this.text('1.2 MB'), this.muted('02 Jul 2026'), b('Principal', 'green')],
             [this.strong('CV_Frontend_EN.pdf'), this.text('0.9 MB'), this.muted('10 Jun 2026'), b('Guardada', 'gray')],
             [this.strong('CV_2025.pdf'), this.text('1.0 MB'), this.muted('18 Dic 2025'), b('Guardada', 'gray')],
-          ],
-        };
-      if (view === 'config')
-        return {
-          title: 'Configuración de la cuenta',
-          columns: ['Configuración', 'Valor'],
-          rows: [
-            [this.muted('Visibilidad del perfil'), b('Público', 'green')],
-            [this.muted('Visibilidad de información'), b('Completa', 'blue')],
-            [this.muted('Disponibilidad inmediata'), b('Sí', 'green')],
-            [this.muted('Correo (no editable)'), this.text('maria.f@mail.com')],
           ],
         };
     }

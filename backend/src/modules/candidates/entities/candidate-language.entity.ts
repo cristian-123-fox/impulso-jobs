@@ -2,9 +2,13 @@ import { Column, Entity, Index } from 'typeorm';
 import { BaseEntity } from '@/common/entities/base.entity';
 
 @Entity('candidate_languages')
-@Index('uq_candidate_languages_profile_language', ['candidateProfileId', 'languageCode'], {
-  unique: true,
-})
+@Index(
+  'uq_candidate_languages_profile_language',
+  ['candidateProfileId', 'languageCode'],
+  {
+    unique: true,
+  },
+)
 export class CandidateLanguage extends BaseEntity {
   @Column({ name: 'candidate_profile_id', type: 'varchar', length: 36 })
   candidateProfileId!: string;
