@@ -19,11 +19,7 @@ import {
   LoginStatus,
   ResendStatus,
 } from '@/features/public/auth/models/auth.models';
-import { IjButton, IjIcon } from '@/shared/ui';
-
-const INPUT_BASE =
-  'w-full rounded-xl border bg-surface px-4 py-3.5 text-[15px] text-body ' +
-  'outline-none transition placeholder:text-muted focus:ring-2';
+import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 
 /**
  * Tarjeta del formulario de acceso (presentacional). Incluye el selector
@@ -34,7 +30,7 @@ const INPUT_BASE =
   selector: 'app-login-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon],
+  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon, IjInput],
   template: `
     <form
       novalidate
@@ -118,51 +114,35 @@ const INPUT_BASE =
 
       <!-- Correo -->
       <div class="mt-6">
-        <label for="login-email" class="mb-2 block text-sm font-semibold text-ink-900">
-          Correo electrónico
-        </label>
-        <input
-          id="login-email"
+        <ij-input
+          label="Correo electrónico"
           type="email"
-          formControlName="email"
           autocomplete="email"
           placeholder="tucorreo@ejemplo.com"
-          [class]="inputClass('email')"
-          [attr.aria-invalid]="isInvalid('email')"
+          formControlName="email"
         />
-        @if (emailError()) {
-          <p class="mt-1.5 text-xs font-medium text-red-600">{{ emailError() }}</p>
-        }
       </div>
 
       <!-- Contraseña -->
       <div class="mt-5">
-        <label for="login-password" class="mb-2 block text-sm font-semibold text-ink-900">
-          Contraseña
-        </label>
-        <div class="relative">
-          <input
-            id="login-password"
-            [type]="showPassword() ? 'text' : 'password'"
-            formControlName="password"
-            autocomplete="current-password"
-            placeholder="••••••••"
-            [class]="inputClass('password') + ' pr-12'"
-            [attr.aria-invalid]="isInvalid('password')"
-          />
+        <ij-input
+          label="Contraseña"
+          [type]="showPassword() ? 'text' : 'password'"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          formControlName="password"
+        >
           <button
+            ijSuffix
             type="button"
-            class="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
+            class="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
             [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
             [attr.aria-pressed]="showPassword()"
             (click)="togglePassword()"
           >
             <ij-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="20" [strokeWidth]="1.9" />
           </button>
-        </div>
-        @if (passwordError()) {
-          <p class="mt-1.5 text-xs font-medium text-red-600">{{ passwordError() }}</p>
-        }
+        </ij-input>
       </div>
 
       <!-- Recordar / recuperar -->
@@ -288,31 +268,6 @@ export class LoginForm {
 
   protected togglePassword(): void {
     this.showPassword.update((visible) => !visible);
-  }
-
-  protected isInvalid(name: 'email' | 'password'): boolean {
-    const control = this.controls[name];
-    return control.invalid && (control.dirty || control.touched);
-  }
-
-  protected inputClass(name: 'email' | 'password'): string {
-    return this.isInvalid(name)
-      ? `${INPUT_BASE} border-red-300 focus:border-red-400 focus:ring-red-200/70`
-      : `${INPUT_BASE} border-line focus:border-brand focus:ring-brand/25`;
-  }
-
-  protected emailError(): string {
-    if (!this.isInvalid('email')) return '';
-    return this.controls.email.hasError('required')
-      ? 'El correo es obligatorio'
-      : 'Ingresa un correo válido';
-  }
-
-  protected passwordError(): string {
-    if (!this.isInvalid('password')) return '';
-    return this.controls.password.hasError('required')
-      ? 'La contraseña es obligatoria'
-      : 'La contraseña debe tener al menos 6 caracteres';
   }
 
   protected onSubmit(): void {

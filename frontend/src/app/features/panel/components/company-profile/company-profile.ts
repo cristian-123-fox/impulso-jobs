@@ -25,20 +25,30 @@ import {
   SAT_CFDI_USES,
   SAT_TAX_REGIMES,
 } from '@/shared/catalogs/mx.catalogs';
-import { IjButton, IjIcon } from '@/shared/ui';
+import {
+  IjButton,
+  IjIcon,
+  IjInput,
+  IjOption,
+  IjSelect,
+  IjTextarea,
+} from '@/shared/ui';
 
-const INPUT =
-  'w-full rounded-xl border border-line bg-white px-4 py-3 text-[14px] text-ink-900 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15';
-const READONLY_INPUT =
-  'w-full rounded-xl border border-line bg-surface px-4 py-3 text-[14px] font-semibold text-muted outline-none';
-const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
-const ERROR = 'mt-1 text-[12px] font-medium text-red-600';
+const catalog = (items: readonly { code: string; name: string }[]): IjOption[] =>
+  items.map((i) => ({ value: i.code, label: i.name }));
 
 @Component({
   selector: 'app-company-profile',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjIcon],
+  imports: [
+    ReactiveFormsModule,
+    IjButton,
+    IjIcon,
+    IjInput,
+    IjSelect,
+    IjTextarea,
+  ],
   host: { class: 'block' },
   template: `
     @if (facade.loading() && !profile()) {
@@ -89,14 +99,11 @@ const ERROR = 'mt-1 text-[12px] font-medium text-red-600';
               </div>
             </div>
 
-            <div class="w-full max-w-[380px]">
-              <label [class]="labelClass" for="logoUrl">URL del logo</label>
-              <div class="flex gap-2">
-                <input id="logoUrl" [class]="inputClass" [value]="logoDraft()" (input)="onLogoInput($event)" placeholder="https://..." />
-                <button ij-button type="button" shape="rounded" size="sm" [disabled]="savingLogo()" (click)="saveLogo()">
-                  {{ savingLogo() ? '...' : 'Guardar' }}
-                </button>
-              </div>
+            <div class="flex w-full max-w-[420px] items-end gap-2">
+              <ij-input class="flex-1" label="URL del logo" placeholder="https://..." [formControl]="logoControl" />
+              <button ij-button type="button" shape="rounded" size="sm" class="mb-[2px]" [disabled]="savingLogo()" (click)="saveLogo()">
+                {{ savingLogo() ? '...' : 'Guardar' }}
+              </button>
             </div>
           </div>
         </section>
@@ -105,44 +112,12 @@ const ERROR = 'mt-1 text-[12px] font-medium text-red-600';
         <section class="rounded-2xl bg-white p-6 shadow-card">
           <h3 class="mb-4 text-base font-bold text-ink-900">Datos generales</h3>
           <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label [class]="labelClass" for="businessName">Nombre comercial *</label>
-              <input id="businessName" [class]="inputClass" formControlName="businessName" />
-              @if (invalid('businessName')) {
-                <p [class]="errorClass">El nombre comercial es obligatorio.</p>
-              }
-            </div>
-            <div>
-              <label [class]="labelClass" for="legalName">Razón social *</label>
-              <input id="legalName" [class]="inputClass" formControlName="legalName" />
-              @if (invalid('legalName')) {
-                <p [class]="errorClass">La razón social es obligatoria.</p>
-              }
-            </div>
-            <div>
-              <label [class]="labelClass" for="economicSector">Sector económico</label>
-              <input id="economicSector" [class]="inputClass" formControlName="economicSector" />
-            </div>
-            <div>
-              <label [class]="labelClass" for="companyType">Tipo de empresa</label>
-              <select id="companyType" [class]="inputClass" formControlName="companyType">
-                <option value="">Sin especificar</option>
-                @for (opt of companyTypes; track opt.value) {
-                  <option [value]="opt.value">{{ opt.label }}</option>
-                }
-              </select>
-            </div>
-            <div>
-              <label [class]="labelClass" for="employeeCount">Número de empleados</label>
-              <input id="employeeCount" type="number" min="1" [class]="inputClass" formControlName="employeeCount" />
-            </div>
-            <div>
-              <label [class]="labelClass" for="foundationYear">Año de fundación</label>
-              <input id="foundationYear" type="number" min="1800" [max]="currentYear" [class]="inputClass" formControlName="foundationYear" />
-              @if (invalid('foundationYear')) {
-                <p [class]="errorClass">El año no puede ser mayor a {{ currentYear }}.</p>
-              }
-            </div>
+            <ij-input label="Nombre comercial" [required]="true" formControlName="businessName" />
+            <ij-input label="Razón social" [required]="true" formControlName="legalName" />
+            <ij-input label="Sector económico" formControlName="economicSector" />
+            <ij-select label="Tipo de empresa" [options]="companyTypeOptions" formControlName="companyType" />
+            <ij-input label="Número de empleados" type="number" [min]="1" formControlName="employeeCount" />
+            <ij-input label="Año de fundación" type="number" [min]="1800" [max]="currentYear" formControlName="foundationYear" />
           </div>
         </section>
 
@@ -157,37 +132,14 @@ const ERROR = 'mt-1 text-[12px] font-medium text-red-600';
           </p>
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label [class]="labelClass" for="rfc">RFC (solo lectura)</label>
-              <input id="rfc" [class]="readonlyClass" [value]="profile.rfc" readonly disabled />
+              <span class="mb-2 block text-sm font-semibold text-ink-900">RFC (solo lectura)</span>
+              <div class="flex min-h-[46px] items-center rounded-xl border border-line bg-surface px-3.5 text-[14px] font-semibold text-muted">
+                {{ profile.rfc }}
+              </div>
             </div>
-            <div>
-              <label [class]="labelClass" for="taxRegime">Régimen fiscal *</label>
-              <select id="taxRegime" [class]="inputClass" formControlName="taxRegime">
-                <option value="" disabled>Selecciona…</option>
-                @for (opt of taxRegimes; track opt.code) {
-                  <option [value]="opt.code">{{ opt.name }}</option>
-                }
-              </select>
-              @if (invalid('taxRegime')) {
-                <p [class]="errorClass">Selecciona un régimen fiscal.</p>
-              }
-            </div>
-            <div>
-              <label [class]="labelClass" for="cfdiUse">Uso de CFDI</label>
-              <select id="cfdiUse" [class]="inputClass" formControlName="cfdiUse">
-                <option value="">Sin especificar</option>
-                @for (opt of cfdiUses; track opt.code) {
-                  <option [value]="opt.code">{{ opt.name }}</option>
-                }
-              </select>
-            </div>
-            <div>
-              <label [class]="labelClass" for="postalCode">Código postal *</label>
-              <input id="postalCode" [class]="inputClass" formControlName="postalCode" maxlength="5" inputmode="numeric" />
-              @if (invalid('postalCode')) {
-                <p [class]="errorClass">El C.P. debe tener 5 dígitos.</p>
-              }
-            </div>
+            <ij-select label="Régimen fiscal" [required]="true" [options]="taxRegimeOptions" formControlName="taxRegime" />
+            <ij-select label="Uso de CFDI" [options]="cfdiUseOptions" formControlName="cfdiUse" />
+            <ij-input label="Código postal" [required]="true" inputmode="numeric" [maxLength]="5" formControlName="postalCode" />
           </div>
         </section>
 
@@ -195,23 +147,10 @@ const ERROR = 'mt-1 text-[12px] font-medium text-red-600';
         <section class="rounded-2xl bg-white p-6 shadow-card">
           <h3 class="mb-4 text-base font-bold text-ink-900">Contacto</h3>
           <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label [class]="labelClass" for="corporateEmail">Correo corporativo</label>
-              <input id="corporateEmail" type="email" [class]="inputClass" formControlName="corporateEmail" />
-              @if (invalid('corporateEmail')) {
-                <p [class]="errorClass">Correo no válido.</p>
-              }
-            </div>
-            <div>
-              <label [class]="labelClass" for="phoneNumber">Teléfono (+52)</label>
-              <input id="phoneNumber" [class]="inputClass" formControlName="phoneNumber" placeholder="33 1234 5678" />
-            </div>
+            <ij-input label="Correo corporativo" type="email" formControlName="corporateEmail" />
+            <ij-input label="Teléfono (+52)" type="tel" placeholder="33 1234 5678" formControlName="phoneNumber" />
             <div class="sm:col-span-2">
-              <label [class]="labelClass" for="website">Sitio web</label>
-              <input id="website" [class]="inputClass" formControlName="website" placeholder="https://empresa.com" />
-              @if (invalid('website')) {
-                <p [class]="errorClass">URL no válida.</p>
-              }
+              <ij-input label="Sitio web" type="url" placeholder="https://empresa.com" formControlName="website" />
             </div>
           </div>
         </section>
@@ -220,28 +159,10 @@ const ERROR = 'mt-1 text-[12px] font-medium text-red-600';
         <section class="rounded-2xl bg-white p-6 shadow-card">
           <h3 class="mb-4 text-base font-bold text-ink-900">Ubicación</h3>
           <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label [class]="labelClass" for="state">Estado *</label>
-              <select id="state" [class]="inputClass" formControlName="state">
-                <option value="" disabled>Selecciona…</option>
-                @for (opt of states; track opt.code) {
-                  <option [value]="opt.code">{{ opt.name }}</option>
-                }
-              </select>
-              @if (invalid('state')) {
-                <p [class]="errorClass">Selecciona un estado.</p>
-              }
-            </div>
-            <div>
-              <label [class]="labelClass" for="municipality">Municipio *</label>
-              <input id="municipality" [class]="inputClass" formControlName="municipality" />
-              @if (invalid('municipality')) {
-                <p [class]="errorClass">El municipio es obligatorio.</p>
-              }
-            </div>
+            <ij-select label="Estado" [required]="true" [options]="stateOptions" formControlName="state" />
+            <ij-input label="Municipio" [required]="true" formControlName="municipality" />
             <div class="sm:col-span-2">
-              <label [class]="labelClass" for="address">Dirección</label>
-              <input id="address" [class]="inputClass" formControlName="address" />
+              <ij-input label="Dirección" formControlName="address" />
             </div>
           </div>
         </section>
@@ -249,7 +170,7 @@ const ERROR = 'mt-1 text-[12px] font-medium text-red-600';
         <!-- Acerca de -->
         <section class="rounded-2xl bg-white p-6 shadow-card">
           <h3 class="mb-4 text-base font-bold text-ink-900">Acerca de la empresa</h3>
-          <textarea rows="5" [class]="inputClass" formControlName="companyDescription" maxlength="2000" placeholder="Describe tu empresa…"></textarea>
+          <ij-textarea [rows]="5" [maxLength]="2000" placeholder="Describe tu empresa…" formControlName="companyDescription" />
         </section>
 
         @if (banner()) {
@@ -273,22 +194,25 @@ export class CompanyProfileComponent {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly inputClass = INPUT;
-  protected readonly readonlyClass = READONLY_INPUT;
-  protected readonly labelClass = LABEL;
-  protected readonly errorClass = ERROR;
-  protected readonly states = MX_STATES;
-  protected readonly taxRegimes = SAT_TAX_REGIMES;
-  protected readonly cfdiUses = SAT_CFDI_USES;
-  protected readonly companyTypes = COMPANY_TYPE_OPTIONS;
   protected readonly currentYear = new Date().getFullYear();
+  protected readonly stateOptions = catalog(MX_STATES);
+  protected readonly taxRegimeOptions = catalog(SAT_TAX_REGIMES);
+  protected readonly cfdiUseOptions: IjOption[] = [
+    { value: '', label: 'Sin especificar' },
+    ...catalog(SAT_CFDI_USES),
+  ];
+  protected readonly companyTypeOptions: IjOption[] = [
+    { value: '', label: 'Sin especificar' },
+    ...COMPANY_TYPE_OPTIONS,
+  ];
 
   protected readonly profile = this.facade.profile;
   protected readonly saving = signal(false);
   protected readonly savingLogo = signal(false);
-  protected readonly logoDraft = signal('');
   protected readonly banner = signal<string | null>(null);
   protected readonly bannerTone = signal<'success' | 'error'>('success');
+
+  protected readonly logoControl = this.fb.control('');
 
   protected readonly form = this.fb.group({
     businessName: ['', [Validators.required, Validators.maxLength(160)]],
@@ -338,16 +262,12 @@ export class CompanyProfileComponent {
         employeeCount: profile.employeeCount?.toString() ?? '',
         foundationYear: profile.foundationYear?.toString() ?? '',
       });
-      this.logoDraft.set(profile.logoUrl ?? '');
+      this.logoControl.setValue(profile.logoUrl ?? '');
     });
   }
 
   protected reload(): void {
     this.facade.load().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
-  }
-
-  protected onLogoInput(event: Event): void {
-    this.logoDraft.set((event.target as HTMLInputElement).value);
   }
 
   protected initials(): string {
@@ -358,11 +278,6 @@ export class CompanyProfileComponent {
       .slice(0, 2)
       .map((word) => word[0]?.toUpperCase() ?? '')
       .join('');
-  }
-
-  protected invalid(control: keyof typeof this.form.controls): boolean {
-    const ctrl = this.form.controls[control];
-    return ctrl.invalid && (ctrl.dirty || ctrl.touched);
   }
 
   protected save(): void {
@@ -393,7 +308,7 @@ export class CompanyProfileComponent {
     this.savingLogo.set(true);
     this.banner.set(null);
     this.facade
-      .updateLogo({ logoUrl: this.logoDraft().trim() || null })
+      .updateLogo({ logoUrl: this.logoControl.value.trim() || null })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {

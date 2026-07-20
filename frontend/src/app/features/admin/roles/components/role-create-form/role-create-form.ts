@@ -10,18 +10,14 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { IjButton } from '@/shared/ui';
+import { IjButton, IjInput } from '@/shared/ui';
 import { CreateRolePayload } from '@/features/admin/roles/models/roles.models';
-
-const INPUT_CLASS =
-  'w-full rounded-xl border border-line bg-surface px-4 py-3 text-[15px] text-body ' +
-  'outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/25';
 
 /** Formulario de creación de rol (presentacional). */
 @Component({
   selector: 'app-role-create-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton],
+  imports: [ReactiveFormsModule, IjButton, IjInput],
   template: `
     <form
       [formGroup]="form"
@@ -35,26 +31,14 @@ const INPUT_CLASS =
         </p>
       }
       <div class="mt-4 grid gap-4 sm:grid-cols-2">
-        <label class="block">
-          <span class="mb-1.5 block text-sm font-semibold text-ink-900">Código</span>
-          <input formControlName="code" placeholder="CONTENT_MANAGER" [class]="inputClass" />
-          @if (invalid('code')) {
-            <span class="mt-1 block text-xs text-red-600">
-              Sólo letras, números y guion bajo (ej. CONTENT_MANAGER).
-            </span>
-          }
-        </label>
-        <label class="block">
-          <span class="mb-1.5 block text-sm font-semibold text-ink-900">Nombre</span>
-          <input formControlName="name" placeholder="Gestor de contenidos" [class]="inputClass" />
-          @if (invalid('name')) {
-            <span class="mt-1 block text-xs text-red-600">El nombre es obligatorio.</span>
-          }
-        </label>
-        <label class="block sm:col-span-2">
-          <span class="mb-1.5 block text-sm font-semibold text-ink-900">Descripción (opcional)</span>
-          <input formControlName="description" [class]="inputClass" />
-        </label>
+        <ij-input label="Código" placeholder="CONTENT_MANAGER" [required]="true"
+          [error]="invalid('code') ? 'Sólo letras, números y guion bajo (ej. CONTENT_MANAGER).' : null"
+          formControlName="code" />
+        <ij-input label="Nombre" placeholder="Gestor de contenidos" [required]="true"
+          [error]="invalid('name') ? 'El nombre es obligatorio.' : null" formControlName="name" />
+        <div class="sm:col-span-2">
+          <ij-input label="Descripción (opcional)" formControlName="description" />
+        </div>
       </div>
       <div class="mt-5 flex justify-end gap-3">
         <button
@@ -84,7 +68,6 @@ export class RoleCreateForm {
   readonly create = output<CreateRolePayload>();
   readonly cancel = output<void>();
 
-  protected readonly inputClass = INPUT_CLASS;
   private readonly fb = inject(NonNullableFormBuilder);
 
   protected readonly form = this.fb.group({

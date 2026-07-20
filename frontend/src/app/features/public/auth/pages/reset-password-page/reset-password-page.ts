@@ -24,11 +24,7 @@ import {
   passwordPolicyValidator,
 } from '@/shared/validators/password.validator';
 import { passwordsMatchValidator } from '@/shared/validators/passwords-match.validator';
-import { IjButton, IjIcon } from '@/shared/ui';
-
-const INPUT_BASE =
-  'w-full rounded-xl border bg-surface px-4 py-3.5 text-[15px] text-body ' +
-  'outline-none transition placeholder:text-muted focus:ring-2';
+import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 
 /**
  * Restablece la contraseña a partir del `?token=` del magic link. Valida el
@@ -39,7 +35,7 @@ const INPUT_BASE =
   selector: 'app-reset-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon],
+  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon, IjInput],
   template: `
     <div class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
       @switch (state()) {
@@ -125,51 +121,38 @@ const INPUT_BASE =
 
           <form novalidate class="mt-6" [formGroup]="form" (ngSubmit)="onSubmit()">
             <!-- Nueva contraseña -->
-            <label for="rp-password" class="mb-2 block text-sm font-semibold text-ink-900">
-              Nueva contraseña
-            </label>
-            <div class="relative">
-              <input
-                id="rp-password"
-                [type]="showPassword() ? 'text' : 'password'"
-                formControlName="newPassword"
-                autocomplete="new-password"
-                placeholder="••••••••"
-                [class]="passwordInputClass() + ' pr-12'"
-                [attr.aria-invalid]="passwordInvalid()"
-              />
+            <ij-input
+              label="Nueva contraseña"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="new-password"
+              placeholder="••••••••"
+              [hint]="policyHint"
+              [error]="passwordInvalid() ? passwordError() : null"
+              formControlName="newPassword"
+            >
               <button
+                ijSuffix
                 type="button"
-                class="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
+                class="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
                 [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                 [attr.aria-pressed]="showPassword()"
                 (click)="showPassword.set(!showPassword())"
               >
                 <ij-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="20" [strokeWidth]="1.9" />
               </button>
-            </div>
-            @if (passwordInvalid()) {
-              <p class="mt-1.5 text-xs font-medium text-red-600">{{ passwordError() }}</p>
-            } @else {
-              <p class="mt-1.5 text-xs text-muted">{{ policyHint }}</p>
-            }
+            </ij-input>
 
             <!-- Confirmar contraseña -->
-            <label for="rp-confirm" class="mb-2 mt-5 block text-sm font-semibold text-ink-900">
-              Confirmar contraseña
-            </label>
-            <input
-              id="rp-confirm"
-              [type]="showPassword() ? 'text' : 'password'"
-              formControlName="confirmPassword"
-              autocomplete="new-password"
-              placeholder="••••••••"
-              [class]="confirmInputClass()"
-              [attr.aria-invalid]="confirmInvalid()"
-            />
-            @if (confirmInvalid()) {
-              <p class="mt-1.5 text-xs font-medium text-red-600">{{ confirmError() }}</p>
-            }
+            <div class="mt-5">
+              <ij-input
+                label="Confirmar contraseña"
+                [type]="showPassword() ? 'text' : 'password'"
+                autocomplete="new-password"
+                placeholder="••••••••"
+                [error]="confirmInvalid() ? confirmError() : null"
+                formControlName="confirmPassword"
+              />
+            </div>
 
             <button
               ij-button
@@ -272,18 +255,6 @@ export class ResetPasswordPage {
       return 'Confirma tu contraseña';
     }
     return 'Las contraseñas no coinciden';
-  }
-
-  protected passwordInputClass(): string {
-    return this.passwordInvalid()
-      ? `${INPUT_BASE} border-red-300 focus:border-red-400 focus:ring-red-200/70`
-      : `${INPUT_BASE} border-line focus:border-brand focus:ring-brand/25`;
-  }
-
-  protected confirmInputClass(): string {
-    return this.confirmInvalid()
-      ? `${INPUT_BASE} border-red-300 focus:border-red-400 focus:ring-red-200/70`
-      : `${INPUT_BASE} border-line focus:border-brand focus:ring-brand/25`;
   }
 
   protected onSubmit(): void {

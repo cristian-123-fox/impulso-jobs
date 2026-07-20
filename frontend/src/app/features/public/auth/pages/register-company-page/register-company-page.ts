@@ -30,11 +30,7 @@ import {
   postalCodeValidator,
   rfcValidator,
 } from '@/shared/validators/mx-identifiers.validator';
-import { IjButton, IjIcon } from '@/shared/ui';
-
-const INPUT_BASE =
-  'w-full rounded-xl border bg-surface px-4 py-3 text-[15px] text-body ' +
-  'outline-none transition placeholder:text-muted focus:ring-2';
+import { IjButton, IjIcon, IjInput, IjOption, IjSelect } from '@/shared/ui';
 
 const STEP_CONTROLS: string[][] = [
   ['email', 'password', 'confirmPassword'],
@@ -47,7 +43,15 @@ const STEP_CONTROLS: string[][] = [
   selector: 'app-register-company-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, AuthStepper, IjButton, IjIcon],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    AuthStepper,
+    IjButton,
+    IjIcon,
+    IjInput,
+    IjSelect,
+  ],
   template: `
     <div class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
       @if (status() === 'success') {
@@ -94,83 +98,59 @@ const STEP_CONTROLS: string[][] = [
           <!-- Paso 1: Cuenta -->
           @if (step() === 0) {
             <div class="space-y-4">
-              <div>
-                <label [class]="labelClass" for="rc-email">Correo electrónico</label>
-                <input id="rc-email" type="email" formControlName="email" autocomplete="email"
-                  placeholder="empresa@correo.com" [class]="cls('email')" />
-                @if (invalid('email')) {
-                  <p [class]="errClass">Ingresa un correo válido.</p>
-                }
-              </div>
-              <div>
-                <label [class]="labelClass" for="rc-pass">Contraseña</label>
-                <div class="relative">
-                  <input id="rc-pass" [type]="showPassword() ? 'text' : 'password'"
-                    formControlName="password" autocomplete="new-password" placeholder="••••••••"
-                    [class]="cls('password') + ' pr-12'" />
-                  <button type="button" [class]="eyeClass"
-                    (click)="showPassword.set(!showPassword())"
-                    [attr.aria-label]="showPassword() ? 'Ocultar' : 'Mostrar'">
-                    <ij-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="20" [strokeWidth]="1.9" />
-                  </button>
-                </div>
-                @if (invalid('password')) {
-                  <p [class]="errClass">{{ passwordHint }}</p>
-                } @else {
-                  <p class="mt-1.5 text-xs text-muted">{{ passwordHint }}</p>
-                }
-              </div>
-              <div>
-                <label [class]="labelClass" for="rc-pass2">Confirmar contraseña</label>
-                <input id="rc-pass2" [type]="showPassword() ? 'text' : 'password'"
-                  formControlName="confirmPassword" autocomplete="new-password" placeholder="••••••••"
-                  [class]="cls('confirmPassword')" />
-                @if (confirmMismatch()) {
-                  <p [class]="errClass">Las contraseñas no coinciden.</p>
-                }
-              </div>
+              <ij-input
+                label="Correo electrónico"
+                type="email"
+                autocomplete="email"
+                placeholder="empresa@correo.com"
+                [error]="invalid('email') ? 'Ingresa un correo válido.' : null"
+                formControlName="email"
+              />
+              <ij-input
+                label="Contraseña"
+                [type]="showPassword() ? 'text' : 'password'"
+                autocomplete="new-password"
+                placeholder="••••••••"
+                [hint]="passwordHint"
+                [error]="invalid('password') ? passwordHint : null"
+                formControlName="password"
+              >
+                <button
+                  ijSuffix
+                  type="button"
+                  class="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
+                  (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'Ocultar' : 'Mostrar'"
+                >
+                  <ij-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="20" [strokeWidth]="1.9" />
+                </button>
+              </ij-input>
+              <ij-input
+                label="Confirmar contraseña"
+                [type]="showPassword() ? 'text' : 'password'"
+                autocomplete="new-password"
+                placeholder="••••••••"
+                [error]="confirmMismatch() ? 'Las contraseñas no coinciden.' : null"
+                formControlName="confirmPassword"
+              />
             </div>
           }
 
           <!-- Paso 2: Datos fiscales -->
           @if (step() === 1) {
             <div class="space-y-4">
-              <div>
-                <label [class]="labelClass" for="rc-legal">Razón social</label>
-                <input id="rc-legal" formControlName="legalName"
-                  placeholder="Impulso Talent S.A. de C.V." [class]="cls('legalName')" />
-                @if (invalid('legalName')) { <p [class]="errClass">La razón social es obligatoria.</p> }
-              </div>
-              <div>
-                <label [class]="labelClass" for="rc-biz">Nombre comercial</label>
-                <input id="rc-biz" formControlName="businessName" placeholder="Impulso Talent"
-                  [class]="cls('businessName')" />
-                @if (invalid('businessName')) { <p [class]="errClass">El nombre comercial es obligatorio.</p> }
-              </div>
+              <ij-input label="Razón social" placeholder="Impulso Talent S.A. de C.V." [required]="true"
+                [error]="invalid('legalName') ? 'La razón social es obligatoria.' : null" formControlName="legalName" />
+              <ij-input label="Nombre comercial" placeholder="Impulso Talent" [required]="true"
+                [error]="invalid('businessName') ? 'El nombre comercial es obligatorio.' : null" formControlName="businessName" />
               <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label [class]="labelClass" for="rc-rfc">RFC</label>
-                  <input id="rc-rfc" formControlName="rfc" placeholder="ABC123456T12"
-                    class="uppercase" [class]="cls('rfc')" />
-                  @if (invalid('rfc')) { <p [class]="errClass">RFC inválido (12–13 caracteres).</p> }
-                </div>
-                <div>
-                  <label [class]="labelClass" for="rc-cp">Código postal</label>
-                  <input id="rc-cp" formControlName="postalCode" inputmode="numeric" placeholder="44100"
-                    maxlength="5" [class]="cls('postalCode')" />
-                  @if (invalid('postalCode')) { <p [class]="errClass">C.P. de 5 dígitos.</p> }
-                </div>
+                <ij-input label="RFC" placeholder="ABC123456T12" [required]="true"
+                  [error]="invalid('rfc') ? 'RFC inválido (12–13 caracteres).' : null" formControlName="rfc" />
+                <ij-input label="Código postal" inputmode="numeric" placeholder="44100" [maxLength]="5" [required]="true"
+                  [error]="invalid('postalCode') ? 'C.P. de 5 dígitos.' : null" formControlName="postalCode" />
               </div>
-              <div>
-                <label [class]="labelClass" for="rc-regime">Régimen fiscal (SAT)</label>
-                <select id="rc-regime" formControlName="taxRegime" [class]="cls('taxRegime')">
-                  <option value="" disabled>Selecciona un régimen…</option>
-                  @for (r of taxRegimes; track r.code) {
-                    <option [value]="r.code">{{ r.name }}</option>
-                  }
-                </select>
-                @if (invalid('taxRegime')) { <p [class]="errClass">Selecciona el régimen fiscal.</p> }
-              </div>
+              <ij-select label="Régimen fiscal (SAT)" [required]="true" [options]="taxRegimeOptions"
+                [error]="invalid('taxRegime') ? 'Selecciona el régimen fiscal.' : null" formControlName="taxRegime" />
             </div>
           }
 
@@ -178,33 +158,13 @@ const STEP_CONTROLS: string[][] = [
           @if (step() === 2) {
             <div class="space-y-4">
               <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label [class]="labelClass" for="rc-state">Estado</label>
-                  <select id="rc-state" formControlName="state" [class]="cls('state')">
-                    <option value="" disabled>Selecciona…</option>
-                    @for (s of states; track s.code) {
-                      <option [value]="s.code">{{ s.name }}</option>
-                    }
-                  </select>
-                  @if (invalid('state')) { <p [class]="errClass">Selecciona el estado.</p> }
-                </div>
-                <div>
-                  <label [class]="labelClass" for="rc-mun">Municipio</label>
-                  <input id="rc-mun" formControlName="municipality" placeholder="Guadalajara"
-                    [class]="cls('municipality')" />
-                  @if (invalid('municipality')) { <p [class]="errClass">El municipio es obligatorio.</p> }
-                </div>
+                <ij-select label="Estado" [required]="true" [options]="stateOptions"
+                  [error]="invalid('state') ? 'Selecciona el estado.' : null" formControlName="state" />
+                <ij-input label="Municipio" placeholder="Guadalajara" [required]="true"
+                  [error]="invalid('municipality') ? 'El municipio es obligatorio.' : null" formControlName="municipality" />
               </div>
-              <div>
-                <label [class]="labelClass" for="rc-sector">Sector económico <span class="font-normal text-muted">(opcional)</span></label>
-                <input id="rc-sector" formControlName="economicSector" placeholder="Tecnología"
-                  [class]="cls('economicSector')" />
-              </div>
-              <div>
-                <label [class]="labelClass" for="rc-web">Sitio web <span class="font-normal text-muted">(opcional)</span></label>
-                <input id="rc-web" formControlName="website" placeholder="https://tuempresa.com"
-                  [class]="cls('website')" />
-              </div>
+              <ij-input label="Sector económico (opcional)" placeholder="Tecnología" formControlName="economicSector" />
+              <ij-input label="Sitio web (opcional)" type="url" placeholder="https://tuempresa.com" formControlName="website" />
             </div>
           }
 
@@ -248,13 +208,15 @@ export class RegisterCompanyPage {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly stepLabels = ['Cuenta', 'Datos fiscales', 'Ubicación'];
-  protected readonly states = MX_STATES;
-  protected readonly taxRegimes = SAT_TAX_REGIMES;
+  protected readonly stateOptions: IjOption[] = MX_STATES.map((s) => ({
+    value: s.code,
+    label: s.name,
+  }));
+  protected readonly taxRegimeOptions: IjOption[] = SAT_TAX_REGIMES.map((r) => ({
+    value: r.code,
+    label: r.name,
+  }));
   protected readonly passwordHint = PASSWORD_POLICY_HINT;
-  protected readonly labelClass = 'mb-1.5 block text-sm font-semibold text-ink-900';
-  protected readonly errClass = 'mt-1.5 text-xs font-medium text-red-600';
-  protected readonly eyeClass =
-    'absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body';
 
   protected readonly step = signal(0);
   protected readonly status = signal<RegisterStatus>('idle');
@@ -293,12 +255,6 @@ export class RegisterCompanyPage {
       (c.invalid || this.form.hasError('passwordsMismatch')) &&
       (c.dirty || c.touched)
     );
-  }
-
-  protected cls(name: string): string {
-    return this.invalid(name) || (name === 'confirmPassword' && this.confirmMismatch())
-      ? `${INPUT_BASE} border-red-300 focus:ring-red-200/70`
-      : `${INPUT_BASE} border-line focus:border-brand focus:ring-brand/25`;
   }
 
   protected next(): void {

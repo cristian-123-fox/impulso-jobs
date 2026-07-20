@@ -14,7 +14,7 @@ import {
   ContactFormValue,
   ContactInfoCard,
 } from '@/features/public/contact/models/contact.models';
-import { IjButton, IjIcon } from '@/shared/ui';
+import { IjButton, IjIcon, IjInput, IjTextarea } from '@/shared/ui';
 
 /**
  * Sección principal de contacto: formulario reactivo tipado + canales de apoyo.
@@ -23,7 +23,7 @@ import { IjButton, IjIcon } from '@/shared/ui';
 @Component({
   selector: 'app-contact-form-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjIcon],
+  imports: [ReactiveFormsModule, IjButton, IjIcon, IjInput, IjTextarea],
   template: `
     <section class="px-6 py-20 lg:px-[60px]">
       <div
@@ -55,81 +55,18 @@ import { IjButton, IjIcon } from '@/shared/ui';
             (ngSubmit)="onSubmit()"
           >
             <div class="grid gap-5 md:grid-cols-2">
-              <label class="block">
-                <span class="mb-2 block text-sm font-medium text-ink-900">Nombre</span>
-                <input
-                  type="text"
-                  formControlName="name"
-                  placeholder="Tu nombre completo"
-                  class="block w-full rounded-xl border-0 bg-surface px-5 py-4 text-sm text-body placeholder:text-muted focus:ring-2 focus:ring-brand/30"
-                />
-                @if (controls.name.invalid && (controls.name.dirty || controls.name.touched)) {
-                  <span class="mt-2 block text-xs text-brand">
-                    Ingresa un nombre válido.
-                  </span>
-                }
-              </label>
-
-              <label class="block">
-                <span class="mb-2 block text-sm font-medium text-ink-900">Correo</span>
-                <input
-                  type="email"
-                  formControlName="email"
-                  placeholder="tu@correo.com"
-                  class="block w-full rounded-xl border-0 bg-surface px-5 py-4 text-sm text-body placeholder:text-muted focus:ring-2 focus:ring-brand/30"
-                />
-                @if (controls.email.invalid && (controls.email.dirty || controls.email.touched)) {
-                  <span class="mt-2 block text-xs text-brand">
-                    Ingresa un correo válido.
-                  </span>
-                }
-              </label>
-
-              <label class="block">
-                <span class="mb-2 block text-sm font-medium text-ink-900">Teléfono</span>
-                <input
-                  type="tel"
-                  formControlName="phone"
-                  placeholder="+57 300 000 0000"
-                  class="block w-full rounded-xl border-0 bg-surface px-5 py-4 text-sm text-body placeholder:text-muted focus:ring-2 focus:ring-brand/30"
-                />
-                @if (controls.phone.invalid && (controls.phone.dirty || controls.phone.touched)) {
-                  <span class="mt-2 block text-xs text-brand">
-                    Comparte un teléfono de contacto.
-                  </span>
-                }
-              </label>
-
-              <label class="block">
-                <span class="mb-2 block text-sm font-medium text-ink-900">Asunto</span>
-                <input
-                  type="text"
-                  formControlName="subject"
-                  placeholder="¿En qué te ayudamos?"
-                  class="block w-full rounded-xl border-0 bg-surface px-5 py-4 text-sm text-body placeholder:text-muted focus:ring-2 focus:ring-brand/30"
-                />
-                @if (controls.subject.invalid && (controls.subject.dirty || controls.subject.touched)) {
-                  <span class="mt-2 block text-xs text-brand">
-                    Escribe un asunto breve.
-                  </span>
-                }
-              </label>
+              <ij-input label="Nombre" placeholder="Tu nombre completo" [required]="true"
+                [error]="fieldInvalid('name') ? 'Ingresa un nombre válido.' : null" formControlName="name" />
+              <ij-input label="Correo" type="email" placeholder="tu@correo.com" [required]="true"
+                [error]="fieldInvalid('email') ? 'Ingresa un correo válido.' : null" formControlName="email" />
+              <ij-input label="Teléfono" type="tel" placeholder="+52 55 0000 0000" [required]="true"
+                [error]="fieldInvalid('phone') ? 'Comparte un teléfono de contacto.' : null" formControlName="phone" />
+              <ij-input label="Asunto" placeholder="¿En qué te ayudamos?" [required]="true"
+                [error]="fieldInvalid('subject') ? 'Escribe un asunto breve.' : null" formControlName="subject" />
             </div>
 
-            <label class="block">
-              <span class="mb-2 block text-sm font-medium text-ink-900">Mensaje</span>
-              <textarea
-                formControlName="message"
-                rows="5"
-                placeholder="Cuéntanos más detalles sobre tu necesidad."
-                class="block w-full rounded-xl border-0 bg-surface px-5 py-4 text-sm text-body placeholder:text-muted focus:ring-2 focus:ring-brand/30"
-              ></textarea>
-              @if (controls.message.invalid && (controls.message.dirty || controls.message.touched)) {
-                <span class="mt-2 block text-xs text-brand">
-                  El mensaje debe tener al menos 20 caracteres.
-                </span>
-              }
-            </label>
+            <ij-textarea label="Mensaje" [rows]="5" placeholder="Cuéntanos más detalles sobre tu necesidad." [required]="true"
+              [error]="fieldInvalid('message') ? 'El mensaje debe tener al menos 20 caracteres.' : null" formControlName="message" />
 
             <button
               ij-button
@@ -197,6 +134,11 @@ export class ContactFormSection {
   });
 
   protected readonly controls = this.form.controls;
+
+  protected fieldInvalid(name: keyof typeof this.controls): boolean {
+    const control = this.controls[name];
+    return control.invalid && (control.dirty || control.touched);
+  }
 
   protected onSubmit(): void {
     if (this.form.invalid) {

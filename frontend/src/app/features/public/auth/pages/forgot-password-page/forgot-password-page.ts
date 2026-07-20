@@ -15,11 +15,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import { ForgotStatus } from '@/features/public/auth/models/auth.models';
-import { IjButton, IjIcon } from '@/shared/ui';
-
-const INPUT_BASE =
-  'w-full rounded-xl border bg-surface px-4 py-3.5 text-[15px] text-body ' +
-  'outline-none transition placeholder:text-muted focus:ring-2';
+import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 
 /**
  * Solicita el enlace de recuperación. La respuesta del backend es genérica, así
@@ -30,7 +26,7 @@ const INPUT_BASE =
   selector: 'app-forgot-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon],
+  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon, IjInput],
   template: `
     <div class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
       @if (status() === 'sent') {
@@ -70,21 +66,13 @@ const INPUT_BASE =
         </p>
 
         <form novalidate class="mt-6" [formGroup]="form" (ngSubmit)="onSubmit()">
-          <label for="fp-email" class="mb-2 block text-sm font-semibold text-ink-900">
-            Correo electrónico
-          </label>
-          <input
-            id="fp-email"
+          <ij-input
+            label="Correo electrónico"
             type="email"
-            formControlName="email"
             autocomplete="email"
             placeholder="tucorreo@ejemplo.com"
-            [class]="inputClass()"
-            [attr.aria-invalid]="emailInvalid()"
+            formControlName="email"
           />
-          @if (emailInvalid()) {
-            <p class="mt-1.5 text-xs font-medium text-red-600">{{ emailError() }}</p>
-          }
 
           <button
             ij-button
@@ -129,23 +117,6 @@ export class ForgotPasswordPage {
   });
 
   protected readonly isLoading = computed(() => this.status() === 'loading');
-
-  protected emailInvalid(): boolean {
-    const control = this.form.controls.email;
-    return control.invalid && (control.dirty || control.touched);
-  }
-
-  protected emailError(): string {
-    return this.form.controls.email.hasError('required')
-      ? 'El correo es obligatorio'
-      : 'Ingresa un correo válido';
-  }
-
-  protected inputClass(): string {
-    return this.emailInvalid()
-      ? `${INPUT_BASE} border-red-300 focus:border-red-400 focus:ring-red-200/70`
-      : `${INPUT_BASE} border-line focus:border-brand focus:ring-brand/25`;
-  }
 
   protected reset(): void {
     this.form.reset({ email: '' });

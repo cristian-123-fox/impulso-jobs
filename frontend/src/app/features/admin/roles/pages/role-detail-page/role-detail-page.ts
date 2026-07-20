@@ -12,7 +12,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { IjButton, IjIcon } from '@/shared/ui';
+import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 import { RolesFacade } from '@/features/admin/roles/data/roles.facade';
 import { RoleSummary } from '@/features/admin/roles/models/roles.models';
 import {
@@ -20,14 +20,17 @@ import {
   PermissionToggle,
 } from '@/features/admin/roles/components/permission-matrix/permission-matrix';
 
-const INPUT_CLASS =
-  'w-full rounded-xl border border-line bg-surface px-4 py-3 text-[15px] text-body ' +
-  'outline-none transition placeholder:text-muted focus:border-brand focus:ring-2 focus:ring-brand/25';
-
 @Component({
   selector: 'app-role-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ReactiveFormsModule, PermissionMatrix, IjButton, IjIcon],
+  imports: [
+    RouterLink,
+    ReactiveFormsModule,
+    PermissionMatrix,
+    IjButton,
+    IjIcon,
+    IjInput,
+  ],
   template: `
     <div class="mx-auto max-w-[1100px]">
       <a
@@ -51,14 +54,8 @@ const INPUT_CLASS =
             }
           </div>
           <form [formGroup]="form" class="grid gap-4 sm:grid-cols-2" (ngSubmit)="onSave()">
-            <label class="block">
-              <span class="mb-1.5 block text-sm font-semibold text-ink-900">Nombre</span>
-              <input formControlName="name" [class]="inputClass" />
-            </label>
-            <label class="block">
-              <span class="mb-1.5 block text-sm font-semibold text-ink-900">Descripción</span>
-              <input formControlName="description" [class]="inputClass" />
-            </label>
+            <ij-input label="Nombre" formControlName="name" />
+            <ij-input label="Descripción" formControlName="description" />
             <div class="flex items-center justify-between sm:col-span-2">
               @if (saveState() === 'saved') {
                 <span class="text-[13px] font-semibold text-accent-green">Cambios guardados.</span>
@@ -101,7 +98,6 @@ export class RoleDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly inputClass = INPUT_CLASS;
   protected readonly role = signal<RoleSummary | null>(null);
   protected readonly assigned = signal<ReadonlySet<string>>(new Set());
   protected readonly pendingId = signal<string | null>(null);

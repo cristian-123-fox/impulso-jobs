@@ -29,11 +29,14 @@ import {
   curpValidator,
   notFutureDateValidator,
 } from '@/shared/validators/mx-identifiers.validator';
-import { IjButton, IjIcon } from '@/shared/ui';
-
-const INPUT_BASE =
-  'w-full rounded-xl border bg-surface px-4 py-3 text-[15px] text-body ' +
-  'outline-none transition placeholder:text-muted focus:ring-2';
+import {
+  IjButton,
+  IjDatepicker,
+  IjIcon,
+  IjInput,
+  IjOption,
+  IjSelect,
+} from '@/shared/ui';
 
 const STEP_CONTROLS: string[][] = [
   ['email', 'password', 'confirmPassword'],
@@ -46,7 +49,16 @@ const STEP_CONTROLS: string[][] = [
   selector: 'app-register-candidate-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, AuthStepper, IjButton, IjIcon],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    AuthStepper,
+    IjButton,
+    IjIcon,
+    IjInput,
+    IjSelect,
+    IjDatepicker,
+  ],
   template: `
     <div class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
       @if (status() === 'success') {
@@ -93,37 +105,41 @@ const STEP_CONTROLS: string[][] = [
           <!-- Paso 1: Cuenta -->
           @if (step() === 0) {
             <div class="space-y-4">
-              <div>
-                <label [class]="labelClass" for="rk-email">Correo electrónico</label>
-                <input id="rk-email" type="email" formControlName="email" autocomplete="email"
-                  placeholder="tucorreo@ejemplo.com" [class]="cls('email')" />
-                @if (invalid('email')) { <p [class]="errClass">Ingresa un correo válido.</p> }
-              </div>
-              <div>
-                <label [class]="labelClass" for="rk-pass">Contraseña</label>
-                <div class="relative">
-                  <input id="rk-pass" [type]="showPassword() ? 'text' : 'password'"
-                    formControlName="password" autocomplete="new-password" placeholder="••••••••"
-                    [class]="cls('password') + ' pr-12'" />
-                  <button type="button" [class]="eyeClass"
-                    (click)="showPassword.set(!showPassword())"
-                    [attr.aria-label]="showPassword() ? 'Ocultar' : 'Mostrar'">
-                    <ij-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="20" [strokeWidth]="1.9" />
-                  </button>
-                </div>
-                @if (invalid('password')) {
-                  <p [class]="errClass">{{ passwordHint }}</p>
-                } @else {
-                  <p class="mt-1.5 text-xs text-muted">{{ passwordHint }}</p>
-                }
-              </div>
-              <div>
-                <label [class]="labelClass" for="rk-pass2">Confirmar contraseña</label>
-                <input id="rk-pass2" [type]="showPassword() ? 'text' : 'password'"
-                  formControlName="confirmPassword" autocomplete="new-password" placeholder="••••••••"
-                  [class]="cls('confirmPassword')" />
-                @if (confirmMismatch()) { <p [class]="errClass">Las contraseñas no coinciden.</p> }
-              </div>
+              <ij-input
+                label="Correo electrónico"
+                type="email"
+                autocomplete="email"
+                placeholder="tucorreo@ejemplo.com"
+                [error]="invalid('email') ? 'Ingresa un correo válido.' : null"
+                formControlName="email"
+              />
+              <ij-input
+                label="Contraseña"
+                [type]="showPassword() ? 'text' : 'password'"
+                autocomplete="new-password"
+                placeholder="••••••••"
+                [hint]="passwordHint"
+                [error]="invalid('password') ? passwordHint : null"
+                formControlName="password"
+              >
+                <button
+                  ijSuffix
+                  type="button"
+                  class="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
+                  (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'Ocultar' : 'Mostrar'"
+                >
+                  <ij-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="20" [strokeWidth]="1.9" />
+                </button>
+              </ij-input>
+              <ij-input
+                label="Confirmar contraseña"
+                [type]="showPassword() ? 'text' : 'password'"
+                autocomplete="new-password"
+                placeholder="••••••••"
+                [error]="confirmMismatch() ? 'Las contraseñas no coinciden.' : null"
+                formControlName="confirmPassword"
+              />
             </div>
           }
 
@@ -131,73 +147,33 @@ const STEP_CONTROLS: string[][] = [
           @if (step() === 1) {
             <div class="space-y-4">
               <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label [class]="labelClass" for="rk-first">Nombre(s)</label>
-                  <input id="rk-first" formControlName="firstName" placeholder="Ana" [class]="cls('firstName')" />
-                  @if (invalid('firstName')) { <p [class]="errClass">El nombre es obligatorio.</p> }
-                </div>
-                <div>
-                  <label [class]="labelClass" for="rk-last">Apellidos</label>
-                  <input id="rk-last" formControlName="lastName" placeholder="García" [class]="cls('lastName')" />
-                  @if (invalid('lastName')) { <p [class]="errClass">El apellido es obligatorio.</p> }
-                </div>
+                <ij-input label="Nombre(s)" placeholder="Ana" [required]="true"
+                  [error]="invalid('firstName') ? 'El nombre es obligatorio.' : null" formControlName="firstName" />
+                <ij-input label="Apellidos" placeholder="García" [required]="true"
+                  [error]="invalid('lastName') ? 'El apellido es obligatorio.' : null" formControlName="lastName" />
               </div>
               <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label [class]="labelClass" for="rk-dtype">Tipo de documento</label>
-                  <select id="rk-dtype" formControlName="documentType" [class]="cls('documentType')">
-                    <option value="" disabled>Selecciona…</option>
-                    @for (d of documentTypes; track d.value) {
-                      <option [value]="d.value">{{ d.label }}</option>
-                    }
-                  </select>
-                  @if (invalid('documentType')) { <p [class]="errClass">Selecciona el tipo.</p> }
-                </div>
-                <div>
-                  <label [class]="labelClass" for="rk-dnum">Número de documento</label>
-                  <input id="rk-dnum" formControlName="documentNumber" placeholder="Número"
-                    [class]="cls('documentNumber')" />
-                  @if (invalid('documentNumber')) { <p [class]="errClass">El documento es obligatorio.</p> }
-                </div>
+                <ij-select label="Tipo de documento" [required]="true" [options]="documentTypeOptions"
+                  [error]="invalid('documentType') ? 'Selecciona el tipo.' : null" formControlName="documentType" />
+                <ij-input label="Número de documento" placeholder="Número" [required]="true"
+                  [error]="invalid('documentNumber') ? 'El documento es obligatorio.' : null" formControlName="documentNumber" />
               </div>
-              <div>
-                <label [class]="labelClass" for="rk-curp">CURP <span class="font-normal text-muted">(opcional)</span></label>
-                <input id="rk-curp" formControlName="curp" placeholder="18 caracteres"
-                  class="uppercase" maxlength="18" [class]="cls('curp')" />
-                @if (invalid('curp')) { <p [class]="errClass">La CURP debe tener 18 caracteres válidos.</p> }
-              </div>
-              <div>
-                <label [class]="labelClass" for="rk-birth">Fecha de nacimiento</label>
-                <input id="rk-birth" type="date" formControlName="birthDate" [class]="cls('birthDate')" />
-                @if (invalid('birthDate')) { <p [class]="errClass">Ingresa una fecha válida (no futura).</p> }
-              </div>
+              <ij-input label="CURP (opcional)" placeholder="18 caracteres" [maxLength]="18"
+                [error]="invalid('curp') ? 'La CURP debe tener 18 caracteres válidos.' : null" formControlName="curp" />
+              <ij-datepicker label="Fecha de nacimiento" [required]="true" [max]="today"
+                [error]="invalid('birthDate') ? 'Ingresa una fecha válida (no futura).' : null" formControlName="birthDate" />
             </div>
           }
 
           <!-- Paso 3: Perfil y ubicación -->
           @if (step() === 2) {
             <div class="space-y-4">
-              <div>
-                <label [class]="labelClass" for="rk-title">Título profesional <span class="font-normal text-muted">(opcional)</span></label>
-                <input id="rk-title" formControlName="professionalTitle" placeholder="Desarrolladora Full-Stack"
-                  [class]="cls('professionalTitle')" />
-              </div>
+              <ij-input label="Título profesional (opcional)" placeholder="Desarrolladora Full-Stack" formControlName="professionalTitle" />
               <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label [class]="labelClass" for="rk-state">Estado</label>
-                  <select id="rk-state" formControlName="state" [class]="cls('state')">
-                    <option value="" disabled>Selecciona…</option>
-                    @for (s of states; track s.code) {
-                      <option [value]="s.code">{{ s.name }}</option>
-                    }
-                  </select>
-                  @if (invalid('state')) { <p [class]="errClass">Selecciona el estado.</p> }
-                </div>
-                <div>
-                  <label [class]="labelClass" for="rk-mun">Municipio</label>
-                  <input id="rk-mun" formControlName="municipality" placeholder="Zapopan" [class]="cls('municipality')" />
-                  @if (invalid('municipality')) { <p [class]="errClass">El municipio es obligatorio.</p> }
-                </div>
+                <ij-select label="Estado" [required]="true" [options]="stateOptions"
+                  [error]="invalid('state') ? 'Selecciona el estado.' : null" formControlName="state" />
+                <ij-input label="Municipio" placeholder="Zapopan" [required]="true"
+                  [error]="invalid('municipality') ? 'El municipio es obligatorio.' : null" formControlName="municipality" />
               </div>
             </div>
           }
@@ -242,13 +218,16 @@ export class RegisterCandidatePage {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly stepLabels = ['Cuenta', 'Datos personales', 'Ubicación'];
-  protected readonly states = MX_STATES;
-  protected readonly documentTypes = DOCUMENT_TYPES;
+  protected readonly documentTypeOptions: IjOption[] = DOCUMENT_TYPES.map((d) => ({
+    value: d.value,
+    label: d.label,
+  }));
+  protected readonly stateOptions: IjOption[] = MX_STATES.map((s) => ({
+    value: s.code,
+    label: s.name,
+  }));
+  protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly passwordHint = PASSWORD_POLICY_HINT;
-  protected readonly labelClass = 'mb-1.5 block text-sm font-semibold text-ink-900';
-  protected readonly errClass = 'mt-1.5 text-xs font-medium text-red-600';
-  protected readonly eyeClass =
-    'absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body';
 
   protected readonly step = signal(0);
   protected readonly status = signal<RegisterStatus>('idle');
@@ -287,12 +266,6 @@ export class RegisterCandidatePage {
       (c.invalid || this.form.hasError('passwordsMismatch')) &&
       (c.dirty || c.touched)
     );
-  }
-
-  protected cls(name: string): string {
-    return this.invalid(name) || (name === 'confirmPassword' && this.confirmMismatch())
-      ? `${INPUT_BASE} border-red-300 focus:ring-red-200/70`
-      : `${INPUT_BASE} border-line focus:border-brand focus:ring-brand/25`;
   }
 
   protected next(): void {

@@ -23,19 +23,36 @@ import {
   LANGUAGE_LEVEL_OPTIONS,
   SKILL_LEVEL_OPTIONS,
 } from '@/features/panel/models/candidate-profile.models';
-import { IjButton, IjIcon } from '@/shared/ui';
+import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import {
+  IjButton,
+  IjDatepicker,
+  IjIcon,
+  IjInput,
+  IjOption,
+  IjSelect,
+  IjTextarea,
+} from '@/shared/ui';
 
 type TabKey = 'information' | 'experience' | 'education' | 'languages' | 'skills';
 type ModalKind = 'photo' | 'experience' | 'education' | 'language' | 'skill' | null;
 
 const INPUT =
-  'w-full rounded-xl border border-line bg-white px-4 py-3 text-[14px] text-ink-900 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15';
+  'w-full rounded-xl border border-line bg-surface px-4 py-3 text-[14px] font-semibold text-muted outline-none';
 const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
 
 @Component({
   selector: 'app-candidate-profile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjIcon],
+  imports: [
+    ReactiveFormsModule,
+    IjButton,
+    IjIcon,
+    IjInput,
+    IjTextarea,
+    IjSelect,
+    IjDatepicker,
+  ],
   host: { class: 'block' },
   template: `
     @if (facade.loading() && !profile()) {
@@ -162,53 +179,28 @@ const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
               </div>
 
               <form [formGroup]="profileForm" class="grid gap-5 md:grid-cols-2" (ngSubmit)="saveProfile()">
-                <div>
-                  <label class="{{ labelClass }}">Nombre</label>
-                  <input formControlName="firstName" [class]="inputClass" />
-                </div>
-                <div>
-                  <label class="{{ labelClass }}">Apellido</label>
-                  <input formControlName="lastName" [class]="inputClass" />
-                </div>
+                <ij-input label="Nombre" [required]="true" formControlName="firstName" />
+                <ij-input label="Apellido" [required]="true" formControlName="lastName" />
                 <div>
                   <label class="{{ labelClass }}">Correo</label>
-                  <input [value]="profile.email" class="{{ inputClass }} bg-surface text-muted" readonly />
+                  <input [value]="profile.email" [class]="inputClass" readonly />
                 </div>
                 <div>
                   <label class="{{ labelClass }}">Documento</label>
-                  <input
-                    [value]="profile.documentType + ' · ' + profile.documentNumber"
-                    class="{{ inputClass }} bg-surface text-muted"
-                    readonly
-                  />
+                  <input [value]="profile.documentType + ' · ' + profile.documentNumber" [class]="inputClass" readonly />
                 </div>
-                <div>
-                  <label class="{{ labelClass }}">Título profesional</label>
-                  <input formControlName="professionalTitle" [class]="inputClass" />
-                </div>
-                <div>
-                  <label class="{{ labelClass }}">Fecha de nacimiento</label>
-                  <input type="date" formControlName="birthDate" [class]="inputClass" />
+                <ij-input label="Título profesional" formControlName="professionalTitle" />
+                <ij-datepicker label="Fecha de nacimiento" [required]="true" [max]="today" formControlName="birthDate" />
+                <div class="md:col-span-2">
+                  <ij-textarea label="Resumen profesional" [rows]="4" formControlName="summary" />
                 </div>
                 <div class="md:col-span-2">
-                  <label class="{{ labelClass }}">Resumen profesional</label>
-                  <textarea formControlName="summary" rows="4" [class]="inputClass"></textarea>
+                  <ij-input label="Dirección" formControlName="address" />
                 </div>
+                <ij-input label="País" formControlName="country" />
+                <ij-select label="Estado" [required]="true" [options]="stateOptions" formControlName="state" />
                 <div class="md:col-span-2">
-                  <label class="{{ labelClass }}">Dirección</label>
-                  <input formControlName="address" [class]="inputClass" />
-                </div>
-                <div>
-                  <label class="{{ labelClass }}">País</label>
-                  <input formControlName="country" [class]="inputClass" />
-                </div>
-                <div>
-                  <label class="{{ labelClass }}">Estado</label>
-                  <input formControlName="state" [class]="inputClass" />
-                </div>
-                <div class="md:col-span-2">
-                  <label class="{{ labelClass }}">Municipio</label>
-                  <input formControlName="municipality" [class]="inputClass" />
+                  <ij-input label="Municipio" [required]="true" formControlName="municipality" />
                 </div>
                 <div class="md:col-span-2 flex justify-end">
                   <button ij-button type="submit" shape="rounded" [disabled]="profileForm.invalid || submitting()">
@@ -434,10 +426,7 @@ const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
           @switch (modalKind()) {
             @case ('photo') {
               <form [formGroup]="photoForm" class="space-y-5" (ngSubmit)="savePhoto()">
-                <div>
-                  <label class="{{ labelClass }}">URL de la foto</label>
-                  <input formControlName="profilePhotoUrl" [class]="inputClass" placeholder="https://..." />
-                </div>
+                <ij-input label="URL de la foto" type="url" placeholder="https://..." formControlName="profilePhotoUrl" />
                 <div class="flex justify-end gap-3">
                   <button ij-button type="button" variant="white" shape="rounded" (click)="closeModal()">Cancelar</button>
                   <button ij-button type="submit" shape="rounded" [disabled]="submitting()">
@@ -448,13 +437,14 @@ const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
             }
             @case ('experience') {
               <form [formGroup]="experienceForm" class="grid gap-5 md:grid-cols-2" (ngSubmit)="saveExperience()">
-                <div><label class="{{ labelClass }}">Cargo</label><input formControlName="jobTitle" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Empresa</label><input formControlName="companyName" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Ubicación</label><input formControlName="location" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Inicio</label><input type="date" formControlName="startDate" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Fin</label><input type="date" formControlName="endDate" [class]="inputClass" [disabled]="experienceForm.controls.isCurrent.value" /></div>
-                <label class="mt-8 flex items-center gap-2 text-[14px] text-body"><input type="checkbox" formControlName="isCurrent" class="accent-brand" /> Trabajo actual</label>
-                <div class="md:col-span-2"><label class="{{ labelClass }}">Responsabilidades</label><textarea rows="4" formControlName="responsibilities" [class]="inputClass"></textarea></div>
+                <ij-input label="Cargo" [required]="true" formControlName="jobTitle" />
+                <ij-input label="Empresa" [required]="true" formControlName="companyName" />
+                <ij-input label="Ubicación" [required]="true" formControlName="location" />
+                <span class="hidden md:block"></span>
+                <ij-datepicker label="Inicio" [required]="true" formControlName="startDate" />
+                <ij-datepicker label="Fin" formControlName="endDate" />
+                <label class="flex items-center gap-2 text-[14px] text-body"><input type="checkbox" formControlName="isCurrent" class="accent-brand" /> Trabajo actual</label>
+                <div class="md:col-span-2"><ij-textarea label="Responsabilidades" [rows]="4" formControlName="responsibilities" /></div>
                 <div class="md:col-span-2 flex justify-end gap-3">
                   <button ij-button type="button" variant="white" shape="rounded" (click)="closeModal()">Cancelar</button>
                   <button ij-button type="submit" shape="rounded" [disabled]="experienceForm.invalid || submitting()">{{ submitting() ? 'Guardando...' : 'Guardar' }}</button>
@@ -463,14 +453,14 @@ const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
             }
             @case ('education') {
               <form [formGroup]="educationForm" class="grid gap-5 md:grid-cols-2" (ngSubmit)="saveEducation()">
-                <div><label class="{{ labelClass }}">Institución</label><input formControlName="institutionName" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Nivel</label><select formControlName="educationLevel" [class]="inputClass">@for (option of educationOptions; track option.value) {<option [value]="option.value">{{ option.label }}</option>}</select></div>
-                <div><label class="{{ labelClass }}">Título</label><input formControlName="degreeName" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Área de estudio</label><input formControlName="fieldOfStudy" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Inicio</label><input type="date" formControlName="startDate" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Fin</label><input type="date" formControlName="endDate" [class]="inputClass" [disabled]="educationForm.controls.isCurrent.value" /></div>
-                <label class="mt-8 flex items-center gap-2 text-[14px] text-body"><input type="checkbox" formControlName="isCurrent" class="accent-brand" /> En curso</label>
-                <div class="md:col-span-2"><label class="{{ labelClass }}">Descripción</label><textarea rows="4" formControlName="description" [class]="inputClass"></textarea></div>
+                <ij-input label="Institución" [required]="true" formControlName="institutionName" />
+                <ij-select label="Nivel" [required]="true" [options]="educationOptions" formControlName="educationLevel" />
+                <ij-input label="Título" [required]="true" formControlName="degreeName" />
+                <ij-input label="Área de estudio" formControlName="fieldOfStudy" />
+                <ij-datepicker label="Inicio" [required]="true" formControlName="startDate" />
+                <ij-datepicker label="Fin" formControlName="endDate" />
+                <label class="flex items-center gap-2 text-[14px] text-body"><input type="checkbox" formControlName="isCurrent" class="accent-brand" /> En curso</label>
+                <div class="md:col-span-2"><ij-textarea label="Descripción" [rows]="4" formControlName="description" /></div>
                 <div class="md:col-span-2 flex justify-end gap-3">
                   <button ij-button type="button" variant="white" shape="rounded" (click)="closeModal()">Cancelar</button>
                   <button ij-button type="submit" shape="rounded" [disabled]="educationForm.invalid || submitting()">{{ submitting() ? 'Guardando...' : 'Guardar' }}</button>
@@ -479,22 +469,8 @@ const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
             }
             @case ('language') {
               <form [formGroup]="languageForm" class="grid gap-5 md:grid-cols-2" (ngSubmit)="saveLanguage()">
-                <div>
-                  <label class="{{ labelClass }}">Idioma</label>
-                  <select formControlName="languageCode" [class]="inputClass">
-                    @for (language of facade.languageCatalog(); track language.code) {
-                      <option [value]="language.code">{{ language.name }}</option>
-                    }
-                  </select>
-                </div>
-                <div>
-                  <label class="{{ labelClass }}">Nivel</label>
-                  <select formControlName="level" [class]="inputClass" [disabled]="languageForm.controls.isNative.value">
-                    @for (option of languageOptions; track option.value) {
-                      <option [value]="option.value">{{ option.label }}</option>
-                    }
-                  </select>
-                </div>
+                <ij-select label="Idioma" [required]="true" [options]="languageSelectOptions()" formControlName="languageCode" />
+                <ij-select label="Nivel" [required]="true" [options]="languageOptions" formControlName="level" />
                 <label class="flex items-center gap-2 text-[14px] text-body"><input type="checkbox" formControlName="isNative" class="accent-brand" /> Idioma nativo</label>
                 <div class="md:col-span-2 flex justify-end gap-3">
                   <button ij-button type="button" variant="white" shape="rounded" (click)="closeModal()">Cancelar</button>
@@ -504,9 +480,9 @@ const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
             }
             @case ('skill') {
               <form [formGroup]="skillForm" class="grid gap-5 md:grid-cols-2" (ngSubmit)="saveSkill()">
-                <div><label class="{{ labelClass }}">Habilidad</label><input formControlName="name" [class]="inputClass" /></div>
-                <div><label class="{{ labelClass }}">Nivel</label><select formControlName="level" [class]="inputClass"><option value="">Sin especificar</option>@for (option of skillOptions; track option.value) {<option [value]="option.value">{{ option.label }}</option>}</select></div>
-                <div><label class="{{ labelClass }}">Años de experiencia</label><input type="number" min="0" formControlName="yearsExperience" [class]="inputClass" /></div>
+                <ij-input label="Habilidad" [required]="true" formControlName="name" />
+                <ij-select label="Nivel" [options]="skillSelectOptions" formControlName="level" />
+                <ij-input label="Años de experiencia" type="number" [min]="0" formControlName="yearsExperience" />
                 <div class="md:col-span-2 flex justify-end gap-3">
                   <button ij-button type="button" variant="white" shape="rounded" (click)="closeModal()">Cancelar</button>
                   <button ij-button type="submit" shape="rounded" [disabled]="skillForm.invalid || submitting()">{{ submitting() ? 'Guardando...' : 'Guardar' }}</button>
@@ -529,6 +505,18 @@ export class CandidateProfileComponent {
   protected readonly educationOptions = EDUCATION_LEVEL_OPTIONS;
   protected readonly languageOptions = LANGUAGE_LEVEL_OPTIONS;
   protected readonly skillOptions = SKILL_LEVEL_OPTIONS;
+  protected readonly today = new Date().toISOString().slice(0, 10);
+  protected readonly stateOptions: IjOption[] = MX_STATES.map((s) => ({
+    value: s.code,
+    label: s.name,
+  }));
+  protected readonly skillSelectOptions: IjOption[] = [
+    { value: '', label: 'Sin especificar' },
+    ...SKILL_LEVEL_OPTIONS,
+  ];
+  protected readonly languageSelectOptions = computed<IjOption[]>(() =>
+    this.facade.languageCatalog().map((l) => ({ value: l.code, label: l.name })),
+  );
   protected readonly activeTab = signal<TabKey>('information');
   protected readonly modalKind = signal<ModalKind>(null);
   protected readonly editingId = signal<string | null>(null);
