@@ -132,8 +132,8 @@ const catalog = (items: readonly { code: string; name: string }[]): IjOption[] =
           </p>
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <span class="mb-2 block text-sm font-semibold text-ink-900">RFC (solo lectura)</span>
-              <div class="flex min-h-[46px] items-center rounded-xl border border-line bg-surface px-3.5 text-[14px] font-semibold text-muted">
+              <span class="mb-1.5 block text-[13px] font-semibold text-ink-900">RFC (solo lectura)</span>
+              <div class="flex h-[42px] items-center rounded-xl border border-line bg-surface px-3.5 text-[14px] font-semibold text-muted">
                 {{ profile.rfc }}
               </div>
             </div>

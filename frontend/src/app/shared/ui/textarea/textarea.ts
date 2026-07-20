@@ -24,7 +24,7 @@ import {
     <div [class]="boxClass()">
       <textarea
         [id]="controlId"
-        class="w-full resize-y bg-transparent py-2.5 text-[14px] leading-relaxed text-ink-900 placeholder:text-muted outline-none"
+        class="w-full resize-y border-0 bg-transparent p-0 text-[14px] leading-relaxed text-ink-900 placeholder:text-muted outline-none focus:outline-none focus:border-transparent focus:ring-0"
         [rows]="rows()"
         [value]="value() ?? ''"
         [placeholder]="placeholder()"
@@ -53,6 +53,7 @@ export class IjTextarea extends IjControlBase<string> {
 
   protected readonly boxClass = computed(() =>
     ijControlClass({
+      height: 'auto',
       focused: this.focused(),
       invalid: this.invalid(),
       disabled: this.disabled(),

@@ -18,4 +18,42 @@
   body {
     @apply bg-white font-sans text-body antialiased;
   }
+
+  /**
+   * `@tailwindcss/forms` pinta de azul (#2563eb) el borde y el anillo de foco de
+   * TODOS los controles nativos. Lo reemplazamos por el naranja de marca a nivel
+   * global, así cualquier input/textarea/select/checkbox — migrado a `ij-*` o
+   * aún nativo (buscadores, solo-lectura, checkboxes) — usa el color de marca.
+   * Los `ij-*` anulan su anillo con `focus:ring-0` (el foco vive en su caja);
+   * esta regla cubre todo lo demás. Se iguala la especificidad del plugin
+   * (`[type='x']:focus`) y va después en la capa `base` para ganar.
+   */
+  [type='text']:focus,
+  [type='email']:focus,
+  [type='url']:focus,
+  [type='password']:focus,
+  [type='number']:focus,
+  [type='date']:focus,
+  [type='datetime-local']:focus,
+  [type='month']:focus,
+  [type='search']:focus,
+  [type='tel']:focus,
+  [type='time']:focus,
+  [type='week']:focus,
+  [multiple]:focus,
+  textarea:focus,
+  select:focus {
+    border-color: theme('colors.brand.DEFAULT');
+    --tw-ring-color: theme('colors.brand.DEFAULT');
+  }
+
+  /* Casillas y radios: color de marca (marca + anillo de foco). */
+  [type='checkbox'],
+  [type='radio'] {
+    color: theme('colors.brand.DEFAULT');
+  }
+  [type='checkbox']:focus,
+  [type='radio']:focus {
+    --tw-ring-color: theme('colors.brand.DEFAULT');
+  }
 }

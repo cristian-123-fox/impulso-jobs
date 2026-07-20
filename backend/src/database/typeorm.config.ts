@@ -1,4 +1,3 @@
-import 'tsconfig-paths/register';
 import { registerAs } from '@nestjs/config';
 import { config as dotenvConfig } from 'dotenv';
 import { DataSourceOptions, DataSource } from 'typeorm';

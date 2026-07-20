@@ -19,7 +19,23 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new ResponseInterceptor(app.get(Reflector)));
-  app.enableCors();
+
+  // Detrás de Apache/Passenger (cPanel): confía en el proxy para obtener la IP
+  // real del cliente (usada en la auditoría).
+  const expressApp = app.getHttpAdapter().getInstance() as {
+    set: (key: string, value: unknown) => void;
+  };
+  expressApp.set('trust proxy', 1);
+
+  // CORS: en producción se restringe a los orígenes de CORS_ORIGIN
+  // (coma-separado, p. ej. "https://tudominio.com"). Sin la variable, permisivo.
+  const corsOrigin = process.env.CORS_ORIGIN?.trim();
+  app.enableCors({
+    origin: corsOrigin
+      ? corsOrigin.split(',').map((origin) => origin.trim())
+      : true,
+    credentials: true,
+  });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Impulso Jobs API')

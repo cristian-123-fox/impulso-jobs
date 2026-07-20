@@ -38,8 +38,8 @@ type TabKey = 'information' | 'experience' | 'education' | 'languages' | 'skills
 type ModalKind = 'photo' | 'experience' | 'education' | 'language' | 'skill' | null;
 
 const INPUT =
-  'w-full rounded-xl border border-line bg-surface px-4 py-3 text-[14px] font-semibold text-muted outline-none';
-const LABEL = 'mb-2 block text-sm font-semibold text-ink-900';
+  'h-[42px] w-full rounded-xl border border-line bg-surface px-3.5 text-[14px] font-semibold text-muted outline-none';
+const LABEL = 'mb-1.5 block text-[13px] font-semibold text-ink-900';
 
 @Component({
   selector: 'app-candidate-profile',
