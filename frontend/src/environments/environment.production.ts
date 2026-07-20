@@ -6,5 +6,5 @@
  */
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.tudominio.com/api/v1',
+  apiBaseUrl: 'https://api.impulsojobs.com/api/v1',
 };
