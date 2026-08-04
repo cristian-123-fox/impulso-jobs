@@ -10,6 +10,7 @@ import { RegistrationModule } from '@/modules/iam/registration/registration.modu
 import { AdminUsersModule } from '@/modules/iam/users/admin-users.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
+import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CompaniesModule } from '@/modules/companies/companies.module';
     RegistrationModule,
     CandidatesModule,
     CompaniesModule,
+    VacanciesModule,
     AdminUsersModule,
   ],
   controllers: [AppController],

@@ -21,6 +21,16 @@ export const routes: Routes = [
     loadChildren: () => import('@/features/panel/panel.routes').then((m) => m.routes),
   },
   {
+    path: 'empresa',
+    canMatch: [roleGuard([Role.EMPLOYER])],
+    loadComponent: () =>
+      import('@/layout/company-layout/company-layout').then(
+        (m) => m.CompanyLayout,
+      ),
+    loadChildren: () =>
+      import('@/features/company/company.routes').then((m) => m.routes),
+  },
+  {
     path: 'admin',
     canMatch: [roleGuard([Role.ADMIN])],
     loadComponent: () =>
@@ -55,7 +65,9 @@ export const routes: Routes = [
       {
         path: 'vacantes',
         loadChildren: () =>
-          import('@/features/public/jobs/jobs.routes').then((m) => m.routes),
+          import('@/features/public/vacancies/vacancies.routes').then(
+            (m) => m.routes,
+          ),
       },
       {
         path: 'faq',
