@@ -19,6 +19,7 @@ import {
   PASSWORD_POLICY_HINT,
   passwordPolicyValidator,
 } from '@/shared/validators/password.validator';
+import { ExtraRolesPicker } from '@/features/admin/users/components/extra-roles-picker/extra-roles-picker';
 import {
   AdminUser,
   ROLE_LABELS,
@@ -26,6 +27,13 @@ import {
   UpdateUserPayload,
   UserStatus,
 } from '@/features/admin/users/models/users.models';
+
+/** Lo que devuelve el formulario: cambios de la cuenta y, aparte, sus roles. */
+export interface UserEditResult {
+  changes: UpdateUserPayload;
+  /** `null` si la selección de roles adicionales no cambió. */
+  extraRoleIds: string[] | null;
+}
 
 /**
  * Edición de una cuenta: correo, rol, estado y restablecimiento de contraseña.
@@ -35,7 +43,14 @@ import {
 @Component({
   selector: 'app-user-edit-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjIcon, IjInput, IjSelect],
+  imports: [
+    ReactiveFormsModule,
+    ExtraRolesPicker,
+    IjButton,
+    IjIcon,
+    IjInput,
+    IjSelect,
+  ],
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
       @if (error()) {
@@ -89,6 +104,10 @@ import {
         </ij-input>
       </div>
 
+      @if (form.controls.role.value === admin) {
+        <app-extra-roles-picker class="mt-5" [(selected)]="extraRoleIds" />
+      }
+
       <label class="mt-4 flex items-center gap-2.5 text-[13.5px] text-body">
         <input
           type="checkbox"
@@ -127,13 +146,17 @@ export class UserEditForm {
   readonly isSelf = input(false);
   readonly submitting = input(false);
   readonly error = input<string | null>(null);
-  readonly save = output<UpdateUserPayload>();
+  readonly save = output<UserEditResult>();
   readonly cancel = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
 
   protected readonly passwordHint = PASSWORD_POLICY_HINT;
   protected readonly showPassword = signal(false);
+  protected readonly admin = Role.ADMIN;
+  protected readonly extraRoleIds = signal<string[]>([]);
+  /** Selección de partida, para saber si los roles cambiaron al guardar. */
+  private readonly initialExtraRoleIds = signal<string[]>([]);
 
   protected readonly roleOptions: readonly IjOption[] = Object.values(Role).map(
     (role) => ({ value: role, label: ROLE_LABELS[role] }),
@@ -160,6 +183,11 @@ export class UserEditForm {
         password: '',
         emailVerified: user.emailVerified,
       });
+      const extra = (user.roles ?? [])
+        .filter((role) => !role.isSystem)
+        .map((role) => role.id);
+      this.extraRoleIds.set(extra);
+      this.initialExtraRoleIds.set(extra);
       // El propio administrador no puede degradarse ni desactivarse.
       const lock = this.isSelf();
       lock ? this.form.controls.role.disable() : this.form.controls.role.enable();
@@ -195,6 +223,17 @@ export class UserEditForm {
     }
     if (value.password) payload.password = value.password;
 
-    this.save.emit(payload);
+    this.save.emit({
+      changes: payload,
+      extraRoleIds: this.rolesChanged() ? this.extraRoleIds() : null,
+    });
+  }
+
+  private rolesChanged(): boolean {
+    const before = this.initialExtraRoleIds();
+    const now = this.extraRoleIds();
+    return (
+      before.length !== now.length || now.some((id) => !before.includes(id))
+    );
   }
 }

@@ -15,6 +15,15 @@ export enum CompanyMemberRole {
   MEMBER = 'MEMBER',
 }
 
+/** Rol de plataforma asignado en `user_roles`. */
+export interface AssignedRole {
+  id: string;
+  code: string;
+  name: string;
+  /** `true` en los roles base (ADMIN/EMPLOYER/CANDIDATE). */
+  isSystem: boolean;
+}
+
 export interface AdminUser {
   id: string;
   email: string;
@@ -30,6 +39,8 @@ export interface AdminUser {
   companyId: string | null;
   companyName: string | null;
   companyRole: string | null;
+  /** Roles asignados: el base más los personalizados. */
+  roles: AssignedRole[];
 }
 
 export interface UserStats {
@@ -76,6 +87,8 @@ export interface CreateUserPayload {
   emailVerified?: boolean;
   companyId?: string;
   companyRole?: CompanyMemberRole;
+  /** Roles personalizados adicionales al rol base. */
+  extraRoleIds?: string[];
   candidate?: CandidatePayload;
 }
 

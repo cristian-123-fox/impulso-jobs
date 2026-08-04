@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsDefined,
   IsEmail,
@@ -66,6 +67,13 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(CompanyMemberRole, { message: 'El rol en la empresa no es válido.' })
   companyRole?: CompanyMemberRole;
+
+  /** Roles personalizados adicionales (los base van en `role`). */
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true, message: 'Alguno de los roles no es válido.' })
+  extraRoleIds?: string[];
 
   @ApiPropertyOptional({ type: RegisterCandidateDto })
   @ValidateIf((o: CreateUserDto) => o.role === Role.CANDIDATE)

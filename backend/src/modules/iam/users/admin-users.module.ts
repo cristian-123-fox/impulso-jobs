@@ -11,6 +11,7 @@ import { CreateUserUseCase } from '@/modules/iam/users/use-cases/create-user.use
 import { DeleteUserUseCase } from '@/modules/iam/users/use-cases/delete-user.use-case';
 import { GetUserUseCase } from '@/modules/iam/users/use-cases/get-user.use-case';
 import { ListUsersUseCase } from '@/modules/iam/users/use-cases/list-users.use-case';
+import { SetUserRolesUseCase } from '@/modules/iam/users/use-cases/set-user-roles.use-case';
 import { UpdateUserUseCase } from '@/modules/iam/users/use-cases/update-user.use-case';
 import { UsersModule } from '@/modules/iam/users/users.module';
 
@@ -36,6 +37,7 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     GetUserUseCase,
     CreateUserUseCase,
     UpdateUserUseCase,
+    SetUserRolesUseCase,
     DeleteUserUseCase,
   ],
 })

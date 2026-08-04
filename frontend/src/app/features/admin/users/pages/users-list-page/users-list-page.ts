@@ -8,6 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { concat, last, Observable } from 'rxjs';
 import { AuthService } from '@/core/auth/auth.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { Role } from '@/core/models/role.enum';
@@ -18,11 +19,13 @@ import { UsersFilters } from '@/features/admin/users/components/users-filters/us
 import { UsersTabs } from '@/features/admin/users/components/users-tabs/users-tabs';
 import { UsersTable } from '@/features/admin/users/components/users-table/users-table';
 import { UserCreateForm } from '@/features/admin/users/components/user-create-form/user-create-form';
-import { UserEditForm } from '@/features/admin/users/components/user-edit-form/user-edit-form';
+import {
+  UserEditForm,
+  UserEditResult,
+} from '@/features/admin/users/components/user-edit-form/user-edit-form';
 import {
   AdminUser,
   CreateUserPayload,
-  UpdateUserPayload,
   UserStatus,
 } from '@/features/admin/users/models/users.models';
 
@@ -222,12 +225,27 @@ export class UsersListPage {
       });
   }
 
-  protected onUpdate(user: AdminUser, payload: UpdateUserPayload): void {
+  /**
+   * La cuenta y sus roles viven en endpoints distintos: se encadenan en orden
+   * y se toma el último resultado, que ya refleja ambos cambios.
+   */
+  protected onUpdate(user: AdminUser, result: UserEditResult): void {
+    const requests: Observable<AdminUser>[] = [];
+    if (Object.keys(result.changes).length > 0) {
+      requests.push(this.facade.update(user.id, result.changes));
+    }
+    if (result.extraRoleIds) {
+      requests.push(this.facade.setRoles(user.id, result.extraRoleIds));
+    }
+    if (requests.length === 0) {
+      this.closeForms();
+      return;
+    }
+
     this.saving.set(true);
     this.formError.set(null);
-    this.facade
-      .update(user.id, payload)
-      .pipe(takeUntilDestroyed(this.destroyRef))
+    concat(...requests)
+      .pipe(last(), takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (updated) => {
           this.saving.set(false);

@@ -25,6 +25,7 @@ import {
 } from '@/modules/companies/repositories/company-user.repository.interface';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
 import { RegisterCandidateData } from '@/modules/iam/registration/use-cases/register.use-case';
+import { Role as PlatformRoleEntity } from '@/modules/iam/roles/entities/role.entity';
 import {
   type IRoleRepository,
   ROLE_REPOSITORY,
@@ -51,6 +52,8 @@ export interface CreateUserCommand {
   emailVerified?: boolean;
   companyId?: string;
   companyRole?: CompanyMemberRole;
+  /** Roles personalizados adicionales al rol base. */
+  extraRoleIds?: string[];
   candidate?: RegisterCandidateData;
   actorUserId: string;
   ip: string;
@@ -110,6 +113,7 @@ export class CreateUserUseCase {
     }
 
     const companyRole = command.companyRole ?? CompanyMemberRole.ADMIN;
+    const extraRoles = await this.resolveExtraRoles(command.extraRoleIds);
 
     const user = new User();
     user.email = email;
@@ -122,6 +126,9 @@ export class CreateUserUseCase {
     await runInTransaction(this.dataSource, async (manager) => {
       created = await this.users.save(user, manager);
       await this.userRoles.add(created.id, role.id, manager);
+      for (const extra of extraRoles) {
+        await this.userRoles.add(created.id, extra.id, manager);
+      }
 
       if (company) {
         const member = new CompanyUser();
@@ -173,13 +180,43 @@ export class CreateUserUseCase {
       companyId: company?.id ?? null,
       companyName: company?.businessName ?? null,
       companyRole: company ? companyRole : null,
+      roles: [role, ...extraRoles].map((r) => ({
+        id: r.id,
+        code: r.code,
+        name: r.name,
+        isSystem: r.isSystem,
+      })),
     });
   }
 
+  /** Valida que los roles adicionales existan y no sean roles base. */
+  private async resolveExtraRoles(
+    ids?: string[],
+  ): Promise<PlatformRoleEntity[]> {
+    const requested = [...new Set(ids ?? [])];
+    if (requested.length === 0) return [];
+
+    const roles = await this.roles.findByIds(requested);
+    if (roles.length !== requested.length) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ROLE_NOT_FOUND,
+        'Alguno de los roles seleccionados no existe.',
+      );
+    }
+    const base = roles.find((role) => role.isSystem);
+    if (base) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.ROLE_IMMUTABLE,
+        `El rol ${base.code} es un rol base: se asigna con el rol del usuario.`,
+      );
+    }
+    return roles;
+  }
+
   private async findCompanyOrFail(companyId?: string): Promise<Company> {
-    const company = companyId
-      ? await this.companies.findById(companyId)
-      : null;
+    const company = companyId ? await this.companies.findById(companyId) : null;
     if (!company) {
       throw new AppException(
         HttpStatus.NOT_FOUND,

@@ -14,7 +14,16 @@
 
 ## 1. Roles del sistema
 
-Tres roles de **plataforma** (en `user_roles`, fuente del `PermissionsGuard`): `ADMIN`, `EMPLOYER`, `CANDIDATE`. Dentro de una empresa existe además un rol interno (`company_users.company_role`: `OWNER` / `ADMIN`) que **no** es rol de plataforma.
+Tres roles de **plataforma** (en `user_roles`, fuente del `PermissionsGuard`): `ADMIN`, `EMPLOYER`, `CANDIDATE`. Dentro de una empresa existe además un rol interno (`company_users.role`) que **no** es rol de plataforma y **no** lo lee el guard — es pertenencia al equipo:
+
+| Rol interno | Alcance dentro de la empresa |
+| --- | --- |
+| `OWNER` | Titular de la cuenta: empresa, equipo y facturación. Toda empresa conserva al menos uno. |
+| `ADMIN` | Administra la empresa y su equipo, sin ser el titular. |
+| `RECRUITER` | Publica vacantes y gestiona candidatos y postulaciones. |
+| `MEMBER` | Consulta la información de la empresa. |
+
+Gestionar el equipo y estos roles exige el permiso `company_users.manage`: el `ADMIN` de plataforma sobre cualquier empresa (back-office), el `EMPLOYER` sólo sobre la suya.
 
 > Regla base: el backend valida SIEMPRE el permiso **y** la propiedad del recurso (*ownership*). El frontend solo muestra/oculta y enruta.
 
@@ -35,7 +44,7 @@ Tres roles de **plataforma** (en `user_roles`, fuente del `PermissionsGuard`): `
 ### 2.2. Empresa / Reclutador (`EMPLOYER`) — gestiona su contratación
 Todo acotado por *ownership* (su empresa, sus vacantes).
 - **Perfil de empresa:** consultar/editar (logo incluido); **datos fiscales** (RFC de solo lectura, razón social, régimen, C.P., uso de CFDI).
-- **Usuarios de la empresa:** (OWNER/ADMIN) gestionar miembros y su rol interno.
+- **Usuarios de la empresa:** (OWNER/ADMIN internos) gestionar miembros y su rol interno.
 - **Vacantes:** crear, editar, **pausar/reactivar/refrescar** (según el límite del plan, con edición de título si el plan lo permite), cerrar.
 - **Preguntas de filtrado:** definir el cuestionario de screening por vacante.
 - **Postulaciones:** consultar, filtrar, ver el **perfil, hoja de vida y respuestas de filtrado**, ver **datos de contacto** del candidato *(según plan)*, y **actualizar el estado** del proceso (con historial).

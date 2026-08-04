@@ -1,10 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsEmail,
   IsEnum,
   IsOptional,
+  IsUUID,
   Matches,
   MaxLength,
 } from 'class-validator';
@@ -53,4 +55,15 @@ export class UpdateUserDto {
 export class UpdateUserStatusDto {
   @IsEnum(UserStatus, { message: 'El estado no es válido.' })
   status!: UserStatus;
+}
+
+/**
+ * Conjunto completo de roles *adicionales* (personalizados) de la cuenta. Los
+ * roles base van en `role`; enviarlos aquí se rechaza.
+ */
+export class SetUserRolesDto {
+  @ApiPropertyOptional({ type: [String] })
+  @IsArray()
+  @IsUUID('4', { each: true, message: 'Alguno de los roles no es válido.' })
+  roleIds!: string[];
 }

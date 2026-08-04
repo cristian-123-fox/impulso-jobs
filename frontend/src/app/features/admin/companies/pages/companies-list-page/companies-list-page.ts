@@ -15,7 +15,10 @@ import { CompaniesFacade } from '@/features/admin/companies/data/companies.facad
 import { CompaniesFilters } from '@/features/admin/companies/components/companies-filters/companies-filters';
 import { CompaniesTable } from '@/features/admin/companies/components/companies-table/companies-table';
 import { CompanyCreateForm } from '@/features/admin/companies/components/company-create-form/company-create-form';
-import { CreateCompanyPayload } from '@/features/admin/companies/models/companies.models';
+import {
+  AdminCompany,
+  CreateCompanyPayload,
+} from '@/features/admin/companies/models/companies.models';
 
 @Component({
   selector: 'app-companies-list-page',
@@ -81,7 +84,7 @@ import { CreateCompanyPayload } from '@/features/admin/companies/models/companie
         @default {
           <app-companies-table
             [companies]="facade.companies()"
-            (addUser)="goToUsers()"
+            (open)="openCompany($event)"
           />
           <app-admin-pagination
             [page]="facade.page()"
@@ -159,8 +162,8 @@ export class CompaniesListPage {
       });
   }
 
-  protected goToUsers(): void {
-    void this.router.navigate(['/admin/usuarios']);
+  protected openCompany(company: AdminCompany): void {
+    void this.router.navigate(['/admin/empresas', company.id]);
   }
 
   private messageOf(error: unknown): string {

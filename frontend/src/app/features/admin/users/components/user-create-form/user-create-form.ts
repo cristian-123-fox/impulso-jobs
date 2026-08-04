@@ -31,6 +31,7 @@ import {
   passwordPolicyValidator,
 } from '@/shared/validators/password.validator';
 import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
+import { ExtraRolesPicker } from '@/features/admin/users/components/extra-roles-picker/extra-roles-picker';
 import {
   CompanyMemberRole,
   CreateUserPayload,
@@ -58,6 +59,7 @@ const CANDIDATE_CONTROLS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule,
+    ExtraRolesPicker,
     IjButton,
     IjIcon,
     IjInput,
@@ -181,6 +183,10 @@ const CANDIDATE_CONTROLS = [
         }
       </div>
 
+      @if (form.controls.role.value === admin) {
+        <app-extra-roles-picker class="mt-5" [(selected)]="extraRoleIds" />
+      }
+
       <div
         class="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4"
       >
@@ -222,6 +228,9 @@ export class UserCreateForm implements OnInit {
 
   protected readonly employer = Role.EMPLOYER;
   protected readonly candidate = Role.CANDIDATE;
+  protected readonly admin = Role.ADMIN;
+  /** Roles personalizados a asignar además del base (sólo personal admin). */
+  protected readonly extraRoleIds = signal<string[]>([]);
   protected readonly passwordHint = PASSWORD_POLICY_HINT;
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly showPassword = signal(false);
@@ -321,6 +330,10 @@ export class UserCreateForm implements OnInit {
     if (value.role === Role.EMPLOYER) {
       payload.companyId = value.companyId;
       payload.companyRole = value.companyRole;
+    }
+
+    if (value.role === Role.ADMIN && this.extraRoleIds().length) {
+      payload.extraRoleIds = this.extraRoleIds();
     }
 
     if (value.role === Role.CANDIDATE) {

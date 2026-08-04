@@ -72,11 +72,11 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
                   <button
                     type="button"
                     class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-brand"
-                    title="Crear un usuario para esta empresa"
-                    (click)="addUser.emit(company)"
+                    title="Ver la ficha y gestionar su equipo"
+                    (click)="open.emit(company)"
                   >
-                    <ij-icon name="plus" [size]="14" />
-                    Usuario
+                    <ij-icon name="users" [size]="14" />
+                    Equipo
                   </button>
                 </div>
               </td>
@@ -95,7 +95,8 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
 })
 export class CompaniesTable {
   readonly companies = input.required<readonly AdminCompany[]>();
-  readonly addUser = output<AdminCompany>();
+  /** Abre la ficha de la empresa (datos + equipo). */
+  readonly open = output<AdminCompany>();
 
   protected readonly headers = [
     'Empresa',

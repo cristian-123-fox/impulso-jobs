@@ -44,6 +44,15 @@ export class UsersApi {
       .pipe(map((r) => r.content));
   }
 
+  /** Fija el conjunto completo de roles adicionales (personalizados). */
+  setRoles(id: string, roleIds: string[]): Observable<AdminUser> {
+    return this.http
+      .put<ApiSuccessResponse<AdminUser>>(`${this.base}/${id}/roles`, {
+        roleIds,
+      })
+      .pipe(map((r) => r.content));
+  }
+
   updateStatus(id: string, status: UserStatus): Observable<AdminUser> {
     return this.http
       .patch<ApiSuccessResponse<AdminUser>>(`${this.base}/${id}/status`, {

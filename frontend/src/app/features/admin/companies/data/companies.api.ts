@@ -5,9 +5,12 @@ import { map } from 'rxjs/operators';
 import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
+  AddCompanyMemberPayload,
   AdminCompany,
   CompaniesFilters,
   CompaniesPage,
+  CompanyMember,
+  CompanyMemberRole,
   CreateCompanyPayload,
   CreateCompanyResult,
 } from '@/features/admin/companies/models/companies.models';
@@ -40,5 +43,45 @@ export class CompaniesApi {
     return this.http
       .post<ApiSuccessResponse<CreateCompanyResult>>(this.base, payload)
       .pipe(map((r) => r.content));
+  }
+
+  // ------------------------------------------------------------------ equipo
+  listMembers(companyId: string): Observable<CompanyMember[]> {
+    return this.http
+      .get<
+        ApiSuccessResponse<CompanyMember[]>
+      >(`${this.base}/${companyId}/members`)
+      .pipe(map((r) => r.content));
+  }
+
+  addMember(
+    companyId: string,
+    payload: AddCompanyMemberPayload,
+  ): Observable<CompanyMember> {
+    return this.http
+      .post<
+        ApiSuccessResponse<CompanyMember>
+      >(`${this.base}/${companyId}/members`, payload)
+      .pipe(map((r) => r.content));
+  }
+
+  updateMemberRole(
+    companyId: string,
+    userId: string,
+    role: CompanyMemberRole,
+  ): Observable<CompanyMember> {
+    return this.http
+      .patch<
+        ApiSuccessResponse<CompanyMember>
+      >(`${this.base}/${companyId}/members/${userId}`, { role })
+      .pipe(map((r) => r.content));
+  }
+
+  removeMember(companyId: string, userId: string): Observable<void> {
+    return this.http
+      .delete<
+        ApiSuccessResponse<unknown>
+      >(`${this.base}/${companyId}/members/${userId}`)
+      .pipe(map(() => undefined));
   }
 }

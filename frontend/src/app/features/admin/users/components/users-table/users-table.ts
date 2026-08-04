@@ -10,6 +10,7 @@ import { Role } from '@/core/models/role.enum';
 import { IjIcon } from '@/shared/ui';
 import {
   AdminUser,
+  AssignedRole,
   STATUS_LABELS,
   UserStatus,
 } from '@/features/admin/users/models/users.models';
@@ -82,6 +83,23 @@ const EMPTY_MESSAGE: Record<Role, string> = {
                   </div>
                 </div>
               </td>
+
+              @if (isAdmin()) {
+                <td class="px-5 py-3.5">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    @for (role of extraRoles(user); track role.id) {
+                      <span
+                        class="inline-block rounded-md bg-accent-blue-soft px-2 py-1 text-[11.5px] font-bold text-accent-blue"
+                        [title]="role.code"
+                      >
+                        {{ role.name }}
+                      </span>
+                    } @empty {
+                      <span class="text-[13px] text-muted">Sin roles adicionales</span>
+                    }
+                  </div>
+                </td>
+              }
 
               @if (isEmployer()) {
                 <td class="px-5 py-3.5 text-[13.5px] text-body">
@@ -206,12 +224,22 @@ export class UsersTable {
   protected readonly active = UserStatus.ACTIVE;
 
   protected readonly isEmployer = computed(() => this.role() === Role.EMPLOYER);
+  protected readonly isAdmin = computed(() => this.role() === Role.ADMIN);
 
-  protected readonly headers = computed(() =>
-    this.isEmployer()
-      ? ['Usuario', 'Empresa', 'Rol interno', 'Estado', 'Alta', '']
-      : ['Usuario', 'Estado', 'Alta', ''],
-  );
+  protected readonly headers = computed(() => {
+    if (this.isEmployer()) {
+      return ['Usuario', 'Empresa', 'Rol interno', 'Estado', 'Alta', ''];
+    }
+    if (this.isAdmin()) {
+      return ['Usuario', 'Roles adicionales', 'Estado', 'Alta', ''];
+    }
+    return ['Usuario', 'Estado', 'Alta', ''];
+  });
+
+  /** El rol base ya lo indica la pestaña; aquí sólo los personalizados. */
+  protected extraRoles(user: AdminUser): readonly AssignedRole[] {
+    return (user.roles ?? []).filter((role) => !role.isSystem);
+  }
 
   protected readonly emptyMessage = computed(() => EMPTY_MESSAGE[this.role()]);
 

@@ -57,7 +57,9 @@ async function main(): Promise<void> {
       console.log(`Empresa (usuario) creada: ${email}`);
     }
 
-    const employerRole = await roleRepo.findOne({ where: { code: 'EMPLOYER' } });
+    const employerRole = await roleRepo.findOne({
+      where: { code: 'EMPLOYER' },
+    });
     if (!employerRole) {
       console.warn(
         '⚠ El rol EMPLOYER no existe. Ejecuta primero: pnpm seed:rbac',
@@ -101,7 +103,9 @@ async function main(): Promise<void> {
           role: CompanyMemberRole.OWNER,
         }),
       );
-      console.log('Empresa + membresía OWNER creadas (companies/company_users).');
+      console.log(
+        'Empresa + membresía OWNER creadas (companies/company_users).',
+      );
     }
 
     console.log(

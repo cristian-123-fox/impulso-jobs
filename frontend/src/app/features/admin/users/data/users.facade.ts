@@ -100,6 +100,10 @@ export class UsersFacade {
     return this.api.update(id, payload);
   }
 
+  setRoles(id: string, roleIds: string[]): Observable<AdminUser> {
+    return this.api.setRoles(id, roleIds);
+  }
+
   updateStatus(id: string, status: UserStatus): Observable<AdminUser> {
     return this.api.updateStatus(id, status);
   }

@@ -26,6 +26,7 @@ import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.g
 import { CreateUserDto } from '@/modules/iam/users/dto/create-user.dto';
 import { ListUsersQueryDto } from '@/modules/iam/users/dto/list-users-query.dto';
 import {
+  SetUserRolesDto,
   UpdateUserDto,
   UpdateUserStatusDto,
 } from '@/modules/iam/users/dto/update-user.dto';
@@ -37,6 +38,7 @@ import {
   ListUsersResult,
   ListUsersUseCase,
 } from '@/modules/iam/users/use-cases/list-users.use-case';
+import { SetUserRolesUseCase } from '@/modules/iam/users/use-cases/set-user-roles.use-case';
 import { UpdateUserUseCase } from '@/modules/iam/users/use-cases/update-user.use-case';
 
 @ApiTags('admin-users')
@@ -49,6 +51,7 @@ export class AdminUsersController {
     private readonly getUser: GetUserUseCase,
     private readonly createUser: CreateUserUseCase,
     private readonly updateUser: UpdateUserUseCase,
+    private readonly setUserRoles: SetUserRolesUseCase,
     private readonly deleteUser: DeleteUserUseCase,
   ) {}
 
@@ -102,6 +105,24 @@ export class AdminUsersController {
     return this.updateUser.execute({
       id,
       ...dto,
+      actorUserId: actor.userId,
+      ip: client.ip,
+      userAgent: client.userAgent,
+    });
+  }
+
+  @Put(':id/roles')
+  @RequirePermissions('roles.assign')
+  @ResponseMessage('Roles del usuario actualizados.')
+  updateRoles(
+    @Param('id') id: string,
+    @Body() dto: SetUserRolesDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<UserResponseDto> {
+    return this.setUserRoles.execute({
+      userId: id,
+      roleIds: dto.roleIds,
       actorUserId: actor.userId,
       ip: client.ip,
       userAgent: client.userAgent,

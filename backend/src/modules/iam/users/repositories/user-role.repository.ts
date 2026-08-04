@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { UserRole } from '@/modules/iam/users/entities/user-role.entity';
 import { IUserRoleRepository } from '@/modules/iam/users/repositories/user-role.repository.interface';
@@ -17,6 +17,14 @@ export class UserRoleRepository
   async findRoleIdsByUserId(userId: string): Promise<string[]> {
     const rows = await this.repo().find({ where: { userId } });
     return rows.map((r) => r.roleId);
+  }
+
+  async findByUserIds(
+    userIds: string[],
+  ): Promise<{ userId: string; roleId: string }[]> {
+    if (userIds.length === 0) return [];
+    const rows = await this.repo().find({ where: { userId: In(userIds) } });
+    return rows.map((r) => ({ userId: r.userId, roleId: r.roleId }));
   }
 
   async exists(userId: string, roleId: string): Promise<boolean> {

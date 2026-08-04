@@ -4,6 +4,10 @@ export const USER_ROLE_REPOSITORY = 'USER_ROLE_REPOSITORY';
 
 export interface IUserRoleRepository {
   findRoleIdsByUserId(userId: string): Promise<string[]>;
+  /** Pares (usuario, rol) de varios usuarios, para el listado admin sin N+1. */
+  findByUserIds(
+    userIds: string[],
+  ): Promise<{ userId: string; roleId: string }[]>;
   exists(userId: string, roleId: string): Promise<boolean>;
   add(userId: string, roleId: string, manager?: EntityManager): Promise<void>;
   remove(

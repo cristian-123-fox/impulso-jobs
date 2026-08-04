@@ -10,6 +10,7 @@ import { CompanyRepository } from '@/modules/companies/repositories/company.repo
 import { COMPANY_USER_REPOSITORY } from '@/modules/companies/repositories/company-user.repository.interface';
 import { CompanyUserRepository } from '@/modules/companies/repositories/company-user.repository';
 import { AdminCompaniesUseCase } from '@/modules/companies/use-cases/admin-companies.use-case';
+import { CompanyMembersUseCase } from '@/modules/companies/use-cases/company-members.use-case';
 import { CompanyProfileUseCase } from '@/modules/companies/use-cases/company-profile.use-case';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
 import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
@@ -32,6 +33,7 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     { provide: COMPANY_USER_REPOSITORY, useClass: CompanyUserRepository },
     CompanyProfileUseCase,
     AdminCompaniesUseCase,
+    CompanyMembersUseCase,
   ],
   exports: [COMPANY_REPOSITORY, COMPANY_USER_REPOSITORY],
 })

@@ -3,6 +3,15 @@ import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { User } from '@/modules/iam/users/entities/user.entity';
 
+/** Rol de plataforma asignado en `user_roles`. */
+export interface AssignedRoleDto {
+  id: string;
+  code: string;
+  name: string;
+  /** `true` en los roles base (ADMIN/EMPLOYER/CANDIDATE) del seed. */
+  isSystem: boolean;
+}
+
 /** Datos del perfil asociados a la cuenta, resueltos por el caso de uso. */
 export interface UserProfileSummary {
   /** Nombre para mostrar: candidato (nombre + apellido) o empresa. */
@@ -10,6 +19,8 @@ export interface UserProfileSummary {
   companyId?: string | null;
   companyName?: string | null;
   companyRole?: string | null;
+  /** Todos los roles asignados; el guard usa estos, no `role`. */
+  roles?: AssignedRoleDto[];
 }
 
 export class UserResponseDto {
@@ -52,6 +63,10 @@ export class UserResponseDto {
 
   @ApiPropertyOptional({ nullable: true })
   companyRole?: string | null;
+
+  /** Roles de plataforma asignados (base + adicionales). */
+  @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
+  roles?: AssignedRoleDto[];
 }
 
 export function toUserResponse(
@@ -74,5 +89,6 @@ export function toUserResponse(
     companyId: profile.companyId ?? null,
     companyName: profile.companyName ?? null,
     companyRole: profile.companyRole ?? null,
+    roles: profile.roles ?? [],
   };
 }

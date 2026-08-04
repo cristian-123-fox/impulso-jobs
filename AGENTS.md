@@ -137,7 +137,7 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 ### 4.5. Seguridad, auditoría y datos
 
 - **JWT** access corto + refresh largo (persistido en `tokens_users`). Revocados/expirados → `blacklist_tokens`. Tokens de un solo uso (reset/verificación) → JWT 30 min, a blacklist tras uso.
-- **RBAC:** rol de plataforma (`ADMIN`/`EMPLOYER`/`CANDIDATE`) en `user_roles`, fuente del `PermissionsGuard`. `company_users.company_role` es rol *dentro* de la empresa.
+- **RBAC:** rol de plataforma (`ADMIN`/`EMPLOYER`/`CANDIDATE`) en `user_roles`, fuente del `PermissionsGuard`. El rol *dentro* de la empresa vive en `company_users.role` (`OWNER`/`ADMIN`/`RECRUITER`/`MEMBER`): es pertenencia, no permiso, y no lo lee el guard. Gestionarlo exige `company_users.manage`, y toda empresa conserva al menos un `OWNER`.
 - **Ownership** validado en el use-case (candidato solo lo suyo; empresa solo sus vacantes/postulaciones), con al menos una prueba negativa.
 - **Auditoría** de crear/actualizar/eliminar vía `AuditService` → `audit_logs` (actor, acción, entidad, entity_id, ip, user_agent, diff?).
 - **Transacciones** (registro, cambios de estado con historial) con `runInTransaction`/QueryRunner y rollback ante error.
