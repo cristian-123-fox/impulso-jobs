@@ -37,9 +37,7 @@ import { AVATAR_GRADIENT } from '@/features/panel/panel.theme';
           <ij-icon name="close" [size]="22" />
         </button>
       } @else {
-        <span class="relative block h-8 w-[26px] rounded-b rounded-t-[13px] bg-brand" aria-hidden="true">
-          <span class="absolute left-1/2 top-[6px] block h-2 w-2 -translate-x-1/2 rounded-full bg-white"></span>
-        </span>
+        <ij-logo size="sm" [iconOnly]="true" />
       }
     </div>
 
