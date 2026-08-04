@@ -5,11 +5,11 @@ import {
   FindOptionsWhere,
   In,
   IsNull,
-  Like,
   Not,
   Repository,
 } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
+import { containsInsensitive } from '@/common/utils/search.util';
 import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { User } from '@/modules/iam/users/entities/user.entity';
@@ -69,14 +69,10 @@ export class UserRepository
     await this.repo(manager).softDelete({ id });
   }
 
-  /**
-   * `Like` con comodines es portable entre MySQL y PostgreSQL. El correo se
-   * persiste en minúsculas, así que basta comparar la búsqueda en minúsculas.
-   */
   private buildWhere(criteria: UserSearchCriteria): FindOptionsWhere<User> {
     const where: FindOptionsWhere<User> = {};
-    const search = criteria.search?.trim().toLowerCase();
-    if (search) where.email = Like(`%${search}%`);
+    const search = criteria.search?.trim();
+    if (search) where.email = containsInsensitive(search, 'searchEmail');
     if (criteria.role) where.role = criteria.role;
     if (criteria.status) where.status = criteria.status;
     if (criteria.emailVerified === true) where.emailVerifiedAt = Not(IsNull());

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, FindOptionsWhere, In, Like, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
+import { containsInsensitive } from '@/common/utils/search.util';
 import { Company } from '@/modules/companies/entities/company.entity';
 import {
   CompanySearchCriteria,
@@ -64,11 +65,11 @@ export class CompanyRepository
     const search = criteria.search?.trim();
     if (!search) return base;
 
-    const like = Like(`%${search}%`);
+    // Cada rama del OR necesita su propio parámetro SQL.
     return [
-      { ...base, businessName: like },
-      { ...base, legalName: like },
-      { ...base, rfc: Like(`%${search.toUpperCase()}%`) },
+      { ...base, businessName: containsInsensitive(search, 'searchBusiness') },
+      { ...base, legalName: containsInsensitive(search, 'searchLegal') },
+      { ...base, rfc: containsInsensitive(search, 'searchRfc') },
     ];
   }
 }

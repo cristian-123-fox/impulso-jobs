@@ -171,7 +171,8 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
   1. Implementar un adaptador **SMTP** (nodemailer con la cuenta de correo de cPanel) — se puede agregar cuando quieras.
   2. Mientras tanto, usar los **seeders** para cuentas ya verificadas (`seed:admin:prod`, `seed:candidate:prod`, `seed:company:prod`).
 - 🧪 **El entorno virtual se activa por sesión:** cada Terminal nueva de la API requiere `source ~/nodevenv/api/.../bin/activate`.
-- 🔁 **Redeploy del backend:** activar venv → `git pull` (o subir cambios) → `pnpm install` → `pnpm run build` → `pnpm run migration:run:prod` → **Restart** en la Node.js App.
+- 🔁 **Redeploy del backend:** activar venv → `git pull` (o subir cambios) → `pnpm install` → `pnpm run build` → `pnpm run migration:run:prod` → `pnpm run seed:rbac:prod` → **Restart** en la Node.js App.
+  > `seed:rbac:prod` es idempotente y hay que ejecutarlo **siempre**: si la versión nueva añadió permisos (p. ej. `users.create`, `companies.create`), sin él los endpoints responden `403 PERMISSION_DENIED` aunque el código esté desplegado.
 - 🔁 **Redeploy del frontend:** recompilar (`pnpm run build`) y resubir el contenido de `dist/frontend/browser/` a `~/demo`.
 - 🔐 **bcryptjs:** se cambió `bcrypt` (nativo) por `bcryptjs` (JS puro) → sin compilación en el servidor. Los hashes existentes siguen siendo válidos.
 - 🚫 **Nunca subas** `node_modules`, el `dist` del backend, ni el `.env` con secretos.

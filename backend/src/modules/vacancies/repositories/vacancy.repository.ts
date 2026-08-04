@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, FindOptionsWhere, Like, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
+import { containsInsensitive } from '@/common/utils/search.util';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import { VacancyStatus } from '@/modules/vacancies/enums/vacancy.enums';
 import {
@@ -38,7 +39,7 @@ export class VacancyRepository
     const where: FindOptionsWhere<Vacancy> = { companyId: criteria.companyId };
     if (criteria.status) where.status = criteria.status;
     const search = criteria.search?.trim();
-    if (search) where.title = Like(`%${search}%`);
+    if (search) where.title = containsInsensitive(search, 'companySearch');
 
     return this.repo(manager).findAndCount({
       where,
@@ -99,7 +100,10 @@ export class VacancyRepository
     const base: FindOptionsWhere<Vacancy> = { status: VacancyStatus.ACTIVE };
     if (criteria.state) base.state = criteria.state;
     if (criteria.municipality) {
-      base.municipality = Like(`%${criteria.municipality.trim()}%`);
+      base.municipality = containsInsensitive(
+        criteria.municipality,
+        'municipality',
+      );
     }
     if (criteria.employmentType) base.employmentType = criteria.employmentType;
     if (criteria.workMode) base.workMode = criteria.workMode;
@@ -110,10 +114,10 @@ export class VacancyRepository
     const search = criteria.search?.trim();
     if (!search) return base;
 
-    const like = Like(`%${search}%`);
+    // Cada rama del OR necesita su propio parámetro SQL.
     return [
-      { ...base, title: like },
-      { ...base, description: like },
+      { ...base, title: containsInsensitive(search, 'searchTitle') },
+      { ...base, description: containsInsensitive(search, 'searchBody') },
     ];
   }
 }
