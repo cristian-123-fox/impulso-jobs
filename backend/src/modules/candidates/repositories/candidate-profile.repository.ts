@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
 import { ICandidateProfileRepository } from '@/modules/candidates/repositories/candidate-profile.repository.interface';
@@ -21,6 +21,14 @@ export class CandidateProfileRepository
     manager?: EntityManager,
   ): Promise<CandidateProfile | null> {
     return this.repo(manager).findOne({ where: { userId } });
+  }
+
+  findByUserIds(
+    userIds: string[],
+    manager?: EntityManager,
+  ): Promise<CandidateProfile[]> {
+    if (userIds.length === 0) return Promise.resolve([]);
+    return this.repo(manager).find({ where: { userId: In(userIds) } });
   }
 
   async existsByDocumentNumber(

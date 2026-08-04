@@ -8,6 +8,11 @@ export interface ICandidateProfileRepository {
     userId: string,
     manager?: EntityManager,
   ): Promise<CandidateProfile | null>;
+  /** Perfiles de varios usuarios (listado admin: nombre de cada candidato). */
+  findByUserIds(
+    userIds: string[],
+    manager?: EntityManager,
+  ): Promise<CandidateProfile[]>;
   existsByDocumentNumber(
     documentNumber: string,
     manager?: EntityManager,

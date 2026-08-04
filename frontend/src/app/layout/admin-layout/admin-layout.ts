@@ -7,7 +7,13 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
-import { IjIcon, IjLogo } from '@/shared/ui';
+import { IconName, IjIcon, IjLogo } from '@/shared/ui';
+
+interface AdminNavItem {
+  readonly path: string;
+  readonly label: string;
+  readonly icon: IconName;
+}
 
 /** Shell del área de administración: sidebar + topbar (sesión) + outlet. */
 @Component({
@@ -26,22 +32,33 @@ import { IjIcon, IjLogo } from '@/shared/ui';
           <span class="pl-2.5 text-[11px] font-bold tracking-[1px] text-muted">ADMINISTRACIÓN</span>
         </div>
         <nav class="flex flex-1 flex-col gap-1 px-4">
-          <a
-            routerLink="/admin/roles"
-            routerLinkActive="bg-brand-50 text-brand"
-            class="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-semibold text-body transition-colors hover:bg-surface"
-          >
-            <ij-icon name="shield" [size]="19" [strokeWidth]="1.9" />
-            Roles y permisos
-          </a>
+          @for (item of navItems; track item.path) {
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="bg-brand-50 text-brand"
+              class="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-semibold text-body transition-colors hover:bg-surface"
+            >
+              <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
+              {{ item.label }}
+            </a>
+          }
         </nav>
+        <div class="border-t border-line p-4">
+          <a
+            routerLink="/panel"
+            class="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-semibold text-muted transition-colors hover:bg-surface hover:text-body"
+          >
+            <ij-icon name="grid" [size]="19" [strokeWidth]="1.9" />
+            Ir al panel
+          </a>
+        </div>
       </aside>
 
       <div class="flex min-w-0 flex-1 flex-col">
         <header
           class="sticky top-0 z-10 flex h-[68px] items-center gap-3 border-b border-line bg-white px-5 sm:px-7"
         >
-          <a routerLink="/admin/roles" class="lg:hidden" aria-label="Administración">
+          <a routerLink="/admin/usuarios" class="lg:hidden" aria-label="Administración">
             <ij-logo size="sm" />
           </a>
           <div class="ml-auto flex items-center gap-3">
@@ -60,6 +77,22 @@ import { IjIcon, IjLogo } from '@/shared/ui';
           </div>
         </header>
 
+        <!-- Navegación en móvil: el sidebar sólo existe desde lg. -->
+        <nav
+          class="flex gap-2 overflow-x-auto border-b border-line bg-white px-4 py-2.5 lg:hidden"
+        >
+          @for (item of navItems; track item.path) {
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="bg-brand-50 text-brand"
+              class="flex flex-shrink-0 items-center gap-2 rounded-[11px] px-3 py-2 text-[13px] font-semibold text-body transition-colors hover:bg-surface"
+            >
+              <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
+              {{ item.label }}
+            </a>
+          }
+        </nav>
+
         <main class="flex-1 overflow-y-auto p-4 sm:p-7">
           <router-outlet />
         </main>
@@ -71,6 +104,12 @@ export class AdminLayout {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+
+  protected readonly navItems: readonly AdminNavItem[] = [
+    { path: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
+    { path: '/admin/empresas', label: 'Empresas', icon: 'building' },
+    { path: '/admin/roles', label: 'Roles y permisos', icon: 'shield' },
+  ];
 
   protected onLogout(): void {
     this.auth

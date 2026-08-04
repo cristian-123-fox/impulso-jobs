@@ -1,7 +1,19 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'roles', pathMatch: 'full' },
+  { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
+  {
+    path: 'usuarios',
+    loadChildren: () =>
+      import('@/features/admin/users/users.routes').then((m) => m.routes),
+  },
+  {
+    path: 'empresas',
+    loadChildren: () =>
+      import('@/features/admin/companies/companies.routes').then(
+        (m) => m.routes,
+      ),
+  },
   {
     path: 'roles',
     loadChildren: () =>

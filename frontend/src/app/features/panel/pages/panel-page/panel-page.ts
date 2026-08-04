@@ -29,6 +29,13 @@ import { CandidateSettingsComponent } from '@/features/panel/components/candidat
 import { CompanyProfileComponent } from '@/features/panel/components/company-profile/company-profile';
 import { Role } from '@/core/models/role.enum';
 
+/** Vistas del admin que ya existen con datos reales fuera del prototipo. */
+const ADMIN_ROUTES: Record<string, string> = {
+  usuarios: '/admin/usuarios',
+  empresas: '/admin/empresas',
+  roles: '/admin/roles',
+};
+
 /**
  * Contenedor del panel multi-rol. Mantiene el estado de rol/vista/página con
  * señales (equivalente al `state` del prototipo) y resuelve, vía el facade, qué
@@ -196,6 +203,13 @@ export class PanelPage {
   }
 
   protected onNavigate(key: string): void {
+    // Las vistas del admin ya implementadas viven en el área real `/admin`;
+    // el resto sigue mostrando el prototipo hasta que se construyan.
+    const adminRoute = ADMIN_ROUTES[key];
+    if (this.role() === 'admin' && adminRoute) {
+      void this.router.navigateByUrl(adminRoute);
+      return;
+    }
     this.view.set(key);
     this.page.set(0);
     // En móvil el sidebar es un drawer: se cierra tras navegar.

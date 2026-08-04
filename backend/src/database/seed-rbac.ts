@@ -56,6 +56,7 @@ const ACTION_NAMES: Record<string, string> = {
 /** Todos los permisos `component.action` de la matriz. */
 const PERMISSION_CODES: readonly string[] = [
   'users.read',
+  'users.create',
   'users.update',
   'users.block',
   'users.delete',
@@ -68,6 +69,7 @@ const PERMISSION_CODES: readonly string[] = [
   'catalogs.manage',
   'audit.read',
   'companies.read',
+  'companies.create',
   'companies.update',
   'company_users.manage',
   'vacancies.read',
@@ -115,6 +117,7 @@ const ROLE_META: Record<string, { name: string; description: string }> = {
 const MATRIX: Record<string, readonly string[]> = {
   ADMIN: [
     'users.read',
+    'users.create',
     'users.update',
     'users.block',
     'users.delete',
@@ -127,6 +130,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'catalogs.manage',
     'audit.read',
     'companies.read',
+    'companies.create',
     'companies.update',
     'company_users.manage',
     'vacancies.read',

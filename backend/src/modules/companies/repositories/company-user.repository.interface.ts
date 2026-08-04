@@ -8,5 +8,15 @@ export interface ICompanyUserRepository {
     userId: string,
     manager?: EntityManager,
   ): Promise<CompanyUser | null>;
+  /** Membresías de varios usuarios (listado admin: empresa de cada empleador). */
+  findByUserIds(
+    userIds: string[],
+    manager?: EntityManager,
+  ): Promise<CompanyUser[]>;
+  /** Membresías de varias empresas (listado admin: dueño y nº de miembros). */
+  findByCompanyIds(
+    companyIds: string[],
+    manager?: EntityManager,
+  ): Promise<CompanyUser[]>;
   save(member: CompanyUser, manager?: EntityManager): Promise<CompanyUser>;
 }
