@@ -33,6 +33,8 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
     VacancyStatusUseCase,
     PublicVacanciesUseCase,
   ],
-  exports: [VACANCY_REPOSITORY],
+  // `VacancyOwnershipService` lo reutiliza M11 (postulaciones) para resolver la
+  // empresa del reclutador y validar que la vacante es suya.
+  exports: [VACANCY_REPOSITORY, VacancyOwnershipService],
 })
 export class VacanciesModule {}

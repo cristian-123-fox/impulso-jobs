@@ -84,8 +84,8 @@ backend/src/
 │  ├─ companies/             ✅ # perfil de empresa (fiscal/CFDI) + company_users + back-office
 │  ├─ candidates/            ✅ # perfil, experiencia, educación, idiomas, skills, hoja de vida, configuración
 │  ├─ vacancies/             ✅ # vacantes (CRUD, estado, pausar/reactivar/refrescar) + listado público
+│  ├─ applications/          ✅ # postulaciones, catálogo de estados e historial de transiciones
 │  ├─ audit/                 ✅ # AuditService + audit_logs
-│  ├─ applications/          🕓 # postulaciones + historial + respuestas de filtrado
 │  ├─ billing/               🕓 # planes, beneficios, promociones, suscripciones, órdenes, Stripe
 │  └─ notifications/         🕓 # mensaje automático a no seleccionados, bandeja
 │
@@ -144,7 +144,9 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 | Vacantes (gestión) | `modules/vacancies/` | `company/vacancies` CRUD + `:id/{status,pause,reactivate,refresh}` | ✅ |
 | Vacantes (público) | `modules/vacancies/` | `GET vacancies` · `GET vacancies/:id` | ✅ |
 | Auditoría | `modules/audit/` (`AuditService`, invocado desde los use-cases) | — (sin endpoint de consulta aún) | ✅ |
-| Postulaciones + historial + respuestas de filtrado | `modules/applications/` | — | 🕓 |
+| Postulaciones del aspirante | `modules/applications/` | `POST/GET candidate/applications` · `GET :id` · `GET :id/history` | ✅ |
+| Postulaciones vistas por la empresa | `modules/applications/` | `GET company/applications` (+ `statuses`, `:id`, `:id/history`) · `PUT :id/status` | ✅ |
+| Respuestas de filtrado (`application_answers`) | `modules/applications/` | — | 🕓 (M15) |
 | Planes, beneficios, promociones, suscripciones, órdenes, Stripe | `modules/billing/` | — | 🕓 |
 | Notificaciones | `modules/notifications/` | — | 🕓 |
 | Catálogos MX | `common/catalogs/` (constantes) + `GET candidate/profile/catalogs/languages` | parcial | ✅ |
@@ -309,12 +311,12 @@ Las rutas de cara al usuario van **en español**; los identificadores del códig
 
 ## 10. Estado del proyecto y qué sigue
 
-**Construido:** identidad completa (registro empresa/candidato, login, refresh, logout, reset, verificación de correo, bloqueo por intentos, blacklist de tokens), RBAC con guard por permiso y back-office de usuarios/empresas/roles, perfil de candidato con experiencia/educación/idiomas/habilidades/hojas de vida/configuración, perfil de empresa con datos fiscales CFDI, y vacantes (CRUD, estado, pausar/reactivar/refrescar) con listado público. Despliegue en cPanel documentado y funcionando.
+**Construido (backend):** identidad completa (registro empresa/candidato, login, refresh, logout, reset, verificación de correo, bloqueo por intentos, blacklist de tokens), RBAC con guard por permiso y back-office de usuarios/empresas/roles, perfil de candidato con experiencia/educación/idiomas/habilidades/hojas de vida/configuración, perfil de empresa con datos fiscales CFDI, vacantes (CRUD, estado, pausar/reactivar/refrescar) con listado público, y **postulaciones con historial de estados**. El circuito candidato↔empresa ya cierra de punta a punta. Despliegue en cPanel documentado y funcionando.
 
 **Siguiente frontera, en orden:**
 
-1. **`modules/applications/`** — postularse, listar/filtrar postulaciones, historial de estados. Es el eslabón que falta para cerrar el circuito candidato↔empresa.
-2. **Preguntas de filtrado** (`vacancy_questions` + `application_answers`) — dependen de applications.
+1. **Frontend de postulaciones** — el backend de M11 está listo pero **no tiene UI**: falta el botón "postularme" en el detalle de vacante, "mis postulaciones" para el aspirante, y la bandeja del reclutador con filtros, detalle y cambio de estado.
+2. **Preguntas de filtrado** (`vacancy_questions` + `application_answers`, M15) — el módulo de postulaciones ya deja el hueco preparado.
 3. **`modules/billing/` + Stripe** — planes, beneficios, promociones por vacante, suscripción anual, órdenes y CFDI. Ver `Impulso_Jobs_Planes_Suscripciones.md` y `Impulso_Jobs_Stripe.md`. **Bloqueado** por las decisiones de precio/alcance listadas en `README_CONTEXTO.md`.
-4. **Notificaciones** (mensaje automático a no seleccionados) y **SMTP real** — hoy `MAILER_PORT` usa `ConsoleMailerAdapter`, que solo escribe el enlace en el log.
-5. **Deuda conocida:** e2e de autorización/ownership, piezas faltantes del UI Kit (`table`, `pagination`, `tabs`, `spinner`, `empty-state`), retirar los datos de demostración de `features/panel/`, y `packages/api-contract`.
+4. **Notificaciones** (mensaje automático a no seleccionados, M16) y **SMTP real** — hoy `MAILER_PORT` usa `ConsoleMailerAdapter`, que solo escribe el enlace en el log. `VacancyStatusUseCase.close()` y `ApplicationsModule` ya exponen lo que ese módulo necesita.
+5. **Deuda conocida:** e2e de autorización/ownership; piezas faltantes del UI Kit (`table`, `pagination`, `tabs`, `spinner`, `empty-state`); retirar los datos de demostración de `features/panel/`; `packages/api-contract`; **y limpiar la instrumentación de depuración commiteada en `candidates/use-cases/candidate-resume.use-case.ts`** (seis bloques `#region debug-point` que hacen `fetch` a `127.0.0.1:7777` en cada subida de CV).

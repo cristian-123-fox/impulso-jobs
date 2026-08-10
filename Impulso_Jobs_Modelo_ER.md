@@ -8,8 +8,8 @@ El diagrama es el **objetivo**. Esto es lo que existe hoy en `backend/src/databa
 
 | Estado | Tablas |
 |---|---|
-| ✅ **Creadas** | `users` · `tokens_users` · `blacklist_tokens` · `roles` · `permissions` · `components` · `actions` · `role_permissions` · `user_roles` · `audit_logs` · `candidate_profiles` · `candidate_experiences` · `candidate_educations` · `candidate_languages` · `languages` · `candidate_skills` · `candidate_resumes` · `candidate_profile_settings` · `companies` · `company_users` · `vacancies` |
-| 🕓 **Pendientes** | `notifications` · `vacancy_questions` · `candidate_applications` · `application_answers` · `application_status` · `application_status_history` · `plans` · `plan_features` · `plan_feature_values` · `vacancy_promotions` · `company_subscriptions` · `promotion_orders` · `talent_access_grants` · `processed_stripe_events` |
+| ✅ **Creadas** | `users` · `tokens_users` · `blacklist_tokens` · `roles` · `permissions` · `components` · `actions` · `role_permissions` · `user_roles` · `audit_logs` · `candidate_profiles` · `candidate_experiences` · `candidate_educations` · `candidate_languages` · `languages` · `candidate_skills` · `candidate_resumes` · `candidate_profile_settings` · `companies` · `company_users` · `vacancies` · `candidate_applications` · `application_status` · `application_status_history` |
+| 🕓 **Pendientes** | `notifications` · `vacancy_questions` · `application_answers` · `plans` · `plan_features` · `plan_feature_values` · `vacancy_promotions` · `company_subscriptions` · `promotion_orders` · `talent_access_grants` · `processed_stripe_events` |
 
 **Convenciones reales del esquema** (aplican a *todas* las tablas de entidad, ver `common/entities/base.entity.ts`):
 
@@ -25,6 +25,10 @@ El diagrama es el **objetivo**. Esto es lo que existe hoy en `backend/src/databa
 | `vacancies` | — | `closed_at`, `can_edit_title_on_reactivate` | Añadidos por el flujo pausar/reactivar/cerrar. |
 | `candidate_profiles` | `profile_visibility` | *(no existe aquí)* | La visibilidad vive **solo** en `candidate_profile_settings` (`profile_visibility` + `information_visibility`). |
 | `companies` | `stripe_customer_id`, `is_active` | *(no existen aún)* | Se agregan con el módulo de billing. |
+| `application_status` | `id smallint PK`, `name`, `description` | `code varchar(30) PK`, `name`, `description`, `sort_order`, `is_final` | Catálogo con **código legible como PK**, igual que `languages`: el historial y las postulaciones se leen sin resolver ids. Se llena con `pnpm seed:applications`. |
+| `candidate_applications` | `application_status_id smallint FK` | `status_code varchar(30)` | Consecuencia de lo anterior. |
+| `candidate_applications` | — | `company_id` | Empresa de la vacante, copiada al postular: permite listar y contar por empresa sin join y conserva el vínculo al cerrarse la vacante. |
+| `application_status_history` | `previous_status_id`, `current_status_id` | `previous_status_code`, `current_status_code` | Íd. `previous` es nulo sólo en la línea inicial. |
 
 > Los bloques del diagrama de abajo reflejan el objetivo; para el detalle exacto de lo ya creado, la fuente de verdad son las entidades y migraciones del backend.
 
@@ -451,7 +455,7 @@ erDiagram
 ## Catálogos (valores semilla)
 
 - **roles.code:** `ADMIN` · `EMPLOYER` · `CANDIDATE`.
-- **application_status.name:** En revisión · En proceso · Entrevista · Prueba técnica · Seleccionado · Rechazado · Finalizado. *(Pendiente: hoy no existe la tabla.)*
+- **application_status:** `IN_REVIEW` En revisión · `IN_PROGRESS` En proceso · `INTERVIEW` Entrevista · `TECHNICAL_TEST` Prueba técnica · `SELECTED` Seleccionado\* · `REJECTED` Rechazado\* · `FINISHED` Finalizado\*. (\* = `is_final`.) Sembrados por `pnpm seed:applications`; toda postulación nace en `IN_REVIEW`. `is_final` es **metadato** (lo usará M16 para avisar a los no seleccionados), no bloquea transiciones.
 - **vacancies.status:** `Activa` · `Pausada` · `Cerrada` — implementado como **enum** en `modules/vacancies/enums/vacancy.enums.ts`, no como tabla.
 - **document_type (MX):** `CURP` · `RFC` · `INE` · `Pasaporte` — **enum** en `modules/candidates/enums/document-type.enum.ts`.
 - **company_users.company_role:** `OWNER` · `ADMIN` · `RECRUITER` · `MEMBER` — **enum** en `modules/companies/enums/company-member-role.enum.ts`.

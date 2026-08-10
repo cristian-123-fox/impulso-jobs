@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, FindOptionsWhere, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { containsInsensitive } from '@/common/utils/search.util';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
@@ -22,6 +22,11 @@ export class VacancyRepository
 
   findById(id: string, manager?: EntityManager): Promise<Vacancy | null> {
     return this.repo(manager).findOne({ where: { id } });
+  }
+
+  findByIds(ids: string[], manager?: EntityManager): Promise<Vacancy[]> {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.repo(manager).find({ where: { id: In(ids) } });
   }
 
   findByIdAndCompany(

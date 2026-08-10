@@ -13,6 +13,11 @@ export interface ICandidateProfileRepository {
     userIds: string[],
     manager?: EntityManager,
   ): Promise<CandidateProfile[]>;
+  /** Perfiles por id (listado de postulaciones de una empresa). */
+  findByIds(
+    ids: string[],
+    manager?: EntityManager,
+  ): Promise<CandidateProfile[]>;
   existsByDocumentNumber(
     documentNumber: string,
     manager?: EntityManager,

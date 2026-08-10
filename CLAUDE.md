@@ -20,8 +20,8 @@ AGENTS.md describes the **target**. These are the deliberate, still-standing div
 
 ### What is built (Aug 2026)
 
-- **Backend** — `modules/`: `iam/{auth,users,roles,permissions,registration}`, `candidates`, `companies`, `vacancies`, `audit`. 16 controllers, 37 use-cases, 10 migrations, 24 unit specs. Swagger at `/docs` + `/docs-json`, global prefix `/api/v1`.
-- **Not built** — `modules/applications/` (postulaciones), `modules/billing/` (planes, Stripe, promociones, suscripciones), notifications, screening questions, talent bank, AI. No e2e tests yet.
+- **Backend** — `modules/`: `iam/{auth,users,roles,permissions,registration}`, `candidates`, `companies`, `vacancies`, `applications`, `audit`. 18 controllers, 40 use-cases, 11 migrations, 26 unit specs. Swagger at `/docs` + `/docs-json`, global prefix `/api/v1`.
+- **Not built** — `modules/billing/` (planes, Stripe, promociones, suscripciones), notifications, screening questions (`vacancy_questions` + `application_answers`), talent bank, AI. Applications has no frontend yet. No e2e tests yet.
 - **Frontend** — public portal (home, vacantes, planes, nosotros, contacto, faq, mantenimiento), auth (login, registro empresa/candidato, reset, verificación), `/admin` (usuarios, empresas, roles), `/empresa/vacantes`, `/panel`. UI kit is `ij-{input,select,multiselect,autocomplete,datepicker,textarea,modal,badge,button,icon,logo,pricing-card}` — **no** `ij-table`/`card`/`pagination`/`tabs`/`spinner`/`empty-state` yet (admin uses a local `admin-pagination`, panel a local `data-table`).
 
 ## Commands
@@ -29,7 +29,7 @@ AGENTS.md describes the **target**. These are the deliberate, still-standing div
 Both apps use pnpm. Backend on `:3000` (`/api/v1`, docs at `/docs`), frontend on `:4200`.
 
 - **Backend** (`cd backend`): `pnpm run start:dev` (watch) · `pnpm run build` · `pnpm run start:prod` (`node dist/main`) · `pnpm test` — single test: `pnpm test -- app.controller` or `pnpm test -- -t "name"` · `pnpm run test:e2e` · `pnpm run lint` · `pnpm run format`
-- **Backend DB** (`cd backend`): `pnpm run migration:run` · `pnpm run migration:revert` · seeds `pnpm run seed:rbac` (roles + matriz de permisos), `seed:admin`, `seed:candidate`, `seed:company`. Each has a `:prod` twin that runs the compiled `dist/` version. **Re-run `seed:rbac` after adding any permission code** — the guard reads the DB, not the source list.
+- **Backend DB** (`cd backend`): `pnpm run migration:run` · `pnpm run migration:revert` · seeds `pnpm run seed:rbac` (roles + matriz de permisos), `seed:admin`, `seed:candidate`, `seed:company`, `seed:applications` (catálogo de estados de postulación). Each has a `:prod` twin that runs the compiled `dist/` version. **Re-run `seed:rbac` after adding any permission code** — the guard reads the DB, not the source list. `seed:applications` is required for M11 to work at all: without it there is no status to assign.
 - **Frontend** (`cd frontend`): `pnpm start` · `pnpm run build` · `pnpm test` · `pnpm run serve:ssr:frontend`
 
 ## Tooling notes (not in AGENTS.md)

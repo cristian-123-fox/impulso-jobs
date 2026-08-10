@@ -31,6 +31,14 @@ export class CandidateProfileRepository
     return this.repo(manager).find({ where: { userId: In(userIds) } });
   }
 
+  findByIds(
+    ids: string[],
+    manager?: EntityManager,
+  ): Promise<CandidateProfile[]> {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.repo(manager).find({ where: { id: In(ids) } });
+  }
+
   async existsByDocumentNumber(
     documentNumber: string,
     manager?: EntityManager,

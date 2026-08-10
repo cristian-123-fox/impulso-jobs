@@ -91,11 +91,11 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 | `vacancies.create` / `vacancies.update` | ✓ | ✓ (propio) | — | ✅ |
 | `vacancies.status` (cerrar **y** pausar/reactivar/refrescar) | ✓ | ⊕ (propio) | — | ✅ |
 | `vacancy_questions.manage` (preguntas de filtrado) | ✓ | ✓ (propio) | — | 🕓 |
-| `applications.create` (postularse) | — | — | ✓ | 🌱 |
-| `applications.read` | ✓ (global) | ✓ (propio) | ✓ (propio) | 🌱 |
+| `applications.create` (postularse) | — | — | ✓ | ✅ |
+| `applications.read` | ✓ (global) | ✓ (propio) | ✓ (propio) | ✅ |
 | `applications.answers.read` (respuestas de filtrado) | ✓ | ✓ (propio) | — | 🕓 |
 | `applications.contact.read` (email/teléfono) | ✓ | ⊕ (propio) | — | 🕓 |
-| `applications.status.update` | ✓ | ✓ (propio) | — | 🌱 |
+| `applications.status.update` | ✓ | ✓ (propio) | — | ✅ |
 | `candidates.search` | ✓ | ✓ | — | 🌱 |
 | `candidates.cv.read` (base de talento) | ✓ | ⊕ (cupo de visitas) | — | 🌱 |
 | `candidate_profile.read` / `.update` | ✓ (global) | — | ✓ (propio) | ✅ |
@@ -121,6 +121,8 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 - Los endpoints públicos de vacantes (`GET /vacancies`, `GET /vacancies/:id`) **no llevan guard**: `vacancies.read.public` está sembrado por completitud, pero hoy nadie lo exige.
 - `settings.read` se sembró junto a `settings.update` porque `GET /candidate/profile-settings` lo necesita.
 - `catalogs.read` está sembrado, pero los catálogos de México se sirven hoy como **constantes** del backend/frontend, no por endpoint (ver `Impulso_Jobs_Modelo_ER.md`).
+- **El contacto del postulado no está condicionado al plan.** `GET /company/applications` devuelve el correo de quien ya postuló, porque Media y Alta lo incluyen. `applications.contact.read` se reserva para la **base de talento** (candidatos que *no* han postulado), que llega con M12/M14.
+- El rol de plataforma se verifica **además** del permiso donde hace falta: `applications.read` lo tienen los tres roles, así que el lado aspirante exige rol `CANDIDATE` y el lado empresa exige membresía en una empresa. Un `EMPLOYER` que llame a `/candidate/applications` recibe 403; un `CANDIDATE` que llame a `/company/applications`, 404.
 
 ---
 

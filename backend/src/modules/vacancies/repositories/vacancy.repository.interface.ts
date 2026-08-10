@@ -34,6 +34,8 @@ export interface PublicVacancySearch {
 
 export interface IVacancyRepository {
   findById(id: string, manager?: EntityManager): Promise<Vacancy | null>;
+  /** Varias vacantes por id (listado de postulaciones: título y empresa). */
+  findByIds(ids: string[], manager?: EntityManager): Promise<Vacancy[]>;
   /** Detalle acotado por ownership: la vacante debe ser de esa empresa. */
   findByIdAndCompany(
     id: string,

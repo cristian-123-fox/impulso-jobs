@@ -27,12 +27,14 @@
     "seed:admin": "ts-node -r tsconfig-paths/register src/database/seed-admin.ts",
     "seed:candidate": "ts-node -r tsconfig-paths/register src/database/seed-candidate.ts",
     "seed:company": "ts-node -r tsconfig-paths/register src/database/seed-company.ts",
+    "seed:applications": "ts-node -r tsconfig-paths/register src/database/seed-application-statuses.ts",
     "migration:run:prod": "node dist/database/run-migrations run",
     "migration:revert:prod": "node dist/database/run-migrations revert",
     "seed:rbac:prod": "node dist/database/seed-rbac",
     "seed:admin:prod": "node dist/database/seed-admin",
     "seed:candidate:prod": "node dist/database/seed-candidate",
-    "seed:company:prod": "node dist/database/seed-company"
+    "seed:company:prod": "node dist/database/seed-company",
+    "seed:applications:prod": "node dist/database/seed-application-statuses"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

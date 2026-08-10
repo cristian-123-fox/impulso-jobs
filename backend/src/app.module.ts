@@ -8,6 +8,7 @@ import { PermissionsModule } from '@/modules/iam/permissions/permissions.module'
 import { RolesModule } from '@/modules/iam/roles/roles.module';
 import { RegistrationModule } from '@/modules/iam/registration/registration.module';
 import { AdminUsersModule } from '@/modules/iam/users/admin-users.module';
+import { ApplicationsModule } from '@/modules/applications/applications.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
 import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
@@ -23,6 +24,7 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     CandidatesModule,
     CompaniesModule,
     VacanciesModule,
+    ApplicationsModule,
     AdminUsersModule,
   ],
   controllers: [AppController],
