@@ -96,8 +96,8 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 | `applications.answers.read` (respuestas de filtrado) | ✓ | ✓ (propio) | — | 🕓 |
 | `applications.contact.read` (email/teléfono) | ✓ | ⊕ (propio) | — | 🕓 |
 | `applications.status.update` | ✓ | ✓ (propio) | — | ✅ |
-| `candidates.search` | ✓ | ✓ | — | 🌱 |
-| `candidates.cv.read` (base de talento) | ✓ | ⊕ (cupo de visitas) | — | 🌱 |
+| `candidates.search` | ✓ | ✓ | — | ✅ |
+| `candidates.cv.read` (base de talento) | ✓ | ⊕ (cupo de visitas) | — | ✅ |
 | `candidate_profile.read` / `.update` | ✓ (global) | — | ✓ (propio) | ✅ |
 | `experiences/educations/languages/skills.manage` | — | — | ✓ (propio) | ✅ |
 | `resumes.manage` | — | — | ✓ (propio) | ✅ |
@@ -123,6 +123,8 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 - `catalogs.read` está sembrado, pero los catálogos de México se sirven hoy como **constantes** del backend/frontend, no por endpoint (ver `Impulso_Jobs_Modelo_ER.md`).
 - **El contacto del postulado no está condicionado al plan.** `GET /company/applications` devuelve el correo de quien ya postuló, porque Media y Alta lo incluyen. `applications.contact.read` se reserva para la **base de talento** (candidatos que *no* han postulado), que llega con M12/M14.
 - El rol de plataforma se verifica **además** del permiso donde hace falta: `applications.read` lo tienen los tres roles, así que el lado aspirante exige rol `CANDIDATE` y el lado empresa exige membresía en una empresa. Un `EMPLOYER` que llame a `/candidate/applications` recibe 403; un `CANDIDATE` que llame a `/company/applications`, 404.
+- **`candidates.cv.read` ya está condicionado por cupo (M12).** El permiso deja pasar al `EMPLOYER`, pero el use-case comprueba `talent_access_grants`: sin visitas disponibles responde **402 `TALENT_QUOTA_EXHAUSTED`** con mensaje de upsell. Los candidatos que **ya postularon** a la empresa quedan fuera del cupo — son gratis y siempre accesibles, incluso con perfil privado.
+- Los endpoints `/company/candidates/**` son de empresa: un `ADMIN` los tiene permitidos por matriz pero recibe 404 al no pertenecer a ninguna empresa. La vista global del back-office necesitaría su propio endpoint.
 
 ---
 

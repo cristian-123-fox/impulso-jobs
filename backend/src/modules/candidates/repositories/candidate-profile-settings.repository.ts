@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { CandidateProfileSettings } from '@/modules/candidates/entities/candidate-profile-settings.entity';
 import { ICandidateProfileSettingsRepository } from '@/modules/candidates/repositories/candidate-profile-settings.repository.interface';
@@ -22,6 +22,16 @@ export class CandidateProfileSettingsRepository
     manager?: EntityManager,
   ): Promise<CandidateProfileSettings | null> {
     return this.repo(manager).findOne({ where: { candidateProfileId } });
+  }
+
+  findByProfileIds(
+    candidateProfileIds: string[],
+    manager?: EntityManager,
+  ): Promise<CandidateProfileSettings[]> {
+    if (candidateProfileIds.length === 0) return Promise.resolve([]);
+    return this.repo(manager).find({
+      where: { candidateProfileId: In(candidateProfileIds) },
+    });
   }
 
   save(

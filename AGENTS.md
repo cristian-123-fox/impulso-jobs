@@ -85,6 +85,7 @@ backend/src/
 │  ├─ candidates/            ✅ # perfil, experiencia, educación, idiomas, skills, hoja de vida, configuración
 │  ├─ vacancies/             ✅ # vacantes (CRUD, estado, pausar/reactivar/refrescar) + listado público
 │  ├─ applications/          ✅ # postulaciones, catálogo de estados e historial de transiciones
+│  ├─ talent/                ✅ # banco de talento: búsqueda de candidatos + cupo de visitas
 │  ├─ audit/                 ✅ # AuditService + audit_logs
 │  ├─ billing/               🕓 # planes, beneficios, promociones, suscripciones, órdenes, Stripe
 │  └─ notifications/         🕓 # mensaje automático a no seleccionados, bandeja
@@ -147,12 +148,16 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 | Postulaciones del aspirante | `modules/applications/` | `POST/GET candidate/applications` · `GET :id` · `GET :id/history` | ✅ |
 | Postulaciones vistas por la empresa | `modules/applications/` | `GET company/applications` (+ `statuses`, `:id`, `:id/history`) · `PUT :id/status` | ✅ |
 | Respuestas de filtrado (`application_answers`) | `modules/applications/` | — | 🕓 (M15) |
+| Banco de talento: búsqueda y detalle de candidatos | `modules/talent/` | `GET company/candidates` (+ `search`, `quota`, `:id`) | ✅ |
+| Cupo de visitas (consumo) | `modules/talent/` (`TalentQuotaService`) | — (interno) | ✅ |
+| Cupo de visitas (otorgamiento al comprar plan) | `modules/billing/` → `TALENT_ACCESS_REPOSITORY` | — | 🕓 (M14) |
 | Planes, beneficios, promociones, suscripciones, órdenes, Stripe | `modules/billing/` | — | 🕓 |
 | Notificaciones | `modules/notifications/` | — | 🕓 |
 | Catálogos MX | `common/catalogs/` (constantes) + `GET candidate/profile/catalogs/languages` | parcial | ✅ |
 
 > `POST /auth/register` vive en **`iam/registration/`** (módulo propio, no dentro de `auth/`) y **orquesta** la creación en `companies/` o `candidates/` según `accountType`, en una transacción.
 > La auditoría se dispara **desde el use-case** vía `AuditService`; no hay `audit.interceptor.ts`.
+> **`candidates/` vs `talent/`:** `candidates/` es el autoservicio del aspirante sobre sus propios datos; `talent/` es la cara **empresa** del mismo dominio (buscar a terceros y consumir el cupo comprado). Se separaron para no mezclar ownership propio con acceso de pago.
 
 ### 4.5. Seguridad, auditoría y datos
 
@@ -311,12 +316,12 @@ Las rutas de cara al usuario van **en español**; los identificadores del códig
 
 ## 10. Estado del proyecto y qué sigue
 
-**Construido (backend):** identidad completa (registro empresa/candidato, login, refresh, logout, reset, verificación de correo, bloqueo por intentos, blacklist de tokens), RBAC con guard por permiso y back-office de usuarios/empresas/roles, perfil de candidato con experiencia/educación/idiomas/habilidades/hojas de vida/configuración, perfil de empresa con datos fiscales CFDI, vacantes (CRUD, estado, pausar/reactivar/refrescar) con listado público, y **postulaciones con historial de estados**. El circuito candidato↔empresa ya cierra de punta a punta. Despliegue en cPanel documentado y funcionando.
+**Construido (backend):** identidad completa (registro empresa/candidato, login, refresh, logout, reset, verificación de correo, bloqueo por intentos, blacklist de tokens), RBAC con guard por permiso y back-office de usuarios/empresas/roles, perfil de candidato con experiencia/educación/idiomas/habilidades/hojas de vida/configuración, perfil de empresa con datos fiscales CFDI, vacantes (CRUD, estado, pausar/reactivar/refrescar) con listado público, **postulaciones con historial de estados** y **banco de talento con cupo de visitas**. El circuito candidato↔empresa ya cierra de punta a punta. Despliegue en cPanel documentado y funcionando.
 
 **Siguiente frontera, en orden:**
 
-1. **Frontend de postulaciones** — el backend de M11 está listo pero **no tiene UI**: falta el botón "postularme" en el detalle de vacante, "mis postulaciones" para el aspirante, y la bandeja del reclutador con filtros, detalle y cambio de estado.
+1. **Frontend de postulaciones y banco de talento** — M11 y M12 están listos en backend pero **sin UI**: falta el botón "postularme", "mis postulaciones" del aspirante, la bandeja del reclutador con filtros y cambio de estado, y el buscador de candidatos con contador de visitas.
 2. **Preguntas de filtrado** (`vacancy_questions` + `application_answers`, M15) — el módulo de postulaciones ya deja el hueco preparado.
-3. **`modules/billing/` + Stripe** — planes, beneficios, promociones por vacante, suscripción anual, órdenes y CFDI. Ver `Impulso_Jobs_Planes_Suscripciones.md` y `Impulso_Jobs_Stripe.md`. **Bloqueado** por las decisiones de precio/alcance listadas en `README_CONTEXTO.md`.
+3. **`modules/billing/` + Stripe** — planes, beneficios, promociones por vacante, suscripción anual, órdenes y CFDI. Ver `Impulso_Jobs_Planes_Suscripciones.md` y `Impulso_Jobs_Stripe.md`. **Bloqueado** por las decisiones de precio/alcance listadas en `README_CONTEXTO.md`. Al implementarlo, lo único que hace falta para activar la base de talento es **crear un `TalentAccessGrant`** vía `TALENT_ACCESS_REPOSITORY` cuando se active un plan; el consumo ya está hecho.
 4. **Notificaciones** (mensaje automático a no seleccionados, M16) y **SMTP real** — hoy `MAILER_PORT` usa `ConsoleMailerAdapter`, que solo escribe el enlace en el log. `VacancyStatusUseCase.close()` y `ApplicationsModule` ya exponen lo que ese módulo necesita.
 5. **Deuda conocida:** e2e de autorización/ownership; piezas faltantes del UI Kit (`table`, `pagination`, `tabs`, `spinner`, `empty-state`); retirar los datos de demostración de `features/panel/`; `packages/api-contract`; **y limpiar la instrumentación de depuración commiteada en `candidates/use-cases/candidate-resume.use-case.ts`** (seis bloques `#region debug-point` que hacen `fetch` a `127.0.0.1:7777` en cada subida de CV).

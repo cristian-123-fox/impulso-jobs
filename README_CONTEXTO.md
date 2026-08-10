@@ -35,18 +35,20 @@ Portal de empleabilidad para **México** que conecta candidatos y empresas, con 
 | **Empresa** | Perfil con datos fiscales CFDI (RFC inmutable), logo, equipo. |
 | **Vacantes** | CRUD, cambio de estado, pausar/reactivar/refrescar, listado y detalle públicos. |
 | **Postulaciones** (backend) | Postularse, listar/filtrar, detalle, historial de estados, embudo por estado y cambio de estado por la empresa. Sin UI todavía. |
+| **Banco de talento** (backend) | Búsqueda con filtros combinables, reglas de visibilidad público/postulado, y cupo de visitas con consumo idempotente y bloqueo por upsell. Sin UI todavía. |
 | **Portal** | Home, vacantes, planes, nosotros, contacto, FAQ, mantenimiento; auth completo. |
-| **Infra** | Swagger en `/docs`, envelope y `errorCode` unificados, auditoría, 11 migraciones, 5 seeds, despliegue cPanel. |
+| **Infra** | Swagger en `/docs`, envelope y `errorCode` unificados, auditoría, 12 migraciones, 5 seeds, despliegue cPanel. |
 
 ### Pendiente
 
 | Área | Bloqueo |
 |---|---|
-| **Frontend de postulaciones** | Ninguno — **es lo siguiente**. El backend ya está listo y probado. |
+| **Frontend de postulaciones y banco de talento** | Ninguno — **es lo siguiente**. Ambos backends están listos y probados. |
 | **Preguntas de filtrado** | Ninguno técnico; el hueco ya está preparado en el módulo de postulaciones. |
 | **Billing + Stripe** | Decisiones de negocio abiertas (abajo). |
 | **Notificaciones + SMTP real** | Hoy `MAILER_PORT` → `ConsoleMailerAdapter`: solo escribe el enlace en el log. |
-| **Banco de talento, IA, redes sociales, CFDI/PAC** | Dependen de billing. |
+| **Otorgar cupos de talento** | Depende de billing: el consumo ya está hecho, falta que M14 cree los `talent_access_grants` al activar un plan. |
+| **IA, redes sociales, CFDI/PAC** | Dependen de billing. |
 | **Calidad** | e2e de autorización/ownership; piezas del UI Kit (`table`, `pagination`, `tabs`, `spinner`, `empty-state`); retirar los datos de demostración de `features/panel/`; `packages/api-contract`; limpiar la instrumentación de depuración commiteada en `candidate-resume.use-case.ts`. |
 
 ---
@@ -84,5 +86,5 @@ Estos documentos **ya no están en el repositorio**; se listan solo para que nad
 > |---|---|---|---|
 > | **M2** RBAC ✅ | **M3** reset de contraseña ✅ | **M4** verificación de correo ✅ | **M5** registro + dominios empresa/candidato ✅ |
 > | **M6** perfil del candidato ✅ | **M8** configuración del candidato ✅ | **M9** perfil de empresa ✅ | **M10** vacantes ✅ |
-> | **M11** postulaciones ✅ (backend) | **M12** búsqueda / banco de talento 🕓 | **M14** planes y billing 🕓 | **M16** notificaciones 🕓 |
+> | **M11** postulaciones ✅ (backend) | **M12** banco de talento ✅ (backend) | **M14** planes y billing 🕓 | **M16** notificaciones 🕓 |
 > | **M18** CFDI 🕓 | | | |

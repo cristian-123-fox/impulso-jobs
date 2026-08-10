@@ -11,6 +11,7 @@ import { AdminUsersModule } from '@/modules/iam/users/admin-users.module';
 import { ApplicationsModule } from '@/modules/applications/applications.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
+import { TalentModule } from '@/modules/talent/talent.module';
 import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
 
 @Module({
@@ -25,6 +26,7 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     CompaniesModule,
     VacanciesModule,
     ApplicationsModule,
+    TalentModule,
     AdminUsersModule,
   ],
   controllers: [AppController],

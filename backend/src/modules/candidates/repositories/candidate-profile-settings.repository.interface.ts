@@ -9,6 +9,11 @@ export interface ICandidateProfileSettingsRepository {
     candidateProfileId: string,
     manager?: EntityManager,
   ): Promise<CandidateProfileSettings | null>;
+  /** Configuración de varios perfiles (listado del banco de talento, M12). */
+  findByProfileIds(
+    candidateProfileIds: string[],
+    manager?: EntityManager,
+  ): Promise<CandidateProfileSettings[]>;
   save(
     settings: CandidateProfileSettings,
     manager?: EntityManager,

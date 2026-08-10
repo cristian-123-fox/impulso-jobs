@@ -20,8 +20,9 @@ AGENTS.md describes the **target**. These are the deliberate, still-standing div
 
 ### What is built (Aug 2026)
 
-- **Backend** — `modules/`: `iam/{auth,users,roles,permissions,registration}`, `candidates`, `companies`, `vacancies`, `applications`, `audit`. 18 controllers, 40 use-cases, 11 migrations, 26 unit specs. Swagger at `/docs` + `/docs-json`, global prefix `/api/v1`.
-- **Not built** — `modules/billing/` (planes, Stripe, promociones, suscripciones), notifications, screening questions (`vacancy_questions` + `application_answers`), talent bank, AI. Applications has no frontend yet. No e2e tests yet.
+- **Backend** — `modules/`: `iam/{auth,users,roles,permissions,registration}`, `candidates`, `companies`, `vacancies`, `applications`, `talent`, `audit`. 19 controllers, 41 use-cases, 12 migrations, 28 unit specs. Swagger at `/docs` + `/docs-json`, global prefix `/api/v1`.
+- **Not built** — `modules/billing/` (planes, Stripe, promociones, suscripciones), notifications, screening questions (`vacancy_questions` + `application_answers`), AI. Applications and talent bank have no frontend yet. No e2e tests yet.
+- **`candidates/` vs `talent/`** — `candidates/` is the applicant's self-service over their own data; `talent/` is the company-facing side (searching third parties, consuming purchased visit quota). `talent/` also owns `talent_access_grants`/`talent_access_views`; M14 will only need to *create* grants through `TALENT_ACCESS_REPOSITORY`.
 - **Frontend** — public portal (home, vacantes, planes, nosotros, contacto, faq, mantenimiento), auth (login, registro empresa/candidato, reset, verificación), `/admin` (usuarios, empresas, roles), `/empresa/vacantes`, `/panel`. UI kit is `ij-{input,select,multiselect,autocomplete,datepicker,textarea,modal,badge,button,icon,logo,pricing-card}` — **no** `ij-table`/`card`/`pagination`/`tabs`/`spinner`/`empty-state` yet (admin uses a local `admin-pagination`, panel a local `data-table`).
 
 ## Commands
