@@ -1,7 +1,7 @@
 # Impulso Jobs — Roles, permisos y acciones por perfil (alineado)
 
 > Documento de referencia de **quién puede hacer qué**. Alineado con los planes definitivos (**Media / Alta / Anual**), la localización a **México** y los módulos nuevos (preguntas de filtrado, notificaciones, IA, CFDI, redes).
-> Los **prompts por módulo** ya no están aquí: viven en la carpeta **`prompts/`** (M00–M19). Este documento se enfoca solo en roles y permisos.
+> Describe el **objetivo**; la §3 marca además qué está sembrado y en uso hoy. La implementación vive en `modules/iam/permissions/` (guard) y `database/seed-rbac.ts` (matriz).
 
 ## Contenido
 1. [Roles del sistema](#1-roles-del-sistema)
@@ -68,45 +68,59 @@ Todo acotado por *ownership* (su perfil, sus postulaciones).
 
 ## 3. Matriz de permisos (`component.action`)
 
-Semilla del módulo RBAC (M2). `✓` permitido · `—` no · `(propio)` limitado a sus recursos · `(global)` toda la plataforma · `(público)` sin rol/cualquiera · **`⊕`** = permitido pero **condicionado al plan activo** (ver §5).
+`✓` permitido · `—` no · `(propio)` limitado a sus recursos · `(global)` toda la plataforma · `(público)` sin rol/cualquiera · **`⊕`** = permitido pero **condicionado al plan activo** (ver §5).
 
-| Permiso (`component.action`) | ADMIN | EMPLOYER | CANDIDATE |
-|---|:--:|:--:|:--:|
-| `users.read` / `users.update` / `users.block` / `users.delete` | ✓ (global) | — | — |
-| `roles.read` / `roles.create` / `roles.update` / `roles.assign` | ✓ | — | — |
-| `permissions.assign` | ✓ | — | — |
-| `catalogs.read` | ✓ | ✓ (público) | ✓ (público) |
-| `catalogs.manage` | ✓ | — | — |
-| `audit.read` | ✓ | — | — |
-| `companies.read` | ✓ (global) | ✓ (propio) | — |
-| `companies.update` (incl. datos fiscales) | ✓ | ✓ (propio) | — |
-| `company_users.manage` | ✓ | ✓ (propio) | — |
-| `vacancies.read.public` | ✓ | ✓ | ✓ (público) |
-| `vacancies.read` (gestión) | ✓ (global) | ✓ (propio) | — |
-| `vacancies.create` / `vacancies.update` / `vacancies.status` | ✓ | ✓ (propio) | — |
-| `vacancies.pause` (pausar/reactivar/refrescar) | ✓ | ⊕ (propio) | — |
-| `vacancy_questions.manage` (preguntas de filtrado) | ✓ | ✓ (propio) | — |
-| `applications.create` (postularse) | — | — | ✓ |
-| `applications.read` | ✓ (global) | ✓ (propio) | ✓ (propio) |
-| `applications.answers.read` (respuestas de filtrado) | ✓ | ✓ (propio) | — |
-| `applications.contact.read` (email/teléfono) | ✓ | ⊕ (propio) | — |
-| `applications.status.update` | ✓ | ✓ (propio) | — |
-| `candidates.search` | ✓ | ✓ | — |
-| `candidates.cv.read` (base de talento) | ✓ | ⊕ (cupo de visitas) | — |
-| `candidate_profile.read` / `.update` | ✓ (global) | — | ✓ (propio) |
-| `experiences/educations/languages/skills.manage` | — | — | ✓ (propio) |
-| `resumes.manage` | — | — | ✓ (propio) |
-| `settings.update` | — | — | ✓ (propio) |
-| `ai.job_draft` (crear oferta con IA) | ✓ | ⊕ (propio) | — |
-| `ai.match` (matching con IA) | ✓ | ⊕ (propio) | — |
-| `plans.read` | ✓ | ✓ (público) | ✓ (público) |
-| `plans.manage` | ✓ | — | — |
-| `promotions.create` / `promotions.checkout` | — | ✓ (propio) | — |
-| `subscriptions.create` / `subscriptions.manage` | — | ✓ (propio) | — |
-| `promotions.read` / `subscriptions.read` | ✓ (global) | ✓ (propio) | — |
-| `invoices.read` (CFDI) | ✓ (global) | ✓ (propio) | — |
-| `notifications.read` | ✓ | ✓ (propio) | ✓ (propio) |
-| `account.delete` / `account.data_export` (ARCO) | ✓ | ✓ (propio) | ✓ (propio) |
+La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.ts`: `✅` sembrado y exigido por al menos un endpoint · `🌱` sembrado pero **aún sin endpoint que lo use** · `🕓` todavía no existe.
+
+> ⚠️ El `PermissionsGuard` lee los permisos **de la base de datos**. Agregar un código a `seed-rbac.ts` no basta: hay que **volver a correr `pnpm seed:rbac`**, o el endpoint responderá 403.
+
+| Permiso (`component.action`) | ADMIN | EMPLOYER | CANDIDATE | Semilla |
+|---|:--:|:--:|:--:|:--:|
+| `users.read` / `users.create` / `users.update` / `users.block` / `users.delete` | ✓ (global) | — | — | ✅ |
+| `roles.read` / `roles.create` / `roles.update` / `roles.assign` | ✓ | — | — | ✅ |
+| `permissions.assign` | ✓ | — | — | ✅ |
+| `catalogs.read` | ✓ | ✓ (público) | ✓ (público) | 🌱 |
+| `catalogs.manage` | ✓ | — | — | 🌱 |
+| `audit.read` | ✓ | — | — | 🌱 |
+| `companies.read` | ✓ (global) | ✓ (propio) | — | ✅ |
+| `companies.create` (alta desde back-office) | ✓ (global) | — | — | ✅ |
+| `companies.update` (incl. datos fiscales) | ✓ | ✓ (propio) | — | ✅ |
+| `company_users.manage` | ✓ | ✓ (propio) | — | ✅ |
+| `vacancies.read.public` | ✓ | ✓ | ✓ (público) | 🌱 |
+| `vacancies.read` (gestión) | ✓ (global) | ✓ (propio) | — | ✅ |
+| `vacancies.create` / `vacancies.update` | ✓ | ✓ (propio) | — | ✅ |
+| `vacancies.status` (cerrar **y** pausar/reactivar/refrescar) | ✓ | ⊕ (propio) | — | ✅ |
+| `vacancy_questions.manage` (preguntas de filtrado) | ✓ | ✓ (propio) | — | 🕓 |
+| `applications.create` (postularse) | — | — | ✓ | 🌱 |
+| `applications.read` | ✓ (global) | ✓ (propio) | ✓ (propio) | 🌱 |
+| `applications.answers.read` (respuestas de filtrado) | ✓ | ✓ (propio) | — | 🕓 |
+| `applications.contact.read` (email/teléfono) | ✓ | ⊕ (propio) | — | 🕓 |
+| `applications.status.update` | ✓ | ✓ (propio) | — | 🌱 |
+| `candidates.search` | ✓ | ✓ | — | 🌱 |
+| `candidates.cv.read` (base de talento) | ✓ | ⊕ (cupo de visitas) | — | 🌱 |
+| `candidate_profile.read` / `.update` | ✓ (global) | — | ✓ (propio) | ✅ |
+| `experiences/educations/languages/skills.manage` | — | — | ✓ (propio) | ✅ |
+| `resumes.manage` | — | — | ✓ (propio) | ✅ |
+| `settings.read` / `settings.update` | — | — | ✓ (propio) | ✅ |
+| `ai.job_draft` (crear oferta con IA) | ✓ | ⊕ (propio) | — | 🕓 |
+| `ai.match` (matching con IA) | ✓ | ⊕ (propio) | — | 🕓 |
+| `plans.read` | ✓ | ✓ (público) | ✓ (público) | 🌱 |
+| `plans.manage` | ✓ | — | — | 🌱 |
+| `promotions.create` / `promotions.checkout` | — | ✓ (propio) | — | 🌱 |
+| `promotions.read` | ✓ (global) | ✓ (propio) | — | 🌱 |
+| `subscriptions.create` / `subscriptions.manage` | — | ✓ (propio) | — | 🕓 |
+| `subscriptions.read` | ✓ (global) | ✓ (propio) | — | 🕓 |
+| `invoices.read` (CFDI) | ✓ (global) | ✓ (propio) | — | 🕓 |
+| `notifications.read` | ✓ | ✓ (propio) | ✓ (propio) | 🕓 |
+| `account.delete` (ARCO) | ✓ | ✓ (propio) | ✓ (propio) | 🌱 |
+| `account.data_export` (ARCO) | ✓ | ✓ (propio) | ✓ (propio) | 🕓 |
+
+**Notas de implementación:**
+
+- **No existe `vacancies.pause`.** Pausar, reactivar, refrescar y cerrar comparten `vacancies.status`. El tope de pausas del plan se aplicará dentro del use-case (contra `pause_count` / `max_pauses`), no con un permiso aparte.
+- Los endpoints públicos de vacantes (`GET /vacancies`, `GET /vacancies/:id`) **no llevan guard**: `vacancies.read.public` está sembrado por completitud, pero hoy nadie lo exige.
+- `settings.read` se sembró junto a `settings.update` porque `GET /candidate/profile-settings` lo necesita.
+- `catalogs.read` está sembrado, pero los catálogos de México se sirven hoy como **constantes** del backend/frontend, no por endpoint (ver `Impulso_Jobs_Modelo_ER.md`).
 
 ---
 

@@ -1,6 +1,32 @@
-# Impulso Jobs — Modelo Entidad‑Relación (completo, unificado)
+# Impulso Jobs — Modelo Entidad‑Relación (completo, México)
 
-> Esquema completo de la plataforma en **un solo diagrama**. Nombres normalizados (ver notas al final).
+> Esquema completo: localización a México (RFC, CURP, estados/municipios, CFDI) y monetización con Stripe (planes por publicación + suscripción anual, cupos de visitas, preguntas de filtrado, notificaciones). Un solo diagrama unificado.
+
+## Estado de implementación (agosto 2026)
+
+El diagrama es el **objetivo**. Esto es lo que existe hoy en `backend/src/database/migrations/` (10 migraciones):
+
+| Estado | Tablas |
+|---|---|
+| ✅ **Creadas** | `users` · `tokens_users` · `blacklist_tokens` · `roles` · `permissions` · `components` · `actions` · `role_permissions` · `user_roles` · `audit_logs` · `candidate_profiles` · `candidate_experiences` · `candidate_educations` · `candidate_languages` · `languages` · `candidate_skills` · `candidate_resumes` · `candidate_profile_settings` · `companies` · `company_users` · `vacancies` |
+| 🕓 **Pendientes** | `notifications` · `vacancy_questions` · `candidate_applications` · `application_answers` · `application_status` · `application_status_history` · `plans` · `plan_features` · `plan_feature_values` · `vacancy_promotions` · `company_subscriptions` · `promotion_orders` · `talent_access_grants` · `processed_stripe_events` |
+
+**Convenciones reales del esquema** (aplican a *todas* las tablas de entidad, ver `common/entities/base.entity.ts`):
+
+- `id` es **UUID v4 generado en la aplicación y almacenado como `varchar(36)`**, no un tipo `uuid` nativo — para que el mismo esquema corra en **PostgreSQL y MySQL** (`DB_TYPE`). Los catálogos usan `smallint`/`int` autoincremental.
+- Toda entidad hereda `created_at`, `updated_at` y **`deleted_at` (soft delete)**, aunque el diagrama no lo repita en cada bloque.
+- Las columnas `jsonb` del diagrama se declaran como `json`/`text` en las tablas ya creadas, por la misma portabilidad.
+
+### Divergencias vigentes entre el diagrama y las tablas creadas
+
+| Tabla | Diagrama | Implementado | Nota |
+|---|---|---|---|
+| `vacancies` | `salary_range` (string) | `salary_min`, `salary_max`, `salary_hidden` | El rango se guarda estructurado para poder filtrar y ordenar. |
+| `vacancies` | — | `closed_at`, `can_edit_title_on_reactivate` | Añadidos por el flujo pausar/reactivar/cerrar. |
+| `candidate_profiles` | `profile_visibility` | *(no existe aquí)* | La visibilidad vive **solo** en `candidate_profile_settings` (`profile_visibility` + `information_visibility`). |
+| `companies` | `stripe_customer_id`, `is_active` | *(no existen aún)* | Se agregan con el módulo de billing. |
+
+> Los bloques del diagrama de abajo reflejan el objetivo; para el detalle exacto de lo ya creado, la fuente de verdad son las entidades y migraciones del backend.
 
 ```mermaid
 erDiagram
@@ -14,6 +40,7 @@ erDiagram
     components ||--o{ permissions : "define"
     actions ||--o{ permissions : "define"
     users ||--o{ audit_logs : "genera"
+    users ||--o{ notifications : "recibe"
 
     %% ===== Candidato =====
     users ||--o| candidate_profiles : "es"
@@ -25,24 +52,30 @@ erDiagram
     candidate_profiles ||--o{ candidate_resumes : "carga"
     candidate_profiles ||--o| candidate_profile_settings : "configura"
 
-    %% ===== Empresa, Vacantes y Postulaciones =====
+    %% ===== Empresa / Vacantes / Postulaciones =====
     users ||--o{ company_users : "vincula"
     companies ||--o{ company_users : "agrupa"
     companies ||--o{ vacancies : "publica"
+    vacancies ||--o{ vacancy_questions : "filtra"
     vacancies ||--o{ candidate_applications : "recibe"
     candidate_profiles ||--o{ candidate_applications : "realiza"
     candidate_resumes ||--o{ candidate_applications : "adjunta"
     application_status ||--o{ candidate_applications : "clasifica"
     candidate_applications ||--o{ application_status_history : "registra"
+    candidate_applications ||--o{ application_answers : "responde"
+    vacancy_questions ||--o{ application_answers : "contesta"
 
-    %% ===== Monetización =====
+    %% ===== Monetización (Stripe) =====
     plans ||--o{ plan_feature_values : "define"
     plan_features ||--o{ plan_feature_values : "parametriza"
     plans ||--o{ vacancy_promotions : "aplica"
+    plans ||--o{ company_subscriptions : "suscribe"
     companies ||--o{ vacancy_promotions : "compra"
+    companies ||--o{ company_subscriptions : "contrata"
+    companies ||--o{ talent_access_grants : "recibe"
     vacancies ||--o{ vacancy_promotions : "promociona"
-    users ||--o{ vacancy_promotions : "adquiere"
     vacancy_promotions ||--o| promotion_orders : "factura"
+    company_subscriptions ||--o{ promotion_orders : "factura"
 
     users {
         uuid id PK
@@ -87,7 +120,6 @@ erDiagram
         string code UK
         string name
         string description
-        timestamp created_at
     }
     permissions {
         int id PK
@@ -125,6 +157,15 @@ erDiagram
         string user_agent
         timestamp created_at
     }
+    notifications {
+        uuid id PK
+        uuid user_id FK
+        string type
+        string title
+        text body
+        timestamp read_at
+        timestamp created_at
+    }
     candidate_profiles {
         uuid id PK
         uuid user_id FK
@@ -132,15 +173,15 @@ erDiagram
         string last_name
         string document_type
         string document_number UK
+        string curp
         date birth_date
         string professional_title
         string summary
         string country
         string state
-        string city
+        string municipality
         string address
         string profile_photo_url
-        string profile_visibility
         timestamp created_at
         timestamp updated_at
     }
@@ -150,9 +191,8 @@ erDiagram
         string company_name
         string job_title
         string employment_type
-        string country
         string state
-        string city
+        string municipality
         date start_date
         date end_date
         boolean is_current_job
@@ -182,8 +222,6 @@ erDiagram
         string writing_level
         string speaking_level
         boolean is_native
-        timestamp created_at
-        timestamp updated_at
     }
     languages {
         smallint id PK
@@ -195,7 +233,6 @@ erDiagram
         uuid candidate_profile_id FK
         string name
         string level
-        timestamp created_at
     }
     candidate_resumes {
         uuid id PK
@@ -214,14 +251,16 @@ erDiagram
         string profile_visibility
         string information_visibility
         boolean is_immediately_available
-        timestamp created_at
         timestamp updated_at
     }
     companies {
         uuid id PK
         string business_name
         string legal_name
-        string tax_id UK
+        string rfc UK
+        string tax_regime
+        string cfdi_use
+        string postal_code
         string company_type
         string economic_sector
         string corporate_email
@@ -229,12 +268,13 @@ erDiagram
         string website
         string country
         string state
-        string city
+        string municipality
         string address
         string company_description
         int employee_count
         int foundation_year
         string logo_url
+        string stripe_customer_id
         boolean is_active
         timestamp created_at
         timestamp updated_at
@@ -255,16 +295,34 @@ erDiagram
         text requirements
         string employment_type
         string work_mode
-        string country
         string state
-        string city
+        string municipality
         string experience_level
-        string salary_range
-        date deadline
+        numeric salary_min
+        numeric salary_max
+        boolean salary_hidden
         string status
+        boolean is_verified
+        boolean is_featured
+        boolean is_urgent
+        boolean is_confidential
+        int pause_count
+        int max_pauses
+        boolean can_edit_title_on_reactivate
+        timestamp refreshed_at
         timestamp published_at
+        timestamp closed_at
         timestamp created_at
         timestamp updated_at
+    }
+    vacancy_questions {
+        uuid id PK
+        uuid vacancy_id FK
+        string question
+        string type
+        jsonb options
+        boolean is_required
+        smallint sort_order
     }
     candidate_applications {
         uuid id PK
@@ -274,6 +332,12 @@ erDiagram
         smallint application_status_id FK
         timestamp applied_at
         timestamp updated_at
+    }
+    application_answers {
+        uuid id PK
+        uuid application_id FK
+        uuid question_id FK
+        text answer
     }
     application_status {
         smallint id PK
@@ -292,15 +356,18 @@ erDiagram
         smallint id PK
         string code UK
         string name
-        string tagline
+        string plan_type
         numeric base_price
         string currency
-        boolean tax_included
         numeric tax_rate
-        int duration_days
+        int validity_days
+        string billing_period
+        int posting_quota
         boolean is_popular
         boolean is_active
         smallint sort_order
+        string stripe_product_id
+        string stripe_price_id
         timestamp created_at
         timestamp updated_at
     }
@@ -331,18 +398,51 @@ erDiagram
         timestamp created_at
         timestamp updated_at
     }
+    company_subscriptions {
+        uuid id PK
+        uuid company_id FK
+        smallint plan_id FK
+        string stripe_subscription_id
+        string status
+        timestamp current_period_end
+        boolean auto_renew
+        timestamp created_at
+        timestamp updated_at
+    }
     promotion_orders {
         uuid id PK
         uuid promotion_id FK
+        uuid subscription_id FK
+        string provider
+        string payment_method
+        string payment_status
         numeric subtotal
         numeric tax_amount
         numeric total
         string currency
-        string payment_status
-        string payment_provider
         string external_reference
+        string voucher_url
+        string voucher_reference
+        timestamp voucher_expires_at
+        int installments
+        string cfdi_uuid
         timestamp paid_at
         timestamp created_at
+    }
+    talent_access_grants {
+        uuid id PK
+        uuid company_id FK
+        string source_type
+        uuid source_id
+        int total_visits
+        int used_visits
+        timestamp expires_at
+        timestamp created_at
+    }
+    processed_stripe_events {
+        string event_id PK
+        string type
+        timestamp processed_at
     }
 ```
 
@@ -350,20 +450,27 @@ erDiagram
 
 ## Catálogos (valores semilla)
 
-- **roles.code:** `ADMIN`, `EMPLOYER`, `CANDIDATE`.
-- **application_status.name:** En revisión · En proceso · Entrevista · Prueba técnica · Seleccionado · Rechazado · Finalizado.
-- **vacancies.status:** `Activa` · `Pausada` · `Cerrada`.
-- **languages:** catálogo con `iso_code` (es, en, pt, fr, …).
+- **roles.code:** `ADMIN` · `EMPLOYER` · `CANDIDATE`.
+- **application_status.name:** En revisión · En proceso · Entrevista · Prueba técnica · Seleccionado · Rechazado · Finalizado. *(Pendiente: hoy no existe la tabla.)*
+- **vacancies.status:** `Activa` · `Pausada` · `Cerrada` — implementado como **enum** en `modules/vacancies/enums/vacancy.enums.ts`, no como tabla.
+- **document_type (MX):** `CURP` · `RFC` · `INE` · `Pasaporte` — **enum** en `modules/candidates/enums/document-type.enum.ts`.
+- **company_users.company_role:** `OWNER` · `ADMIN` · `RECRUITER` · `MEMBER` — **enum** en `modules/companies/enums/company-member-role.enum.ts`.
+- **plans.plan_type:** `per_publication` (Media, Alta) · `annual_subscription` (Anual).
+- **plans.code:** `MEDIA` · `ALTA` · `ANUAL`. **currency:** `MXN` · **tax_rate:** `0.16`.
 - **plan_features.value_type:** `boolean` · `percent` · `numeric` · `text`.
-- **plans.code:** `ESSENTIAL` · `PRO` · `PREMIUM` (matriz de beneficios en `plan_feature_values`).
-- **vacancy_promotions.status:** `pending_payment` · `active` · `expired` · `cancelled`.
-- **promotion_orders.payment_status:** `pending` · `paid` · `failed` · `refunded`.
+- **promotion_orders.payment_method:** `card` · `oxxo` · `spei` · `msi`.
+- **promotion_orders.payment_status:** `pending` · `awaiting_payment` · `paid` · `failed` · `refunded`.
+- **subscriptions.status:** `pending_payment` · `active` · `past_due` · `cancelled` · `expired`.
+- **Catálogos MX:** 32 estados + municipios · regímenes fiscales SAT · usos de CFDI. **No son tablas**: son constantes en `backend/src/common/catalogs/` (`mx-states.ts`, `sat-tax-regimes.ts`, `sat-cfdi-uses.ts`), espejadas en `frontend/src/app/shared/catalogs/mx.catalogs.ts`. Solo `languages` llegó a ser tabla.
 
 ## Notas de diseño
 
-- `users` es la raíz de identidad. Un candidato tiene 1 `candidate_profiles`; un usuario empresa se vincula a 1..N `companies` vía `company_users`.
-- El rol de **plataforma** (ADMIN/EMPLOYER/CANDIDATE) vive en `user_roles` (fuente única para el guard de permisos). El `company_role` (OWNER/ADMIN) de `company_users` es un rol **dentro** de la empresa.
-- `audit_logs` es genérica y transversal a todos los dominios.
-- Catálogo de planes **parametrizable**: `plans` + `plan_features` + `plan_feature_values` permiten crear/editar planes y beneficios sin cambiar el esquema. La promoción es **por vacante** (`vacancy_promotions`), con su cobro en `promotion_orders`.
-- Nombres normalizados respecto al documento original: `companies` unificado (`business_name`, `legal_name`, `tax_id`, `economic_sector`, `website`); hojas de vida referencian `candidate_profile_id`; el rol vive en RBAC (no en columna `users.role`). `users.deleted_at` habilita el soft delete.
-- Cardinalidad Mermaid: `||--o{` uno‑a‑muchos · `||--o|` uno‑a‑uno · `PK`/`FK`/`UK` = primaria/foránea/único.
+- `users` es la raíz de identidad. Candidato → 1 `candidate_profiles`; empresa → 1..N `companies` vía `company_users`.
+- Rol de **plataforma** en `user_roles` (fuente del guard). `company_users.company_role` (OWNER/ADMIN) es rol interno de la empresa.
+- **Dos modelos de cobro:** `vacancy_promotions` (Media/Alta, por vacante) y `company_subscriptions` (Anual, por empresa). Ambos facturan en `promotion_orders`.
+- `talent_access_grants` controla el **cupo de visitas** a la base de talento (consumo en M12), otorgado por promoción o suscripción.
+- `vacancy_questions` + `application_answers` = preguntas de filtrado (screening).
+- `processed_stripe_events` garantiza **idempotencia** de los webhooks de Stripe.
+- Datos fiscales en `companies` (`rfc`, `tax_regime`, `cfdi_use`, `postal_code`) alimentan el **CFDI** (SAT/PAC).
+- `users.deleted_at` habilita soft delete (ARCO / LFPDPPP).
+- Cardinalidad Mermaid: `||--o{` uno‑a‑muchos · `||--o|` uno‑a‑uno · `PK`/`FK`/`UK`.
