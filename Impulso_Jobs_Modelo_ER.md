@@ -4,12 +4,12 @@
 
 ## Estado de implementación (agosto 2026)
 
-El diagrama es el **objetivo**. Esto es lo que existe hoy en `backend/src/database/migrations/` (10 migraciones):
+El diagrama es el **objetivo**. Esto es lo que existe hoy en `backend/src/database/migrations/` (13 migraciones):
 
 | Estado | Tablas |
 |---|---|
-| ✅ **Creadas** | `users` · `tokens_users` · `blacklist_tokens` · `roles` · `permissions` · `components` · `actions` · `role_permissions` · `user_roles` · `audit_logs` · `candidate_profiles` · `candidate_experiences` · `candidate_educations` · `candidate_languages` · `languages` · `candidate_skills` · `candidate_resumes` · `candidate_profile_settings` · `companies` · `company_users` · `vacancies` · `candidate_applications` · `application_status` · `application_status_history` · `talent_access_grants` · **`talent_access_views`** (nueva, ver abajo) |
-| 🕓 **Pendientes** | `notifications` · `vacancy_questions` · `application_answers` · `plans` · `plan_features` · `plan_feature_values` · `vacancy_promotions` · `company_subscriptions` · `promotion_orders` · `processed_stripe_events` |
+| ✅ **Creadas** | `users` · `tokens_users` · `blacklist_tokens` · `roles` · `permissions` · `components` · `actions` · `role_permissions` · `user_roles` · `audit_logs` · `candidate_profiles` · `candidate_experiences` · `candidate_educations` · `candidate_languages` · `languages` · `candidate_skills` · `candidate_resumes` · `candidate_profile_settings` · `companies` · `company_users` · `vacancies` · `candidate_applications` · `application_status` · `application_status_history` · `talent_access_grants` · **`talent_access_views`** (nueva) · `plans` · `plan_features` · `plan_feature_values` · `vacancy_promotions` · `company_subscriptions` · `promotion_orders` · `processed_payment_events` |
+| 🕓 **Pendientes** | `notifications` · `vacancy_questions` · `application_answers` |
 
 **Convenciones reales del esquema** (aplican a *todas* las tablas de entidad, ver `common/entities/base.entity.ts`):
 
@@ -24,12 +24,16 @@ El diagrama es el **objetivo**. Esto es lo que existe hoy en `backend/src/databa
 | `vacancies` | `salary_range` (string) | `salary_min`, `salary_max`, `salary_hidden` | El rango se guarda estructurado para poder filtrar y ordenar. |
 | `vacancies` | — | `closed_at`, `can_edit_title_on_reactivate` | Añadidos por el flujo pausar/reactivar/cerrar. |
 | `candidate_profiles` | `profile_visibility` | *(no existe aquí)* | La visibilidad vive **solo** en `candidate_profile_settings` (`profile_visibility` + `information_visibility`). |
-| `companies` | `stripe_customer_id`, `is_active` | *(no existen aún)* | Se agregan con el módulo de billing. |
+| `companies` | `is_active` | *(no existe)* | La empresa no se desactiva; se gestiona por el estado de sus usuarios. |
 | `application_status` | `id smallint PK`, `name`, `description` | `code varchar(30) PK`, `name`, `description`, `sort_order`, `is_final` | Catálogo con **código legible como PK**, igual que `languages`: el historial y las postulaciones se leen sin resolver ids. Se llena con `pnpm seed:applications`. |
 | `candidate_applications` | `application_status_id smallint FK` | `status_code varchar(30)` | Consecuencia de lo anterior. |
 | `candidate_applications` | — | `company_id` | Empresa de la vacante, copiada al postular: permite listar y contar por empresa sin join y conserva el vínculo al cerrarse la vacante. |
 | `application_status_history` | `previous_status_id`, `current_status_id` | `previous_status_code`, `current_status_code` | Íd. `previous` es nulo sólo en la línea inicial. |
 | `talent_access_views` | *(no existe en el ER)* | **tabla nueva** | Registra qué CV ya desbloqueó cada empresa (`company_id` + `candidate_profile_id`, único). Sin ella el cupo sería inservible: recargar la ficha gastaría otra visita. **La primera consulta cobra; las siguientes son gratis para siempre.** |
+| `processed_stripe_events` | tabla propia de Stripe | **`processed_payment_events`** con PK compuesta (`provider` + `event_id`) | El cobro pasa por `PaymentProviderPort`, así que la idempotencia no puede llamarse por el nombre de un proveedor. |
+| `companies.stripe_customer_id` | íd. | **`payment_customer_id`** | Misma razón. |
+| `plans`, `vacancy_promotions`, `company_subscriptions` | `stripe_product_id`/`stripe_price_id`/`stripe_subscription_id` | `provider_product_id` / `provider_price_id` / `provider_subscription_id` | Misma razón. Nulos con el adaptador manual. |
+| `plan_features` | `id smallint PK` | `code varchar(60) PK` | Tercer catálogo con código legible como PK, igual que `application_status` y `languages`. |
 | `talent_access_grants` | `source_type`, `source_id` | íd. + `MANUAL` como origen | Además de promoción y suscripción, un administrador puede otorgar visitas a mano (cortesía/soporte). `total_visits = -1` significa ilimitado. |
 
 > Los bloques del diagrama de abajo reflejan el objetivo; para el detalle exacto de lo ya creado, la fuente de verdad son las entidades y migraciones del backend.

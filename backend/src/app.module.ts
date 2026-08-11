@@ -10,6 +10,7 @@ import { RegistrationModule } from '@/modules/iam/registration/registration.modu
 import { AdminUsersModule } from '@/modules/iam/users/admin-users.module';
 import { AccountModule } from '@/modules/iam/account/account.module';
 import { ApplicationsModule } from '@/modules/applications/applications.module';
+import { BillingModule } from '@/modules/billing/billing.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
 import { TalentModule } from '@/modules/talent/talent.module';
@@ -28,6 +29,7 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     VacanciesModule,
     ApplicationsModule,
     TalentModule,
+    BillingModule,
     AccountModule,
     AdminUsersModule,
   ],

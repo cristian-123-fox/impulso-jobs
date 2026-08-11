@@ -3,8 +3,9 @@
 > Revisión literal de las tres ofertas descritas y su consolidación. Cada beneficio se marca según su **origen**:
 > **[D]** = declarado explícitamente en la especificación · **[I]** = inferido (requiere confirmación) · **[?]** = no especificado.
 
-> 🕓 **Estado (agosto 2026): sin implementar.** No existe `modules/billing/` ni ninguna de las tablas de §5. Lo único que ya está en el código son los campos que las vacantes necesitan para recibir estos beneficios (`is_verified`, `is_featured`, `is_urgent`, `is_confidential`, `pause_count`, `max_pauses`, `can_edit_title_on_reactivate`, `refreshed_at`), hoy con valores por defecto y sin plan que los alimente. La página `/planes` del portal es **estática**.
-> **Las decisiones de §7 bloquean el arranque**: sin precios en MXN ni el alcance de la Anual no se puede sembrar el catálogo de planes.
+> **Estado (agosto 2026): la maquinaria está construida; faltan los datos.**
+> `modules/billing/` implementa todo lo de §5 y §6 salvo redes sociales e IA: los 13 códigos de beneficio de §4 están sembrados, y comprar un plan aplica sus distintivos a la vacante y otorga el cupo de la base de talento.
+> **Los planes de §3 NO están dados de alta**, porque las decisiones de §7 siguen abiertas. No hacen falta cambios de código: se crean desde `POST /admin/plans` con su precio y se les asigna la matriz de beneficios con `PUT /admin/plans/{id}/features`. Hasta entonces `GET /plans` devuelve vacío.
 
 ---
 

@@ -79,6 +79,19 @@ export class Company extends BaseEntity {
   @Column({ name: 'foundation_year', type: 'int', nullable: true })
   foundationYear?: number | null;
 
+  /**
+   * Identificador de la empresa como cliente en la pasarela de pago (M14).
+   * Nulo hasta su primer cobro. En el ER figura como `stripe_customer_id`;
+   * aquí es agnóstico porque el cobro pasa por `PaymentProviderPort`.
+   */
+  @Column({
+    name: 'payment_customer_id',
+    type: 'varchar',
+    length: 120,
+    nullable: true,
+  })
+  paymentCustomerId?: string | null;
+
   @Column({ name: 'logo_url', type: 'varchar', length: 500, nullable: true })
   logoUrl?: string | null;
 }

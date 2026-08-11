@@ -87,8 +87,9 @@ backend/src/
 │  ├─ vacancies/             ✅ # vacantes (CRUD, estado, pausar/reactivar/refrescar) + listado público
 │  ├─ applications/          ✅ # postulaciones, catálogo de estados e historial de transiciones
 │  ├─ talent/                ✅ # banco de talento: búsqueda de candidatos + cupo de visitas
+│  ├─ billing/               ✅ # planes, beneficios, promociones, suscripciones y órdenes
+│  │                            # (cobro tras PaymentProviderPort; adaptador Stripe 🕓)
 │  ├─ audit/                 ✅ # AuditService + audit_logs
-│  ├─ billing/               🕓 # planes, beneficios, promociones, suscripciones, órdenes, Stripe
 │  └─ notifications/         🕓 # mensaje automático a no seleccionados, bandeja
 │
 ├─ app.module.ts · app.controller.ts · app.service.ts
@@ -152,7 +153,13 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 | Respuestas de filtrado (`application_answers`) | `modules/applications/` | — | 🕓 (M15) |
 | Banco de talento: búsqueda y detalle de candidatos | `modules/talent/` | `GET company/candidates` (+ `search`, `quota`, `:id`) | ✅ |
 | Cupo de visitas (consumo) | `modules/talent/` (`TalentQuotaService`) | — (interno) | ✅ |
-| Cupo de visitas (otorgamiento al comprar plan) | `modules/billing/` → `TALENT_ACCESS_REPOSITORY` | — | 🕓 (M14) |
+| Cupo de visitas (otorgamiento al comprar plan) | `modules/billing/` (`EntitlementService`) | — (al confirmarse el pago) | ✅ |
+| Catálogo de planes (público) | `modules/billing/` | `GET plans` (precio + IVA 16 % + matriz) | ✅ |
+| Catálogo de planes (back-office) | `modules/billing/` | `admin/plans` CRUD + `:id/status`, `:id/features` · `admin/plan-features` | ✅ |
+| Promoción de vacante (Media/Alta) | `modules/billing/` | `POST company/vacancies/:id/promotions` · `GET :id/promotion` · `company/promotions` · `POST company/promotions/:id/checkout` | ✅ |
+| Suscripción anual de empresa | `modules/billing/` | `POST company/subscriptions` · `GET .../current` · `DELETE .../renewal` | ✅ |
+| Confirmación de cobro | `modules/billing/` (`SettlePaymentUseCase`) | `POST payments/confirm` (manual) · webhook de Stripe 🕓 | ✅ |
+| Caducidad de promociones | `modules/billing/` | — (`pnpm billing:expire`) | ✅ |
 | Planes, beneficios, promociones, suscripciones, órdenes, Stripe | `modules/billing/` | — | 🕓 |
 | Notificaciones | `modules/notifications/` | — | 🕓 |
 | Catálogos MX | `common/catalogs/` (constantes) + `GET candidate/profile/catalogs/languages` | parcial | ✅ |
@@ -160,6 +167,7 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 > `POST /auth/register` vive en **`iam/registration/`** (módulo propio, no dentro de `auth/`) y **orquesta** la creación en `companies/` o `candidates/` según `accountType`, en una transacción.
 > La auditoría se dispara **desde el use-case** vía `AuditService`; no hay `audit.interceptor.ts`.
 > **`candidates/` vs `talent/`:** `candidates/` es el autoservicio del aspirante sobre sus propios datos; `talent/` es la cara **empresa** del mismo dominio (buscar a terceros y consumir el cupo comprado). Se separaron para no mezclar ownership propio con acceso de pago.
+> **El cobro va detrás de un puerto.** `billing/` no conoce Stripe: habla con `PaymentProviderPort`. Hoy lo implementa `ManualPaymentAdapter` (no hay cuenta ni entidad legal mexicana); el día que exista, `StripePaymentAdapter` implementa el mismo contrato y **sólo cambia el `useClass` en `billing.module.ts`**. Mismo patrón que `MAILER_PORT`. Todo pago —venga del webhook, de la confirmación manual o de una reconciliación— pasa por `SettlePaymentUseCase`, que es donde viven la idempotencia y la activación.
 
 ### 4.5. Seguridad, auditoría y datos
 
@@ -319,12 +327,13 @@ Las rutas de cara al usuario van **en español**; los identificadores del códig
 
 ## 10. Estado del proyecto y qué sigue
 
-**Construido (backend):** identidad completa (registro empresa/candidato, login, refresh, logout, reset, verificación de correo, bloqueo por intentos, blacklist de tokens), RBAC con guard por permiso y back-office de usuarios/empresas/roles, perfil de candidato con experiencia/educación/idiomas/habilidades/hojas de vida/configuración, perfil de empresa con datos fiscales CFDI, vacantes (CRUD, estado, pausar/reactivar/refrescar) con listado público, **postulaciones con historial de estados**, **banco de talento con cupo de visitas** y **baja de cuenta con derechos ARCO**. El circuito candidato↔empresa ya cierra de punta a punta. Despliegue en cPanel documentado y funcionando.
+**Construido (backend):** identidad completa (registro empresa/candidato, login, refresh, logout, reset, verificación de correo, bloqueo por intentos, blacklist de tokens), RBAC con guard por permiso y back-office de usuarios/empresas/roles, perfil de candidato con experiencia/educación/idiomas/habilidades/hojas de vida/configuración, perfil de empresa con datos fiscales CFDI, vacantes (CRUD, estado, pausar/reactivar/refrescar) con listado público, **postulaciones con historial de estados**, **banco de talento con cupo de visitas**, **baja de cuenta con derechos ARCO** y **monetización completa** (catálogo de planes y beneficios, promociones por vacante, suscripción anual, órdenes con IVA y caducidad). El circuito candidato↔empresa cierra de punta a punta y el de compra→beneficios→cupo también. Despliegue en cPanel documentado y funcionando.
 
 **Siguiente frontera, en orden:**
 
-1. **Frontend de postulaciones, banco de talento y baja de cuenta** — M11, M12 y M13 están listos en backend pero **sin UI**: falta el botón "postularme", "mis postulaciones" del aspirante, la bandeja del reclutador con filtros y cambio de estado, el buscador de candidatos con contador de visitas, y la pantalla de baja/descarga de datos en configuración.
-2. **Preguntas de filtrado** (`vacancy_questions` + `application_answers`, M15) — el módulo de postulaciones ya deja el hueco preparado.
-3. **`modules/billing/` + Stripe** — planes, beneficios, promociones por vacante, suscripción anual, órdenes y CFDI. Ver `Impulso_Jobs_Planes_Suscripciones.md` y `Impulso_Jobs_Stripe.md`. **Bloqueado** por las decisiones de precio/alcance listadas en `README_CONTEXTO.md`. Al implementarlo, lo único que hace falta para activar la base de talento es **crear un `TalentAccessGrant`** vía `TALENT_ACCESS_REPOSITORY` cuando se active un plan; el consumo ya está hecho.
+1. **Frontend de todo lo construido desde M11** — postulaciones, banco de talento, baja de cuenta y **compra de planes** están listos en backend pero **sin UI**: falta el botón "postularme", "mis postulaciones", la bandeja del reclutador, el buscador de candidatos con contador de visitas, la pantalla de baja/descarga de datos, y la de precios + checkout + estado del pago (incluido el vale de OXXO pendiente).
+2. **Adaptador de Stripe** — escribir `StripePaymentAdapter` contra `PaymentProviderPort` y el webhook con verificación de firma. **Bloqueado** por la entidad legal mexicana y las credenciales; el resto de billing no depende de ello.
+3. **Preguntas de filtrado** (`vacancy_questions` + `application_answers`, M15) — el módulo de postulaciones ya deja el hueco preparado.
 4. **Notificaciones** (mensaje automático a no seleccionados, M16) y **SMTP real** — hoy `MAILER_PORT` usa `ConsoleMailerAdapter`, que solo escribe el enlace en el log. `VacancyStatusUseCase.close()` y `ApplicationsModule` ya exponen lo que ese módulo necesita.
-5. **Deuda conocida:** e2e de autorización/ownership; piezas faltantes del UI Kit (`table`, `pagination`, `tabs`, `spinner`, `empty-state`); retirar los datos de demostración de `features/panel/`; `packages/api-contract`; **y limpiar la instrumentación de depuración commiteada en `candidates/use-cases/candidate-resume.use-case.ts`** (seis bloques `#region debug-point` que hacen `fetch` a `127.0.0.1:7777` en cada subida de CV).
+5. **CFDI** (M18) — `promotion_orders.cfdi_uuid` está reservado; falta el PAC.
+6. **Deuda conocida:** e2e de autorización/ownership; piezas faltantes del UI Kit (`table`, `pagination`, `tabs`, `spinner`, `empty-state`); retirar los datos de demostración de `features/panel/`; `packages/api-contract`; **y limpiar la instrumentación de depuración commiteada en `candidates/use-cases/candidate-resume.use-case.ts`** (seis bloques `#region debug-point` que hacen `fetch` a `127.0.0.1:7777` en cada subida de CV).

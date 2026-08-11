@@ -37,19 +37,21 @@ Portal de empleabilidad para **México** que conecta candidatos y empresas, con 
 | **Postulaciones** (backend) | Postularse, listar/filtrar, detalle, historial de estados, embudo por estado y cambio de estado por la empresa. Sin UI todavía. |
 | **Banco de talento** (backend) | Búsqueda con filtros combinables, reglas de visibilidad público/postulado, y cupo de visitas con consumo idempotente y bloqueo por upsell. Sin UI todavía. |
 | **Baja de cuenta / ARCO** (backend) | Baja lógica con reconfirmación de contraseña, invalidación total de sesiones, export de datos en JSON, restauración por admin y purga manual tras retención. Sin UI todavía. |
+| **Monetización** (backend) | Catálogo de planes y beneficios administrable, `/plans` público con IVA 16 % y métodos de pago, promoción por vacante, suscripción anual, órdenes con vale OXXO, activación de beneficios, otorgamiento de cupo y caducidad. **El cobro va tras un puerto**; el adaptador de Stripe está pendiente. Sin UI todavía. |
 | **Portal** | Home, vacantes, planes, nosotros, contacto, FAQ, mantenimiento; auth completo. |
-| **Infra** | Swagger en `/docs`, envelope y `errorCode` unificados, auditoría, 12 migraciones, 5 seeds, purga por retención, despliegue cPanel. |
+| **Infra** | Swagger en `/docs`, envelope y `errorCode` unificados, auditoría, 13 migraciones, 6 seeds, purga por retención, caducidad de promociones, despliegue cPanel. |
 
 ### Pendiente
 
 | Área | Bloqueo |
 |---|---|
-| **Frontend de postulaciones, banco de talento y baja de cuenta** | Ninguno — **es lo siguiente**. Los tres backends están listos y probados. |
+| **Frontend de todo lo de M11–M14** | Ninguno — **es lo siguiente**. Postulaciones, banco de talento, baja de cuenta y compra de planes están listos y probados en backend. |
 | **Preguntas de filtrado** | Ninguno técnico; el hueco ya está preparado en el módulo de postulaciones. |
-| **Billing + Stripe** | Decisiones de negocio abiertas (abajo). |
+| **Adaptador de Stripe** | Entidad legal mexicana + credenciales. El resto de billing ya funciona con el adaptador manual. |
+| **Dar de alta los planes reales** | Decisiones de precio y alcance (abajo). El catálogo se llena desde `/admin/plans`, sin tocar código. |
 | **Notificaciones + SMTP real** | Hoy `MAILER_PORT` → `ConsoleMailerAdapter`: solo escribe el enlace en el log. |
-| **Otorgar cupos de talento** | Depende de billing: el consumo ya está hecho, falta que M14 cree los `talent_access_grants` al activar un plan. |
-| **IA, redes sociales, CFDI/PAC** | Dependen de billing. |
+| **CFDI** | Falta el PAC. `promotion_orders.cfdi_uuid` ya está reservado. |
+| **IA y redes sociales** | Dependen de que se definan en qué planes entran. |
 | **Calidad** | e2e de autorización/ownership; piezas del UI Kit (`table`, `pagination`, `tabs`, `spinner`, `empty-state`); retirar los datos de demostración de `features/panel/`; `packages/api-contract`; limpiar la instrumentación de depuración commiteada en `candidate-resume.use-case.ts`. |
 
 ---
@@ -87,5 +89,5 @@ Estos documentos **ya no están en el repositorio**; se listan solo para que nad
 > |---|---|---|---|
 > | **M2** RBAC ✅ | **M3** reset de contraseña ✅ | **M4** verificación de correo ✅ | **M5** registro + dominios empresa/candidato ✅ |
 > | **M6** perfil del candidato ✅ | **M8** configuración del candidato ✅ | **M9** perfil de empresa ✅ | **M10** vacantes ✅ |
-> | **M11** postulaciones ✅ (backend) | **M12** banco de talento ✅ (backend) | **M13** baja de cuenta / ARCO ✅ (backend) | **M14** planes y billing 🕓 |
+> | **M11** postulaciones ✅ (backend) | **M12** banco de talento ✅ (backend) | **M13** baja de cuenta / ARCO ✅ (backend) | **M14** planes y billing ✅ (backend, sin Stripe) |
 > | **M16** notificaciones 🕓 | **M18** CFDI 🕓 | | |

@@ -2,8 +2,10 @@
 
 > Diseño de la pasarela para el módulo de billing (M14). Cubre los **dos modelos de cobro** del catálogo: pago único **por publicación** (Media / Alta) y **suscripción anual** de empresa (Anual).
 
-> 🕓 **Estado (agosto 2026): sin implementar.** No hay dependencia de Stripe en `backend/package.json`, ni `modules/billing/`, ni las variables de §8 en `.env.example`, ni tablas `promotion_orders` / `company_subscriptions` / `processed_stripe_events`. Este documento es el plan a ejecutar, no una descripción del código.
-> Antes de empezar hacen falta la **entidad legal** para operar Stripe en México, el **PAC** para el CFDI y los **precios en MXN** (ver `README_CONTEXTO.md`).
+> **Estado (agosto 2026): el dominio de billing está construido; falta el adaptador de Stripe.**
+> `modules/billing/` existe con planes, beneficios, promociones, suscripciones y órdenes, y las tablas correspondientes. El cobro se hace contra **`PaymentProviderPort`**, hoy implementado por `ManualPaymentAdapter`.
+> Lo que queda de este documento por ejecutar: escribir `StripePaymentAdapter` (§6) y el webhook (§4) contra ese contrato, y añadir las variables de §8. La **idempotencia** (§4) ya está resuelta en `processed_payment_events`, y el flujo asíncrono de OXXO/SPEI (§2) ya está modelado en `PaymentStatus.AWAITING_PAYMENT` + el vale de la orden.
+> Sigue bloqueado por la **entidad legal** para operar Stripe en México y el **PAC** para el CFDI.
 
 ---
 

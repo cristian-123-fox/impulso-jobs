@@ -34,6 +34,7 @@ const COMPONENT_NAMES: Record<string, string> = {
   settings: 'Configuración',
   plans: 'Planes',
   promotions: 'Promociones',
+  subscriptions: 'Suscripciones',
   account: 'Cuenta',
 };
 
@@ -97,6 +98,9 @@ const PERMISSION_CODES: readonly string[] = [
   'promotions.create',
   'promotions.checkout',
   'promotions.read',
+  'subscriptions.create',
+  'subscriptions.manage',
+  'subscriptions.read',
   'account.delete',
   'account.data_export',
 ];
@@ -149,6 +153,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'plans.read',
     'plans.manage',
     'promotions.read',
+    'subscriptions.read',
     'account.delete',
     'account.data_export',
   ],
@@ -170,6 +175,9 @@ const MATRIX: Record<string, readonly string[]> = {
     'promotions.create',
     'promotions.checkout',
     'promotions.read',
+    'subscriptions.create',
+    'subscriptions.manage',
+    'subscriptions.read',
     'account.delete',
     'account.data_export',
   ],
