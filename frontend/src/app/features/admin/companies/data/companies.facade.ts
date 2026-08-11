@@ -1,12 +1,13 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
 import {
   AdminCompany,
   CompaniesFilters,
   CreateCompanyPayload,
   CreateCompanyResult,
+  UpdateCompanyPayload,
 } from '@/features/admin/companies/models/companies.models';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
@@ -66,5 +67,15 @@ export class CompaniesFacade {
 
   create(payload: CreateCompanyPayload): Observable<CreateCompanyResult> {
     return this.api.create(payload);
+  }
+
+  update(id: string, payload: UpdateCompanyPayload): Observable<AdminCompany> {
+    return this.api.update(id, payload).pipe(
+      tap((updated) =>
+        this.companies.update((list) =>
+          list.map((company) => (company.id === updated.id ? updated : company)),
+        ),
+      ),
+    );
   }
 }

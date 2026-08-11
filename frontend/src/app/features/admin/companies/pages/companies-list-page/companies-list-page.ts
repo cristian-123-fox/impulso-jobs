@@ -15,9 +15,11 @@ import { CompaniesFacade } from '@/features/admin/companies/data/companies.facad
 import { CompaniesFilters } from '@/features/admin/companies/components/companies-filters/companies-filters';
 import { CompaniesTable } from '@/features/admin/companies/components/companies-table/companies-table';
 import { CompanyCreateForm } from '@/features/admin/companies/components/company-create-form/company-create-form';
+import { CompanyEditForm } from '@/features/admin/companies/components/company-edit-form/company-edit-form';
 import {
   AdminCompany,
   CreateCompanyPayload,
+  UpdateCompanyPayload,
 } from '@/features/admin/companies/models/companies.models';
 
 @Component({
@@ -28,6 +30,7 @@ import {
     CompaniesFilters,
     CompaniesTable,
     CompanyCreateForm,
+    CompanyEditForm,
     IjButton,
     IjIcon,
     IjModal,
@@ -85,6 +88,7 @@ import {
           <app-companies-table
             [companies]="facade.companies()"
             (open)="openCompany($event)"
+            (edit)="openEdit($event)"
           />
           <app-admin-pagination
             [page]="facade.page()"
@@ -111,6 +115,23 @@ import {
         />
       </ij-modal>
     }
+
+    @if (editing(); as company) {
+      <ij-modal
+        title="Editar empresa"
+        [subtitle]="company.businessName"
+        size="lg"
+        (close)="closeCreate()"
+      >
+        <app-company-edit-form
+          [company]="company"
+          [submitting]="saving()"
+          [error]="formError()"
+          (save)="onUpdate(company, $event)"
+          (cancel)="closeCreate()"
+        />
+      </ij-modal>
+    }
   `,
 })
 export class CompaniesListPage {
@@ -119,6 +140,7 @@ export class CompaniesListPage {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly showCreate = signal(false);
+  protected readonly editing = signal<AdminCompany | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly created = signal<string | null>(null);
@@ -128,14 +150,45 @@ export class CompaniesListPage {
   }
 
   protected openCreate(): void {
+    this.editing.set(null);
     this.formError.set(null);
     this.created.set(null);
     this.showCreate.set(true);
   }
 
-  protected closeCreate(): void {
+  protected openEdit(company: AdminCompany): void {
     this.showCreate.set(false);
     this.formError.set(null);
+    this.created.set(null);
+    this.editing.set(company);
+  }
+
+  /** Cierra cualquiera de los dos formularios: sólo hay uno abierto a la vez. */
+  protected closeCreate(): void {
+    this.showCreate.set(false);
+    this.editing.set(null);
+    this.formError.set(null);
+  }
+
+  protected onUpdate(
+    company: AdminCompany,
+    payload: UpdateCompanyPayload,
+  ): void {
+    this.saving.set(true);
+    this.formError.set(null);
+    this.facade
+      .update(company.id, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.closeCreate();
+        },
+        error: (error: unknown) => {
+          this.saving.set(false);
+          this.formError.set(this.messageOf(error));
+        },
+      });
   }
 
   protected onCreate(payload: CreateCompanyPayload): void {

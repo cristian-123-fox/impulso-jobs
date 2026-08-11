@@ -39,4 +39,8 @@ export class RoleRepository
   save(role: Role, manager?: EntityManager): Promise<Role> {
     return this.repo(manager).save(role);
   }
+
+  async remove(id: string, manager?: EntityManager): Promise<void> {
+    await this.repo(manager).delete({ id });
+  }
 }

@@ -235,6 +235,42 @@ export class CompanyMembersUseCase {
     });
   }
 
+  /**
+   * Autoservicio: resuelve la empresa del usuario en sesión vía `company_users`
+   * y comprueba que su rol interno permita tocar el equipo.
+   *
+   * El permiso `company_users.manage` lo tiene **todo** EMPLOYER, así que sin
+   * esto un reclutador podría dar de alta cuentas. Mandar sobre el equipo es de
+   * OWNER y ADMIN; el resto sólo lo consulta.
+   */
+  async resolveOwnCompanyId(
+    userId: string,
+    options: { manage?: boolean } = {},
+  ): Promise<string> {
+    const membership = await this.members.findByUserId(userId);
+    if (!membership) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.COMPANY_NOT_FOUND,
+        'Tu cuenta no está vinculada a ninguna empresa.',
+      );
+    }
+
+    if (options.manage && !this.canManage(membership.role)) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.PERMISSION_DENIED,
+        'Sólo el propietario o un administrador pueden gestionar el equipo.',
+      );
+    }
+
+    return membership.companyId;
+  }
+
+  private canManage(role: CompanyMemberRole): boolean {
+    return role === CompanyMemberRole.OWNER || role === CompanyMemberRole.ADMIN;
+  }
+
   /** Orden de presentación del equipo: primero quien más manda. */
   private rank(role: CompanyMemberRole): number {
     const order: Record<CompanyMemberRole, number> = {

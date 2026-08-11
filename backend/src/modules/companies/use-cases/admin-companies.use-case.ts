@@ -62,6 +62,25 @@ export interface CreateCompanyCommand {
   userAgent: string;
 }
 
+/** El RFC no viaja: identifica fiscalmente a la empresa y es inmutable. */
+export interface UpdateCompanyCommand {
+  id: string;
+  businessName: string;
+  legalName: string;
+  taxRegime: string;
+  postalCode: string;
+  state: string;
+  municipality: string;
+  economicSector?: string;
+  companyType?: CompanyType;
+  corporateEmail?: string;
+  phoneNumber?: string;
+  website?: string;
+  actorUserId: string;
+  ip: string;
+  userAgent: string;
+}
+
 export interface CreateCompanyResult {
   company: AdminCompanyResponseDto;
   /** Id del usuario dueño, si se creó junto con la empresa. */
@@ -200,6 +219,45 @@ export class AdminCompaniesUseCase {
       }),
       ownerUserId,
     };
+  }
+
+  /**
+   * Edición desde el back-office. Toca los mismos campos que el autoservicio
+   * de la empresa (`PUT /company/profile`) menos el RFC, que no se reemite.
+   */
+  async update(
+    command: UpdateCompanyCommand,
+  ): Promise<AdminCompanyResponseDto> {
+    const company = await this.companies.findById(command.id);
+    if (!company) throw this.notFound();
+
+    company.businessName = command.businessName.trim();
+    company.legalName = command.legalName.trim();
+    company.taxRegime = command.taxRegime;
+    company.postalCode = command.postalCode.trim();
+    company.state = command.state;
+    company.municipality = command.municipality.trim();
+    company.economicSector = command.economicSector?.trim() || null;
+    company.companyType = command.companyType ?? null;
+    company.corporateEmail =
+      command.corporateEmail?.trim().toLowerCase() || null;
+    company.phoneNumber = command.phoneNumber?.trim() || null;
+    company.website = command.website?.trim() || null;
+
+    const saved = await this.companies.save(company);
+
+    await this.audit.record({
+      action: 'companies.update',
+      actorUserId: command.actorUserId,
+      entity: 'company',
+      entityId: saved.id,
+      ip: command.ip,
+      userAgent: command.userAgent,
+    });
+
+    // Se vuelve a decorar para no perder dueño ni número de miembros.
+    const [item] = await this.decorate([saved]);
+    return item;
   }
 
   /** Añade dueño y número de miembros a cada empresa, en lote (sin N+1). */

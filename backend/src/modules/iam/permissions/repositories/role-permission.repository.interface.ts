@@ -1,3 +1,5 @@
+import { EntityManager } from 'typeorm';
+
 export const ROLE_PERMISSION_REPOSITORY = 'ROLE_PERMISSION_REPOSITORY';
 
 export interface RolePermissionCode {
@@ -12,4 +14,6 @@ export interface IRolePermissionRepository {
   exists(roleId: string, permissionId: string): Promise<boolean>;
   add(roleId: string, permissionId: string): Promise<void>;
   remove(roleId: string, permissionId: string): Promise<void>;
+  /** Limpia la matriz del rol antes de borrarlo. */
+  removeByRoleId(roleId: string, manager?: EntityManager): Promise<void>;
 }

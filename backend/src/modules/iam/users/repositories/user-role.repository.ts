@@ -31,6 +31,10 @@ export class UserRoleRepository
     return (await this.repo().count({ where: { userId, roleId } })) > 0;
   }
 
+  countByRoleId(roleId: string): Promise<number> {
+    return this.repo().count({ where: { roleId } });
+  }
+
   async add(
     userId: string,
     roleId: string,

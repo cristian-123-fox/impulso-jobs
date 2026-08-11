@@ -16,6 +16,7 @@ describe('PermissionsService', () => {
       exists: jest.fn(),
       add: jest.fn(),
       remove: jest.fn(),
+      removeByRoleId: jest.fn(),
     };
     service = new PermissionsService(rolePermissions);
   });

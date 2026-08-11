@@ -8,10 +8,14 @@ import { AuthUser, LoginResponse } from '@/core/models/auth.models';
 import { Role } from '@/core/models/role.enum';
 import { TokenStorageService } from '@/core/auth/token-storage.service';
 
-/** Áreas de aterrizaje por rol (empresa/candidato al panel demo por ahora). */
+/**
+ * A dónde va cada rol al iniciar sesión. La empresa entra directamente a sus
+ * vacantes —el área real, con alta y edición— y no al `/panel`, que sigue
+ * siendo la maqueta con datos de ejemplo.
+ */
 const ROLE_HOME: Record<Role, string> = {
   [Role.ADMIN]: '/admin',
-  [Role.EMPLOYER]: '/panel',
+  [Role.EMPLOYER]: '/empresa/vacantes',
   [Role.CANDIDATE]: '/panel',
 };
 

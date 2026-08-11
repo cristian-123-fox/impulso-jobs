@@ -116,6 +116,11 @@ export class CompanyLayout {
 
   protected readonly navItems: readonly CompanyNavItem[] = [
     { path: '/empresa/vacantes', label: 'Mis vacantes', icon: 'briefcase' },
+    { path: '/empresa/postulaciones', label: 'Postulaciones', icon: 'file' },
+    { path: '/empresa/candidatos', label: 'Buscar candidatos', icon: 'search' },
+    { path: '/empresa/promociones', label: 'Promociona tu vacante', icon: 'award' },
+    { path: '/empresa/usuarios', label: 'Usuarios de la empresa', icon: 'users' },
+    { path: '/empresa/perfil', label: 'Perfil de empresa', icon: 'building' },
   ];
 
   protected onLogout(): void {

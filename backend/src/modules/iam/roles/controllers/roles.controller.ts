@@ -34,6 +34,7 @@ import { ListRolesUseCase } from '@/modules/iam/roles/use-cases/list-roles.use-c
 import { GetRoleUseCase } from '@/modules/iam/roles/use-cases/get-role.use-case';
 import { CreateRoleUseCase } from '@/modules/iam/roles/use-cases/create-role.use-case';
 import { UpdateRoleUseCase } from '@/modules/iam/roles/use-cases/update-role.use-case';
+import { DeleteRoleUseCase } from '@/modules/iam/roles/use-cases/delete-role.use-case';
 import { ListRolePermissionsUseCase } from '@/modules/iam/roles/use-cases/list-role-permissions.use-case';
 import { AssignRolePermissionUseCase } from '@/modules/iam/roles/use-cases/assign-role-permission.use-case';
 import { RemoveRolePermissionUseCase } from '@/modules/iam/roles/use-cases/remove-role-permission.use-case';
@@ -48,6 +49,7 @@ export class RolesController {
     private readonly getRole: GetRoleUseCase,
     private readonly createRole: CreateRoleUseCase,
     private readonly updateRole: UpdateRoleUseCase,
+    private readonly deleteRole: DeleteRoleUseCase,
     private readonly listRolePermissions: ListRolePermissionsUseCase,
     private readonly assignRolePermission: AssignRolePermissionUseCase,
     private readonly removeRolePermission: RemoveRolePermissionUseCase,
@@ -107,6 +109,23 @@ export class RolesController {
       userAgent: client.userAgent,
     });
     return toRoleResponse(role);
+  }
+
+  /** Sólo roles personalizados y sin usuarios asignados (ver el caso de uso). */
+  @Delete(':id')
+  @RequirePermissions('roles.delete')
+  @ResponseMessage('Rol eliminado.')
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<void> {
+    await this.deleteRole.execute({
+      id,
+      actorUserId: user.userId,
+      ip: client.ip,
+      userAgent: client.userAgent,
+    });
   }
 
   @Get(':id/permissions')

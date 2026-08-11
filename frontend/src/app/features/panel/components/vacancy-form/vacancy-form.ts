@@ -18,9 +18,12 @@ import {
 } from '@/shared/ui';
 
 /**
- * "Nueva vacante": formulario reactivo construido con los controles del UI Kit
- * (ij-input, ij-autocomplete, ij-select, ij-multiselect, ij-datepicker). Sirve
- * como ejemplo de uso de los componentes de formulario ij-*.
+ * Muestra de los controles del UI Kit (ij-input, ij-autocomplete, ij-select,
+ * ij-multiselect, ij-datepicker) en un formulario reactivo. **No guarda nada**:
+ * el alta real de vacantes es el modal de `features/company/vacancies/`.
+ *
+ * Sólo se llega aquí desde la previsualización del panel; a una empresa real
+ * `panel-page` la manda a `/empresa/vacantes`.
  */
 @Component({
   selector: 'app-vacancy-form',
@@ -40,6 +43,13 @@ import {
       [formGroup]="form"
       (ngSubmit)="submit()"
     >
+      <p
+        class="mb-5 rounded-xl bg-accent-amber-soft px-4 py-3 text-[13px] font-medium text-[#b26a15]"
+      >
+        Muestra de los controles del UI Kit: <strong>no publica nada</strong>. El alta
+        real de vacantes está en “Mis vacantes” de la empresa.
+      </p>
+
       <div class="grid gap-5 md:grid-cols-2">
         <ij-input
           label="Título del cargo"
@@ -98,7 +108,7 @@ import {
           Cancelar
         </button>
         <button ij-button type="submit" variant="primary" shape="rounded" size="md" class="shadow-search">
-          Publicar vacante
+          Volver al listado
         </button>
       </div>
     </form>
@@ -139,7 +149,7 @@ export class VacancyForm {
   );
 
   protected submit(): void {
-    // Demo: sin backend de vacantes todavía (M10). Se emite para volver al listado.
+    // No hay envío: esto es la muestra del UI Kit, no el alta real.
     this.navigate.emit('vacantes');
   }
 }

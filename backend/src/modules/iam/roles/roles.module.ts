@@ -13,6 +13,7 @@ import { ListRolesUseCase } from '@/modules/iam/roles/use-cases/list-roles.use-c
 import { GetRoleUseCase } from '@/modules/iam/roles/use-cases/get-role.use-case';
 import { CreateRoleUseCase } from '@/modules/iam/roles/use-cases/create-role.use-case';
 import { UpdateRoleUseCase } from '@/modules/iam/roles/use-cases/update-role.use-case';
+import { DeleteRoleUseCase } from '@/modules/iam/roles/use-cases/delete-role.use-case';
 import { ListRolePermissionsUseCase } from '@/modules/iam/roles/use-cases/list-role-permissions.use-case';
 import { AssignRolePermissionUseCase } from '@/modules/iam/roles/use-cases/assign-role-permission.use-case';
 import { RemoveRolePermissionUseCase } from '@/modules/iam/roles/use-cases/remove-role-permission.use-case';
@@ -34,6 +35,7 @@ import { RemoveUserRoleUseCase } from '@/modules/iam/roles/use-cases/remove-user
     GetRoleUseCase,
     CreateRoleUseCase,
     UpdateRoleUseCase,
+    DeleteRoleUseCase,
     ListRolePermissionsUseCase,
     AssignRolePermissionUseCase,
     RemoveRolePermissionUseCase,

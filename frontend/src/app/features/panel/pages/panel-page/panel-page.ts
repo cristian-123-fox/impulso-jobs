@@ -34,6 +34,21 @@ const ADMIN_ROUTES: Record<string, string> = {
   usuarios: '/admin/usuarios',
   empresas: '/admin/empresas',
   roles: '/admin/roles',
+  planes: '/admin/planes',
+};
+
+/**
+ * Ídem para la empresa: `/empresa` ya cubre todo su menú. El alta de vacante no
+ * tiene ruta propia —es el mismo modal del listado—, así que apunta ahí.
+ */
+const COMPANY_ROUTES: Record<string, string> = {
+  vacantes: '/empresa/vacantes',
+  'nueva-vacante': '/empresa/vacantes',
+  postulaciones: '/empresa/postulaciones',
+  candidatos: '/empresa/candidatos',
+  promociones: '/empresa/promociones',
+  equipo: '/empresa/usuarios',
+  perfil: '/empresa/perfil',
 };
 
 /**
@@ -203,11 +218,21 @@ export class PanelPage {
   }
 
   protected onNavigate(key: string): void {
-    // Las vistas del admin ya implementadas viven en el área real `/admin`;
-    // el resto sigue mostrando el prototipo hasta que se construyan.
-    const adminRoute = ADMIN_ROUTES[key];
-    if (this.role() === 'admin' && adminRoute) {
-      void this.router.navigateByUrl(adminRoute);
+    // Las vistas ya implementadas viven en sus áreas reales (`/admin`,
+    // `/empresa`); el resto sigue mostrando el prototipo hasta que se
+    // construyan. Sin esto el usuario acabaría en un formulario que no guarda.
+    // Se compara contra el rol de la sesión, no contra el del selector: el
+    // administrador puede previsualizar el panel "empresa", pero `/empresa`
+    // exige rol EMPLOYER y su guard lo expulsaría al portal público.
+    const sessionRole = this.auth.currentUser()?.role;
+    const real =
+      sessionRole === Role.ADMIN && this.role() === 'admin'
+        ? ADMIN_ROUTES[key]
+        : sessionRole === Role.EMPLOYER
+          ? COMPANY_ROUTES[key]
+          : undefined;
+    if (real) {
+      void this.router.navigateByUrl(real);
       return;
     }
     this.view.set(key);

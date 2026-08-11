@@ -138,6 +138,76 @@ export class CreateCompanyDto {
   owner?: CreateCompanyOwnerDto;
 }
 
+/**
+ * Edición de empresa desde el back-office. Mismos campos que el alta salvo el
+ * **RFC** —inmutable, igual que en el autoservicio de la empresa— y la cuenta
+ * dueña, que se gestiona desde el equipo.
+ */
+export class UpdateCompanyDto {
+  @ApiProperty({ example: 'Northwind' })
+  @IsString()
+  @IsNotEmpty({ message: 'El nombre comercial es obligatorio.' })
+  @MaxLength(160)
+  businessName!: string;
+
+  @ApiProperty({ example: 'Northwind S.A. de C.V.' })
+  @IsString()
+  @IsNotEmpty({ message: 'La razón social es obligatoria.' })
+  @MaxLength(160)
+  legalName!: string;
+
+  @ApiProperty({ example: '601' })
+  @IsIn([...SAT_TAX_REGIME_CODES], {
+    message: 'El régimen fiscal no es válido.',
+  })
+  taxRegime!: string;
+
+  @ApiProperty({ example: '45010' })
+  @IsString()
+  @IsNotEmpty({ message: 'El código postal es obligatorio.' })
+  @MaxLength(5)
+  postalCode!: string;
+
+  @ApiProperty({ example: 'JAL' })
+  @IsIn([...MX_STATE_CODES], { message: 'El estado no es válido.' })
+  state!: string;
+
+  @ApiProperty({ example: 'Zapopan' })
+  @IsString()
+  @IsNotEmpty({ message: 'El municipio es obligatorio.' })
+  @MaxLength(120)
+  municipality!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  economicSector?: string;
+
+  @ApiPropertyOptional({ enum: [...COMPANY_TYPES] })
+  @IsOptional()
+  @IsIn([...COMPANY_TYPES], { message: 'El tipo de empresa no es válido.' })
+  companyType?: CompanyType;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEmail({}, { message: 'El correo corporativo no es válido.' })
+  @MaxLength(255)
+  corporateEmail?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phoneNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUrl({ require_tld: false }, { message: 'El sitio web no es válido.' })
+  @MaxLength(255)
+  website?: string;
+}
+
 /** Empresa en el listado admin, con su dueño y número de miembros. */
 export interface AdminCompanyResponseDto {
   id: string;

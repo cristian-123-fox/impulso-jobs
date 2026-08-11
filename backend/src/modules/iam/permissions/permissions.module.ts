@@ -11,6 +11,7 @@ import { ROLE_PERMISSION_REPOSITORY } from '@/modules/iam/permissions/repositori
 import { RolePermissionRepository } from '@/modules/iam/permissions/repositories/role-permission.repository';
 import { PermissionsService } from '@/modules/iam/permissions/services/permissions.service';
 import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.guard';
+import { RolesGuard } from '@/modules/iam/permissions/guards/roles.guard';
 import { PermissionsController } from '@/modules/iam/permissions/controllers/permissions.controller';
 
 /** Catálogo de permisos + resolución/guard de autorización reutilizable. */
@@ -25,10 +26,12 @@ import { PermissionsController } from '@/modules/iam/permissions/controllers/per
     { provide: ROLE_PERMISSION_REPOSITORY, useClass: RolePermissionRepository },
     PermissionsService,
     PermissionsGuard,
+    RolesGuard,
   ],
   exports: [
     PermissionsService,
     PermissionsGuard,
+    RolesGuard,
     PERMISSION_REPOSITORY,
     ROLE_PERMISSION_REPOSITORY,
   ],

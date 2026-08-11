@@ -17,6 +17,7 @@ describe('CreateRoleUseCase', () => {
       findByCode: jest.fn(),
       findByIds: jest.fn(),
       existsByCode: jest.fn(),
+      remove: jest.fn(),
       save: jest.fn((role: Role) =>
         Promise.resolve(Object.assign(role, { id: 'new-id' })),
       ),

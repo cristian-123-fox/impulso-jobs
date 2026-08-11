@@ -108,6 +108,7 @@ export class AdminLayout {
   protected readonly navItems: readonly AdminNavItem[] = [
     { path: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
     { path: '/admin/empresas', label: 'Empresas', icon: 'building' },
+    { path: '/admin/planes', label: 'Planes', icon: 'tag' },
     { path: '/admin/roles', label: 'Roles y permisos', icon: 'shield' },
   ];
 

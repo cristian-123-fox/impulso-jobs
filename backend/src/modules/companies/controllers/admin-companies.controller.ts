@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -18,6 +19,8 @@ import {
 } from '@/common/decorators/client-info.decorator';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { RequirePermissions } from '@/common/decorators/require-permissions.decorator';
+import { RequireRoles } from '@/common/decorators/require-roles.decorator';
+import { Role } from '@/common/types/role.enum';
 import { ResponseMessage } from '@/common/decorators/response-message.decorator';
 import type { PaginatedResponse } from '@/common/dto/paginated-response.dto';
 import type { AuthenticatedUser } from '@/common/types/authenticated-user';
@@ -25,6 +28,7 @@ import {
   AdminCompanyResponseDto,
   CreateCompanyDto,
   ListCompaniesQueryDto,
+  UpdateCompanyDto,
 } from '@/modules/companies/dto/admin-company.dto';
 import {
   AddCompanyMemberDto,
@@ -38,11 +42,13 @@ import {
 import { CompanyMembersUseCase } from '@/modules/companies/use-cases/company-members.use-case';
 import { JwtAuthGuard } from '@/modules/iam/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.guard';
+import { RolesGuard } from '@/modules/iam/permissions/guards/roles.guard';
 
 @ApiTags('admin-companies')
 @ApiBearerAuth()
 @Controller('admin/companies')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequireRoles(Role.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 export class AdminCompaniesController {
   constructor(
     private readonly useCase: AdminCompaniesUseCase,
@@ -85,6 +91,25 @@ export class AdminCompaniesController {
   @ResponseMessage('Empresa obtenida.')
   get(@Param('id') id: string): Promise<AdminCompanyResponseDto> {
     return this.useCase.get(id);
+  }
+
+  /** El RFC no se edita: identifica fiscalmente a la empresa. */
+  @Put(':id')
+  @RequirePermissions('companies.update')
+  @ResponseMessage('Empresa actualizada.')
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCompanyDto,
+    @CurrentUser() actor: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<AdminCompanyResponseDto> {
+    return this.useCase.update({
+      ...dto,
+      id,
+      actorUserId: actor.userId,
+      ip: client.ip,
+      userAgent: client.userAgent,
+    });
   }
 
   // ---------------------------------------------------------------- equipo

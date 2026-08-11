@@ -52,6 +52,9 @@ export interface CreateCompanyPayload {
   owner?: { email: string; password: string };
 }
 
+/** Edición: el RFC es inmutable y la cuenta dueña se gestiona en el equipo. */
+export type UpdateCompanyPayload = Omit<CreateCompanyPayload, 'rfc' | 'owner'>;
+
 export interface CreateCompanyResult {
   company: AdminCompany;
   ownerUserId: string | null;

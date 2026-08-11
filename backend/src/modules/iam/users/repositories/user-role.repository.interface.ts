@@ -9,6 +9,8 @@ export interface IUserRoleRepository {
     userIds: string[],
   ): Promise<{ userId: string; roleId: string }[]>;
   exists(userId: string, roleId: string): Promise<boolean>;
+  /** Cuántas cuentas tienen el rol. Bloquea el borrado de un rol en uso. */
+  countByRoleId(roleId: string): Promise<number>;
   add(userId: string, roleId: string, manager?: EntityManager): Promise<void>;
   remove(
     userId: string,

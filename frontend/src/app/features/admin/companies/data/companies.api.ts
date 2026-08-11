@@ -13,6 +13,7 @@ import {
   CompanyMemberRole,
   CreateCompanyPayload,
   CreateCompanyResult,
+  UpdateCompanyPayload,
 } from '@/features/admin/companies/models/companies.models';
 
 /** Cliente HTTP del back-office de empresas (desenvuelve el envelope). */
@@ -42,6 +43,12 @@ export class CompaniesApi {
   create(payload: CreateCompanyPayload): Observable<CreateCompanyResult> {
     return this.http
       .post<ApiSuccessResponse<CreateCompanyResult>>(this.base, payload)
+      .pipe(map((r) => r.content));
+  }
+
+  update(id: string, payload: UpdateCompanyPayload): Observable<AdminCompany> {
+    return this.http
+      .put<ApiSuccessResponse<AdminCompany>>(`${this.base}/${id}`, payload)
       .pipe(map((r) => r.content));
   }
 

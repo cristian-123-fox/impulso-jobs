@@ -17,6 +17,8 @@ import {
 } from '@/common/decorators/client-info.decorator';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { RequirePermissions } from '@/common/decorators/require-permissions.decorator';
+import { RequireRoles } from '@/common/decorators/require-roles.decorator';
+import { Role } from '@/common/types/role.enum';
 import { ResponseMessage } from '@/common/decorators/response-message.decorator';
 import type { AuthenticatedUser } from '@/common/types/authenticated-user';
 import {
@@ -35,6 +37,7 @@ import {
 } from '@/modules/billing/use-cases/plan-catalog.use-case';
 import { JwtAuthGuard } from '@/modules/iam/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.guard';
+import { RolesGuard } from '@/modules/iam/permissions/guards/roles.guard';
 
 /**
  * Back-office del catálogo. Los precios en MXN y el alcance de la Anual se dan
@@ -43,7 +46,8 @@ import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.g
 @ApiTags('admin-plans')
 @ApiBearerAuth()
 @Controller('admin')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequireRoles(Role.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 export class AdminPlansController {
   constructor(private readonly catalog: PlanCatalogUseCase) {}
 

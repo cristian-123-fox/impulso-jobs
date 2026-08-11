@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { AdminCompaniesController } from '@/modules/companies/controllers/admin-companies.controller';
 import { CompanyProfileController } from '@/modules/companies/controllers/company-profile.controller';
+import { CompanyTeamController } from '@/modules/companies/controllers/company-team.controller';
 import { Company } from '@/modules/companies/entities/company.entity';
 import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
 import { COMPANY_REPOSITORY } from '@/modules/companies/repositories/company.repository.interface';
@@ -27,7 +28,11 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     RolesModule,
     UsersModule,
   ],
-  controllers: [CompanyProfileController, AdminCompaniesController],
+  controllers: [
+    CompanyProfileController,
+    CompanyTeamController,
+    AdminCompaniesController,
+  ],
   providers: [
     { provide: COMPANY_REPOSITORY, useClass: CompanyRepository },
     { provide: COMPANY_USER_REPOSITORY, useClass: CompanyUserRepository },

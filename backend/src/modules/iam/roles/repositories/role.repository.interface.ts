@@ -10,4 +10,6 @@ export interface IRoleRepository {
   findByIds(ids: string[]): Promise<Role[]>;
   existsByCode(code: string, exceptId?: string): Promise<boolean>;
   save(role: Role, manager?: EntityManager): Promise<Role>;
+  /** Borrado duro: sólo para roles personalizados sin usuarios asignados. */
+  remove(id: string, manager?: EntityManager): Promise<void>;
 }

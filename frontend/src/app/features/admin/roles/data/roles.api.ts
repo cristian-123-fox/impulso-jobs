@@ -41,6 +41,13 @@ export class RolesApi {
       .pipe(map((r) => r.content));
   }
 
+  /** Sólo roles personalizados y sin cuentas asignadas; si no, el backend 409. */
+  deleteRole(id: string): Observable<void> {
+    return this.http
+      .delete<ApiSuccessResponse<unknown>>(`${this.base}/roles/${id}`)
+      .pipe(map(() => undefined));
+  }
+
   listPermissions(): Observable<Permission[]> {
     return this.http
       .get<ApiSuccessResponse<Permission[]>>(`${this.base}/permissions`)

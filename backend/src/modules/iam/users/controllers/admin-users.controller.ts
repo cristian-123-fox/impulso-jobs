@@ -19,10 +19,13 @@ import {
 } from '@/common/decorators/client-info.decorator';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { RequirePermissions } from '@/common/decorators/require-permissions.decorator';
+import { RequireRoles } from '@/common/decorators/require-roles.decorator';
+import { Role } from '@/common/types/role.enum';
 import { ResponseMessage } from '@/common/decorators/response-message.decorator';
 import type { AuthenticatedUser } from '@/common/types/authenticated-user';
 import { JwtAuthGuard } from '@/modules/iam/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.guard';
+import { RolesGuard } from '@/modules/iam/permissions/guards/roles.guard';
 import { CreateUserDto } from '@/modules/iam/users/dto/create-user.dto';
 import { ListUsersQueryDto } from '@/modules/iam/users/dto/list-users-query.dto';
 import {
@@ -44,7 +47,8 @@ import { UpdateUserUseCase } from '@/modules/iam/users/use-cases/update-user.use
 @ApiTags('admin-users')
 @ApiBearerAuth()
 @Controller('admin/users')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequireRoles(Role.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 export class AdminUsersController {
   constructor(
     private readonly listUsers: ListUsersUseCase,

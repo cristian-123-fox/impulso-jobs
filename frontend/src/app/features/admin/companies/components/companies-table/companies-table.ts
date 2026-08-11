@@ -68,7 +68,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
                 {{ company.createdAt | date: 'dd MMM yyyy' }}
               </td>
               <td class="px-5 py-3.5">
-                <div class="flex justify-end">
+                <div class="flex items-center justify-end gap-1.5">
                   <button
                     type="button"
                     class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-brand"
@@ -77,6 +77,15 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
                   >
                     <ij-icon name="users" [size]="14" />
                     Equipo
+                  </button>
+                  <button
+                    type="button"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand"
+                    title="Editar datos de la empresa"
+                    aria-label="Editar empresa"
+                    (click)="edit.emit(company)"
+                  >
+                    <ij-icon name="pen" [size]="15" />
                   </button>
                 </div>
               </td>
@@ -97,6 +106,8 @@ export class CompaniesTable {
   readonly companies = input.required<readonly AdminCompany[]>();
   /** Abre la ficha de la empresa (datos + equipo). */
   readonly open = output<AdminCompany>();
+  /** Edita los datos de la empresa sin salir del listado. */
+  readonly edit = output<AdminCompany>();
 
   protected readonly headers = [
     'Empresa',

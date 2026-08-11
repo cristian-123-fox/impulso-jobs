@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { RolesApi } from '@/features/admin/roles/data/roles.api';
 import {
   CreateRolePayload,
@@ -61,11 +61,32 @@ export class RolesFacade {
   }
 
   createRole(payload: CreateRolePayload): Observable<RoleSummary> {
-    return this.api.createRole(payload);
+    return this.api
+      .createRole(payload)
+      .pipe(tap((role) => this.roles.update((list) => [...list, role])));
   }
 
   updateRole(id: string, payload: UpdateRolePayload): Observable<RoleSummary> {
-    return this.api.updateRole(id, payload);
+    return this.api.updateRole(id, payload).pipe(
+      tap((updated) =>
+        this.roles.update((list) =>
+          // El `PUT` no devuelve `isSystem`: se conserva lo que ya teníamos.
+          list.map((role) =>
+            role.id === updated.id ? { ...role, ...updated } : role,
+          ),
+        ),
+      ),
+    );
+  }
+
+  deleteRole(id: string): Observable<void> {
+    return this.api
+      .deleteRole(id)
+      .pipe(
+        tap(() =>
+          this.roles.update((list) => list.filter((role) => role.id !== id)),
+        ),
+      );
   }
 
   assignPermission(roleId: string, permissionId: string): Observable<void> {

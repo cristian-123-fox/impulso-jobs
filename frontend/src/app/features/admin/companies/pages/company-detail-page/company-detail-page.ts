@@ -13,6 +13,7 @@ import { MX_STATES, SAT_TAX_REGIMES } from '@/shared/catalogs/mx.catalogs';
 import { IjButton, IjIcon, IjModal } from '@/shared/ui';
 import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
 import { CompanyMembersTable } from '@/features/admin/companies/components/company-members-table/company-members-table';
+import { CompanyEditForm } from '@/features/admin/companies/components/company-edit-form/company-edit-form';
 import { CompanyMemberForm } from '@/features/admin/companies/components/company-member-form/company-member-form';
 import { CompanyMemberRoleForm } from '@/features/admin/companies/components/company-member-role-form/company-member-role-form';
 import {
@@ -20,6 +21,7 @@ import {
   AdminCompany,
   CompanyMember,
   CompanyMemberRole,
+  UpdateCompanyPayload,
 } from '@/features/admin/companies/models/companies.models';
 
 const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
@@ -32,6 +34,7 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
   imports: [
     RouterLink,
     CompanyMembersTable,
+    CompanyEditForm,
     CompanyMemberForm,
     CompanyMemberRoleForm,
     IjButton,
@@ -77,6 +80,14 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
                   </p>
                 </div>
               </div>
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+                (click)="openEdit(data)"
+              >
+                <ij-icon name="pen" [size]="16" />
+                Editar empresa
+              </button>
             </div>
 
             <dl
@@ -133,6 +144,23 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
       }
     </div>
 
+    @if (editingCompany(); as data) {
+      <ij-modal
+        title="Editar empresa"
+        [subtitle]="data.businessName"
+        size="lg"
+        (close)="closeForms()"
+      >
+        <app-company-edit-form
+          [company]="data"
+          [submitting]="saving()"
+          [error]="formError()"
+          (save)="onUpdateCompany($event)"
+          (cancel)="closeForms()"
+        />
+      </ij-modal>
+    }
+
     @if (showAdd()) {
       <ij-modal
         title="Agregar miembro"
@@ -178,6 +206,7 @@ export class CompanyDetailPage {
   protected readonly state = signal<'loading' | 'loaded' | 'error'>('loading');
 
   protected readonly showAdd = signal(false);
+  protected readonly editingCompany = signal<AdminCompany | null>(null);
   protected readonly editing = signal<CompanyMember | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
@@ -215,13 +244,22 @@ export class CompanyDetailPage {
       });
   }
 
+  protected openEdit(company: AdminCompany): void {
+    this.showAdd.set(false);
+    this.editing.set(null);
+    this.formError.set(null);
+    this.editingCompany.set(company);
+  }
+
   protected openAdd(): void {
+    this.editingCompany.set(null);
     this.editing.set(null);
     this.formError.set(null);
     this.showAdd.set(true);
   }
 
   protected openRole(member: CompanyMember): void {
+    this.editingCompany.set(null);
     this.showAdd.set(false);
     this.formError.set(null);
     this.editing.set(member);
@@ -229,8 +267,30 @@ export class CompanyDetailPage {
 
   protected closeForms(): void {
     this.showAdd.set(false);
+    this.editingCompany.set(null);
     this.editing.set(null);
     this.formError.set(null);
+  }
+
+  protected onUpdateCompany(payload: UpdateCompanyPayload): void {
+    this.saving.set(true);
+    this.formError.set(null);
+    this.api
+      .update(this.companyId, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.saving.set(false);
+          this.closeForms();
+          this.company.set(updated);
+        },
+        error: (error: unknown) => {
+          this.saving.set(false);
+          this.formError.set(
+            this.messageOf(error, 'No se pudo actualizar la empresa.'),
+          );
+        },
+      });
   }
 
   protected onAdd(payload: AddCompanyMemberPayload): void {

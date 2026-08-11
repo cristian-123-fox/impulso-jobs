@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { Permission } from '@/modules/iam/permissions/entities/permission.entity';
 import { RolePermission } from '@/modules/iam/permissions/entities/role-permission.entity';
@@ -45,5 +45,9 @@ export class RolePermissionRepository
 
   async remove(roleId: string, permissionId: string): Promise<void> {
     await this.repo().delete({ roleId, permissionId });
+  }
+
+  async removeByRoleId(roleId: string, manager?: EntityManager): Promise<void> {
+    await this.repo(manager).delete({ roleId });
   }
 }

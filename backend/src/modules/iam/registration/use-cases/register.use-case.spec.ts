@@ -84,6 +84,7 @@ describe('RegisterUseCase', () => {
     };
     userRoles = {
       findRoleIdsByUserId: jest.fn(),
+      countByRoleId: jest.fn(),
       exists: jest.fn(),
       add: jest.fn(),
       remove: jest.fn(),

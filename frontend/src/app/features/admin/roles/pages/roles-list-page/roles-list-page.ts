@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,22 +7,25 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { Observable } from 'rxjs';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
-import { IjButton, IjIcon } from '@/shared/ui';
+import { IjButton, IjIcon, IjModal } from '@/shared/ui';
 import { RolesFacade } from '@/features/admin/roles/data/roles.facade';
 import {
   CreateRolePayload,
   RoleSummary,
 } from '@/features/admin/roles/models/roles.models';
-import { RolesTable } from '@/features/admin/roles/components/roles-table/roles-table';
-import { RoleCreateForm } from '@/features/admin/roles/components/role-create-form/role-create-form';
+import {
+  RoleActionEvent,
+  RolesTable,
+} from '@/features/admin/roles/components/roles-table/roles-table';
+import { RoleForm } from '@/features/admin/roles/components/role-form/role-form';
 
 @Component({
   selector: 'app-roles-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RolesTable, RoleCreateForm, IjButton, IjIcon],
+  imports: [RolesTable, RoleForm, IjButton, IjIcon, IjModal],
   template: `
     <div class="mx-auto max-w-[1100px]">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -31,30 +35,26 @@ import { RoleCreateForm } from '@/features/admin/roles/components/role-create-fo
             Administra los roles de la plataforma y los permisos que otorgan.
           </p>
         </div>
-        @if (!showCreate()) {
-          <button
-            ij-button
-            type="button"
-            variant="primary"
-            shape="rounded"
-            size="md"
-            (click)="showCreate.set(true)"
-          >
-            <ij-icon name="plus" [size]="16" />
-            Nuevo rol
-          </button>
-        }
+        <button
+          ij-button
+          type="button"
+          variant="primary"
+          shape="rounded"
+          size="md"
+          (click)="openCreate()"
+        >
+          <ij-icon name="plus" [size]="16" />
+          Nuevo rol
+        </button>
       </div>
 
-      @if (showCreate()) {
-        <div class="mb-5">
-          <app-role-create-form
-            [submitting]="creating()"
-            [error]="createError()"
-            (create)="onCreate($event)"
-            (cancel)="closeCreate()"
-          />
-        </div>
+      @if (actionError(); as message) {
+        <p
+          role="alert"
+          class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
+        >
+          {{ message }}
+        </p>
       }
 
       @switch (facade.rolesState()) {
@@ -69,10 +69,26 @@ import { RoleCreateForm } from '@/features/admin/roles/components/role-create-fo
           </div>
         }
         @default {
-          <app-roles-table [roles]="facade.roles()" (select)="onSelect($event)" />
+          <app-roles-table [roles]="facade.roles()" (action)="onAction($event)" />
         }
       }
     </div>
+
+    @if (formOpen()) {
+      <ij-modal
+        [title]="editing() ? 'Editar rol' : 'Nuevo rol'"
+        [subtitle]="editing()?.name ?? 'Después podrás asignarle permisos.'"
+        (close)="closeForm()"
+      >
+        <app-role-form
+          [role]="editing()"
+          [submitting]="saving()"
+          [error]="formError()"
+          (save)="onSave($event)"
+          (cancel)="closeForm()"
+        />
+      </ij-modal>
+    }
   `,
 })
 export class RolesListPage {
@@ -80,50 +96,98 @@ export class RolesListPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly showCreate = signal(false);
-  protected readonly creating = signal(false);
-  protected readonly createError = signal<string | null>(null);
+  protected readonly formOpen = signal(false);
+  protected readonly editing = signal<RoleSummary | null>(null);
+  protected readonly saving = signal(false);
+  protected readonly formError = signal<string | null>(null);
+  protected readonly actionError = signal<string | null>(null);
 
   constructor() {
     this.facade.loadRoles();
   }
 
-  protected onSelect(role: RoleSummary): void {
-    void this.router.navigate(['/admin/roles', role.id]);
+  protected openCreate(): void {
+    this.editing.set(null);
+    this.formError.set(null);
+    this.formOpen.set(true);
   }
 
-  protected closeCreate(): void {
-    this.showCreate.set(false);
-    this.createError.set(null);
+  protected closeForm(): void {
+    this.formOpen.set(false);
+    this.editing.set(null);
+    this.formError.set(null);
   }
 
-  protected onCreate(payload: CreateRolePayload): void {
-    this.creating.set(true);
-    this.createError.set(null);
+  protected onAction(event: RoleActionEvent): void {
+    const { action, role } = event;
+    switch (action) {
+      case 'open':
+        void this.router.navigate(['/admin/roles', role.id]);
+        return;
+      case 'edit':
+        this.editing.set(role);
+        this.formError.set(null);
+        this.formOpen.set(true);
+        return;
+      case 'remove':
+        this.onRemove(role);
+    }
+  }
+
+  protected onSave(payload: CreateRolePayload): void {
+    const editing = this.editing();
+    this.saving.set(true);
+    this.formError.set(null);
+
+    // Al editar sólo viajan nombre y descripción: el código es inmutable.
+    const request: Observable<RoleSummary> = editing
+      ? this.facade.updateRole(editing.id, {
+          name: payload.name,
+          description: payload.description,
+        })
+      : this.facade.createRole(payload);
+
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.closeForm();
+      },
+      error: (error: unknown) => {
+        this.saving.set(false);
+        this.formError.set(this.messageOf(error, 'No se pudo guardar el rol.'));
+      },
+    });
+  }
+
+  private onRemove(role: RoleSummary): void {
+    if (
+      !confirm(
+        `¿Eliminar el rol "${role.name}"? Se borrarán también sus permisos asignados.`,
+      )
+    ) {
+      return;
+    }
+    this.actionError.set(null);
     this.facade
-      .createRole(payload)
+      .deleteRole(role.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (role) => {
-          this.facade.roles.update((list) => [...list, role]);
-          this.creating.set(false);
-          this.closeCreate();
-        },
-        error: (error: unknown) => {
-          this.creating.set(false);
-          this.createError.set(this.messageOf(error));
-        },
+        error: (error: unknown) =>
+          this.actionError.set(
+            this.messageOf(error, 'No se pudo eliminar el rol.'),
+          ),
       });
   }
 
-  private messageOf(error: unknown): string {
+  /** El backend ya envía mensajes en español; se usa el suyo cuando existe. */
+  private messageOf(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       const body = error.error as ApiErrorResponse | null;
       if (body?.errorCode === 'ROLE_ALREADY_EXISTS') {
         return 'Ya existe un rol con ese código.';
       }
-      return body?.message ?? 'No se pudo crear el rol.';
+      return body?.errors?.[0]?.message ?? body?.message ?? fallback;
     }
-    return 'No se pudo crear el rol.';
+    return fallback;
   }
 }
