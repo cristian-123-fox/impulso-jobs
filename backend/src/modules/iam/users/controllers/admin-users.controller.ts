@@ -64,6 +64,7 @@ export class AdminUsersController {
       role: query.role,
       status: query.status,
       emailVerified: query.emailVerified,
+      deleted: query.deleted,
       page: query.page ?? 1,
       limit: query.limit ?? 10,
     });

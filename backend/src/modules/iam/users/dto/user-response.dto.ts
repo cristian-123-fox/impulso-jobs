@@ -52,6 +52,10 @@ export class UserResponseDto {
   @ApiProperty()
   createdAt!: string;
 
+  /** Fecha de baja (M13). `null` en las cuentas vigentes. */
+  @ApiProperty({ nullable: true })
+  deletedAt!: string | null;
+
   @ApiPropertyOptional({ nullable: true })
   displayName?: string | null;
 
@@ -85,6 +89,7 @@ export function toUserResponse(
     blockedUntil: user.blockedUntil?.toISOString() ?? null,
     lastLogin: user.lastLogin?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
+    deletedAt: user.deletedAt?.toISOString() ?? null,
     displayName: profile.displayName ?? null,
     companyId: profile.companyId ?? null,
     companyName: profile.companyName ?? null,

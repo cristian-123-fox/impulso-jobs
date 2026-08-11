@@ -13,6 +13,8 @@ export interface UserSearchCriteria {
   status?: UserStatus;
   /** `true` = sólo verificados, `false` = sólo sin verificar. */
   emailVerified?: boolean;
+  /** `true` = sólo las cuentas dadas de baja (M13, para restaurarlas). */
+  deleted?: boolean;
   page: number;
   limit: number;
 }
@@ -33,4 +35,18 @@ export interface IUserRepository {
     manager?: EntityManager,
   ): Promise<number>;
   softDelete(id: string, manager?: EntityManager): Promise<void>;
+  /**
+   * Incluye las cuentas dadas de baja. Necesario para restaurarlas y para la
+   * purga por retención (M13): el resto de consultas las excluye.
+   */
+  findByIdIncludingDeleted(
+    id: string,
+    manager?: EntityManager,
+  ): Promise<User | null>;
+  /** Deshace la baja lógica (`deleted_at = NULL`). */
+  restore(id: string, manager?: EntityManager): Promise<void>;
+  /** Cuentas dadas de baja antes de la fecha indicada (purga por retención). */
+  findDeletedBefore(cutoff: Date, manager?: EntityManager): Promise<User[]>;
+  /** Borrado físico. Sólo lo usa la purga tras el periodo de retención. */
+  hardDelete(id: string, manager?: EntityManager): Promise<void>;
 }

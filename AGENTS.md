@@ -80,7 +80,8 @@ backend/src/
 │  │  ├─ users/              ✅ # usuarios (raíz de identidad, tokens, blacklist) + back-office
 │  │  ├─ roles/              ✅ # roles + asignación a usuarios
 │  │  ├─ permissions/        ✅ # permisos (component.action), components, actions, PermissionsGuard
-│  │  └─ registration/       ✅ # POST /auth/register (empresa | candidato), transaccional
+│  │  ├─ registration/       ✅ # POST /auth/register (empresa | candidato), transaccional
+│  │  └─ account/            ✅ # baja de cuenta, restauración y export ARCO (LFPDPPP)
 │  ├─ companies/             ✅ # perfil de empresa (fiscal/CFDI) + company_users + back-office
 │  ├─ candidates/            ✅ # perfil, experiencia, educación, idiomas, skills, hoja de vida, configuración
 │  ├─ vacancies/             ✅ # vacantes (CRUD, estado, pausar/reactivar/refrescar) + listado público
@@ -135,6 +136,7 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 | Reset de contraseña | `modules/iam/auth/` | `POST auth/password-reset/{request,validate,confirm}` | ✅ |
 | Verificación de correo | `modules/iam/auth/` | `GET auth/email-verification/confirm` · `POST …/resend` | ✅ |
 | Registro (empresa \| candidato) | `modules/iam/registration/` | `POST auth/register` | ✅ |
+| Baja de cuenta y derechos ARCO | `modules/iam/account/` | `DELETE account` · `GET account/data-export` · `POST account/:id/restore` | ✅ |
 | Roles, permisos (RBAC) | `modules/iam/roles/`, `modules/iam/permissions/` | `GET permissions` · `roles` CRUD · `roles/:id/permissions` · `users/:id/roles` | ✅ |
 | Back-office de usuarios | `modules/iam/users/` | `admin/users` CRUD + `:id/roles`, `:id/status` | ✅ |
 | Perfil de empresa (fiscal/CFDI) | `modules/companies/` | `GET/PUT company/profile` · `PATCH company/profile/logo` | ✅ |
@@ -169,6 +171,7 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 - **Contraseña:** mínimo 8, 1 mayúscula, 1 minúscula, 1 número, 1 especial (`common/utils/password-policy.ts`). **bcryptjs**. Nunca texto plano.
 - **Migraciones:** toda entidad/cambio de esquema requiere migración en `database/migrations/`. Sin `synchronize`. IDs = UUID v4 generados en la app y guardados como `varchar(36)` (portable Postgres/MySQL, ver `common/entities/base.entity.ts`).
 - **Seed de RBAC:** el `PermissionsGuard` lee los permisos **de la base de datos**. Todo permiso nuevo se agrega a `database/seed-rbac.ts` (`PERMISSION_CODES` + `MATRIX`) y **exige volver a correr `pnpm seed:rbac`**, o el endpoint responde 403.
+- **Borrado lógico y ARCO:** la baja de una cuenta es `deleted_at` en `users` + el perfil de aspirante (M13). TypeORM excluye las filas borradas de toda consulta, así que el login y el token dejan de funcionar solos; además se fija `tokens_valid_from`, se revocan los refresh y el access presentado va a la blacklist. **Nunca se borra físicamente en caliente**: la purga tras el periodo de retención es un script manual (`pnpm purge:accounts`, simulación por defecto). Postulaciones, vacantes y auditoría se conservan como registro histórico de la contraparte.
 
 ---
 
@@ -316,11 +319,11 @@ Las rutas de cara al usuario van **en español**; los identificadores del códig
 
 ## 10. Estado del proyecto y qué sigue
 
-**Construido (backend):** identidad completa (registro empresa/candidato, login, refresh, logout, reset, verificación de correo, bloqueo por intentos, blacklist de tokens), RBAC con guard por permiso y back-office de usuarios/empresas/roles, perfil de candidato con experiencia/educación/idiomas/habilidades/hojas de vida/configuración, perfil de empresa con datos fiscales CFDI, vacantes (CRUD, estado, pausar/reactivar/refrescar) con listado público, **postulaciones con historial de estados** y **banco de talento con cupo de visitas**. El circuito candidato↔empresa ya cierra de punta a punta. Despliegue en cPanel documentado y funcionando.
+**Construido (backend):** identidad completa (registro empresa/candidato, login, refresh, logout, reset, verificación de correo, bloqueo por intentos, blacklist de tokens), RBAC con guard por permiso y back-office de usuarios/empresas/roles, perfil de candidato con experiencia/educación/idiomas/habilidades/hojas de vida/configuración, perfil de empresa con datos fiscales CFDI, vacantes (CRUD, estado, pausar/reactivar/refrescar) con listado público, **postulaciones con historial de estados**, **banco de talento con cupo de visitas** y **baja de cuenta con derechos ARCO**. El circuito candidato↔empresa ya cierra de punta a punta. Despliegue en cPanel documentado y funcionando.
 
 **Siguiente frontera, en orden:**
 
-1. **Frontend de postulaciones y banco de talento** — M11 y M12 están listos en backend pero **sin UI**: falta el botón "postularme", "mis postulaciones" del aspirante, la bandeja del reclutador con filtros y cambio de estado, y el buscador de candidatos con contador de visitas.
+1. **Frontend de postulaciones, banco de talento y baja de cuenta** — M11, M12 y M13 están listos en backend pero **sin UI**: falta el botón "postularme", "mis postulaciones" del aspirante, la bandeja del reclutador con filtros y cambio de estado, el buscador de candidatos con contador de visitas, y la pantalla de baja/descarga de datos en configuración.
 2. **Preguntas de filtrado** (`vacancy_questions` + `application_answers`, M15) — el módulo de postulaciones ya deja el hueco preparado.
 3. **`modules/billing/` + Stripe** — planes, beneficios, promociones por vacante, suscripción anual, órdenes y CFDI. Ver `Impulso_Jobs_Planes_Suscripciones.md` y `Impulso_Jobs_Stripe.md`. **Bloqueado** por las decisiones de precio/alcance listadas en `README_CONTEXTO.md`. Al implementarlo, lo único que hace falta para activar la base de talento es **crear un `TalentAccessGrant`** vía `TALENT_ACCESS_REPOSITORY` cuando se active un plan; el consumo ya está hecho.
 4. **Notificaciones** (mensaje automático a no seleccionados, M16) y **SMTP real** — hoy `MAILER_PORT` usa `ConsoleMailerAdapter`, que solo escribe el enlace en el log. `VacancyStatusUseCase.close()` y `ApplicationsModule` ya exponen lo que ese módulo necesita.

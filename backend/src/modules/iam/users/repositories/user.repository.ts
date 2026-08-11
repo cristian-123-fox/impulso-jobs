@@ -5,6 +5,7 @@ import {
   FindOptionsWhere,
   In,
   IsNull,
+  LessThan,
   Not,
   Repository,
 } from 'typeorm';
@@ -52,6 +53,8 @@ export class UserRepository
   ): Promise<[User[], number]> {
     return this.repo(manager).findAndCount({
       where: this.buildWhere(criteria),
+      // `withDeleted` trae también las bajas; el `where` las acota a sólo ésas.
+      withDeleted: criteria.deleted === true,
       order: { createdAt: 'DESC' },
       skip: (criteria.page - 1) * criteria.limit,
       take: criteria.limit,
@@ -69,6 +72,29 @@ export class UserRepository
     await this.repo(manager).softDelete({ id });
   }
 
+  findByIdIncludingDeleted(
+    id: string,
+    manager?: EntityManager,
+  ): Promise<User | null> {
+    return this.repo(manager).findOne({ where: { id }, withDeleted: true });
+  }
+
+  async restore(id: string, manager?: EntityManager): Promise<void> {
+    await this.repo(manager).restore({ id });
+  }
+
+  findDeletedBefore(cutoff: Date, manager?: EntityManager): Promise<User[]> {
+    return this.repo(manager).find({
+      where: { deletedAt: LessThan(cutoff) },
+      withDeleted: true,
+      order: { deletedAt: 'ASC' },
+    });
+  }
+
+  async hardDelete(id: string, manager?: EntityManager): Promise<void> {
+    await this.repo(manager).delete({ id });
+  }
+
   private buildWhere(criteria: UserSearchCriteria): FindOptionsWhere<User> {
     const where: FindOptionsWhere<User> = {};
     const search = criteria.search?.trim();
@@ -77,6 +103,8 @@ export class UserRepository
     if (criteria.status) where.status = criteria.status;
     if (criteria.emailVerified === true) where.emailVerifiedAt = Not(IsNull());
     if (criteria.emailVerified === false) where.emailVerifiedAt = IsNull();
+    // Acota a las bajas; sin el filtro, TypeORM ya las excluye por sí solo.
+    if (criteria.deleted === true) where.deletedAt = Not(IsNull());
     return where;
   }
 }

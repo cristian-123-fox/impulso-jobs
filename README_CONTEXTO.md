@@ -36,14 +36,15 @@ Portal de empleabilidad para **México** que conecta candidatos y empresas, con 
 | **Vacantes** | CRUD, cambio de estado, pausar/reactivar/refrescar, listado y detalle públicos. |
 | **Postulaciones** (backend) | Postularse, listar/filtrar, detalle, historial de estados, embudo por estado y cambio de estado por la empresa. Sin UI todavía. |
 | **Banco de talento** (backend) | Búsqueda con filtros combinables, reglas de visibilidad público/postulado, y cupo de visitas con consumo idempotente y bloqueo por upsell. Sin UI todavía. |
+| **Baja de cuenta / ARCO** (backend) | Baja lógica con reconfirmación de contraseña, invalidación total de sesiones, export de datos en JSON, restauración por admin y purga manual tras retención. Sin UI todavía. |
 | **Portal** | Home, vacantes, planes, nosotros, contacto, FAQ, mantenimiento; auth completo. |
-| **Infra** | Swagger en `/docs`, envelope y `errorCode` unificados, auditoría, 12 migraciones, 5 seeds, despliegue cPanel. |
+| **Infra** | Swagger en `/docs`, envelope y `errorCode` unificados, auditoría, 12 migraciones, 5 seeds, purga por retención, despliegue cPanel. |
 
 ### Pendiente
 
 | Área | Bloqueo |
 |---|---|
-| **Frontend de postulaciones y banco de talento** | Ninguno — **es lo siguiente**. Ambos backends están listos y probados. |
+| **Frontend de postulaciones, banco de talento y baja de cuenta** | Ninguno — **es lo siguiente**. Los tres backends están listos y probados. |
 | **Preguntas de filtrado** | Ninguno técnico; el hueco ya está preparado en el módulo de postulaciones. |
 | **Billing + Stripe** | Decisiones de negocio abiertas (abajo). |
 | **Notificaciones + SMTP real** | Hoy `MAILER_PORT` → `ConsoleMailerAdapter`: solo escribe el enlace en el log. |
@@ -86,5 +87,5 @@ Estos documentos **ya no están en el repositorio**; se listan solo para que nad
 > |---|---|---|---|
 > | **M2** RBAC ✅ | **M3** reset de contraseña ✅ | **M4** verificación de correo ✅ | **M5** registro + dominios empresa/candidato ✅ |
 > | **M6** perfil del candidato ✅ | **M8** configuración del candidato ✅ | **M9** perfil de empresa ✅ | **M10** vacantes ✅ |
-> | **M11** postulaciones ✅ (backend) | **M12** banco de talento ✅ (backend) | **M14** planes y billing 🕓 | **M16** notificaciones 🕓 |
-> | **M18** CFDI 🕓 | | | |
+> | **M11** postulaciones ✅ (backend) | **M12** banco de talento ✅ (backend) | **M13** baja de cuenta / ARCO ✅ (backend) | **M14** planes y billing 🕓 |
+> | **M16** notificaciones 🕓 | **M18** CFDI 🕓 | | |

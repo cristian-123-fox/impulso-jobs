@@ -112,8 +112,8 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 | `subscriptions.read` | ✓ (global) | ✓ (propio) | — | 🕓 |
 | `invoices.read` (CFDI) | ✓ (global) | ✓ (propio) | — | 🕓 |
 | `notifications.read` | ✓ | ✓ (propio) | ✓ (propio) | 🕓 |
-| `account.delete` (ARCO) | ✓ | ✓ (propio) | ✓ (propio) | 🌱 |
-| `account.data_export` (ARCO) | ✓ | ✓ (propio) | ✓ (propio) | 🕓 |
+| `account.delete` (ARCO — Cancelación) | ✓ | ✓ (propio) | ✓ (propio) | ✅ |
+| `account.data_export` (ARCO — Acceso) | ✓ | ✓ (propio) | ✓ (propio) | ✅ |
 
 **Notas de implementación:**
 
@@ -125,6 +125,9 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 - El rol de plataforma se verifica **además** del permiso donde hace falta: `applications.read` lo tienen los tres roles, así que el lado aspirante exige rol `CANDIDATE` y el lado empresa exige membresía en una empresa. Un `EMPLOYER` que llame a `/candidate/applications` recibe 403; un `CANDIDATE` que llame a `/company/applications`, 404.
 - **`candidates.cv.read` ya está condicionado por cupo (M12).** El permiso deja pasar al `EMPLOYER`, pero el use-case comprueba `talent_access_grants`: sin visitas disponibles responde **402 `TALENT_QUOTA_EXHAUSTED`** con mensaje de upsell. Los candidatos que **ya postularon** a la empresa quedan fuera del cupo — son gratis y siempre accesibles, incluso con perfil privado.
 - Los endpoints `/company/candidates/**` son de empresa: un `ADMIN` los tiene permitidos por matriz pero recibe 404 al no pertenecer a ninguna empresa. La vista global del back-office necesitaría su propio endpoint.
+- **`account.data_export` se añadió en M13**, así que hace falta haber corrido `pnpm seed:rbac` después de esa versión o `GET /account/data-export` responderá 403.
+- **La baja de la propia cuenta tiene dos topes de seguridad** además del permiso: no puede darse de baja el único `ADMIN` activo de la plataforma (`ACCOUNT_LAST_ADMIN`) ni el único `OWNER` de una empresa (`COMPANY_LAST_OWNER`). Además exige reconfirmar la contraseña.
+- **Restaurar** (`POST /account/:id/restore`) exige `users.delete`, el mismo permiso que permite provocar la baja desde el back-office. Para *encontrar* las cuentas dadas de baja: `GET /admin/users?deleted=true`.
 
 ---
 

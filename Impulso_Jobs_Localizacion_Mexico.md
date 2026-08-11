@@ -3,7 +3,8 @@
 > La plataforma opera en **México**. Este documento **corrige y reemplaza** los supuestos previos basados en Colombia (NIT, IVA 19 %, DIAN, PSE, COP) y recoge todo lo que cambia en el producto, el modelo de datos y el backlog.
 
 > **Estado (agosto 2026): aplicado en lo ya construido.** RFC/CURP validados (`common/utils/mx-identifiers.ts` + `shared/validators/mx-identifiers.validator.ts`); estados, municipios, regímenes fiscales SAT y usos de CFDI como constantes en `common/catalogs/` y `shared/catalogs/mx.catalogs.ts`; ubicación por estado/municipio y C.P. en empresas, perfiles y vacantes; soft delete en `users` para ARCO.
-> **Pendiente:** todo lo ligado a pagos y facturación (§2, §3, §5) — depende del módulo de billing. El aviso de privacidad y la exportación de datos (ARCO completo) tampoco están.
+> **ARCO ya está implementado (M13):** Acceso → `GET /account/data-export` · Rectificación → endpoints de perfil (M6/M9) · Cancelación → `DELETE /account` (baja lógica + purga tras retención, `ACCOUNT_RETENTION_DAYS`) · Oposición → visibilidad del perfil (M8).
+> **Pendiente:** todo lo ligado a pagos y facturación (§2, §3, §5) — depende del módulo de billing. Falta también publicar el **aviso de privacidad**.
 
 ---
 

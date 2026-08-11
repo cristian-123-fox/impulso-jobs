@@ -58,8 +58,12 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     CompanyApplicationsUseCase,
     ApplicationStatusUseCase,
   ],
-  // M16 (aviso a no seleccionados) necesitará leer las postulaciones al cerrar
-  // una vacante.
-  exports: [CANDIDATE_APPLICATION_REPOSITORY, APPLICATION_STATUS_REPOSITORY],
+  // M13 (export ARCO) lee postulaciones e historial; M16 (aviso a no
+  // seleccionados) leerá las postulaciones al cerrar una vacante.
+  exports: [
+    CANDIDATE_APPLICATION_REPOSITORY,
+    APPLICATION_STATUS_REPOSITORY,
+    APPLICATION_STATUS_HISTORY_REPOSITORY,
+  ],
 })
 export class ApplicationsModule {}

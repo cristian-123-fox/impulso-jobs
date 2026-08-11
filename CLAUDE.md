@@ -20,8 +20,8 @@ AGENTS.md describes the **target**. These are the deliberate, still-standing div
 
 ### What is built (Aug 2026)
 
-- **Backend** — `modules/`: `iam/{auth,users,roles,permissions,registration}`, `candidates`, `companies`, `vacancies`, `applications`, `talent`, `audit`. 19 controllers, 41 use-cases, 12 migrations, 28 unit specs. Swagger at `/docs` + `/docs-json`, global prefix `/api/v1`.
-- **Not built** — `modules/billing/` (planes, Stripe, promociones, suscripciones), notifications, screening questions (`vacancy_questions` + `application_answers`), AI. Applications and talent bank have no frontend yet. No e2e tests yet.
+- **Backend** — `modules/`: `iam/{auth,users,roles,permissions,registration,account}`, `candidates`, `companies`, `vacancies`, `applications`, `talent`, `audit`. 20 controllers, 44 use-cases, 12 migrations, 30 unit specs. Swagger at `/docs` + `/docs-json`, global prefix `/api/v1`.
+- **Not built** — `modules/billing/` (planes, Stripe, promociones, suscripciones), notifications, screening questions (`vacancy_questions` + `application_answers`), AI. Applications, talent bank and account deletion have no frontend yet. No e2e tests yet.
 - **`candidates/` vs `talent/`** — `candidates/` is the applicant's self-service over their own data; `talent/` is the company-facing side (searching third parties, consuming purchased visit quota). `talent/` also owns `talent_access_grants`/`talent_access_views`; M14 will only need to *create* grants through `TALENT_ACCESS_REPOSITORY`.
 - **Frontend** — public portal (home, vacantes, planes, nosotros, contacto, faq, mantenimiento), auth (login, registro empresa/candidato, reset, verificación), `/admin` (usuarios, empresas, roles), `/empresa/vacantes`, `/panel`. UI kit is `ij-{input,select,multiselect,autocomplete,datepicker,textarea,modal,badge,button,icon,logo,pricing-card}` — **no** `ij-table`/`card`/`pagination`/`tabs`/`spinner`/`empty-state` yet (admin uses a local `admin-pagination`, panel a local `data-table`).
 
@@ -31,6 +31,7 @@ Both apps use pnpm. Backend on `:3000` (`/api/v1`, docs at `/docs`), frontend on
 
 - **Backend** (`cd backend`): `pnpm run start:dev` (watch) · `pnpm run build` · `pnpm run start:prod` (`node dist/main`) · `pnpm test` — single test: `pnpm test -- app.controller` or `pnpm test -- -t "name"` · `pnpm run test:e2e` · `pnpm run lint` · `pnpm run format`
 - **Backend DB** (`cd backend`): `pnpm run migration:run` · `pnpm run migration:revert` · seeds `pnpm run seed:rbac` (roles + matriz de permisos), `seed:admin`, `seed:candidate`, `seed:company`, `seed:applications` (catálogo de estados de postulación). Each has a `:prod` twin that runs the compiled `dist/` version. **Re-run `seed:rbac` after adding any permission code** — the guard reads the DB, not the source list. `seed:applications` is required for M11 to work at all: without it there is no status to assign.
+- **Account purge** (`cd backend`): `pnpm run purge:accounts` hard-deletes soft-deleted accounts past `ACCOUNT_RETENTION_DAYS` (default 90). **Dry-run by default** — it only lists; add `-- --confirm` to actually delete. It is not scheduled; run it manually or from cron.
 - **Frontend** (`cd frontend`): `pnpm start` · `pnpm run build` · `pnpm test` · `pnpm run serve:ssr:frontend`
 
 ## Tooling notes (not in AGENTS.md)

@@ -48,6 +48,7 @@ const ACTION_NAMES: Record<string, string> = {
   'read.public': 'Leer (público)',
   'status.update': 'Actualizar estado',
   'cv.read': 'Leer hoja de vida',
+  data_export: 'Exportar datos',
   status: 'Cambiar estado',
   checkout: 'Pagar',
   search: 'Buscar',
@@ -97,6 +98,7 @@ const PERMISSION_CODES: readonly string[] = [
   'promotions.checkout',
   'promotions.read',
   'account.delete',
+  'account.data_export',
 ];
 
 const ROLE_META: Record<string, { name: string; description: string }> = {
@@ -148,6 +150,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'plans.manage',
     'promotions.read',
     'account.delete',
+    'account.data_export',
   ],
   EMPLOYER: [
     'catalogs.read',
@@ -168,6 +171,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'promotions.checkout',
     'promotions.read',
     'account.delete',
+    'account.data_export',
   ],
   CANDIDATE: [
     'catalogs.read',
@@ -185,6 +189,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'settings.update',
     'plans.read',
     'account.delete',
+    'account.data_export',
   ],
 };
 

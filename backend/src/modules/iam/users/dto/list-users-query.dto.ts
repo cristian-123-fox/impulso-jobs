@@ -27,4 +27,12 @@ export class ListUsersQueryDto extends PaginationQueryDto {
     return undefined;
   })
   emailVerified?: boolean;
+
+  /**
+   * `true` lista **sólo** las cuentas dadas de baja. Sin este filtro quedan
+   * fuera, así que es la única forma de encontrarlas para restaurarlas (M13).
+   */
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  deleted?: boolean;
 }

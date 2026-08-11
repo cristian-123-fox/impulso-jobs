@@ -52,4 +52,25 @@ export class CandidateProfileRepository
   ): Promise<CandidateProfile> {
     return this.repo(manager).save(profile);
   }
+
+  async softDeleteByUserId(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.repo(manager).softDelete({ userId });
+  }
+
+  async restoreByUserId(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.repo(manager).restore({ userId });
+  }
+
+  findByUserIdIncludingDeleted(
+    userId: string,
+    manager?: EntityManager,
+  ): Promise<CandidateProfile | null> {
+    return this.repo(manager).findOne({ where: { userId }, withDeleted: true });
+  }
 }
