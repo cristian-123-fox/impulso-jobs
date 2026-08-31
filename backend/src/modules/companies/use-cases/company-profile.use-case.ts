@@ -1,7 +1,17 @@
+import { randomUUID } from 'node:crypto';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
+import {
+  requireValidImage,
+  storageKeyFromUrl,
+  type UploadedImageFile,
+} from '@/common/storage/image-upload';
+import {
+  PUBLIC_FILE_STORAGE,
+  type PublicFileStoragePort,
+} from '@/common/storage/public-file-storage.port';
 import { normalizeMxPhone, normalizeRfc } from '@/common/utils/mx-identifiers';
 import { AuditService } from '@/modules/audit/audit.service';
 import { Company } from '@/modules/companies/entities/company.entity';
@@ -48,6 +58,10 @@ export interface UpdateCompanyLogoCommand extends CompanyActor {
   logoUrl?: string | null;
 }
 
+export interface UploadCompanyLogoCommand extends CompanyActor {
+  file?: UploadedImageFile;
+}
+
 export interface CompanyProfileResult {
   company: Company;
   companyRole: string;
@@ -60,6 +74,8 @@ export class CompanyProfileUseCase {
     private readonly companies: ICompanyRepository,
     @Inject(COMPANY_USER_REPOSITORY)
     private readonly members: ICompanyUserRepository,
+    @Inject(PUBLIC_FILE_STORAGE)
+    private readonly storage: PublicFileStoragePort,
     private readonly audit: AuditService,
   ) {}
 
@@ -118,8 +134,10 @@ export class CompanyProfileUseCase {
     this.assertEmployerRole(command.role);
     const { company } = await this.requireOwnCompany(command.userId);
 
+    const previousUrl = company.logoUrl;
     company.logoUrl = command.logoUrl?.trim() || null;
     const saved = await this.companies.save(company);
+    await this.deleteReplacedFile(previousUrl, saved.logoUrl);
     await this.audit.record({
       action: 'company.profile.logo.update',
       actorUserId: command.userId,
@@ -130,6 +148,46 @@ export class CompanyProfileUseCase {
     });
 
     return saved;
+  }
+
+  async uploadLogo(command: UploadCompanyLogoCommand): Promise<Company> {
+    this.assertEmployerRole(command.role);
+    const { company } = await this.requireOwnCompany(command.userId);
+    const { file, extension } = requireValidImage(command.file, {
+      invalidType: ErrorCode.COMPANY_LOGO_INVALID_TYPE,
+      tooLarge: ErrorCode.COMPANY_LOGO_TOO_LARGE,
+    });
+
+    // Nombre nuevo en cada subida: evita servir caché viejo tras reemplazar.
+    const key = `company-logos/${randomUUID()}.${extension}`;
+    await this.storage.save({ key, buffer: file.buffer });
+
+    const previousUrl = company.logoUrl;
+    company.logoUrl = this.storage.publicUrl(key);
+    const saved = await this.companies.save(company);
+    await this.deleteReplacedFile(previousUrl, saved.logoUrl);
+
+    await this.audit.record({
+      action: 'company.profile.logo.upload',
+      actorUserId: command.userId,
+      entity: 'company',
+      entityId: saved.id,
+      ip: command.ip,
+      userAgent: command.userAgent,
+    });
+
+    return saved;
+  }
+
+  /** Borra (best-effort) el archivo local que la nueva URL dejó huérfano. */
+  private async deleteReplacedFile(
+    previousUrl: string | null | undefined,
+    currentUrl: string | null | undefined,
+  ): Promise<void> {
+    const previousKey = storageKeyFromUrl(previousUrl);
+    if (previousKey && previousUrl !== currentUrl) {
+      await this.storage.delete(previousKey).catch(() => undefined);
+    }
   }
 
   /** Resuelve la empresa del usuario vía `company_users` (ownership). */

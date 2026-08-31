@@ -63,7 +63,11 @@ export class CandidateResumeController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file'))
+  // Tope duro por encima de los 5 MB del use-case: sin él, multer bufferea
+  // en RAM cualquier tamaño antes de que la validación corra.
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 6 * 1024 * 1024 } }),
+  )
   @ResponseMessage('Hoja de vida cargada.')
   async upload(
     @UploadedFile() file: CandidateResumeUploadFile | undefined,

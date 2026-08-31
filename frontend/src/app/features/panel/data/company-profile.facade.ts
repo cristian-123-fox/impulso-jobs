@@ -49,12 +49,20 @@ export class CompanyProfileFacade {
 
   updateLogo(payload: CompanyLogoPayload): Observable<{ logoUrl: string | null }> {
     return this.api.updateLogo(payload).pipe(
-      tap((result) => {
-        const profile = this.profileState();
-        if (profile) {
-          this.profileState.set({ ...profile, logoUrl: result.logoUrl });
-        }
-      }),
+      tap((result) => this.applyLogoUrl(result.logoUrl)),
     );
+  }
+
+  uploadLogo(file: File): Observable<{ logoUrl: string | null }> {
+    return this.api.uploadLogo(file).pipe(
+      tap((result) => this.applyLogoUrl(result.logoUrl)),
+    );
+  }
+
+  private applyLogoUrl(logoUrl: string | null): void {
+    const profile = this.profileState();
+    if (profile) {
+      this.profileState.set({ ...profile, logoUrl });
+    }
   }
 }

@@ -4,6 +4,7 @@ import {
   HttpStatus,
   Injectable,
   NestInterceptor,
+  StreamableFile,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
@@ -15,14 +16,14 @@ import { ApiSuccessResponse } from '@/common/types/api-response.types';
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<
   T,
-  ApiSuccessResponse<T> | undefined
+  ApiSuccessResponse<T> | T | undefined
 > {
   constructor(private readonly reflector: Reflector) {}
 
   intercept(
     context: ExecutionContext,
     next: CallHandler<T>,
-  ): Observable<ApiSuccessResponse<T> | undefined> {
+  ): Observable<ApiSuccessResponse<T> | T | undefined> {
     const response = context.switchToHttp().getResponse<Response>();
     const message =
       this.reflector.get<string | undefined>(
@@ -31,7 +32,12 @@ export class ResponseInterceptor<T> implements NestInterceptor<
       ) ?? 'Success';
 
     return next.handle().pipe(
-      map((content: T): ApiSuccessResponse<T> | undefined => {
+      map((content: T): ApiSuccessResponse<T> | T | undefined => {
+        // Nest detecta StreamableFile en el valor FINAL de la cadena; si se
+        // envuelve en el envelope, el stream jamás se envía (descarga de CV).
+        if (content instanceof StreamableFile) {
+          return content;
+        }
         const noContent: number = HttpStatus.NO_CONTENT;
         if (response.statusCode === noContent) {
           return undefined;

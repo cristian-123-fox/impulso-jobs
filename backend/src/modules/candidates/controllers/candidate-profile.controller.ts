@@ -7,9 +7,16 @@ import {
   Patch,
   Post,
   Put,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  IMAGE_MULTER_LIMIT_BYTES,
+  type UploadedImageFile,
+} from '@/common/storage/image-upload';
 import {
   ClientInfo,
   type ClientInfoPayload,
@@ -105,6 +112,40 @@ export class CandidateProfileController {
   ): Promise<{ profilePhotoUrl: string | null }> {
     const profile = await this.profileUseCase.updatePhoto({
       profilePhotoUrl: dto.profilePhotoUrl,
+      userId: user.userId,
+      role: user.role,
+      ip: client.ip,
+      userAgent: client.userAgent,
+    });
+    return { profilePhotoUrl: profile.profilePhotoUrl ?? null };
+  }
+
+  @Post('photo')
+  @RequirePermissions('candidate_profile.update')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: IMAGE_MULTER_LIMIT_BYTES } }),
+  )
+  @ResponseMessage('Foto de perfil actualizada.')
+  async uploadPhoto(
+    @UploadedFile() file: UploadedImageFile | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<{ profilePhotoUrl: string | null }> {
+    const profile = await this.profileUseCase.uploadPhoto({
+      file,
       userId: user.userId,
       role: user.role,
       ip: client.ip,

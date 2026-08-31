@@ -45,6 +45,17 @@ export class CandidateProfileApi {
       .pipe(map((response) => response.content));
   }
 
+  uploadPhoto(file: File): Observable<{ profilePhotoUrl: string | null }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http
+      .post<ApiSuccessResponse<{ profilePhotoUrl: string | null }>>(
+        `${this.base}/photo`,
+        formData,
+      )
+      .pipe(map((response) => response.content));
+  }
+
   listLanguageCatalog(): Observable<LanguageCatalogItem[]> {
     return this.http
       .get<ApiSuccessResponse<LanguageCatalogItem[]>>(`${this.base}/catalogs/languages`)

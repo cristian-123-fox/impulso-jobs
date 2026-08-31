@@ -96,13 +96,21 @@ export class CandidateProfileFacade {
 
   updatePhoto(payload: CandidatePhotoPayload): Observable<{ profilePhotoUrl: string | null }> {
     return this.api.updatePhoto(payload).pipe(
-      tap((result) => {
-        const profile = this.profileState();
-        if (profile) {
-          this.profileState.set({ ...profile, profilePhotoUrl: result.profilePhotoUrl });
-        }
-      }),
+      tap((result) => this.applyPhotoUrl(result.profilePhotoUrl)),
     );
+  }
+
+  uploadPhoto(file: File): Observable<{ profilePhotoUrl: string | null }> {
+    return this.api.uploadPhoto(file).pipe(
+      tap((result) => this.applyPhotoUrl(result.profilePhotoUrl)),
+    );
+  }
+
+  private applyPhotoUrl(profilePhotoUrl: string | null): void {
+    const profile = this.profileState();
+    if (profile) {
+      this.profileState.set({ ...profile, profilePhotoUrl });
+    }
   }
 
   saveExperience(

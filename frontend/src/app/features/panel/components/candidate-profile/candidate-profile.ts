@@ -41,6 +41,10 @@ const INPUT =
   'h-[42px] w-full rounded-xl border border-line bg-surface px-3.5 text-[14px] font-semibold text-muted outline-none';
 const LABEL = 'mb-1.5 block text-[13px] font-semibold text-ink-900';
 
+// Debe coincidir con la validación del backend (requireValidImage).
+const PHOTO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+
 @Component({
   selector: 'app-candidate-profile',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -425,15 +429,50 @@ const LABEL = 'mb-1.5 block text-[13px] font-semibold text-ink-900';
 
           @switch (modalKind()) {
             @case ('photo') {
-              <form [formGroup]="photoForm" class="space-y-5" (ngSubmit)="savePhoto()">
-                <ij-input label="URL de la foto" type="url" placeholder="https://..." formControlName="profilePhotoUrl" />
-                <div class="flex justify-end gap-3">
-                  <button ij-button type="button" variant="white" shape="rounded" (click)="closeModal()">Cancelar</button>
-                  <button ij-button type="submit" shape="rounded" [disabled]="submitting()">
-                    {{ submitting() ? 'Guardando...' : 'Guardar foto' }}
-                  </button>
+              <div class="space-y-5">
+                <div class="flex items-center gap-5">
+                  <div class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-[22px] border border-line bg-surface">
+                    @if (photoPreview(); as preview) {
+                      <img [src]="preview" alt="Foto de perfil" class="h-full w-full object-cover" />
+                    } @else {
+                      <ij-icon name="image" [size]="26" class="text-muted" />
+                    }
+                  </div>
+                  <div class="space-y-2">
+                    <input
+                      #photoInput
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      class="hidden"
+                      (change)="onPhotoSelected($event)"
+                    />
+                    <button ij-button type="button" variant="white" shape="rounded" size="sm" (click)="photoInput.click()">
+                      Seleccionar imagen
+                    </button>
+                    <p class="text-[12.5px] text-muted">JPG, PNG o WebP · máximo 5 MB.</p>
+                  </div>
                 </div>
-              </form>
+
+                @if (photoError() || actionError(); as error) {
+                  <p class="rounded-xl bg-red-50 px-4 py-2.5 text-[13px] font-semibold text-red-700">{{ error }}</p>
+                }
+
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    @if (profile()?.profilePhotoUrl) {
+                      <button ij-button type="button" variant="white" shape="rounded" [disabled]="submitting()" (click)="removePhoto()">
+                        Quitar foto
+                      </button>
+                    }
+                  </div>
+                  <div class="flex gap-3">
+                    <button ij-button type="button" variant="white" shape="rounded" (click)="closeModal()">Cancelar</button>
+                    <button ij-button type="button" shape="rounded" [disabled]="!photoFile() || submitting()" (click)="savePhoto()">
+                      {{ submitting() ? 'Subiendo...' : 'Subir foto' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             }
             @case ('experience') {
               <form [formGroup]="experienceForm" class="grid gap-5 md:grid-cols-2" (ngSubmit)="saveExperience()">
@@ -523,6 +562,9 @@ export class CandidateProfileComponent {
   protected readonly submitting = signal(false);
   protected readonly actionMessage = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
+  protected readonly photoFile = signal<File | null>(null);
+  protected readonly photoPreview = signal<string | null>(null);
+  protected readonly photoError = signal<string | null>(null);
 
   protected readonly profile = this.facade.profile;
   protected readonly experiences = this.facade.experiences;
@@ -548,10 +590,6 @@ export class CandidateProfileComponent {
     state: ['', [Validators.required, Validators.maxLength(10)]],
     municipality: ['', [Validators.required, Validators.maxLength(120)]],
     birthDate: ['', [Validators.required]],
-  });
-
-  protected readonly photoForm = this.fb.group({
-    profilePhotoUrl: [''],
   });
 
   protected readonly experienceForm = this.fb.group({
@@ -604,7 +642,6 @@ export class CandidateProfileComponent {
         municipality: profile.municipality,
         birthDate: profile.birthDate,
       });
-      this.photoForm.patchValue({ profilePhotoUrl: profile.profilePhotoUrl ?? '' });
     });
 
     this.experienceForm.controls.isCurrent.valueChanges
@@ -674,7 +711,7 @@ export class CandidateProfileComponent {
 
   protected modalSubtitle(): string {
     return {
-      photo: 'Guarda la URL de la foto principal que quieres mostrar en tu perfil.',
+      photo: 'Sube la imagen que quieres mostrar en tu perfil (JPG, PNG o WebP).',
       experience: 'Las fechas deben ser coherentes y la fecha de inicio no puede ser futura.',
       education: 'Usa el nivel que mejor represente la formación obtenida.',
       language: 'Si marcas el idioma como nativo, el nivel se ajusta automáticamente.',
@@ -686,7 +723,30 @@ export class CandidateProfileComponent {
   protected openPhotoModal(): void {
     this.clearFeedback();
     this.editingId.set(null);
+    this.photoFile.set(null);
+    this.photoError.set(null);
+    this.photoPreview.set(this.profile()?.profilePhotoUrl ?? null);
     this.modalKind.set('photo');
+  }
+
+  protected onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+    if (!PHOTO_TYPES.includes(file.type)) {
+      this.photoError.set('Selecciona una imagen JPG, PNG o WebP.');
+      return;
+    }
+    if (file.size > PHOTO_MAX_BYTES) {
+      this.photoError.set('La imagen no puede superar los 5 MB.');
+      return;
+    }
+    this.photoError.set(null);
+    this.photoFile.set(file);
+    const reader = new FileReader();
+    reader.onload = () => this.photoPreview.set(reader.result as string);
+    reader.readAsDataURL(file);
   }
 
   protected openExperienceModal(item?: CandidateExperience): void {
@@ -758,9 +818,18 @@ export class CandidateProfileComponent {
   }
 
   protected savePhoto(): void {
+    const file = this.photoFile();
+    if (!file) return;
+    this.runMutation(this.facade.uploadPhoto(file), 'Foto actualizada.', () => {
+      this.closeModal();
+      this.reload();
+    });
+  }
+
+  protected removePhoto(): void {
     this.runMutation(
-      this.facade.updatePhoto({ profilePhotoUrl: this.photoForm.getRawValue().profilePhotoUrl || null }),
-      'Foto actualizada.',
+      this.facade.updatePhoto({ profilePhotoUrl: null }),
+      'Foto eliminada.',
       () => {
         this.closeModal();
         this.reload();

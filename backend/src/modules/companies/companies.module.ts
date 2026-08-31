@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LocalPublicFileStorageAdapter } from '@/common/storage/local-public-file-storage.adapter';
+import { PUBLIC_FILE_STORAGE } from '@/common/storage/public-file-storage.port';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { AdminCompaniesController } from '@/modules/companies/controllers/admin-companies.controller';
 import { CompanyProfileController } from '@/modules/companies/controllers/company-profile.controller';
@@ -36,6 +38,9 @@ import { UsersModule } from '@/modules/iam/users/users.module';
   providers: [
     { provide: COMPANY_REPOSITORY, useClass: CompanyRepository },
     { provide: COMPANY_USER_REPOSITORY, useClass: CompanyUserRepository },
+    // Logo en disco local (decisión cPanel). Migrar a S3 = cambiar este
+    // useClass, mismo patrón que MAILER_PORT / PAYMENT_PROVIDER.
+    { provide: PUBLIC_FILE_STORAGE, useClass: LocalPublicFileStorageAdapter },
     CompanyProfileUseCase,
     AdminCompaniesUseCase,
     CompanyMembersUseCase,

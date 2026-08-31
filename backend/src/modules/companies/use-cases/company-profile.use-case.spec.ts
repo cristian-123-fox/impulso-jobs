@@ -1,4 +1,5 @@
 import { AppException } from '@/common/exceptions/app.exception';
+import { PublicFileStoragePort } from '@/common/storage/public-file-storage.port';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
 import { AuditService } from '@/modules/audit/audit.service';
@@ -34,6 +35,7 @@ function baseCommand(overrides: Record<string, unknown> = {}) {
 describe('CompanyProfileUseCase', () => {
   let companies: jest.Mocked<ICompanyRepository>;
   let members: jest.Mocked<ICompanyUserRepository>;
+  let storage: jest.Mocked<PublicFileStoragePort>;
   let audit: jest.Mocked<AuditService>;
   let useCase: CompanyProfileUseCase;
 
@@ -67,8 +69,15 @@ describe('CompanyProfileUseCase', () => {
       ),
       save: jest.fn(),
     };
+    storage = {
+      save: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue(undefined),
+      publicUrl: jest.fn(
+        (key: string) => `http://localhost:3000/uploads/${key}`,
+      ),
+    };
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
-    useCase = new CompanyProfileUseCase(companies, members, audit);
+    useCase = new CompanyProfileUseCase(companies, members, storage, audit);
   });
 
   it('rechaza a un usuario que no es empresa (EMPLOYER)', async () => {
@@ -148,5 +157,83 @@ describe('CompanyProfileUseCase', () => {
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'company.profile.logo.update' }),
     );
+  });
+
+  const pngFile = () => {
+    const buffer = Buffer.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x00,
+    ]);
+    return {
+      originalname: 'logo.png',
+      mimetype: 'image/png',
+      size: buffer.length,
+      buffer,
+    };
+  };
+
+  const uploadCommand = (file = pngFile()) => ({
+    userId: 'user-1',
+    role: Role.EMPLOYER,
+    ip: '127.0.0.1',
+    userAgent: 'jest',
+    file,
+  });
+
+  it('sube el logo: guarda la imagen, persiste la URL pública y audita', async () => {
+    const saved = await useCase.uploadLogo(uploadCommand());
+
+    expect(storage.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: expect.stringMatching(/^company-logos\/[a-f0-9-]+\.png$/),
+      }),
+    );
+    expect(saved.logoUrl).toMatch(
+      /^http:\/\/localhost:3000\/uploads\/company-logos\/[a-f0-9-]+\.png$/,
+    );
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'company.profile.logo.upload' }),
+    );
+  });
+
+  it('rechaza un archivo que no es imagen (magic bytes)', async () => {
+    const buffer = Buffer.from('%PDF-1.7 no soy una imagen');
+    const thrown = await useCase
+      .uploadLogo(
+        uploadCommand({
+          originalname: 'logo.png',
+          mimetype: 'image/png',
+          size: buffer.length,
+          buffer,
+        }),
+      )
+      .catch((e: unknown) => e);
+
+    expect(errorCodeOf(thrown)).toBe(ErrorCode.COMPANY_LOGO_INVALID_TYPE);
+    expect(storage.save).not.toHaveBeenCalled();
+    expect(companies.save).not.toHaveBeenCalled();
+  });
+
+  it('al reemplazar el logo borra el archivo local anterior', async () => {
+    companies.findById.mockResolvedValue(
+      Object.assign(makeCompany(), {
+        logoUrl: 'http://localhost:3000/uploads/company-logos/anterior.png',
+      }),
+    );
+
+    await useCase.uploadLogo(uploadCommand());
+
+    expect(storage.delete).toHaveBeenCalledWith('company-logos/anterior.png');
+  });
+
+  it('no intenta borrar nada cuando el logo anterior era una URL externa', async () => {
+    companies.findById.mockResolvedValue(
+      Object.assign(makeCompany(), {
+        logoUrl: 'https://cdn.externa.com/logo.png',
+      }),
+    );
+
+    await useCase.uploadLogo(uploadCommand());
+
+    expect(storage.delete).not.toHaveBeenCalled();
   });
 });

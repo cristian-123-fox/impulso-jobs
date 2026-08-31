@@ -106,9 +106,19 @@ JWT_REFRESH_SECRET=<otro secreto largo aleatorio>
 
 APP_WEB_URL=https://demo.impulsojobs.com
 CORS_ORIGIN=https://demo.impulsojobs.com
+
+# Archivos subidos (foto de perfil, logo, CV): almacenamiento LOCAL en disco.
+# APP_PUBLIC_URL es la base de las URLs de imagen que se guardan en BD.
+APP_PUBLIC_URL=https://api.impulsojobs.com
 ```
 
 Genera cada secreto con: `openssl rand -hex 32`.
+
+> **Archivos subidos:** viven en `~/api/uploads/` (se crea solo). `uploads/public/`
+> se sirve en `https://api.impulsojobs.com/uploads/...` (fotos y logos);
+> `uploads/candidate-resumes/` es privado — los CV solo bajan por endpoint con
+> JWT. El deploy es `git pull` + build, así que la carpeta **sobrevive a los
+> deploys**; no la borres al limpiar, y inclúyela en los respaldos de cPanel.
 
 ### 5.3 Instala, compila y prepara la BD
 

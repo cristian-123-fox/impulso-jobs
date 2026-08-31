@@ -1,7 +1,17 @@
+import { randomUUID } from 'node:crypto';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { AppException } from '@/common/exceptions/app.exception';
 import { Role } from '@/common/types/role.enum';
 import { ErrorCode } from '@/common/types/error-code.enum';
+import {
+  requireValidImage,
+  storageKeyFromUrl,
+  type UploadedImageFile,
+} from '@/common/storage/image-upload';
+import {
+  PUBLIC_FILE_STORAGE,
+  type PublicFileStoragePort,
+} from '@/common/storage/public-file-storage.port';
 import { AuditService } from '@/modules/audit/audit.service';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
 import { Language } from '@/modules/candidates/entities/language.entity';
@@ -61,6 +71,10 @@ export interface UpdateCandidatePhotoCommand extends CandidateActor {
   profilePhotoUrl?: string | null;
 }
 
+export interface UploadCandidatePhotoCommand extends CandidateActor {
+  file?: UploadedImageFile;
+}
+
 @Injectable()
 export class CandidateProfileUseCase {
   constructor(
@@ -80,6 +94,8 @@ export class CandidateProfileUseCase {
     private readonly languageCatalog: ILanguageRepository,
     @Inject(USER_REPOSITORY)
     private readonly users: IUserRepository,
+    @Inject(PUBLIC_FILE_STORAGE)
+    private readonly storage: PublicFileStoragePort,
     private readonly audit: AuditService,
   ) {}
 
@@ -154,8 +170,10 @@ export class CandidateProfileUseCase {
   ): Promise<CandidateProfile> {
     this.assertCandidateRole(command.role);
     const profile = await this.requireProfile(command.userId);
+    const previousUrl = profile.profilePhotoUrl;
     profile.profilePhotoUrl = command.profilePhotoUrl?.trim() || null;
     const saved = await this.profiles.save(profile);
+    await this.deleteReplacedFile(previousUrl, saved.profilePhotoUrl);
     await this.audit.record({
       action: 'candidate.profile.photo.update',
       actorUserId: command.userId,
@@ -167,8 +185,49 @@ export class CandidateProfileUseCase {
     return saved;
   }
 
+  async uploadPhoto(
+    command: UploadCandidatePhotoCommand,
+  ): Promise<CandidateProfile> {
+    this.assertCandidateRole(command.role);
+    const profile = await this.requireProfile(command.userId);
+    const { file, extension } = requireValidImage(command.file, {
+      invalidType: ErrorCode.CANDIDATE_PHOTO_INVALID_TYPE,
+      tooLarge: ErrorCode.CANDIDATE_PHOTO_TOO_LARGE,
+    });
+
+    // Nombre nuevo en cada subida: evita servir caché viejo tras reemplazar.
+    const key = `candidate-photos/${randomUUID()}.${extension}`;
+    await this.storage.save({ key, buffer: file.buffer });
+
+    const previousUrl = profile.profilePhotoUrl;
+    profile.profilePhotoUrl = this.storage.publicUrl(key);
+    const saved = await this.profiles.save(profile);
+    await this.deleteReplacedFile(previousUrl, saved.profilePhotoUrl);
+
+    await this.audit.record({
+      action: 'candidate.profile.photo.upload',
+      actorUserId: command.userId,
+      entity: 'candidate_profile',
+      entityId: saved.id,
+      ip: command.ip,
+      userAgent: command.userAgent,
+    });
+    return saved;
+  }
+
   listCatalogLanguages(): Promise<Language[]> {
     return this.languageCatalog.findAll();
+  }
+
+  /** Borra (best-effort) el archivo local que la nueva URL dejó huérfano. */
+  private async deleteReplacedFile(
+    previousUrl: string | null | undefined,
+    currentUrl: string | null | undefined,
+  ): Promise<void> {
+    const previousKey = storageKeyFromUrl(previousUrl);
+    if (previousKey && previousUrl !== currentUrl) {
+      await this.storage.delete(previousKey).catch(() => undefined);
+    }
   }
 
   private async requireProfile(userId: string): Promise<CandidateProfile> {

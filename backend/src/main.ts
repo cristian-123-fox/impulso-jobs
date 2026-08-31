@@ -1,14 +1,29 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { join } from 'node:path';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { uploadsDir } from './common/storage/uploads-dir';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix('api/v1');
+
+  // Imágenes subidas (foto de perfil, logo): estáticas bajo /uploads, fuera
+  // del prefijo /api/v1. Solo se expone el subárbol `public/` — los CV viven
+  // en uploads/candidate-resumes y bajan por endpoint autenticado.
+  // maxAge agresivo porque cada subida genera un nombre de archivo nuevo.
+  app.useStaticAssets(join(uploadsDir(), 'public'), {
+    prefix: '/uploads/',
+    index: false,
+    dotfiles: 'ignore',
+    immutable: true,
+    maxAge: '30d',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -22,10 +37,7 @@ async function bootstrap() {
 
   // Detrás de Apache/Passenger (cPanel): confía en el proxy para obtener la IP
   // real del cliente (usada en la auditoría).
-  const expressApp = app.getHttpAdapter().getInstance() as {
-    set: (key: string, value: unknown) => void;
-  };
-  expressApp.set('trust proxy', 1);
+  app.set('trust proxy', 1);
 
   // CORS: en producción se restringe a los orígenes de CORS_ORIGIN
   // (coma-separado, p. ej. "https://tudominio.com"). Sin la variable, permisivo.

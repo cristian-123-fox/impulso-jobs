@@ -1,4 +1,4 @@
-import { ReadStream, readFileSync } from 'node:fs';
+import { ReadStream } from 'node:fs';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { randomUUID } from 'node:crypto';
@@ -54,70 +54,7 @@ export class CandidateResumeUseCase {
   ): Promise<CandidateResume> {
     this.assertCandidateRole(command.role);
     const profile = await this.requireProfile(command.userId);
-    // #region debug-point A:upload-input
-    (() => {
-      let u = 'http://127.0.0.1:7777/event';
-      let s = 'resume-upload-400';
-      try {
-        const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
-        u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
-        s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-      } catch {}
-      void fetch(u, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: s,
-          runId: 'pre-fix',
-          hypothesisId: 'A',
-          location: 'candidate-resume.use-case.ts:upload:start',
-          msg: '[DEBUG] upload input received',
-          data: {
-            hasFile: Boolean(command.file),
-            originalname: command.file?.originalname ?? null,
-            mimetype: command.file?.mimetype ?? null,
-            size: command.file?.size ?? null,
-            bufferLength: command.file?.buffer?.length ?? null,
-          },
-          ts: Date.now(),
-        }),
-      }).catch(() => {});
-    })();
-    // #endregion
     const file = this.requireValidFile(command.file);
-    // #region debug-point B:file-validated
-    (() => {
-      let u = 'http://127.0.0.1:7777/event';
-      let s = 'resume-upload-400';
-      try {
-        const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
-        u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
-        s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-      } catch {}
-      void fetch(u, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: s,
-          runId: 'pre-fix',
-          hypothesisId: 'B',
-          location: 'candidate-resume.use-case.ts:upload:validated',
-          msg: '[DEBUG] file passed validation',
-          data: {
-            originalname: file.originalname,
-            mimetype: file.mimetype,
-            size: file.size,
-            hasPdfExtension: file.originalname.toLowerCase().endsWith('.pdf'),
-            hasPdfMime: file.mimetype === 'application/pdf',
-            hasPdfSignature: file.buffer
-              .subarray(0, PDF_MAGIC.length)
-              .equals(PDF_MAGIC),
-          },
-          ts: Date.now(),
-        }),
-      }).catch(() => {});
-    })();
-    // #endregion
 
     const resume = Object.assign(new CandidateResume(), {
       id: randomUUID(),
@@ -136,34 +73,6 @@ export class CandidateResumeUseCase {
         resumeId: resume.id,
         buffer: file.buffer,
       });
-      // #region debug-point C:storage-saved
-      (() => {
-        let u = 'http://127.0.0.1:7777/event';
-        let s = 'resume-upload-400';
-        try {
-          const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
-          u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
-          s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-        } catch {}
-        void fetch(u, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: s,
-            runId: 'pre-fix',
-            hypothesisId: 'C',
-            location: 'candidate-resume.use-case.ts:upload:storage',
-            msg: '[DEBUG] storage save completed',
-            data: {
-              profileId: profile.id,
-              resumeId: resume.id,
-              storageKey: stored.storageKey,
-            },
-            ts: Date.now(),
-          }),
-        }).catch(() => {});
-      })();
-      // #endregion
 
       resume.storageKey = stored.storageKey;
       resume.fileUrl = `/api/v1/candidate/resumes/${resume.id}/download`;
@@ -173,35 +82,6 @@ export class CandidateResumeUseCase {
         resume.isDefault = total === 0;
         return this.resumes.save(resume, manager);
       });
-      // #region debug-point D:db-saved
-      (() => {
-        let u = 'http://127.0.0.1:7777/event';
-        let s = 'resume-upload-400';
-        try {
-          const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
-          u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
-          s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-        } catch {}
-        void fetch(u, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: s,
-            runId: 'pre-fix',
-            hypothesisId: 'D',
-            location: 'candidate-resume.use-case.ts:upload:db',
-            msg: '[DEBUG] resume persisted successfully',
-            data: {
-              id: saved.id,
-              candidateProfileId: saved.candidateProfileId,
-              isDefault: saved.isDefault,
-              storageKey: saved.storageKey,
-            },
-            ts: Date.now(),
-          }),
-        }).catch(() => {});
-      })();
-      // #endregion
 
       await this.audit.record({
         action: 'candidate.resume.upload',
@@ -225,76 +105,8 @@ export class CandidateResumeUseCase {
       }
 
       if (error instanceof AppException) {
-        // #region debug-point E:app-exception
-        (() => {
-          let u = 'http://127.0.0.1:7777/event';
-          let s = 'resume-upload-400';
-          try {
-            const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
-            u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
-            s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-          } catch {}
-          const response = error.getResponse() as {
-            errorCode?: string;
-            message?: string;
-          };
-          void fetch(u, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId: s,
-              runId: 'pre-fix',
-              hypothesisId: 'E',
-              location:
-                'candidate-resume.use-case.ts:upload:catch-app-exception',
-              msg: '[DEBUG] upload failed with AppException',
-              data: {
-                name: error.constructor.name,
-                errorCode: response.errorCode ?? null,
-                message: response.message ?? error.message,
-                storageKey: resume.storageKey || null,
-              },
-              ts: Date.now(),
-            }),
-          }).catch(() => {});
-        })();
-        // #endregion
         throw error;
       }
-
-      // #region debug-point E:unknown-exception
-      (() => {
-        let u = 'http://127.0.0.1:7777/event';
-        let s = 'resume-upload-400';
-        try {
-          const e = readFileSync('.dbg/resume-upload-400.env', 'utf8');
-          u = e.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || u;
-          s = e.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || s;
-        } catch {}
-        void fetch(u, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: s,
-            runId: 'pre-fix',
-            hypothesisId: 'E',
-            location: 'candidate-resume.use-case.ts:upload:catch-unknown',
-            msg: '[DEBUG] upload failed with unknown exception',
-            data: {
-              name:
-                error instanceof Error ? error.constructor.name : typeof error,
-              message: error instanceof Error ? error.message : String(error),
-              stack:
-                error instanceof Error
-                  ? error.stack?.split('\n').slice(0, 5)
-                  : null,
-              storageKey: resume.storageKey || null,
-            },
-            ts: Date.now(),
-          }),
-        }).catch(() => {});
-      })();
-      // #endregion
 
       throw new AppException(
         HttpStatus.BAD_REQUEST,
@@ -520,6 +332,7 @@ export class CandidateResumeUseCase {
   }
 
   private normalizeFileName(name: string): string {
+    // eslint-disable-next-line no-control-regex -- sanea caracteres de control del nombre original
     const normalized = name.trim().replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_');
     return normalized.slice(0, 255) || 'resume.pdf';
   }

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LocalPublicFileStorageAdapter } from '@/common/storage/local-public-file-storage.adapter';
+import { PUBLIC_FILE_STORAGE } from '@/common/storage/public-file-storage.port';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { CandidateProfileController } from '@/modules/candidates/controllers/candidate-profile.controller';
 import { CandidateResumeController } from '@/modules/candidates/controllers/candidate-resume.controller';
@@ -100,6 +102,12 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     {
       provide: CANDIDATE_RESUME_STORAGE,
       useClass: LocalCandidateResumeStorageService,
+    },
+    // Foto de perfil en disco local (decisión cPanel). Migrar a S3 = cambiar
+    // este useClass, mismo patrón que MAILER_PORT / PAYMENT_PROVIDER.
+    {
+      provide: PUBLIC_FILE_STORAGE,
+      useClass: LocalPublicFileStorageAdapter,
     },
     CandidateProfileUseCase,
     CandidateExperienceUseCase,

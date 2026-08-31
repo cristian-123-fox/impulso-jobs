@@ -18,5 +18,8 @@ export function containsInsensitive(
   param: string,
 ): FindOperator<string> {
   const value = `%${term.trim().toLowerCase()}%`;
-  return Raw((alias) => `LOWER(${alias}) LIKE :${param}`, { [param]: value });
+  // Raw() siempre devuelve FindOperator<any>; el cast fija el tipo declarado.
+  return Raw((alias) => `LOWER(${alias}) LIKE :${param}`, {
+    [param]: value,
+  }) as FindOperator<string>;
 }

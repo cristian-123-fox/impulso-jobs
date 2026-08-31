@@ -117,6 +117,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return this.normalizeHttpException(exception);
     }
 
+    // multer lanza MulterError fuera de la jerarquía HttpException; sin esta
+    // rama, superar `limits.fileSize` en un upload saldría como 500.
+    if (exception instanceof Error && exception.name === 'MulterError') {
+      const code = (exception as { code?: string }).code;
+      const tooLarge = code === 'LIMIT_FILE_SIZE';
+      const message = tooLarge
+        ? 'El archivo excede el tamaño máximo permitido.'
+        : 'La carga del archivo no es válida.';
+      return {
+        statusCode: tooLarge
+          ? HttpStatus.PAYLOAD_TOO_LARGE
+          : HttpStatus.BAD_REQUEST,
+        message,
+        errorCode: tooLarge
+          ? ErrorCode.FILE_TOO_LARGE
+          : ErrorCode.VALIDATION_ERROR,
+        errors: [{ message, code: code ?? 'MulterError' }],
+        exceptionName: 'MulterError',
+      };
+    }
+
     if (exception instanceof Error) {
       const exceptionName = exception.constructor.name;
       const message = exception.message || 'Internal server error';

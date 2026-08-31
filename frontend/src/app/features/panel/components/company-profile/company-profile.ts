@@ -37,6 +37,10 @@ import {
 const catalog = (items: readonly { code: string; name: string }[]): IjOption[] =>
   items.map((i) => ({ value: i.code, label: i.name }));
 
+// Debe coincidir con la validación del backend (requireValidImage).
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+
 @Component({
   selector: 'app-company-profile',
   standalone: true,
@@ -99,11 +103,25 @@ const catalog = (items: readonly { code: string; name: string }[]): IjOption[] =
               </div>
             </div>
 
-            <div class="flex w-full max-w-[420px] items-end gap-2">
-              <ij-input class="flex-1" label="URL del logo" placeholder="https://..." [formControl]="logoControl" />
-              <button ij-button type="button" shape="rounded" size="sm" class="mb-[2px]" [disabled]="savingLogo()" (click)="saveLogo()">
-                {{ savingLogo() ? '...' : 'Guardar' }}
-              </button>
+            <div class="flex flex-col items-start gap-1.5">
+              <div class="flex items-center gap-2">
+                <input
+                  #logoInput
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  class="hidden"
+                  (change)="onLogoSelected($event)"
+                />
+                <button ij-button type="button" shape="rounded" size="sm" [disabled]="savingLogo()" (click)="logoInput.click()">
+                  {{ savingLogo() ? 'Subiendo...' : 'Subir logo' }}
+                </button>
+                @if (profile.logoUrl) {
+                  <button ij-button type="button" variant="white" shape="rounded" size="sm" [disabled]="savingLogo()" (click)="removeLogo()">
+                    Quitar
+                  </button>
+                }
+              </div>
+              <span class="text-[12px] text-muted">JPG, PNG o WebP · máximo 5 MB.</span>
             </div>
           </div>
         </section>
@@ -212,8 +230,6 @@ export class CompanyProfileComponent {
   protected readonly banner = signal<string | null>(null);
   protected readonly bannerTone = signal<'success' | 'error'>('success');
 
-  protected readonly logoControl = this.fb.control('');
-
   protected readonly form = this.fb.group({
     businessName: ['', [Validators.required, Validators.maxLength(160)]],
     legalName: ['', [Validators.required, Validators.maxLength(160)]],
@@ -262,7 +278,6 @@ export class CompanyProfileComponent {
         employeeCount: profile.employeeCount?.toString() ?? '',
         foundationYear: profile.foundationYear?.toString() ?? '',
       });
-      this.logoControl.setValue(profile.logoUrl ?? '');
     });
   }
 
@@ -304,22 +319,45 @@ export class CompanyProfileComponent {
       });
   }
 
-  protected saveLogo(): void {
+  protected onLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    if (!file) return;
+    if (!LOGO_TYPES.includes(file.type)) {
+      this.showError('Selecciona una imagen JPG, PNG o WebP.');
+      return;
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      this.showError('La imagen no puede superar los 5 MB.');
+      return;
+    }
+    this.runLogoMutation(this.facade.uploadLogo(file), 'Logo actualizado.');
+  }
+
+  protected removeLogo(): void {
+    this.runLogoMutation(
+      this.facade.updateLogo({ logoUrl: null }),
+      'Logo eliminado.',
+    );
+  }
+
+  private runLogoMutation(
+    request$: import('rxjs').Observable<unknown>,
+    successMessage: string,
+  ): void {
     this.savingLogo.set(true);
     this.banner.set(null);
-    this.facade
-      .updateLogo({ logoUrl: this.logoControl.value.trim() || null })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.savingLogo.set(false);
-          this.showSuccess('Logo actualizado.');
-        },
-        error: (error: unknown) => {
-          this.savingLogo.set(false);
-          this.showError(this.messageOf(error));
-        },
-      });
+    request$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.savingLogo.set(false);
+        this.showSuccess(successMessage);
+      },
+      error: (error: unknown) => {
+        this.savingLogo.set(false);
+        this.showError(this.messageOf(error));
+      },
+    });
   }
 
   private buildPayload(): CompanyProfilePayload {
@@ -371,6 +409,11 @@ export class CompanyProfileComponent {
             return 'El año de fundación no puede ser mayor al año actual.';
           case 'COMPANY_INVALID_PHONE':
             return 'El teléfono debe tener 10 dígitos (con lada +52 opcional).';
+          case 'COMPANY_LOGO_INVALID_TYPE':
+            return 'El archivo no es una imagen válida (JPG, PNG o WebP).';
+          case 'COMPANY_LOGO_TOO_LARGE':
+          case 'FILE_TOO_LARGE':
+            return 'La imagen no puede superar los 5 MB.';
           default:
             return body.message ?? 'No fue posible guardar el perfil.';
         }

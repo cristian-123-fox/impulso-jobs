@@ -35,4 +35,15 @@ export class CompanyProfileApi {
       )
       .pipe(map((response) => response.content));
   }
+
+  uploadLogo(file: File): Observable<{ logoUrl: string | null }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http
+      .post<ApiSuccessResponse<{ logoUrl: string | null }>>(
+        `${this.base}/logo`,
+        formData,
+      )
+      .pipe(map((response) => response.content));
+  }
 }
