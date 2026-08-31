@@ -12,7 +12,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { COMPANY_TYPE_OPTIONS } from '@/features/panel/models/company-profile.models';
+import { COMPANY_TYPE_OPTIONS } from '@/features/company/profile/models/company-profile.models';
 import { MX_STATES, SAT_TAX_REGIMES } from '@/shared/catalogs/mx.catalogs';
 import { IjButton, IjInput, IjOption, IjSelect } from '@/shared/ui';
 import { postalCodeValidator } from '@/shared/validators/mx-identifiers.validator';

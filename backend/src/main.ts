@@ -47,6 +47,9 @@ async function bootstrap() {
       ? corsOrigin.split(',').map((origin) => origin.trim())
       : true,
     credentials: true,
+    // Sin esto el navegador no puede leer el nombre del archivo en las
+    // descargas de CV (el frontend caería al nombre genérico).
+    exposedHeaders: ['Content-Disposition'],
   });
 
   const swaggerConfig = new DocumentBuilder()

@@ -1,8 +1,17 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ReadStream } from 'node:fs';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import {
   PaginatedResponse,
   toPaginated,
 } from '@/common/dto/paginated-response.dto';
+import { AppException } from '@/common/exceptions/app.exception';
+import { ErrorCode } from '@/common/types/error-code.enum';
+import { AuditService } from '@/modules/audit/audit.service';
+import { CandidateResume } from '@/modules/candidates/entities/candidate-resume.entity';
+import {
+  type ICandidateResumeStorage,
+  CANDIDATE_RESUME_STORAGE,
+} from '@/modules/candidates/services/candidate-resume-storage.port';
 import {
   ApplicationStatusHistoryResponseDto,
   ApplicationStatusResponseDto,
@@ -92,9 +101,12 @@ export class CompanyApplicationsUseCase {
     private readonly profiles: ICandidateProfileRepository,
     @Inject(CANDIDATE_RESUME_REPOSITORY)
     private readonly resumes: ICandidateResumeRepository,
+    @Inject(CANDIDATE_RESUME_STORAGE)
+    private readonly resumeStorage: ICandidateResumeStorage,
     @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
     private readonly companyOwnership: VacancyOwnershipService,
     private readonly ownership: ApplicationOwnershipService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(
@@ -164,6 +176,56 @@ export class CompanyApplicationsUseCase {
     return entries.map((entry) =>
       toApplicationStatusHistoryResponse(entry, byCode),
     );
+  }
+
+  /**
+   * Descarga del CV adjunto a una postulación de la empresa. El acceso ya está
+   * acotado por ownership (`company_id`); el archivo baja por el mismo storage
+   * privado de los CV (nunca por el área pública de /uploads).
+   */
+  async getResumeDownload(
+    id: string,
+    actor: CompanyApplicationActor,
+  ): Promise<{ resume: CandidateResume; stream: ReadStream }> {
+    const company = await this.companyOwnership.requireCompany(actor.userId);
+    const application = await this.ownership.requireCompanyApplication(
+      id,
+      company.id,
+    );
+
+    const resume = application.resumeId
+      ? await this.resumes.findByIdAndProfileId(
+          application.resumeId,
+          application.candidateProfileId,
+        )
+      : null;
+    if (!resume) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.APPLICATION_RESUME_NOT_FOUND,
+        'La postulación no tiene hoja de vida adjunta.',
+      );
+    }
+
+    try {
+      const stream = await this.resumeStorage.openReadStream(resume.storageKey);
+      await this.audit.record({
+        action: 'company.application.resume.download',
+        actorUserId: actor.userId,
+        entity: 'candidate_application',
+        entityId: application.id,
+        ip: actor.ip,
+        userAgent: actor.userAgent,
+        metadata: { resumeId: resume.id, fileName: resume.fileName },
+      });
+      return { resume, stream };
+    } catch {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CANDIDATE_RESUME_FILE_NOT_FOUND,
+        'No fue posible descargar la hoja de vida.',
+      );
+    }
   }
 
   /** Catálogo de estados disponibles para el selector del reclutador. */

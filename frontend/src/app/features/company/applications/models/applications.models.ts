@@ -35,6 +35,11 @@ export interface ApplicationCandidate {
   email: string | null;
 }
 
+export interface ApplicationResumeDownload {
+  blob: Blob;
+  fileName: string;
+}
+
 export interface ApplicationResume {
   id: string;
   fileName: string;

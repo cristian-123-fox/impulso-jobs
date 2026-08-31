@@ -125,6 +125,8 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     CANDIDATE_LANGUAGE_REPOSITORY,
     CANDIDATE_SKILL_REPOSITORY,
     CANDIDATE_RESUME_REPOSITORY,
+    // M11: la empresa descarga el CV adjunto a una postulación.
+    CANDIDATE_RESUME_STORAGE,
     LANGUAGE_REPOSITORY,
   ],
 })

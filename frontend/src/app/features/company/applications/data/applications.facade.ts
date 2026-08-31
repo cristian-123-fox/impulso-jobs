@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, tap } from 'rxjs';
 import { ApplicationsApi } from '@/features/company/applications/data/applications.api';
 import {
+  ApplicationResumeDownload,
   ApplicationStatus,
   ApplicationStats,
   ApplicationStatusHistory,
@@ -82,6 +83,10 @@ export class ApplicationsFacade {
 
   history(id: string): Observable<ApplicationStatusHistory[]> {
     return this.api.history(id);
+  }
+
+  downloadResume(id: string): Observable<ApplicationResumeDownload> {
+    return this.api.downloadResume(id);
   }
 
   /**

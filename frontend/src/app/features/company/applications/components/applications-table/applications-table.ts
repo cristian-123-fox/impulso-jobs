@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { IjIcon } from '@/shared/ui';
 import { CompanyApplication } from '@/features/company/applications/models/applications.models';
 
-export type ApplicationAction = 'status' | 'history';
+export type ApplicationAction = 'status' | 'history' | 'resume';
 
 export interface ApplicationActionEvent {
   action: ApplicationAction;
@@ -79,6 +79,20 @@ export interface ApplicationActionEvent {
               </td>
               <td class="px-5 py-3.5">
                 <div class="flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    [class]="actionClass + ' disabled:cursor-not-allowed disabled:opacity-40'"
+                    [title]="
+                      item.resume
+                        ? 'Descargar CV: ' + item.resume.fileName
+                        : 'La postulación no tiene CV adjunto'
+                    "
+                    aria-label="Descargar CV"
+                    [disabled]="!item.resume"
+                    (click)="emit('resume', item)"
+                  >
+                    <ij-icon name="file" [size]="15" />
+                  </button>
                   <button
                     type="button"
                     [class]="actionClass"

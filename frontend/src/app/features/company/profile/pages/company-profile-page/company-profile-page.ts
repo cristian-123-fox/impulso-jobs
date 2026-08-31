@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { CompanyProfileComponent } from '@/features/panel/components/company-profile/company-profile';
+import { CompanyProfileComponent } from '@/features/company/profile/components/company-profile/company-profile';
 
 /**
  * Perfil de la empresa dentro de su propia área. Reutiliza el componente que

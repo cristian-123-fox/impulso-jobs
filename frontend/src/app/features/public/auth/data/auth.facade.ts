@@ -1,7 +1,7 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
@@ -21,6 +21,7 @@ export class LoginFacade {
   private readonly api = inject(AuthApi);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly status = signal<LoginStatus>('idle');
@@ -44,7 +45,13 @@ export class LoginFacade {
         next: (response) => {
           this.auth.setSession(response);
           this.status.set('success');
-          void this.router.navigateByUrl(this.auth.redirectUrlFor(response.user.role));
+          // Sólo rutas internas: un returnUrl externo sería un open redirect.
+          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+          const target =
+            returnUrl?.startsWith('/') && !returnUrl.startsWith('//')
+              ? returnUrl
+              : this.auth.redirectUrlFor(response.user.role);
+          void this.router.navigateByUrl(target);
         },
         error: (error: unknown) => this.handleError(error),
       });

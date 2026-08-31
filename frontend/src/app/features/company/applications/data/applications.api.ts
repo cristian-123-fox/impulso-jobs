@@ -1,10 +1,11 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
+  ApplicationResumeDownload,
   ApplicationStatus,
   ApplicationStatusHistory,
   ApplicationsFilters,
@@ -57,5 +58,27 @@ export class ApplicationsApi {
         status,
       })
       .pipe(map((r) => r.content));
+  }
+
+  /** CV adjunto a la postulación. Baja por endpoint autenticado (no /uploads). */
+  downloadResume(id: string): Observable<ApplicationResumeDownload> {
+    return this.http
+      .get(`${this.base}/${id}/resume`, {
+        observe: 'response',
+        responseType: 'blob',
+      })
+      .pipe(map((response) => this.toDownload(response)));
+  }
+
+  private toDownload(response: HttpResponse<Blob>): ApplicationResumeDownload {
+    const fallback = 'hoja-de-vida.pdf';
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const encodedName =
+      disposition.match(/filename="([^"]+)"/i)?.[1] ?? fallback;
+
+    return {
+      blob: response.body ?? new Blob(),
+      fileName: decodeURIComponent(encodedName),
+    };
   }
 }

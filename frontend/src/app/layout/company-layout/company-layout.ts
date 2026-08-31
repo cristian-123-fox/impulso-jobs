@@ -50,15 +50,6 @@ interface CompanyNavItem {
             </a>
           }
         </nav>
-        <div class="border-t border-line p-4">
-          <a
-            routerLink="/panel"
-            class="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-semibold text-muted transition-colors hover:bg-surface hover:text-body"
-          >
-            <ij-icon name="grid" [size]="19" [strokeWidth]="1.9" />
-            Ir al panel
-          </a>
-        </div>
       </aside>
 
       <div class="flex min-w-0 flex-1 flex-col">

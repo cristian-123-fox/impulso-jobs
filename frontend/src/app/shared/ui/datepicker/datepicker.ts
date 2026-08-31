@@ -93,44 +93,86 @@ function iso(y: number, m: number, d: number): string {
         <div class="mb-2.5 flex items-center justify-between">
           <button
             type="button"
-            aria-label="Mes anterior"
+            [attr.aria-label]="view() === 'days' ? 'Mes anterior' : 'Anterior'"
             class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-line text-body hover:bg-surface"
-            (click)="shift(-1)"
+            (click)="navigate(-1)"
           >
             <ij-icon name="chevron-left" [size]="15" />
           </button>
-          <span class="text-[13.5px] font-bold text-ink-900">{{ monthLabel() }}</span>
           <button
             type="button"
-            aria-label="Mes siguiente"
+            aria-label="Elegir año"
+            class="rounded-lg px-2.5 py-1 text-[13.5px] font-bold text-ink-900 transition-colors hover:bg-surface hover:text-brand"
+            (click)="onHeaderClick()"
+          >
+            {{ headerLabel() }}
+          </button>
+          <button
+            type="button"
+            [attr.aria-label]="view() === 'days' ? 'Mes siguiente' : 'Siguiente'"
             class="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-line text-body hover:bg-surface"
-            (click)="shift(1)"
+            (click)="navigate(1)"
           >
             <ij-icon name="chevron-right" [size]="15" />
           </button>
         </div>
-        <div class="mb-1 grid grid-cols-7 gap-0.5">
-          @for (w of weekdays; track w) {
-            <span class="py-1 text-center text-[11px] font-bold text-muted">{{ w }}</span>
+
+        @switch (view()) {
+          @case ('years') {
+            <div class="grid grid-cols-3 gap-1">
+              @for (y of yearCells(); track y.year) {
+                <button
+                  type="button"
+                  class="flex h-[38px] items-center justify-center rounded-lg text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+                  [class]="y.selected ? 'bg-brand font-bold text-white' : 'font-medium text-ink-900 hover:bg-surface'"
+                  [disabled]="y.disabled"
+                  (click)="pickYear(y.year)"
+                >
+                  {{ y.year }}
+                </button>
+              }
+            </div>
           }
-        </div>
-        <div class="grid grid-cols-7 gap-0.5">
-          @for (c of cells(); track $index) {
-            @if (c.blank) {
-              <span></span>
-            } @else {
-              <button
-                type="button"
-                class="flex h-[34px] items-center justify-center rounded-lg text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-                [class]="dayClass(c)"
-                [disabled]="c.disabled"
-                (click)="pick(c.iso!)"
-              >
-                {{ c.label }}
-              </button>
-            }
+          @case ('months') {
+            <div class="grid grid-cols-3 gap-1">
+              @for (m of monthCells(); track m.index) {
+                <button
+                  type="button"
+                  class="flex h-[38px] items-center justify-center rounded-lg text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+                  [class]="m.selected ? 'bg-brand font-bold text-white' : 'font-medium text-ink-900 hover:bg-surface'"
+                  [disabled]="m.disabled"
+                  (click)="pickMonth(m.index)"
+                >
+                  {{ m.label }}
+                </button>
+              }
+            </div>
           }
-        </div>
+          @default {
+            <div class="mb-1 grid grid-cols-7 gap-0.5">
+              @for (w of weekdays; track w) {
+                <span class="py-1 text-center text-[11px] font-bold text-muted">{{ w }}</span>
+              }
+            </div>
+            <div class="grid grid-cols-7 gap-0.5">
+              @for (c of cells(); track $index) {
+                @if (c.blank) {
+                  <span></span>
+                } @else {
+                  <button
+                    type="button"
+                    class="flex h-[34px] items-center justify-center rounded-lg text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-30"
+                    [class]="dayClass(c)"
+                    [disabled]="c.disabled"
+                    (click)="pick(c.iso!)"
+                  >
+                    {{ c.label }}
+                  </button>
+                }
+              }
+            </div>
+          }
+        }
       </div>
     </ng-template>
 
@@ -155,6 +197,10 @@ export class IjDatepicker extends IjControlBase<string> {
   private readonly today = new Date();
   protected readonly viewYear = signal(this.today.getFullYear());
   protected readonly viewMonth = signal(this.today.getMonth());
+  /** 'days' es el calendario; 'years'/'months' son los pasos del salto de año. */
+  protected readonly view = signal<'days' | 'months' | 'years'>('days');
+  /** Primer año de la página visible de la grilla de años (12 por página). */
+  protected readonly yearBase = signal(0);
   private readonly trigger = viewChild<ElementRef<HTMLElement>>('trigger');
 
   protected readonly boxClass = computed(() =>
@@ -168,6 +214,51 @@ export class IjDatepicker extends IjControlBase<string> {
   protected readonly monthLabel = computed(
     () => `${MONTHS[this.viewMonth()]} ${this.viewYear()}`,
   );
+
+  protected readonly headerLabel = computed(() => {
+    switch (this.view()) {
+      case 'years':
+        return `${this.yearBase()} – ${this.yearBase() + 11}`;
+      case 'months':
+        return String(this.viewYear());
+      default:
+        return this.monthLabel();
+    }
+  });
+
+  protected readonly yearCells = computed(() => {
+    const base = this.yearBase();
+    const minYear = this.boundYear(this.min());
+    const maxYear = this.boundYear(this.max());
+    return Array.from({ length: 12 }, (_, i) => {
+      const year = base + i;
+      return {
+        year,
+        selected: year === this.viewYear(),
+        disabled:
+          (minYear !== null && year < minYear) ||
+          (maxYear !== null && year > maxYear),
+      };
+    });
+  });
+
+  protected readonly monthCells = computed(() => {
+    const y = this.viewYear();
+    const min = this.min();
+    const max = this.max();
+    return MSHORT.map((label, index) => {
+      const lastDay = new Date(y, index + 1, 0).getDate();
+      return {
+        label,
+        index,
+        selected: index === this.viewMonth(),
+        // Un mes se puede elegir si al menos un día suyo cae dentro de min/max.
+        disabled:
+          (!!min && iso(y, index, lastDay) < min) ||
+          (!!max && iso(y, index, 1) > max),
+      };
+    });
+  });
 
   protected readonly display = computed(() => {
     const value = this.value();
@@ -224,6 +315,7 @@ export class IjDatepicker extends IjControlBase<string> {
       this.viewYear.set(parseInt(y, 10));
       this.viewMonth.set(parseInt(m, 10) - 1);
     }
+    this.view.set('days');
     this.open.set(true);
   }
 
@@ -232,6 +324,37 @@ export class IjDatepicker extends IjControlBase<string> {
       this.open.set(false);
       this.markTouched();
     }
+  }
+
+  protected onHeaderClick(): void {
+    if (this.view() !== 'years') {
+      this.yearBase.set(this.viewYear() - (this.viewYear() % 12));
+      this.view.set('years');
+    }
+  }
+
+  /** Las flechas navegan según la vista: mes, año o página de 12 años. */
+  protected navigate(delta: number): void {
+    switch (this.view()) {
+      case 'years':
+        this.yearBase.set(this.yearBase() + delta * 12);
+        break;
+      case 'months':
+        this.viewYear.set(this.viewYear() + delta);
+        break;
+      default:
+        this.shift(delta);
+    }
+  }
+
+  protected pickYear(year: number): void {
+    this.viewYear.set(year);
+    this.view.set('months');
+  }
+
+  protected pickMonth(index: number): void {
+    this.viewMonth.set(index);
+    this.view.set('days');
   }
 
   protected shift(delta: number): void {
@@ -246,6 +369,12 @@ export class IjDatepicker extends IjControlBase<string> {
     }
     this.viewMonth.set(m);
     this.viewYear.set(y);
+  }
+
+  private boundYear(bound: string | null): number | null {
+    if (!bound) return null;
+    const year = parseInt(bound.slice(0, 4), 10);
+    return Number.isNaN(year) ? null : year;
   }
 
   protected pick(value: string): void {

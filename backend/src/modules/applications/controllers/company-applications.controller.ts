@@ -5,9 +5,12 @@ import {
   Param,
   Put,
   Query,
+  Res,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import {
   ClientInfo,
   type ClientInfoPayload,
@@ -81,6 +84,28 @@ export class CompanyApplicationsController {
     @ClientInfo() client: ClientInfoPayload,
   ): Promise<CompanyApplicationResponseDto> {
     return this.applications.get(id, this.actor(user, client));
+  }
+
+  @Get(':id/resume')
+  @RequirePermissions('applications.read')
+  async downloadResume(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const result = await this.applications.getResumeDownload(
+      id,
+      this.actor(user, client),
+    );
+
+    response.setHeader('Content-Type', result.resume.mimeType);
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(result.resume.fileName)}"`,
+    );
+
+    return new StreamableFile(result.stream);
   }
 
   @Get(':id/history')

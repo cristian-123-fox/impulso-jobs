@@ -4,6 +4,7 @@ import {
   computed,
   input,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { IjButton } from '@/shared/ui/button/button';
 import { IjIcon } from '@/shared/ui/icon/icon';
 import {
@@ -11,16 +12,16 @@ import {
   PricingPlan,
 } from '@/shared/models/pricing.models';
 
-const PRICE_FORMATTER = new Intl.NumberFormat('en-US', {
+const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
   style: 'currency',
-  currency: 'USD',
+  currency: 'MXN',
   maximumFractionDigits: 0,
 });
 
 @Component({
   selector: 'ij-pricing-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjButton],
+  imports: [IjIcon, IjButton, RouterLink],
   template: `
     <article
       class="relative overflow-hidden rounded-[12px] bg-white pb-9 shadow-[0_24px_54px_-30px_rgba(0,0,0,.28)]"
@@ -75,9 +76,15 @@ const PRICE_FORMATTER = new Intl.NumberFormat('en-US', {
             }
           </div>
 
-          <button ij-button type="button" variant="primary" shape="rounded" size="lg">
-            Comprar ahora
-          </button>
+          @if (plan().ctaLink; as ctaLink) {
+            <a ij-button [routerLink]="ctaLink" variant="primary" shape="rounded" size="lg">
+              Comprar ahora
+            </a>
+          } @else {
+            <button ij-button type="button" variant="primary" shape="rounded" size="lg">
+              Comprar ahora
+            </button>
+          }
         </div>
       </div>
     </article>
@@ -95,8 +102,10 @@ export class IjPricingCard {
     ),
   );
 
-  protected readonly periodLabel = computed(() =>
-    this.billingCycle() === 'monthly' ? 'Mensual' : 'Anual',
+  protected readonly periodLabel = computed(
+    () =>
+      this.plan().periodLabel ??
+      (this.billingCycle() === 'monthly' ? 'Mensual' : 'Anual'),
   );
 
   protected readonly decoClasses = computed(() => {

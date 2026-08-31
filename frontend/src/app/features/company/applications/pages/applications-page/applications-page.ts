@@ -250,6 +250,11 @@ export class ApplicationsPage {
       return;
     }
 
+    if (action === 'resume') {
+      this.downloadResume(application);
+      return;
+    }
+
     this.editing.set(null);
     this.history.set([]);
     this.historyOf.set(application);
@@ -289,6 +294,29 @@ export class ApplicationsPage {
     this.editing.set(null);
     this.historyOf.set(null);
     this.formError.set(null);
+  }
+
+  private downloadResume(application: CompanyApplication): void {
+    this.actionError.set(null);
+    this.facade
+      .downloadResume(application.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (download) => this.saveBlob(download.blob, download.fileName),
+        error: () =>
+          this.actionError.set(
+            'No se pudo descargar el CV de esta postulación.',
+          ),
+      });
+  }
+
+  private saveBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   private messageOf(error: unknown, fallback: string): string {
