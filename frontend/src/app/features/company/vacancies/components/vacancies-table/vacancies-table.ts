@@ -37,7 +37,7 @@ export interface VacancyActionEvent {
   imports: [DatePipe, IjIcon],
   template: `
     <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
-      <table class="w-full min-w-[880px] border-collapse text-left">
+      <table class="w-full min-w-[940px] border-collapse text-left">
         <thead>
           <tr class="border-b border-line">
             @for (h of headers; track h) {
@@ -93,6 +93,15 @@ export interface VacancyActionEvent {
               <td class="px-5 py-3.5 text-[13px]">
                 <span [class]="vacancy.pausesLeft ? 'text-body' : 'text-red-600'">
                   {{ vacancy.pauseCount }}/{{ vacancy.maxPauses }}
+                </span>
+              </td>
+              <td
+                class="px-5 py-3.5 text-[13px] text-body"
+                title="Se actualizan una vez al día"
+              >
+                <span class="inline-flex items-center gap-1.5">
+                  <ij-icon name="eye" [size]="14" />
+                  {{ vacancy.viewsCount }}
                 </span>
               </td>
               <td class="px-5 py-3.5 text-[13px] text-muted">
@@ -170,7 +179,7 @@ export interface VacancyActionEvent {
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="px-5 py-10 text-center text-[13.5px] text-muted">
+              <td colspan="8" class="px-5 py-10 text-center text-[13.5px] text-muted">
                 No hay vacantes que coincidan con los filtros.
               </td>
             </tr>
@@ -194,6 +203,7 @@ export class VacanciesTable {
     'Ubicación',
     'Estado',
     'Pausas',
+    'Vistas',
     'Actualizada',
     '',
   ];

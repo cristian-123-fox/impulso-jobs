@@ -45,6 +45,10 @@ import {
 } from '@/modules/applications/repositories/candidate-application.repository.interface';
 import { ApplicationOwnershipService } from '@/modules/applications/services/application-ownership.service';
 import {
+  type IApplicationResumeSnapshotStorage,
+  APPLICATION_RESUME_SNAPSHOT_STORAGE,
+} from '@/modules/applications/services/application-resume-snapshot-storage.port';
+import {
   type ICandidateProfileRepository,
   CANDIDATE_PROFILE_REPOSITORY,
 } from '@/modules/candidates/repositories/candidate-profile.repository.interface';
@@ -111,6 +115,8 @@ export class CompanyApplicationsUseCase {
     private readonly resumes: ICandidateResumeRepository,
     @Inject(CANDIDATE_RESUME_STORAGE)
     private readonly resumeStorage: ICandidateResumeStorage,
+    @Inject(APPLICATION_RESUME_SNAPSHOT_STORAGE)
+    private readonly snapshotStorage: IApplicationResumeSnapshotStorage,
     @Inject(APPLICATION_ANSWER_REPOSITORY)
     private readonly answers: IApplicationAnswerRepository,
     @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
@@ -216,7 +222,7 @@ export class CompanyApplicationsUseCase {
   async getResumeDownload(
     id: string,
     actor: CompanyApplicationActor,
-  ): Promise<{ resume: CandidateResume; stream: ReadStream }> {
+  ): Promise<{ fileName: string; mimeType: string; stream: ReadStream }> {
     const company = await this.companyOwnership.requireCompany(actor.userId);
     const application = await this.ownership.requireCompanyApplication(
       id,
@@ -225,6 +231,25 @@ export class CompanyApplicationsUseCase {
 
     await this.markRead(application);
 
+    // T19: se prefiere el snapshot congelado al postular — es lo que la
+    // empresa evaluó, aunque el candidato haya borrado o reemplazado su CV.
+    if (application.resumeSnapshotKey) {
+      try {
+        const stream = await this.snapshotStorage.openReadStream(
+          application.resumeSnapshotKey,
+        );
+        await this.auditResumeDownload(application, actor, true);
+        return {
+          fileName: application.resumeSnapshotName ?? 'hoja-de-vida.pdf',
+          mimeType: application.resumeSnapshotMime ?? 'application/pdf',
+          stream,
+        };
+      } catch {
+        // Snapshot ilegible: se intenta la FK viva antes de rendirse.
+      }
+    }
+
+    // Postulaciones previas a T19 (o snapshot perdido): la FK viva.
     const resume = application.resumeId
       ? await this.resumes.findByIdAndProfileId(
           application.resumeId,
@@ -241,16 +266,8 @@ export class CompanyApplicationsUseCase {
 
     try {
       const stream = await this.resumeStorage.openReadStream(resume.storageKey);
-      await this.audit.record({
-        action: 'company.application.resume.download',
-        actorUserId: actor.userId,
-        entity: 'candidate_application',
-        entityId: application.id,
-        ip: actor.ip,
-        userAgent: actor.userAgent,
-        metadata: { resumeId: resume.id, fileName: resume.fileName },
-      });
-      return { resume, stream };
+      await this.auditResumeDownload(application, actor, false, resume);
+      return { fileName: resume.fileName, mimeType: resume.mimeType, stream };
     } catch {
       throw new AppException(
         HttpStatus.NOT_FOUND,
@@ -258,6 +275,29 @@ export class CompanyApplicationsUseCase {
         'No fue posible descargar la hoja de vida.',
       );
     }
+  }
+
+  private auditResumeDownload(
+    application: CandidateApplication,
+    actor: CompanyApplicationActor,
+    fromSnapshot: boolean,
+    resume?: CandidateResume,
+  ): Promise<void> {
+    return this.audit.record({
+      action: 'company.application.resume.download',
+      actorUserId: actor.userId,
+      entity: 'candidate_application',
+      entityId: application.id,
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+      metadata: {
+        fromSnapshot,
+        resumeId: resume?.id ?? application.resumeId,
+        fileName: fromSnapshot
+          ? (application.resumeSnapshotName ?? null)
+          : (resume?.fileName ?? null),
+      },
+    });
   }
 
   /**

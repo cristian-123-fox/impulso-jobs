@@ -10,10 +10,12 @@ import { IApplicationStatusHistoryRepository } from '@/modules/applications/repo
 import { IApplicationStatusRepository } from '@/modules/applications/repositories/application-status.repository.interface';
 import { ICandidateApplicationRepository } from '@/modules/applications/repositories/candidate-application.repository.interface';
 import { ApplicationOwnershipService } from '@/modules/applications/services/application-ownership.service';
+import { IApplicationResumeSnapshotStorage } from '@/modules/applications/services/application-resume-snapshot-storage.port';
 import { CandidateApplicationsUseCase } from '@/modules/applications/use-cases/candidate-applications.use-case';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
 import { CandidateResume } from '@/modules/candidates/entities/candidate-resume.entity';
 import { ICandidateResumeRepository } from '@/modules/candidates/repositories/candidate-resume.repository.interface';
+import { ICandidateResumeStorage } from '@/modules/candidates/services/candidate-resume-storage.port';
 import { ICompanyRepository } from '@/modules/companies/repositories/company.repository.interface';
 import { IApplicationAnswerRepository } from '@/modules/applications/repositories/application-answer.repository.interface';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
@@ -138,6 +140,8 @@ describe('CandidateApplicationsUseCase', () => {
   let vacancies: jest.Mocked<IVacancyRepository>;
   let companies: jest.Mocked<ICompanyRepository>;
   let resumes: jest.Mocked<ICandidateResumeRepository>;
+  let resumeStorage: jest.Mocked<ICandidateResumeStorage>;
+  let snapshotStorage: jest.Mocked<IApplicationResumeSnapshotStorage>;
   let questions: jest.Mocked<IVacancyQuestionRepository>;
   let answers: jest.Mocked<IApplicationAnswerRepository>;
   let ownership: jest.Mocked<ApplicationOwnershipService>;
@@ -193,6 +197,16 @@ describe('CandidateApplicationsUseCase', () => {
       findByIdAndProfileId: jest.fn().mockResolvedValue(resume()),
     } as unknown as jest.Mocked<ICandidateResumeRepository>;
 
+    // Un arreglo de Buffers es async-iterable: sirve como ReadStream de mentira.
+    resumeStorage = {
+      openReadStream: jest.fn().mockResolvedValue([Buffer.from('%PDF-')]),
+    } as unknown as jest.Mocked<ICandidateResumeStorage>;
+
+    snapshotStorage = {
+      save: jest.fn().mockResolvedValue({ storageKey: 'app-1.pdf' }),
+      delete: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<IApplicationResumeSnapshotStorage>;
+
     questions = {
       findByVacancyId: jest.fn().mockResolvedValue([]),
       findOptionsByQuestionIds: jest.fn().mockResolvedValue([]),
@@ -219,6 +233,8 @@ describe('CandidateApplicationsUseCase', () => {
       vacancies,
       companies,
       resumes,
+      resumeStorage,
+      snapshotStorage,
       questions,
       answers,
       ownership,
@@ -336,9 +352,45 @@ describe('CandidateApplicationsUseCase', () => {
       expect(saved.resumeId).toBeNull();
     });
 
+    it('congela una copia del CV al postular (T19)', async () => {
+      await useCase.apply({ vacancyId: 'vac-1', ...actor });
+
+      expect(resumeStorage.openReadStream).toHaveBeenCalledWith('cv');
+      expect(snapshotStorage.save).toHaveBeenCalled();
+      const saved = applications.save.mock.calls[0][0];
+      expect(saved.resumeSnapshotKey).toBe('app-1.pdf');
+      expect(saved.resumeSnapshotName).toBe('cv.pdf');
+      expect(saved.resumeSnapshotMime).toBe('application/pdf');
+    });
+
+    it('si la copia falla, la postulación sigue con la FK viva (best-effort)', async () => {
+      resumeStorage.openReadStream.mockRejectedValue(new Error('ENOENT'));
+
+      const result = await useCase.apply({ vacancyId: 'vac-1', ...actor });
+
+      expect(result.id).toBeDefined();
+      const saved = applications.save.mock.calls[0][0];
+      expect(saved.resumeSnapshotKey).toBeNull();
+      expect(saved.resumeId).toBe('resume-1');
+    });
+
     it('rechaza postular a una vacante que no está activa', async () => {
       vacancies.findById.mockResolvedValue(
         vacancy({ status: VacancyStatus.CLOSED }),
+      );
+
+      try {
+        await useCase.apply({ vacancyId: 'vac-1', ...actor });
+        fail('debió lanzar');
+      } catch (e) {
+        expect(errorCodeOf(e)).toBe(ErrorCode.APPLICATION_VACANCY_NOT_ACTIVE);
+      }
+      expect(applications.save).not.toHaveBeenCalled();
+    });
+
+    it('rechaza postular cuando la fecha límite ya pasó (T15)', async () => {
+      vacancies.findById.mockResolvedValue(
+        vacancy({ applicationDeadline: '2000-01-01' }),
       );
 
       try {

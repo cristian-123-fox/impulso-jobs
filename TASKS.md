@@ -172,23 +172,69 @@ Implementación completa de la especificación (§3.1):
 
 ## Núcleo post-demo
 
-### T15 · Enriquecer el modelo de vacante ⬜
-Hoy el form tiene 11 campos; el de Computrabajo demuestra cuáles faltan para buscar/filtrar bien. Propuesta de subset (no todo): **área profesional** (catálogo de 23, heredar IDs de §3.2 — hoy no existe categoría alguna), **nº de plazas**, **tipo de contrato MX** (indeterminado/determinado/temporada/otro), **escolaridad mínima** (9 niveles), **comisiones** (flag junto al salario), **fecha límite de postulación** (habilita T6). Con eso, sumar al portal público los filtros que faltan: salario, fecha de publicación, área, y selector de orden (relevancia/fecha/salario).
+### T15 · Enriquecer el modelo de vacante ✅
 
-### T16 · SEO del portal público ⬜
-Estado real: `/vacantes/:id` con UUID pelado, sin `Meta`/`Title` por vacante, sin JSON-LD, y la **lista** cae en el prerender genérico (el HTML servido va vacío para crawlers). Tareas: slug en la URL (`/vacantes/:id-:slug`), `RenderMode.Server` para la lista, meta/OG por vacante, **JSON-LD JobPosting**, y las landings `trabajo-de-{cargo}-en-{ciudad}` cuando exista el área profesional (T15). Es el canal orgánico entero (§8).
+**Hecho (2026-08-31):**
+- **Catálogo de 23 áreas profesionales** embebido (`backend/src/common/catalogs/professional-areas.ts`, espejo en `frontend/src/app/shared/catalogs/professional-areas.catalogs.ts`) con `id` estable y `slug` para las landings de T16. *Nota:* `computrabajocontextoclonacion.md` no está en el repo, así que los IDs no se heredaron de §3.2 — son propios (1–23, orden alfabético, taxonomía Computrabajo MX).
+- **Vacante:** `professional_area_id` (obligatoria al crear/editar; nullable sólo por las vacantes viejas), `positions_count` (default 1), `contract_type` (enum LFT: indeterminado/determinado/temporada/obra u otro), `min_education_level` (9 niveles MX), `has_commissions`, `application_deadline` (`date`, inclusiva; `VACANCY_INVALID_DEADLINE` si nace en el pasado, y `POST /candidate/applications` responde `APPLICATION_VACANCY_NOT_ACTIVE` cuando ya venció). Migración `1720000016000`.
+- **Portal público:** filtros nuevos `areaId`, `salaryMin` (paga al menos X: `COALESCE(salary_max, salary_min) >= X`, ignora salario oculto), `publishedWithinDays` (1/3/7/15/30) y `sort=relevance|date|salary` (relevance conserva el orden monetizado; salary ordena NULLs al final en MySQL — divergencia PG documentada en el repo).
+- **Frontend:** form de empresa con los 6 campos (área/contrato/escolaridad en `ij-select`, plazas, checkbox comisiones, `ij-datepicker` con `min=hoy`); lista pública con los 3 filtros + selector de orden (reordena al vuelo); detalle público muestra área, contrato, escolaridad, plazas (>1), "Postúlate antes del" y "+ comisiones" en el salario.
+- 3 pruebas nuevas (deadline en pasado, mapping T15, deadline vencida al postular): suite 223 en verde.
 
-### T17 · Acciones del candidato ⬜
-Ninguna existe hoy: **guardar vacante** (primero — alimenta el área nueva del candidato de T8), ocultar, seguir empresa, alertas de búsqueda (job diario `send-search-alerts`), "recibir similares". Fasear en ese orden.
+Propuesta original: área (23), plazas, contrato MX, escolaridad (9), comisiones, fecha límite (habilita T6) + filtros públicos de salario/fecha/área y orden.
 
-### T18 · Contador de vistas por vacante ⬜
-No hay ningún contador en el backend. Copiar el patrón de CT (§4): tabla de eventos + **consolidación diaria** por job (la UI dice "se actualizan una vez al día" — evita contadores calientes). Habilita "N visualizaciones" en la bandeja de empresa y en T6.
+### T16 · SEO del portal público ✅
 
-### T19 · Snapshot del CV en la postulación ⬜
-Hoy `application.resumeId` es FK viva: si el candidato borra o reemplaza su CV, la empresa pierde lo que evaluó. Congelar copia (archivo + metadatos) al postular, como hace CT con el versionado de CV (§6). Encaja con el almacenamiento local ya construido (T9).
+**Hecho (2026-08-31).** Hallazgo previo: el build era **SPA puro** — el commit del deploy cPanel había eliminado `server`/`outputMode`/`ssr` de `angular.json` (el código SSR seguía en el repo, muerto). Se restauró y sobre eso:
+- **SSR real**: `angular.json` recupera `server`/`outputMode: server`/`ssr` + `security.allowedHosts` (obligatorio en Angular 20 — sin él, el engine rechaza el host y cae a CSR; hostnames sin puerto: localhost, demo.impulsojobs.com…). `/vacantes` y `/vacantes/:id` en `RenderMode.Server`; `empresa/**` faltaba en las rutas de servidor (caía al prerender) — corregido a Client.
+- **Datos en el HTML servido**: lista y detalle hacen el fetch en el servidor y pasan el resultado por `TransferState` — el cliente hidrata con los mismos datos sin re-pedir ni parpadear (compartir/mapa/preguntas quedan en `afterNextRender`).
+- **Slug en la URL**: canónica `/vacantes/<uuid>-<slug-del-titulo>` (`shared/utils/seo.ts`; el backend recibe los primeros 36 chars — no cambió). Cards enlazan con slug; URL sin slug se canonicaliza con `Location.replaceState` + `<link rel="canonical">`.
+- **Meta/OG + JSON-LD JobPosting** por vacante (`core/services/seo.service.ts`): title con empresa y lugar, description, OG/twitter, canonical absoluto (`environment.siteUrl` nuevo), y JSON-LD con salario MXN, `validThrough` (fecha límite T15 o vigencia T20), `occupationalCategory` (área T15), `TELECOMMUTE` si remota. Checks tolerantes a APIs sin desplegar T15.
+- **Landings**: **`/trabajo/<area>-en-<estado>`** (p. ej. `/trabajo/ventas-en-jalisco`) — reutilizan la página de lista con filtros preconfigurados, h1/title/canonical propios y SSR. *Divergencia deliberada:* el análisis proponía `trabajo-de-X-en-Y` en un solo segmento, pero Angular no soporta parámetros parciales de segmento; se usó el prefijo `/trabajo/`. Slug inválido → redirect a `/vacantes`.
+- `robots.txt` (bloquea /admin, /empresa, /candidato, /auth). **Sitemap.xml pendiente** (backlog: idealmente generado por el backend con las vacantes activas).
+- **Smoke test local completo**: SSR sirvió lista con 5 vacantes y links con slug, detalle con title/canonical/JSON-LD/OG, landing válida e inválida, y el circuito T18 (vista SSR → consolidación → contador). Prerender de 14 rutas estáticas sigue funcionando.
+- ⚠️ **Cambia el despliegue**: para el SEO el frontend debe correr como **app Node en cPanel** (`dist/frontend/server/server.mjs`, como la API). Documentado en DEPLOY-CPANEL.md, incluida la alternativa estática (pierde SSR).
 
-### T20 · Vigencia de la vacante ⬜🔷
-Hoy la vacante **nunca vence sola** (solo la promoción expira y caen los badges; el cierre es manual). Decidir si adoptamos reloj de publicación (¿60 días?) con job `expire-vacancies` — y si va, **comunicar la vigencia en la ficha desde el día 1** (el análisis recomienda no copiar los relojes opacos, §13.4.5).
+### T17 · Acciones del candidato 🔄 (fase 1 ✅ · resto ⬜)
+
+**Fase 1 — Guardar vacante ✅ (2026-08-31):**
+- Tabla `saved_vacancies` (única por perfil+vacante, **borrado físico** — el soft delete rompería el índice único al re-guardar; migración `1720000020000`), en `modules/candidates/` (autoservicio del aspirante).
+- Endpoints `GET/POST/DELETE /candidate/saved-vacancies[/:vacancyId]` + `GET .../ids` (para pintar el botón). Guardar y quitar son **idempotentes**; sólo se guardan vacantes visibles en el portal (404 si no); una guardada que luego cierra se conserva marcada "Ya no disponible". Auditado.
+- **Permiso nuevo `saved_vacancies.manage`** (rol CANDIDATE) — ⚠️ **re-correr `pnpm seed:rbac`** o el endpoint responde 403.
+- Frontend: botón "Guardar/Guardada" (toggle optimista, icono `bookmark` nuevo en ij-icon) junto a Postularme en el detalle; página **`/candidato/guardadas`** (reutiliza `app-vacancy-card`, quitar por fila, paginación) + ítem en el sidebar del candidato.
+- 6 pruebas nuevas; suite 238 en verde.
+
+**Fases pendientes (en orden):** ocultar vacante ⬜ · seguir empresa ⬜ · alertas de búsqueda (job `send-search-alerts`; bloqueado por SMTP real) ⬜ · "recibir similares" ⬜.
+
+### T18 · Contador de vistas por vacante ✅
+
+**Hecho (2026-08-31), patrón CT §4 (eventos + consolidación diaria, sin contadores calientes):**
+- Tabla `vacancy_view_events` + columna `vacancies.views_count` (migración `1720000018000`). El `GET /vacancies/:id` público registra el evento en fuego-y-olvido (una vista jamás tumba el detalle).
+- Job **`pnpm views:consolidate`** (+ `:prod`): suma por vacante y borra los eventos consolidados **en una sola transacción con el mismo corte** — si falla, nada se pierde ni se cuenta doble. Cron documentado en DEPLOY-CPANEL.md.
+- `viewsCount` expuesto en ambos DTOs: columna "Vistas" (con ojo y tooltip "se actualizan una vez al día") en la bandeja `/empresa/vacantes`, y "Visualizaciones" en el sidebar del detalle público cuando > 0 (cierra el pendiente de vistas de T6).
+- 2 specs nuevos (consolidación) + 2 en el público (registra vista / no registra en 404). Suite 230 en verde.
+
+### T19 · Snapshot del CV en la postulación ✅
+
+**Hecho (2026-08-31), patrón CT §6 sobre el almacenamiento local de T9:**
+- Al postular se congela una **copia del archivo** en `<UPLOADS_DIR>/application-resumes/<applicationId>.pdf` (privado, nunca por `/uploads`) + metadatos (`resume_snapshot_{key,name,mime}` en `candidate_applications`, migración `1720000019000`). El id de la postulación se genera antes de la transacción para nombrar el archivo; si la transacción falla, el snapshot huérfano se borra.
+- **Best-effort:** si la copia falla, la postulación sigue con la FK viva (postularse es lo crítico) — queda warning en el log.
+- `GET /company/applications/:id/resume` **prefiere el snapshot** (lo que la empresa evaluó, aunque el candidato borre/reemplace su CV) y cae a la FK viva para postulaciones previas a T19 o snapshot ilegible. La auditoría registra `fromSnapshot`.
+- Nuevo puerto `APPLICATION_RESUME_SNAPSHOT_STORAGE` + adaptador local (mismo patrón que `CANDIDATE_RESUME_STORAGE`; S3 = cambiar el `useClass`). *Nota:* el adaptador respeta `UPLOADS_DIR`; el de CVs vivos sigue fijado a `process.cwd()/uploads` (deuda menor preexistente).
+- Pendiente conocido: la purga de cuentas (`purge:accounts`) aún no borra los archivos de snapshot (tampoco borraba los CVs vivos) — anotado como deuda.
+- 2 specs nuevos (congela copia / best-effort). Suite 232 en verde. Sin cambios de frontend: la descarga es el mismo botón.
+
+### T20 · Vigencia de la vacante ✅
+
+**Decisión (2026-08-31): reloj de publicación de 60 días**, configurable con `VACANCY_LIFETIME_DAYS` (0 lo desactiva). Hecho:
+- Al publicar: `expires_at = publishedAt + N días` (migración `1720000017000`). Las vacantes previas quedan con NULL — **nunca vencen**; el reloj sólo aplica a publicaciones nuevas. Pausar/reactivar/refrescar NO tocan el reloj.
+- **Vigencia comunicada desde el día 1** (sin relojes opacos, §13.4.5): "Vigente hasta X" en la ficha pública; `expiresAt` expuesto en ambos DTOs.
+- Job **`pnpm vacancies:expire`** (+ `:prod`): cierra las vencidas (status `CLOSED` + `closedAt`, auditado como `vacancies.expire`, un fallo no detiene el lote). Cron documentado en DEPLOY-CPANEL.md junto a `billing:expire`.
+- `POST /candidate/applications` rechaza vacantes con `expiresAt` vencido (`APPLICATION_VACANCY_NOT_ACTIVE`) — cubre la ventana hasta la corrida del cron. La lista pública no filtra por `expiresAt` a propósito: con cron diario la ventana es ≤24 h.
+- Las postulaciones recibidas siguen legibles tras el cierre (decisión "no copiar" #2).
+- Spec nuevo `expire-vacancies.use-case.spec.ts` (3 pruebas); suite 226 en verde.
+
+**Nota de despliegue T15–T20 (2026-08-31):** 5 migraciones nuevas (`1720000016000`–`1720000020000`) → `migration:run:prod`. **Permiso nuevo `saved_vacancies.manage`** → re-correr `seed:rbac:prod`. Env nueva `VACANCY_LIFETIME_DAYS` (default 60). Dos crons nuevos: `vacancies:expire:prod` y `views:consolidate:prod` (junto a `billing:expire:prod`). El frontend pasa a desplegarse como **app Node SSR** (DEPLOY-CPANEL §6). Suite backend: 238 tests en 37 suites, lint sin errores; build SSR verificado con smoke test local de punta a punta.
 
 ## Decisiones de negocio (producto) 🔷
 

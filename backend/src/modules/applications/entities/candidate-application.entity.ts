@@ -61,4 +61,34 @@ export class CandidateApplication extends BaseEntity {
   /** Alguna respuesta fue excluyente: el aspirante queda descartado del filtro. */
   @Column({ name: 'is_excluded', type: 'boolean', default: false })
   isExcluded!: boolean;
+
+  // ---- Snapshot del CV (T19) ----
+  /**
+   * Copia congelada del CV que viajó con la postulación: si el candidato borra
+   * o reemplaza su hoja de vida, la empresa conserva lo que evaluó. Null en
+   * postulaciones previas a T19 (caen al `resumeId` vivo) o sin CV adjunto.
+   */
+  @Column({
+    name: 'resume_snapshot_key',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
+  resumeSnapshotKey?: string | null;
+
+  @Column({
+    name: 'resume_snapshot_name',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  resumeSnapshotName?: string | null;
+
+  @Column({
+    name: 'resume_snapshot_mime',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  resumeSnapshotMime?: string | null;
 }

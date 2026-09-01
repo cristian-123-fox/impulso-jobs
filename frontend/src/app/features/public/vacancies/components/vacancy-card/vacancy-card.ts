@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import { vacancyPath } from '@/shared/utils/seo';
 import { IjIcon } from '@/shared/ui';
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -21,7 +22,7 @@ const NEW_BADGE_DAYS = 7;
   host: { class: 'block' },
   template: `
     <a
-      [routerLink]="['/vacantes', vacancy().id]"
+      [routerLink]="detailPath()"
       class="flex gap-4 rounded-2xl bg-white p-5 shadow-card transition-shadow hover:shadow-float sm:gap-5"
       [class.ring-1]="vacancy().isFeatured"
       [class.ring-brand]="vacancy().isFeatured"
@@ -103,6 +104,11 @@ const NEW_BADGE_DAYS = 7;
 })
 export class VacancyCard {
   readonly vacancy = input.required<PublicVacancy>();
+
+  /** URL canónica con slug (T16). */
+  protected detailPath(): string {
+    return vacancyPath(this.vacancy());
+  }
 
   protected companyName(): string {
     return this.vacancy().company?.businessName ?? 'Empresa confidencial';

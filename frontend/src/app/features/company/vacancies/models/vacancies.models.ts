@@ -27,6 +27,46 @@ export enum ExperienceLevel {
   LEAD = 'LEAD',
 }
 
+/** Tipo de contrato LFT (espeja `ContractType` del backend, T15). */
+export enum ContractType {
+  INDEFINITE = 'INDEFINITE',
+  FIXED_TERM = 'FIXED_TERM',
+  SEASONAL = 'SEASONAL',
+  OTHER = 'OTHER',
+}
+
+/** Escolaridad mínima (espeja `EducationLevel` del backend, T15). */
+export enum EducationLevel {
+  NONE = 'NONE',
+  PRIMARY = 'PRIMARY',
+  SECONDARY = 'SECONDARY',
+  HIGH_SCHOOL = 'HIGH_SCHOOL',
+  TECHNICAL = 'TECHNICAL',
+  BACHELOR = 'BACHELOR',
+  SPECIALTY = 'SPECIALTY',
+  MASTER = 'MASTER',
+  DOCTORATE = 'DOCTORATE',
+}
+
+export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
+  [ContractType.INDEFINITE]: 'Tiempo indeterminado',
+  [ContractType.FIXED_TERM]: 'Tiempo determinado',
+  [ContractType.SEASONAL]: 'Por temporada',
+  [ContractType.OTHER]: 'Por obra u otro',
+};
+
+export const EDUCATION_LEVEL_LABELS: Record<EducationLevel, string> = {
+  [EducationLevel.NONE]: 'Sin estudios',
+  [EducationLevel.PRIMARY]: 'Primaria',
+  [EducationLevel.SECONDARY]: 'Secundaria',
+  [EducationLevel.HIGH_SCHOOL]: 'Bachillerato / Preparatoria',
+  [EducationLevel.TECHNICAL]: 'Carrera técnica / TSU',
+  [EducationLevel.BACHELOR]: 'Licenciatura',
+  [EducationLevel.SPECIALTY]: 'Especialidad',
+  [EducationLevel.MASTER]: 'Maestría',
+  [EducationLevel.DOCTORATE]: 'Doctorado',
+};
+
 export const VACANCY_STATUS_LABELS: Record<VacancyStatus, string> = {
   [VacancyStatus.ACTIVE]: 'Activa',
   [VacancyStatus.PAUSED]: 'Pausada',
@@ -67,12 +107,21 @@ export interface Vacancy {
   state: string;
   municipality: string;
   experienceLevel: ExperienceLevel;
+  professionalAreaId: number | null;
+  positionsCount: number;
+  contractType: ContractType | null;
+  minEducationLevel: EducationLevel | null;
+  hasCommissions: boolean;
+  /** YYYY-MM-DD, inclusive; null = sin fecha límite. */
+  applicationDeadline: string | null;
   salaryMin: number | null;
   salaryMax: number | null;
   salaryHidden: boolean;
   status: VacancyStatus;
   publishedAt: string | null;
   closedAt: string | null;
+  /** Fin de la vigencia (T20); null = sin vencimiento. */
+  expiresAt: string | null;
   refreshedAt: string | null;
   createdAt: string;
   isVerified: boolean;
@@ -87,6 +136,8 @@ export interface Vacancy {
   maxPauses: number;
   pausesLeft: number;
   canEditTitleOnReactivate: boolean;
+  /** Vistas consolidadas (T18); se actualizan una vez al día. */
+  viewsCount: number;
 }
 
 export interface VacancyStats {
@@ -122,6 +173,13 @@ export interface SaveVacancyPayload {
   state: string;
   municipality: string;
   experienceLevel: ExperienceLevel;
+  professionalAreaId: number;
+  positionsCount?: number;
+  contractType: ContractType;
+  minEducationLevel?: EducationLevel;
+  hasCommissions?: boolean;
+  /** YYYY-MM-DD, inclusive. */
+  applicationDeadline?: string;
   salaryMin?: number;
   salaryMax?: number;
   salaryHidden?: boolean;

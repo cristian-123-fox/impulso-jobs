@@ -35,7 +35,21 @@
             "styles": [
               "node_modules/leaflet/dist/leaflet.css",
               "src/styles.scss"
-            ]
+            ],
+            "server": "src/main.server.ts",
+            "outputMode": "server",
+            "ssr": {
+              "entry": "src/server.ts"
+            },
+            "security": {
+              "allowedHosts": [
+                "localhost",
+                "127.0.0.1",
+                "demo.impulsojobs.com",
+                "impulsojobs.com",
+                "www.impulsojobs.com"
+              ]
+            }
           },
           "configurations": {
             "production": {

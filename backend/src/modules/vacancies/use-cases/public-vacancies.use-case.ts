@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PaginatedResponse,
   toPaginated,
@@ -20,6 +20,10 @@ import {
   PublicVacancySearch,
   VACANCY_REPOSITORY,
 } from '@/modules/vacancies/repositories/vacancy.repository.interface';
+import {
+  type IVacancyViewEventRepository,
+  VACANCY_VIEW_EVENT_REPOSITORY,
+} from '@/modules/vacancies/repositories/vacancy-view-event.repository.interface';
 
 /**
  * Portal público de vacantes. No requiere sesión: cualquiera puede buscar
@@ -28,9 +32,13 @@ import {
  */
 @Injectable()
 export class PublicVacanciesUseCase {
+  private readonly logger = new Logger(PublicVacanciesUseCase.name);
+
   constructor(
     @Inject(VACANCY_REPOSITORY) private readonly vacancies: IVacancyRepository,
     @Inject(COMPANY_REPOSITORY) private readonly companies: ICompanyRepository,
+    @Inject(VACANCY_VIEW_EVENT_REPOSITORY)
+    private readonly viewEvents: IVacancyViewEventRepository,
   ) {}
 
   async list(
@@ -50,8 +58,21 @@ export class PublicVacanciesUseCase {
         'La vacante no está disponible.',
       );
     }
+    // T18: evento de vista. El contador visible se consolida una vez al día.
+    this.recordView(vacancy.id);
     const [item] = await this.withCompanies([vacancy]);
     return item;
+  }
+
+  /** Fuego y olvido: una vista jamás debe tumbar ni retrasar el detalle. */
+  private recordView(vacancyId: string): void {
+    void this.viewEvents.record(vacancyId).catch((error: unknown) => {
+      this.logger.warn(
+        `No se pudo registrar la vista de ${vacancyId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    });
   }
 
   /** Resuelve las empresas en lote, omitiendo las vacantes confidenciales. */

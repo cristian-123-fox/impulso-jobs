@@ -1,4 +1,5 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import {
   PaginatedResponse,
@@ -7,6 +8,7 @@ import {
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
+import { toDateOnly, todayAsDateOnly } from '@/common/utils/date-only.util';
 import { runInTransaction } from '@/common/utils/transaction.util';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
@@ -39,9 +41,18 @@ import {
 } from '@/modules/applications/repositories/application-answer.repository.interface';
 import { ApplicationOwnershipService } from '@/modules/applications/services/application-ownership.service';
 import {
+  type IApplicationResumeSnapshotStorage,
+  APPLICATION_RESUME_SNAPSHOT_STORAGE,
+} from '@/modules/applications/services/application-resume-snapshot-storage.port';
+import { CandidateResume } from '@/modules/candidates/entities/candidate-resume.entity';
+import {
   type ICandidateResumeRepository,
   CANDIDATE_RESUME_REPOSITORY,
 } from '@/modules/candidates/repositories/candidate-resume.repository.interface';
+import {
+  type ICandidateResumeStorage,
+  CANDIDATE_RESUME_STORAGE,
+} from '@/modules/candidates/services/candidate-resume-storage.port';
 import {
   EXCLUDING_WEIGHT,
   VacancyQuestionType,
@@ -101,6 +112,8 @@ export interface ListCandidateApplicationsCommand extends CandidateApplicationAc
  */
 @Injectable()
 export class CandidateApplicationsUseCase {
+  private readonly logger = new Logger(CandidateApplicationsUseCase.name);
+
   constructor(
     private readonly dataSource: DataSource,
     @Inject(CANDIDATE_APPLICATION_REPOSITORY)
@@ -113,6 +126,10 @@ export class CandidateApplicationsUseCase {
     @Inject(COMPANY_REPOSITORY) private readonly companies: ICompanyRepository,
     @Inject(CANDIDATE_RESUME_REPOSITORY)
     private readonly resumes: ICandidateResumeRepository,
+    @Inject(CANDIDATE_RESUME_STORAGE)
+    private readonly resumeStorage: ICandidateResumeStorage,
+    @Inject(APPLICATION_RESUME_SNAPSHOT_STORAGE)
+    private readonly snapshotStorage: IApplicationResumeSnapshotStorage,
     @Inject(VACANCY_QUESTION_REPOSITORY)
     private readonly questions: IVacancyQuestionRepository,
     @Inject(APPLICATION_ANSWER_REPOSITORY)
@@ -147,6 +164,24 @@ export class CandidateApplicationsUseCase {
         'Esta vacante ya no admite postulaciones.',
       );
     }
+    // La fecha límite es inclusiva: el día señalado todavía se puede postular.
+    const deadline = toDateOnly(vacancy.applicationDeadline);
+    if (deadline && deadline < todayAsDateOnly()) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.APPLICATION_VACANCY_NOT_ACTIVE,
+        'La fecha límite para postularse a esta vacante ya pasó.',
+      );
+    }
+    // Vigencia (T20): cubre la ventana entre el vencimiento y la corrida del
+    // job `vacancies:expire`, que es quien la cierra de verdad.
+    if (vacancy.expiresAt && vacancy.expiresAt.getTime() <= Date.now()) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.APPLICATION_VACANCY_NOT_ACTIVE,
+        'Esta vacante ya venció.',
+      );
+    }
 
     const alreadyApplied = await this.applications.existsByProfileAndVacancy(
       profile.id,
@@ -160,44 +195,60 @@ export class CandidateApplicationsUseCase {
       );
     }
 
-    const resumeId = await this.resolveResumeId(profile.id, command.resumeId);
+    const resume = await this.resolveResume(profile.id, command.resumeId);
     const screening = await this.resolveScreening(
       vacancy.id,
       command.answers ?? [],
     );
     const now = new Date();
 
-    const saved = await runInTransaction(this.dataSource, async (manager) => {
-      const application = new CandidateApplication();
-      application.candidateProfileId = profile.id;
-      application.vacancyId = vacancy.id;
-      application.companyId = vacancy.companyId;
-      application.resumeId = resumeId;
-      application.statusCode = INITIAL_APPLICATION_STATUS;
-      application.appliedAt = now;
-      application.score = screening.score;
-      application.isExcluded = screening.isExcluded;
+    // T19: el id se genera aquí para poder nombrar el snapshot del CV, que se
+    // escribe en disco ANTES de la transacción (los archivos no participan en
+    // el rollback; si la transacción falla, el snapshot huérfano se borra).
+    const applicationId = randomUUID();
+    const snapshot = await this.snapshotResume(applicationId, resume);
 
-      const stored = await this.applications.save(application, manager);
+    let saved: CandidateApplication;
+    try {
+      saved = await runInTransaction(this.dataSource, async (manager) => {
+        const application = new CandidateApplication();
+        application.id = applicationId;
+        application.candidateProfileId = profile.id;
+        application.vacancyId = vacancy.id;
+        application.companyId = vacancy.companyId;
+        application.resumeId = resume?.id ?? null;
+        application.resumeSnapshotKey = snapshot?.storageKey ?? null;
+        application.resumeSnapshotName = snapshot?.fileName ?? null;
+        application.resumeSnapshotMime = snapshot?.mimeType ?? null;
+        application.statusCode = INITIAL_APPLICATION_STATUS;
+        application.appliedAt = now;
+        application.score = screening.score;
+        application.isExcluded = screening.isExcluded;
 
-      if (screening.answers.length > 0) {
-        screening.answers.forEach((answer) => {
-          answer.applicationId = stored.id;
-        });
-        await this.answers.saveMany(screening.answers, manager);
-      }
+        const stored = await this.applications.save(application, manager);
 
-      // Línea inicial del historial: sin estado previo.
-      const entry = new ApplicationStatusHistory();
-      entry.applicationId = stored.id;
-      entry.previousStatusCode = null;
-      entry.currentStatusCode = stored.statusCode;
-      entry.changedBy = command.userId;
-      entry.changedAt = now;
-      await this.historyEntries.save(entry, manager);
+        if (screening.answers.length > 0) {
+          screening.answers.forEach((answer) => {
+            answer.applicationId = stored.id;
+          });
+          await this.answers.saveMany(screening.answers, manager);
+        }
 
-      return stored;
-    });
+        // Línea inicial del historial: sin estado previo.
+        const entry = new ApplicationStatusHistory();
+        entry.applicationId = stored.id;
+        entry.previousStatusCode = null;
+        entry.currentStatusCode = stored.statusCode;
+        entry.changedBy = command.userId;
+        entry.changedAt = now;
+        await this.historyEntries.save(entry, manager);
+
+        return stored;
+      });
+    } catch (error) {
+      if (snapshot) await this.safeDeleteSnapshot(snapshot.storageKey);
+      throw error;
+    }
 
     await this.audit.record({
       action: 'applications.create',
@@ -402,10 +453,10 @@ export class CandidateApplicationsUseCase {
     );
   }
 
-  private async resolveResumeId(
+  private async resolveResume(
     candidateProfileId: string,
     requestedId?: string,
-  ): Promise<string | null> {
+  ): Promise<CandidateResume | null> {
     if (requestedId) {
       const resume = await this.resumes.findByIdAndProfileId(
         requestedId,
@@ -418,11 +469,58 @@ export class CandidateApplicationsUseCase {
           'La hoja de vida indicada no existe.',
         );
       }
-      return resume.id;
+      return resume;
     }
 
     const resumes = await this.resumes.findByProfileId(candidateProfileId);
-    const preferred = resumes.find((resume) => resume.isDefault) ?? resumes[0];
-    return preferred?.id ?? null;
+    return resumes.find((resume) => resume.isDefault) ?? resumes[0] ?? null;
+  }
+
+  /**
+   * T19: congela una copia del CV para la postulación. Es best-effort — si la
+   * copia falla, la postulación sigue adelante con la FK viva (el comportamiento
+   * previo a T19): postularse es lo crítico, el snapshot es una garantía extra.
+   */
+  private async snapshotResume(
+    applicationId: string,
+    resume: CandidateResume | null,
+  ): Promise<{
+    storageKey: string;
+    fileName: string;
+    mimeType: string;
+  } | null> {
+    if (!resume) return null;
+    try {
+      const stream = await this.resumeStorage.openReadStream(resume.storageKey);
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk as Buffer);
+      }
+      const { storageKey } = await this.snapshotStorage.save(
+        applicationId,
+        Buffer.concat(chunks),
+      );
+      return {
+        storageKey,
+        fileName: resume.fileName,
+        mimeType: resume.mimeType,
+      };
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo congelar el CV ${resume.id} para la postulación ${applicationId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return null;
+    }
+  }
+
+  /** Mejor un archivo huérfano que un doble fallo al deshacer. */
+  private async safeDeleteSnapshot(storageKey: string): Promise<void> {
+    try {
+      await this.snapshotStorage.delete(storageKey);
+    } catch {
+      this.logger.warn(`Snapshot huérfano sin borrar: ${storageKey}`);
+    }
   }
 }

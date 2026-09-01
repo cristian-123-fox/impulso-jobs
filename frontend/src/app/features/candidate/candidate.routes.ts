@@ -25,6 +25,13 @@ export const routes: Routes = [
       ).then((m) => m.CandidateApplicationsPage),
   },
   {
+    path: 'guardadas',
+    loadComponent: () =>
+      import(
+        '@/features/candidate/pages/candidate-saved-vacancies-page/candidate-saved-vacancies-page'
+      ).then((m) => m.CandidateSavedVacanciesPage),
+  },
+  {
     path: 'configuracion',
     loadComponent: () =>
       import('@/features/candidate/pages/candidate-settings-page/candidate-settings-page').then(

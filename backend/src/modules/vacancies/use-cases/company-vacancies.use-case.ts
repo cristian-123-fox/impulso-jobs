@@ -5,6 +5,7 @@ import {
 } from '@/common/dto/paginated-response.dto';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
+import { todayAsDateOnly } from '@/common/utils/date-only.util';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
   VacancyResponseDto,
@@ -12,9 +13,12 @@ import {
 } from '@/modules/vacancies/dto/vacancy-response.dto';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import {
+  ContractType,
   DEFAULT_MAX_PAUSES,
+  EducationLevel,
   EmploymentType,
   ExperienceLevel,
+  vacancyLifetimeDays,
   VacancyStatus,
   WorkMode,
 } from '@/modules/vacancies/enums/vacancy.enums';
@@ -39,6 +43,13 @@ export interface VacancyData {
   state: string;
   municipality: string;
   experienceLevel: ExperienceLevel;
+  professionalAreaId: number;
+  positionsCount?: number;
+  contractType: ContractType;
+  minEducationLevel?: EducationLevel;
+  hasCommissions?: boolean;
+  /** YYYY-MM-DD, inclusive. */
+  applicationDeadline?: string;
   salaryMin?: number;
   salaryMax?: number;
   salaryHidden?: boolean;
@@ -122,6 +133,7 @@ export class CompanyVacanciesUseCase {
   ): Promise<VacancyResponseDto> {
     const company = await this.ownership.requireCompany(actor.userId);
     this.assertSalaryRange(data);
+    this.assertDeadline(data);
 
     const now = new Date();
     const vacancy = new Vacancy();
@@ -129,6 +141,13 @@ export class CompanyVacanciesUseCase {
     this.apply(vacancy, data);
     vacancy.status = VacancyStatus.ACTIVE;
     vacancy.publishedAt = now;
+    // Vigencia (T20): se fija y se comunica desde el día 1. Con el reloj
+    // desactivado (VACANCY_LIFETIME_DAYS=0) la vacante nace sin vencimiento.
+    const lifetimeDays = vacancyLifetimeDays();
+    vacancy.expiresAt =
+      lifetimeDays > 0
+        ? new Date(now.getTime() + lifetimeDays * 86_400_000)
+        : null;
     // Se rellena desde el alta para que el orden del portal no dependa de nulos.
     vacancy.refreshedAt = now;
     vacancy.pauseCount = 0;
@@ -176,6 +195,7 @@ export class CompanyVacanciesUseCase {
       );
     }
     this.assertSalaryRange(data);
+    this.assertDeadline(data);
 
     this.apply(vacancy, data);
     this.applyConfidentiality(vacancy, data.isConfidential);
@@ -204,6 +224,12 @@ export class CompanyVacanciesUseCase {
     vacancy.state = data.state;
     vacancy.municipality = data.municipality.trim();
     vacancy.experienceLevel = data.experienceLevel;
+    vacancy.professionalAreaId = data.professionalAreaId;
+    vacancy.positionsCount = data.positionsCount ?? 1;
+    vacancy.contractType = data.contractType;
+    vacancy.minEducationLevel = data.minEducationLevel ?? null;
+    vacancy.hasCommissions = data.hasCommissions ?? false;
+    vacancy.applicationDeadline = data.applicationDeadline ?? null;
     vacancy.salaryMin = data.salaryMin?.toString() ?? null;
     vacancy.salaryMax = data.salaryMax?.toString() ?? null;
     vacancy.salaryHidden = data.salaryHidden ?? false;
@@ -225,6 +251,18 @@ export class CompanyVacanciesUseCase {
       );
     }
     vacancy.isConfidential = requested;
+  }
+
+  /** La fecha límite es inclusiva: hoy todavía se puede postular. */
+  private assertDeadline(data: VacancyData): void {
+    if (!data.applicationDeadline) return;
+    if (data.applicationDeadline < todayAsDateOnly()) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.VACANCY_INVALID_DEADLINE,
+        'La fecha límite de postulación no puede estar en el pasado.',
+      );
+    }
   }
 
   private assertSalaryRange(data: VacancyData): void {

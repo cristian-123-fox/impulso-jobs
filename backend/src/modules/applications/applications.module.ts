@@ -15,6 +15,8 @@ import { ApplicationStatusRepository } from '@/modules/applications/repositories
 import { CANDIDATE_APPLICATION_REPOSITORY } from '@/modules/applications/repositories/candidate-application.repository.interface';
 import { CandidateApplicationRepository } from '@/modules/applications/repositories/candidate-application.repository';
 import { ApplicationOwnershipService } from '@/modules/applications/services/application-ownership.service';
+import { APPLICATION_RESUME_SNAPSHOT_STORAGE } from '@/modules/applications/services/application-resume-snapshot-storage.port';
+import { LocalApplicationResumeSnapshotStorageService } from '@/modules/applications/services/local-application-resume-snapshot-storage.service';
 import { ApplicationStatusUseCase } from '@/modules/applications/use-cases/application-status.use-case';
 import { CandidateApplicationsUseCase } from '@/modules/applications/use-cases/candidate-applications.use-case';
 import { CompanyApplicationsUseCase } from '@/modules/applications/use-cases/company-applications.use-case';
@@ -60,6 +62,12 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     {
       provide: APPLICATION_ANSWER_REPOSITORY,
       useClass: ApplicationAnswerRepository,
+    },
+    // T19: snapshot del CV por postulación (local; migrar a S3 = cambiar
+    // el useClass, mismo patrón que CANDIDATE_RESUME_STORAGE).
+    {
+      provide: APPLICATION_RESUME_SNAPSHOT_STORAGE,
+      useClass: LocalApplicationResumeSnapshotStorageService,
     },
     ApplicationOwnershipService,
     CandidateApplicationsUseCase,

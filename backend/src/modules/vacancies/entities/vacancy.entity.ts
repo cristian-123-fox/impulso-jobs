@@ -1,7 +1,9 @@
 import { Column, Entity, Index } from 'typeorm';
 import { BaseEntity } from '@/common/entities/base.entity';
 import {
+  ContractType,
   DEFAULT_MAX_PAUSES,
+  EducationLevel,
   EmploymentType,
   ExperienceLevel,
   VacancyStatus,
@@ -47,6 +49,49 @@ export class Vacancy extends BaseEntity {
   @Column({ name: 'experience_level', type: 'varchar', length: 20 })
   experienceLevel!: ExperienceLevel;
 
+  // ---- Perfil de la posición (T15) ----
+  /**
+   * Área profesional (catálogo embebido `PROFESSIONAL_AREAS`). Nullable sólo
+   * por las vacantes previas a T15; el alta y la edición la exigen.
+   */
+  @Index('idx_vacancies_professional_area')
+  @Column({ name: 'professional_area_id', type: 'smallint', nullable: true })
+  professionalAreaId?: number | null;
+
+  /** Número de plazas de la posición. */
+  @Column({ name: 'positions_count', type: 'smallint', default: 1 })
+  positionsCount!: number;
+
+  /** Tipo de contrato LFT. Nullable por vacantes previas a T15. */
+  @Column({
+    name: 'contract_type',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  contractType?: ContractType | null;
+
+  /** Escolaridad mínima; null = sin requisito. */
+  @Column({
+    name: 'min_education_level',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  minEducationLevel?: EducationLevel | null;
+
+  /** El puesto paga comisiones además del salario base. */
+  @Column({ name: 'has_commissions', type: 'boolean', default: false })
+  hasCommissions!: boolean;
+
+  /**
+   * Fecha límite para postularse (inclusive). El driver de MySQL entrega las
+   * columnas `date` como `Date` y el de PostgreSQL como texto: normalizar con
+   * `toDateOnly` antes de exponerla.
+   */
+  @Column({ name: 'application_deadline', type: 'date', nullable: true })
+  applicationDeadline?: string | Date | null;
+
   /** Salario mensual en MXN. Ambos extremos son opcionales ("a convenir"). */
   @Column({
     name: 'salary_min',
@@ -79,6 +124,15 @@ export class Vacancy extends BaseEntity {
 
   @Column({ name: 'closed_at', type: 'timestamp', nullable: true })
   closedAt?: Date | null;
+
+  /**
+   * Fin de la vigencia (T20): `publishedAt` + `VACANCY_LIFETIME_DAYS`. El job
+   * `vacancies:expire` cierra las vencidas. Null = sin vencimiento (vacantes
+   * previas a T20, o reloj desactivado).
+   */
+  @Index('idx_vacancies_expires_at')
+  @Column({ name: 'expires_at', type: 'timestamp', nullable: true })
+  expiresAt?: Date | null;
 
   // ---- Distintivos derivados del plan/promoción (M14) ----
   @Column({ name: 'is_verified', type: 'boolean', default: false })
@@ -127,4 +181,11 @@ export class Vacancy extends BaseEntity {
   @Index('idx_vacancies_refreshed_at')
   @Column({ name: 'refreshed_at', type: 'timestamp', nullable: true })
   refreshedAt?: Date | null;
+
+  /**
+   * Vistas consolidadas (T18): las suma el job `views:consolidate` desde
+   * `vacancy_view_events`, una vez al día. Nunca se escribe en caliente.
+   */
+  @Column({ name: 'views_count', type: 'int', default: 0 })
+  viewsCount!: number;
 }

@@ -16,15 +16,21 @@ import {
   Validators,
 } from '@angular/forms';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import { PROFESSIONAL_AREAS } from '@/shared/catalogs/professional-areas.catalogs';
 import { piiWarning } from '@/shared/utils/pii';
 import {
   IjButton,
+  IjDatepicker,
   IjInput,
   IjOption,
   IjSelect,
   IjTextarea,
 } from '@/shared/ui';
 import {
+  CONTRACT_TYPE_LABELS,
+  ContractType,
+  EDUCATION_LEVEL_LABELS,
+  EducationLevel,
   EMPLOYMENT_TYPE_LABELS,
   EmploymentType,
   EXPERIENCE_LEVEL_LABELS,
@@ -49,7 +55,14 @@ function options<T extends string>(labels: Record<T, string>): IjOption[] {
 @Component({
   selector: 'app-vacancy-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjInput, IjSelect, IjTextarea],
+  imports: [
+    ReactiveFormsModule,
+    IjButton,
+    IjDatepicker,
+    IjInput,
+    IjSelect,
+    IjTextarea,
+  ],
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
       @if (error()) {
@@ -107,7 +120,41 @@ function options<T extends string>(labels: Record<T, string>): IjOption[] {
           [searchable]="false"
           formControlName="experienceLevel"
         />
-        <div></div>
+        <ij-select
+          label="Área profesional"
+          [required]="true"
+          [options]="areas"
+          [error]="invalid('professionalAreaId') ? 'Selecciona el área.' : null"
+          formControlName="professionalAreaId"
+        />
+
+        <ij-select
+          label="Tipo de contrato"
+          [required]="true"
+          [options]="contractTypes"
+          [searchable]="false"
+          formControlName="contractType"
+        />
+        <ij-select
+          label="Escolaridad mínima"
+          [options]="educationLevels"
+          [searchable]="false"
+          formControlName="minEducationLevel"
+        />
+
+        <ij-input
+          label="Número de plazas"
+          type="number"
+          [min]="1"
+          hint="Cuántas posiciones cubre esta vacante."
+          formControlName="positionsCount"
+        />
+        <ij-datepicker
+          label="Fecha límite para postularse"
+          hint="Opcional. La vacante deja de recibir postulaciones al día siguiente."
+          [min]="today"
+          formControlName="applicationDeadline"
+        />
 
         <ij-input
           label="Salario mensual mínimo (MXN)"
@@ -155,6 +202,15 @@ function options<T extends string>(labels: Record<T, string>): IjOption[] {
       }
 
       <label class="mt-4 flex items-center gap-2.5 text-[13.5px] text-body">
+        <input
+          type="checkbox"
+          class="h-4 w-4 rounded border-line text-brand focus:ring-brand"
+          formControlName="hasCommissions"
+        />
+        El puesto paga comisiones además del salario base
+      </label>
+
+      <label class="mt-2 flex items-center gap-2.5 text-[13.5px] text-body">
         <input
           type="checkbox"
           class="h-4 w-4 rounded border-line text-brand focus:ring-brand"
@@ -209,10 +265,21 @@ export class VacancyForm implements OnInit {
   protected readonly employmentTypes = options(EMPLOYMENT_TYPE_LABELS);
   protected readonly workModes = options(WORK_MODE_LABELS);
   protected readonly experienceLevels = options(EXPERIENCE_LEVEL_LABELS);
+  protected readonly contractTypes = options(CONTRACT_TYPE_LABELS);
+  protected readonly educationLevels: IjOption[] = [
+    { value: '', label: 'Sin requisito' },
+    ...options(EDUCATION_LEVEL_LABELS),
+  ];
   protected readonly states: IjOption[] = MX_STATES.map((s) => ({
     value: s.code,
     label: s.name,
   }));
+  protected readonly areas: IjOption[] = PROFESSIONAL_AREAS.map((a) => ({
+    value: String(a.id),
+    label: a.name,
+  }));
+  /** Hoy en ISO local: la fecha límite no puede nacer en el pasado. */
+  protected readonly today = new Date().toISOString().slice(0, 10);
 
   protected readonly form = this.fb.group({
     title: this.fb.control('', [Validators.required, Validators.maxLength(160)]),
@@ -227,6 +294,14 @@ export class VacancyForm implements OnInit {
     experienceLevel: this.fb.control<ExperienceLevel>(ExperienceLevel.MID, [
       Validators.required,
     ]),
+    professionalAreaId: this.fb.control('', [Validators.required]),
+    contractType: this.fb.control<ContractType>(ContractType.INDEFINITE, [
+      Validators.required,
+    ]),
+    minEducationLevel: this.fb.control(''),
+    positionsCount: this.fb.control<number | null>(1),
+    applicationDeadline: this.fb.control(''),
+    hasCommissions: this.fb.control(false),
     salaryMin: this.fb.control<number | null>(null),
     salaryMax: this.fb.control<number | null>(null),
     salaryHidden: this.fb.control(false),
@@ -259,6 +334,15 @@ export class VacancyForm implements OnInit {
       state: vacancy.state,
       municipality: vacancy.municipality,
       experienceLevel: vacancy.experienceLevel,
+      professionalAreaId:
+        vacancy.professionalAreaId === null
+          ? ''
+          : String(vacancy.professionalAreaId),
+      contractType: vacancy.contractType ?? ContractType.INDEFINITE,
+      minEducationLevel: vacancy.minEducationLevel ?? '',
+      positionsCount: vacancy.positionsCount,
+      applicationDeadline: vacancy.applicationDeadline ?? '',
+      hasCommissions: vacancy.hasCommissions,
       salaryMin: vacancy.salaryMin,
       salaryMax: vacancy.salaryMax,
       salaryHidden: vacancy.salaryHidden,
@@ -295,8 +379,18 @@ export class VacancyForm implements OnInit {
       state: value.state,
       municipality: value.municipality.trim(),
       experienceLevel: value.experienceLevel,
+      professionalAreaId: Number(value.professionalAreaId),
+      contractType: value.contractType,
+      positionsCount: Math.max(1, Number(value.positionsCount) || 1),
+      hasCommissions: value.hasCommissions,
       salaryHidden: value.salaryHidden,
     };
+    if (value.minEducationLevel) {
+      payload.minEducationLevel = value.minEducationLevel as EducationLevel;
+    }
+    if (value.applicationDeadline) {
+      payload.applicationDeadline = value.applicationDeadline;
+    }
     if (value.requirements.trim()) {
       payload.requirements = value.requirements.trim();
     }

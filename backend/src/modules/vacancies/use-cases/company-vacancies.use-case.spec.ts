@@ -3,7 +3,9 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { AuditService } from '@/modules/audit/audit.service';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import {
+  ContractType,
   DEFAULT_MAX_PAUSES,
+  EducationLevel,
   EmploymentType,
   ExperienceLevel,
   VacancyStatus,
@@ -30,6 +32,8 @@ const data = (overrides: Partial<VacancyData> = {}): VacancyData => ({
   state: 'JAL',
   municipality: 'Zapopan',
   experienceLevel: ExperienceLevel.SENIOR,
+  professionalAreaId: 13,
+  contractType: ContractType.INDEFINITE,
   ...overrides,
 });
 
@@ -85,6 +89,34 @@ describe('CompanyVacanciesUseCase', () => {
     expect(result.isUrgent).toBe(false);
     expect(result.isConfidential).toBe(false);
     expect(result.isVerified).toBe(false);
+  });
+
+  it('guarda el perfil de la posición (T15) con sus defaults', async () => {
+    const result = await useCase.create(
+      data({
+        minEducationLevel: EducationLevel.BACHELOR,
+        hasCommissions: true,
+      }),
+      actor,
+    );
+
+    expect(result).toMatchObject({
+      professionalAreaId: 13,
+      contractType: ContractType.INDEFINITE,
+      minEducationLevel: EducationLevel.BACHELOR,
+      hasCommissions: true,
+      positionsCount: 1,
+      applicationDeadline: null,
+    });
+  });
+
+  it('rechaza una fecha límite en el pasado', async () => {
+    const thrown = await useCase
+      .create(data({ applicationDeadline: '2000-01-01' }), actor)
+      .catch((e: unknown) => e);
+
+    expect(errorCodeOf(thrown)).toBe(ErrorCode.VACANCY_INVALID_DEADLINE);
+    expect(vacancies.save).not.toHaveBeenCalled();
   });
 
   it('rechaza un rango de salario invertido', async () => {

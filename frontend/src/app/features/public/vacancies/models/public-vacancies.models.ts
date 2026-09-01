@@ -1,11 +1,18 @@
 export {
+  CONTRACT_TYPE_LABELS,
+  ContractType,
+  EDUCATION_LEVEL_LABELS,
+  EducationLevel,
   EMPLOYMENT_TYPE_LABELS,
-  EXPERIENCE_LEVEL_LABELS,
   EmploymentType,
+  EXPERIENCE_LEVEL_LABELS,
   ExperienceLevel,
   WORK_MODE_LABELS,
   WorkMode,
 } from '@/features/company/vacancies/models/vacancies.models';
+
+/** Orden del listado público (espeja `PublicVacancySort` del backend). */
+export type PublicVacancySort = 'relevance' | 'date' | 'salary';
 
 /** Empresa mostrada en el portal; `null` si la vacante es confidencial. */
 export interface PublicVacancyCompany {
@@ -28,14 +35,25 @@ export interface PublicVacancy {
   state: string;
   municipality: string;
   experienceLevel: string;
+  professionalAreaId: number | null;
+  positionsCount: number;
+  contractType: string | null;
+  minEducationLevel: string | null;
+  hasCommissions: boolean;
+  /** YYYY-MM-DD, inclusive; null = sin fecha límite. */
+  applicationDeadline: string | null;
   salaryMin: number | null;
   salaryMax: number | null;
   publishedAt: string | null;
+  /** Fin de la vigencia (T20); null = sin vencimiento. */
+  expiresAt: string | null;
   refreshedAt: string | null;
   isVerified: boolean;
   isFeatured: boolean;
   isUrgent: boolean;
   isConfidential: boolean;
+  /** Vistas consolidadas (T18); se actualizan una vez al día. */
+  viewsCount: number;
   company: PublicVacancyCompany | null;
 }
 
@@ -54,6 +72,13 @@ export interface PublicVacanciesFilters {
   employmentType?: string;
   workMode?: string;
   experienceLevel?: string;
+  /** Área profesional (catálogo compartido). */
+  areaId?: number;
+  /** Vacantes que pagan al menos esta cifra (MXN mensuales). */
+  salaryMin?: number;
+  /** Publicadas en los últimos N días (1 | 3 | 7 | 15 | 30). */
+  publishedWithinDays?: number;
+  sort?: PublicVacancySort;
   page: number;
   limit: number;
 }

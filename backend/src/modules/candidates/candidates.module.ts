@@ -5,6 +5,7 @@ import { PUBLIC_FILE_STORAGE } from '@/common/storage/public-file-storage.port';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { CandidateProfileController } from '@/modules/candidates/controllers/candidate-profile.controller';
 import { CandidateResumeController } from '@/modules/candidates/controllers/candidate-resume.controller';
+import { CandidateSavedVacanciesController } from '@/modules/candidates/controllers/candidate-saved-vacancies.controller';
 import { CandidateSettingsController } from '@/modules/candidates/controllers/candidate-settings.controller';
 import { CandidateEducation } from '@/modules/candidates/entities/candidate-education.entity';
 import { CandidateExperience } from '@/modules/candidates/entities/candidate-experience.entity';
@@ -14,6 +15,7 @@ import { CandidateProfileSettings } from '@/modules/candidates/entities/candidat
 import { CandidateResume } from '@/modules/candidates/entities/candidate-resume.entity';
 import { CandidateSkill } from '@/modules/candidates/entities/candidate-skill.entity';
 import { Language } from '@/modules/candidates/entities/language.entity';
+import { SavedVacancy } from '@/modules/candidates/entities/saved-vacancy.entity';
 import { CANDIDATE_EDUCATION_REPOSITORY } from '@/modules/candidates/repositories/candidate-education.repository.interface';
 import { CandidateEducationRepository } from '@/modules/candidates/repositories/candidate-education.repository';
 import { CANDIDATE_EXPERIENCE_REPOSITORY } from '@/modules/candidates/repositories/candidate-experience.repository.interface';
@@ -30,6 +32,8 @@ import { CANDIDATE_SKILL_REPOSITORY } from '@/modules/candidates/repositories/ca
 import { CandidateSkillRepository } from '@/modules/candidates/repositories/candidate-skill.repository';
 import { LANGUAGE_REPOSITORY } from '@/modules/candidates/repositories/language.repository.interface';
 import { LanguageRepository } from '@/modules/candidates/repositories/language.repository';
+import { SAVED_VACANCY_REPOSITORY } from '@/modules/candidates/repositories/saved-vacancy.repository.interface';
+import { SavedVacancyRepository } from '@/modules/candidates/repositories/saved-vacancy.repository';
 import { CANDIDATE_RESUME_STORAGE } from '@/modules/candidates/services/candidate-resume-storage.port';
 import { LocalCandidateResumeStorageService } from '@/modules/candidates/services/local-candidate-resume-storage.service';
 import { CandidateEducationUseCase } from '@/modules/candidates/use-cases/candidate-education.use-case';
@@ -39,9 +43,12 @@ import { CandidateProfileUseCase } from '@/modules/candidates/use-cases/candidat
 import { CandidateResumeUseCase } from '@/modules/candidates/use-cases/candidate-resume.use-case';
 import { CandidateSettingsUseCase } from '@/modules/candidates/use-cases/candidate-settings.use-case';
 import { CandidateSkillUseCase } from '@/modules/candidates/use-cases/candidate-skill.use-case';
+import { SavedVacanciesUseCase } from '@/modules/candidates/use-cases/saved-vacancies.use-case';
+import { CompaniesModule } from '@/modules/companies/companies.module';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
 import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
 import { UsersModule } from '@/modules/iam/users/users.module';
+import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
 
 /** Dominio de candidatos: perfil y su repositorio. */
 @Module({
@@ -55,15 +62,20 @@ import { UsersModule } from '@/modules/iam/users/users.module';
       CandidateSkill,
       CandidateResume,
       Language,
+      SavedVacancy,
     ]),
     AuditModule,
     AuthModule,
     PermissionsModule,
     UsersModule,
+    // T17: las guardadas listan la vista pública de la vacante y su empresa.
+    VacanciesModule,
+    CompaniesModule,
   ],
   controllers: [
     CandidateProfileController,
     CandidateResumeController,
+    CandidateSavedVacanciesController,
     CandidateSettingsController,
   ],
   providers: [
@@ -100,6 +112,10 @@ import { UsersModule } from '@/modules/iam/users/users.module';
       useClass: LanguageRepository,
     },
     {
+      provide: SAVED_VACANCY_REPOSITORY,
+      useClass: SavedVacancyRepository,
+    },
+    {
       provide: CANDIDATE_RESUME_STORAGE,
       useClass: LocalCandidateResumeStorageService,
     },
@@ -116,6 +132,7 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     CandidateSkillUseCase,
     CandidateResumeUseCase,
     CandidateSettingsUseCase,
+    SavedVacanciesUseCase,
   ],
   exports: [
     CANDIDATE_PROFILE_REPOSITORY,

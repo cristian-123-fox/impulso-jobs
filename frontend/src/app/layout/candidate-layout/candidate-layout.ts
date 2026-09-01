@@ -141,6 +141,7 @@ export class CandidateLayout {
     { path: '/candidato/perfil', label: 'Mi perfil', icon: 'user' },
     { path: '/candidato/cv', label: 'Mis hojas de vida', icon: 'file' },
     { path: '/candidato/postulaciones', label: 'Mis postulaciones', icon: 'briefcase' },
+    { path: '/candidato/guardadas', label: 'Guardadas', icon: 'bookmark' },
     { path: '/candidato/configuracion', label: 'Configuración', icon: 'settings' },
   ];
 

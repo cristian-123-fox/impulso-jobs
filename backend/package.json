@@ -31,6 +31,8 @@
     "seed:plan-features": "ts-node -r tsconfig-paths/register src/database/seed-plan-features.ts",
     "purge:accounts": "ts-node -r tsconfig-paths/register src/database/purge-accounts.ts",
     "billing:expire": "ts-node -r tsconfig-paths/register src/database/expire-promotions.ts",
+    "vacancies:expire": "ts-node -r tsconfig-paths/register src/database/expire-vacancies.ts",
+    "views:consolidate": "ts-node -r tsconfig-paths/register src/database/consolidate-vacancy-views.ts",
     "migration:run:prod": "node dist/database/run-migrations run",
     "migration:revert:prod": "node dist/database/run-migrations revert",
     "seed:rbac:prod": "node dist/database/seed-rbac",
@@ -40,7 +42,9 @@
     "seed:applications:prod": "node dist/database/seed-application-statuses",
     "seed:plan-features:prod": "node dist/database/seed-plan-features",
     "purge:accounts:prod": "node dist/database/purge-accounts",
-    "billing:expire:prod": "node dist/database/expire-promotions"
+    "billing:expire:prod": "node dist/database/expire-promotions",
+    "vacancies:expire:prod": "node dist/database/expire-vacancies",
+    "views:consolidate:prod": "node dist/database/consolidate-vacancy-views"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

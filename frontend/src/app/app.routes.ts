@@ -75,6 +75,14 @@ export const routes: Routes = [
           ),
       },
       {
+        // Landing SEO (T16): la lista con área y estado preconfigurados.
+        path: 'trabajo/:landing',
+        loadComponent: () =>
+          import(
+            '@/features/public/vacancies/pages/vacancies-page/vacancies-page'
+          ).then((m) => m.VacanciesPage),
+      },
+      {
         path: 'faq',
         loadChildren: () =>
           import('@/features/public/faq/faq.routes').then((m) => m.routes),

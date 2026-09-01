@@ -13,14 +13,19 @@ import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import { VacancyQuestion } from '@/modules/vacancies/entities/vacancy-question.entity';
 import { VacancyQuestionOption } from '@/modules/vacancies/entities/vacancy-question-option.entity';
 import { VacancyReport } from '@/modules/vacancies/entities/vacancy-report.entity';
+import { VacancyViewEvent } from '@/modules/vacancies/entities/vacancy-view-event.entity';
 import { VACANCY_QUESTION_REPOSITORY } from '@/modules/vacancies/repositories/vacancy-question.repository.interface';
 import { VacancyQuestionRepository } from '@/modules/vacancies/repositories/vacancy-question.repository';
 import { VACANCY_REPORT_REPOSITORY } from '@/modules/vacancies/repositories/vacancy-report.repository.interface';
 import { VacancyReportRepository } from '@/modules/vacancies/repositories/vacancy-report.repository';
 import { VACANCY_REPOSITORY } from '@/modules/vacancies/repositories/vacancy.repository.interface';
 import { VacancyRepository } from '@/modules/vacancies/repositories/vacancy.repository';
+import { VACANCY_VIEW_EVENT_REPOSITORY } from '@/modules/vacancies/repositories/vacancy-view-event.repository.interface';
+import { VacancyViewEventRepository } from '@/modules/vacancies/repositories/vacancy-view-event.repository';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
 import { CompanyVacanciesUseCase } from '@/modules/vacancies/use-cases/company-vacancies.use-case';
+import { ConsolidateVacancyViewsUseCase } from '@/modules/vacancies/use-cases/consolidate-vacancy-views.use-case';
+import { ExpireVacanciesUseCase } from '@/modules/vacancies/use-cases/expire-vacancies.use-case';
 import { PublicVacanciesUseCase } from '@/modules/vacancies/use-cases/public-vacancies.use-case';
 import { VacancyQuestionsUseCase } from '@/modules/vacancies/use-cases/vacancy-questions.use-case';
 import { VacancyReportsUseCase } from '@/modules/vacancies/use-cases/vacancy-reports.use-case';
@@ -34,6 +39,7 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
       VacancyQuestion,
       VacancyQuestionOption,
       VacancyReport,
+      VacancyViewEvent,
     ]),
     AuditModule,
     AuthModule,
@@ -54,12 +60,20 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
       useClass: VacancyQuestionRepository,
     },
     { provide: VACANCY_REPORT_REPOSITORY, useClass: VacancyReportRepository },
+    {
+      provide: VACANCY_VIEW_EVENT_REPOSITORY,
+      useClass: VacancyViewEventRepository,
+    },
     VacancyOwnershipService,
     CompanyVacanciesUseCase,
     VacancyStatusUseCase,
     PublicVacanciesUseCase,
     VacancyQuestionsUseCase,
     VacancyReportsUseCase,
+    // Jobs sin endpoint, invocados por los scripts de cron:
+    // `vacancies:expire` (T20) y `views:consolidate` (T18).
+    ExpireVacanciesUseCase,
+    ConsolidateVacancyViewsUseCase,
   ],
   // `VacancyOwnershipService` lo reutiliza M11 (postulaciones) para resolver la
   // empresa del reclutador y validar que la vacante es suya. Las preguntas de

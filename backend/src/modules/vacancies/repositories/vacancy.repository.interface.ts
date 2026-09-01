@@ -3,6 +3,7 @@ import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import {
   EmploymentType,
   ExperienceLevel,
+  PublicVacancySort,
   VacancyStatus,
   WorkMode,
 } from '@/modules/vacancies/enums/vacancy.enums';
@@ -28,6 +29,14 @@ export interface PublicVacancySearch {
   employmentType?: EmploymentType;
   workMode?: WorkMode;
   experienceLevel?: ExperienceLevel;
+  /** Área profesional (catálogo embebido). */
+  areaId?: number;
+  /** Vacantes que pagan al menos esta cifra (MXN, sólo salario público). */
+  salaryMin?: number;
+  /** Publicadas en los últimos N días. */
+  publishedWithinDays?: number;
+  /** Orden del listado; por defecto la prioridad monetizada (relevance). */
+  sort?: PublicVacancySort;
   page: number;
   limit: number;
 }
@@ -57,6 +66,14 @@ export interface IVacancyRepository {
   ): Promise<[Vacancy[], number]>;
   /** Detalle público: sólo si la vacante está activa. */
   findPublicById(id: string, manager?: EntityManager): Promise<Vacancy | null>;
+  /** Vacantes activas cuya vigencia ya venció (T20, job `vacancies:expire`). */
+  findExpiredActive(now: Date, manager?: EntityManager): Promise<Vacancy[]>;
+  /** Suma vistas consolidadas al contador (T18, job `views:consolidate`). */
+  incrementViews(
+    vacancyId: string,
+    by: number,
+    manager?: EntityManager,
+  ): Promise<void>;
   countByCompany(
     companyId: string,
     status?: VacancyStatus,

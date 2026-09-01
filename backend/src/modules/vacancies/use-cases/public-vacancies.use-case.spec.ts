@@ -10,6 +10,7 @@ import {
   WorkMode,
 } from '@/modules/vacancies/enums/vacancy.enums';
 import { IVacancyRepository } from '@/modules/vacancies/repositories/vacancy.repository.interface';
+import { IVacancyViewEventRepository } from '@/modules/vacancies/repositories/vacancy-view-event.repository.interface';
 import { PublicVacanciesUseCase } from '@/modules/vacancies/use-cases/public-vacancies.use-case';
 
 function errorCodeOf(e: unknown): string | undefined {
@@ -55,6 +56,7 @@ const NORTHWIND = Object.assign(new Company(), {
 describe('PublicVacanciesUseCase', () => {
   let vacancies: jest.Mocked<IVacancyRepository>;
   let companies: jest.Mocked<ICompanyRepository>;
+  let viewEvents: jest.Mocked<IVacancyViewEventRepository>;
   let useCase: PublicVacanciesUseCase;
 
   beforeEach(() => {
@@ -65,8 +67,11 @@ describe('PublicVacanciesUseCase', () => {
     companies = {
       findByIds: jest.fn().mockResolvedValue([NORTHWIND]),
     } as unknown as jest.Mocked<ICompanyRepository>;
+    viewEvents = {
+      record: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<IVacancyViewEventRepository>;
 
-    useCase = new PublicVacanciesUseCase(vacancies, companies);
+    useCase = new PublicVacanciesUseCase(vacancies, companies, viewEvents);
   });
 
   it('muestra la empresa en una vacante normal', async () => {
@@ -74,6 +79,20 @@ describe('PublicVacanciesUseCase', () => {
 
     expect(result.company).toMatchObject({ businessName: 'Northwind MX' });
     expect(result.salaryMin).toBe(45000);
+  });
+
+  it('el detalle registra un evento de vista (T18)', async () => {
+    await useCase.get('vac-1');
+
+    expect(viewEvents.record).toHaveBeenCalledWith('vac-1');
+  });
+
+  it('no registra vista si la vacante no existe', async () => {
+    vacancies.findPublicById.mockResolvedValue(null);
+
+    await useCase.get('vac-1').catch(() => undefined);
+
+    expect(viewEvents.record).not.toHaveBeenCalled();
   });
 
   it('oculta la identidad de la empresa si la vacante es confidencial', async () => {

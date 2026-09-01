@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, isPlatformServer, Location } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -8,7 +8,10 @@ import {
   effect,
   ElementRef,
   inject,
+  makeStateKey,
+  PLATFORM_ID,
   signal,
+  TransferState,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,12 +20,20 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { Role } from '@/core/models/role.enum';
+import { SeoService } from '@/core/services/seo.service';
+import { vacancyPath } from '@/shared/utils/seo';
 import { CandidateApplicationsApi } from '@/features/candidate/data/candidate-applications.api';
+import { CandidateSavedVacanciesApi } from '@/features/candidate/data/candidate-saved-vacancies.api';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import { PROFESSIONAL_AREA_NAMES } from '@/shared/catalogs/professional-areas.catalogs';
 import { IconName, IjButton, IjIcon, IjModal } from '@/shared/ui';
 import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
 import {
   ApplicationAnswerPayload,
+  CONTRACT_TYPE_LABELS,
+  ContractType,
+  EDUCATION_LEVEL_LABELS,
+  EducationLevel,
   EMPLOYMENT_TYPE_LABELS,
   EmploymentType,
   EXPERIENCE_LEVEL_LABELS,
@@ -35,6 +46,19 @@ import {
 } from '@/features/public/vacancies/models/public-vacancies.models';
 
 const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
+
+/** Vacante renderizada en SSR, transferida para hidratar sin re-pedir (T16). */
+const DETAIL_STATE_KEY = makeStateKey<PublicVacancy>('public-vacancy-detail');
+const JSON_LD_ID = 'vacancy-jobposting';
+
+/** `EmploymentType` propio → enum de schema.org/JobPosting. */
+const SCHEMA_EMPLOYMENT: Record<string, string> = {
+  FULL_TIME: 'FULL_TIME',
+  PART_TIME: 'PART_TIME',
+  CONTRACT: 'CONTRACTOR',
+  TEMPORARY: 'TEMPORARY',
+  INTERNSHIP: 'INTERN',
+};
 
 interface DetailItem {
   readonly icon: IconName;
@@ -123,7 +147,19 @@ const BRAND_COLOR = '#e47c3f';
                       {{ data.title }}
                     </h1>
 
-                    <div class="flex-shrink-0">
+                    <div class="flex flex-shrink-0 items-start gap-2">
+                      @if (auth.currentUser()?.role === candidateRole) {
+                        <button
+                          type="button"
+                          [class]="saveButtonClass()"
+                          [disabled]="savePending()"
+                          [attr.aria-pressed]="saved()"
+                          (click)="toggleSave(data.id)"
+                        >
+                          <ij-icon name="bookmark" [size]="15" />
+                          {{ saved() ? 'Guardada' : 'Guardar' }}
+                        </button>
+                      }
                       @if (!auth.currentUser()) {
                         <a
                           ij-button
@@ -470,8 +506,17 @@ export class PublicVacancyDetailPage {
   private readonly destroyRef = inject(DestroyRef);
   protected readonly auth = inject(AuthService);
 
+  private readonly savedApi = inject(CandidateSavedVacanciesApi);
+  private readonly seo = inject(SeoService);
+  private readonly location = inject(Location);
+  private readonly transferState = inject(TransferState);
+  private readonly platformId = inject(PLATFORM_ID);
+
   protected readonly candidateRole = Role.CANDIDATE;
   protected readonly vacancy = signal<PublicVacancy | null>(null);
+  // Guardar vacante (T17): estado del toggle.
+  protected readonly saved = signal(false);
+  protected readonly savePending = signal(false);
   protected readonly state = signal<'loading' | 'loaded' | 'error'>('loading');
   protected readonly applyState = signal<'idle' | 'submitting' | 'applied'>('idle');
   protected readonly applyError = signal<string | null>(null);
@@ -505,8 +550,21 @@ export class PublicVacancyDetailPage {
   private map: import('leaflet').Map | undefined;
 
   constructor() {
-    const id = this.route.snapshot.paramMap.get('id') ?? '';
-    afterNextRender(() => {
+    // T16: el parámetro puede traer slug (`<uuid>-<slug-del-titulo>`); el
+    // UUID son siempre los primeros 36 caracteres.
+    const rawParam = this.route.snapshot.paramMap.get('id') ?? '';
+    const id = rawParam.slice(0, 36);
+
+    const cached = this.transferState.get(DETAIL_STATE_KEY, null);
+    if (cached && cached.id === id) {
+      // Hidratación: mismos datos que renderizó el servidor, sin re-pedir.
+      this.transferState.remove(DETAIL_STATE_KEY);
+      this.vacancy.set(cached);
+      this.state.set('loaded');
+      this.applySeo(cached);
+      afterNextRender(() => this.onLoadedInBrowser(cached, rawParam));
+    } else if (isPlatformServer(this.platformId)) {
+      // SSR: los crawlers reciben la vacante, su meta y el JSON-LD.
       this.api
         .get(id)
         .pipe(takeUntilDestroyed(this.destroyRef))
@@ -514,12 +572,40 @@ export class PublicVacancyDetailPage {
           next: (vacancy) => {
             this.vacancy.set(vacancy);
             this.state.set('loaded');
-            this.shareLinks.set(this.buildShareLinks(vacancy));
-            void this.resolveMapCoords(vacancy);
-            this.loadQuestions(vacancy.id);
+            this.applySeo(vacancy);
+            this.transferState.set(DETAIL_STATE_KEY, vacancy);
           },
           error: () => this.state.set('error'),
         });
+    } else {
+      // Navegación interna en el cliente.
+      afterNextRender(() => {
+        this.api
+          .get(id)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (vacancy) => {
+              this.vacancy.set(vacancy);
+              this.state.set('loaded');
+              this.applySeo(vacancy);
+              this.onLoadedInBrowser(vacancy, rawParam);
+            },
+            error: () => this.state.set('error'),
+          });
+      });
+    }
+
+    // T17: si hay sesión de candidato, se pinta el estado de "Guardar".
+    afterNextRender(() => {
+      if (this.auth.currentUser()?.role === Role.CANDIDATE) {
+        this.savedApi
+          .ids()
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (ids) => this.saved.set(ids.includes(id)),
+            error: () => undefined,
+          });
+      }
     });
 
     // El div del mapa aparece cuando hay coordenadas; ahí se monta Leaflet.
@@ -531,7 +617,128 @@ export class PublicVacancyDetailPage {
       }
     });
 
-    this.destroyRef.onDestroy(() => this.map?.remove());
+    this.destroyRef.onDestroy(() => {
+      this.map?.remove();
+      this.seo.setJsonLd(JSON_LD_ID, null);
+    });
+  }
+
+  /** Pasos que sólo aplican en navegador: compartir, mapa, preguntas y slug. */
+  private onLoadedInBrowser(vacancy: PublicVacancy, rawParam: string): void {
+    this.shareLinks.set(this.buildShareLinks(vacancy));
+    void this.resolveMapCoords(vacancy);
+    this.loadQuestions(vacancy.id);
+
+    // Canonicaliza la URL con el slug sin recargar (T16).
+    const canonical = vacancyPath(vacancy);
+    if (`/vacantes/${rawParam}` !== canonical) {
+      this.location.replaceState(canonical);
+    }
+  }
+
+  /** Título, meta/OG, canonical y JSON-LD JobPosting (T16). */
+  private applySeo(vacancy: PublicVacancy): void {
+    const companyName = vacancy.company?.businessName ?? 'Empresa confidencial';
+    const place = `${vacancy.municipality}, ${this.stateName(vacancy.state)}`;
+    this.seo.setPage({
+      title: `${vacancy.title} — ${companyName} en ${place} | Impulso Jobs`,
+      description: vacancy.description,
+      canonicalPath: vacancyPath(vacancy),
+      image: vacancy.company?.logoUrl ?? undefined,
+    });
+    this.seo.setJsonLd(JSON_LD_ID, this.jobPostingJsonLd(vacancy));
+  }
+
+  private jobPostingJsonLd(vacancy: PublicVacancy): object {
+    const validThrough =
+      (vacancy.applicationDeadline
+        ? `${vacancy.applicationDeadline}T23:59:59-06:00`
+        : null) ?? vacancy.expiresAt;
+
+    return {
+      '@context': 'https://schema.org/',
+      '@type': 'JobPosting',
+      title: vacancy.title,
+      description: vacancy.description,
+      datePosted: vacancy.publishedAt?.slice(0, 10),
+      ...(validThrough && { validThrough }),
+      employmentType: SCHEMA_EMPLOYMENT[vacancy.employmentType] ?? 'OTHER',
+      hiringOrganization: {
+        '@type': 'Organization',
+        name: vacancy.company?.businessName ?? 'Empresa confidencial',
+        ...(vacancy.company?.logoUrl && { logo: vacancy.company.logoUrl }),
+      },
+      jobLocation: {
+        '@type': 'Place',
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: vacancy.municipality,
+          addressRegion: this.stateName(vacancy.state),
+          addressCountry: 'MX',
+        },
+      },
+      ...(vacancy.workMode === 'REMOTE' && {
+        jobLocationType: 'TELECOMMUTE',
+      }),
+      ...(vacancy.salaryMin !== null || vacancy.salaryMax !== null
+        ? {
+            baseSalary: {
+              '@type': 'MonetaryAmount',
+              currency: 'MXN',
+              value: {
+                '@type': 'QuantitativeValue',
+                ...(vacancy.salaryMin !== null && {
+                  minValue: vacancy.salaryMin,
+                }),
+                ...(vacancy.salaryMax !== null && {
+                  maxValue: vacancy.salaryMax,
+                }),
+                unitText: 'MONTH',
+              },
+            },
+          }
+        : {}),
+      ...(vacancy.professionalAreaId && {
+        occupationalCategory:
+          PROFESSIONAL_AREA_NAMES.get(vacancy.professionalAreaId) ?? undefined,
+      }),
+      ...(vacancy.positionsCount && {
+        totalJobOpenings: vacancy.positionsCount,
+      }),
+      identifier: {
+        '@type': 'PropertyValue',
+        name: 'Impulso Jobs',
+        value: vacancy.id,
+      },
+      directApply: true,
+    };
+  }
+
+  protected saveButtonClass(): string {
+    const base =
+      'inline-flex h-[42px] items-center gap-1.5 rounded-xl border px-3.5 text-[13px] font-bold transition-colors disabled:opacity-60 ';
+    return this.saved()
+      ? base + 'border-brand bg-brand-50 text-brand'
+      : base + 'border-line bg-white text-body hover:bg-surface';
+  }
+
+  /** Toggle optimista de "Guardar": si la API falla, se revierte. */
+  protected toggleSave(vacancyId: string): void {
+    if (this.savePending()) return;
+    const next = !this.saved();
+    this.saved.set(next);
+    this.savePending.set(true);
+
+    const request = next
+      ? this.savedApi.save(vacancyId)
+      : this.savedApi.remove(vacancyId);
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.savePending.set(false),
+      error: () => {
+        this.saved.set(!next);
+        this.savePending.set(false);
+      },
+    });
   }
 
   /** Con preguntas se abre el cuestionario; sin ellas la postulación es directa. */
@@ -654,7 +861,7 @@ export class PublicVacancyDetailPage {
   }
 
   protected details(vacancy: PublicVacancy): readonly DetailItem[] {
-    return [
+    const items: DetailItem[] = [
       {
         icon: 'calendar',
         label: 'Publicada',
@@ -688,6 +895,74 @@ export class PublicVacancyDetailPage {
       },
       { icon: 'dollar', label: 'Salario mensual', value: this.salary(vacancy) },
     ];
+
+    // ---- Perfil de la posición (T15): sólo lo que la vacante trae. Checks
+    // "truthy" a propósito: una API sin desplegar T15 manda undefined. ----
+    if (vacancy.professionalAreaId) {
+      const area = PROFESSIONAL_AREA_NAMES.get(vacancy.professionalAreaId);
+      if (area) items.push({ icon: 'grid', label: 'Área', value: area });
+    }
+    if (vacancy.contractType) {
+      items.push({
+        icon: 'file',
+        label: 'Tipo de contrato',
+        value:
+          CONTRACT_TYPE_LABELS[vacancy.contractType as ContractType] ??
+          vacancy.contractType,
+      });
+    }
+    if (vacancy.minEducationLevel) {
+      items.push({
+        icon: 'resume',
+        label: 'Escolaridad mínima',
+        value:
+          EDUCATION_LEVEL_LABELS[
+            vacancy.minEducationLevel as EducationLevel
+          ] ?? vacancy.minEducationLevel,
+      });
+    }
+    if (vacancy.positionsCount > 1) {
+      items.push({
+        icon: 'users',
+        label: 'Plazas',
+        value: `${vacancy.positionsCount} posiciones`,
+      });
+    }
+    if (vacancy.applicationDeadline) {
+      items.push({
+        icon: 'clock',
+        label: 'Postúlate antes del',
+        value: this.dateOnlyLabel(vacancy.applicationDeadline),
+      });
+    }
+    // Vistas consolidadas (T18): se actualizan una vez al día.
+    if (vacancy.viewsCount > 0) {
+      items.push({
+        icon: 'eye',
+        label: 'Visualizaciones',
+        value: vacancy.viewsCount.toLocaleString('es-MX'),
+      });
+    }
+    // Vigencia (T20): se comunica desde el día 1, sin relojes opacos.
+    if (vacancy.expiresAt) {
+      items.push({
+        icon: 'history',
+        label: 'Vigente hasta',
+        value: new Intl.DateTimeFormat('es-MX', { dateStyle: 'long' }).format(
+          new Date(vacancy.expiresAt),
+        ),
+      });
+    }
+
+    return items;
+  }
+
+  /** `YYYY-MM-DD` → fecha larga es-MX, sin correr el día por zona horaria. */
+  private dateOnlyLabel(dateOnly: string): string {
+    return new Intl.DateTimeFormat('es-MX', {
+      dateStyle: 'long',
+      timeZone: 'UTC',
+    }).format(new Date(`${dateOnly}T00:00:00Z`));
   }
 
   private publishedLabel(vacancy: PublicVacancy): string {
@@ -798,9 +1073,10 @@ export class PublicVacancyDetailPage {
         currency: 'MXN',
         maximumFractionDigits: 0,
       }).format(amount);
-    if (salaryMin !== null && salaryMax !== null) {
-      return `${format(salaryMin)} – ${format(salaryMax)}`;
-    }
-    return format((salaryMin ?? salaryMax)!);
+    const range =
+      salaryMin !== null && salaryMax !== null
+        ? `${format(salaryMin)} – ${format(salaryMax)}`
+        : format((salaryMin ?? salaryMax)!);
+    return vacancy.hasCommissions ? `${range} + comisiones` : range;
   }
 }

@@ -33,6 +33,10 @@ export class PublicVacanciesController {
       employmentType: query.employmentType,
       workMode: query.workMode,
       experienceLevel: query.experienceLevel,
+      areaId: query.areaId,
+      salaryMin: query.salaryMin,
+      publishedWithinDays: query.publishedWithinDays,
+      sort: query.sort,
       page: query.page ?? 1,
       limit: query.limit ?? 10,
     });

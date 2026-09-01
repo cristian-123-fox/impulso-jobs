@@ -1,3 +1,4 @@
+import { toDateOnly } from '@/common/utils/date-only.util';
 import { Company } from '@/modules/companies/entities/company.entity';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import { VacancyStatus } from '@/modules/vacancies/enums/vacancy.enums';
@@ -14,12 +15,21 @@ export interface VacancyResponseDto {
   state: string;
   municipality: string;
   experienceLevel: string;
+  professionalAreaId: number | null;
+  positionsCount: number;
+  contractType: string | null;
+  minEducationLevel: string | null;
+  hasCommissions: boolean;
+  /** YYYY-MM-DD, inclusive; null = sin fecha límite. */
+  applicationDeadline: string | null;
   salaryMin: number | null;
   salaryMax: number | null;
   salaryHidden: boolean;
   status: VacancyStatus;
   publishedAt: string | null;
   closedAt: string | null;
+  /** Fin de la vigencia (T20); null = sin vencimiento. */
+  expiresAt: string | null;
   refreshedAt: string | null;
   createdAt: string;
   isVerified: boolean;
@@ -35,6 +45,8 @@ export interface VacancyResponseDto {
   /** Pausas que aún puede consumir (nunca negativo). */
   pausesLeft: number;
   canEditTitleOnReactivate: boolean;
+  /** Vistas consolidadas (T18); se actualizan una vez al día. */
+  viewsCount: number;
 }
 
 /**
@@ -52,14 +64,25 @@ export interface PublicVacancyResponseDto {
   state: string;
   municipality: string;
   experienceLevel: string;
+  professionalAreaId: number | null;
+  positionsCount: number;
+  contractType: string | null;
+  minEducationLevel: string | null;
+  hasCommissions: boolean;
+  /** YYYY-MM-DD, inclusive; null = sin fecha límite. */
+  applicationDeadline: string | null;
   salaryMin: number | null;
   salaryMax: number | null;
   publishedAt: string | null;
+  /** Fin de la vigencia (T20); null = sin vencimiento. */
+  expiresAt: string | null;
   refreshedAt: string | null;
   isVerified: boolean;
   isFeatured: boolean;
   isUrgent: boolean;
   isConfidential: boolean;
+  /** Vistas consolidadas (T18); se actualizan una vez al día. */
+  viewsCount: number;
   company: PublicVacancyCompanyDto | null;
 }
 
@@ -91,12 +114,19 @@ export function toVacancyResponse(vacancy: Vacancy): VacancyResponseDto {
     state: vacancy.state,
     municipality: vacancy.municipality,
     experienceLevel: vacancy.experienceLevel,
+    professionalAreaId: vacancy.professionalAreaId ?? null,
+    positionsCount: vacancy.positionsCount ?? 1,
+    contractType: vacancy.contractType ?? null,
+    minEducationLevel: vacancy.minEducationLevel ?? null,
+    hasCommissions: vacancy.hasCommissions ?? false,
+    applicationDeadline: toDateOnly(vacancy.applicationDeadline),
     salaryMin: toAmount(vacancy.salaryMin),
     salaryMax: toAmount(vacancy.salaryMax),
     salaryHidden: vacancy.salaryHidden,
     status: vacancy.status,
     publishedAt: vacancy.publishedAt?.toISOString() ?? null,
     closedAt: vacancy.closedAt?.toISOString() ?? null,
+    expiresAt: vacancy.expiresAt?.toISOString() ?? null,
     refreshedAt: vacancy.refreshedAt?.toISOString() ?? null,
     createdAt: vacancy.createdAt.toISOString(),
     isVerified: vacancy.isVerified,
@@ -109,6 +139,7 @@ export function toVacancyResponse(vacancy: Vacancy): VacancyResponseDto {
     maxPauses: vacancy.maxPauses,
     pausesLeft: Math.max(0, vacancy.maxPauses - vacancy.pauseCount),
     canEditTitleOnReactivate: vacancy.canEditTitleOnReactivate,
+    viewsCount: vacancy.viewsCount ?? 0,
   };
 }
 
@@ -127,14 +158,22 @@ export function toPublicVacancyResponse(
     state: vacancy.state,
     municipality: vacancy.municipality,
     experienceLevel: vacancy.experienceLevel,
+    professionalAreaId: vacancy.professionalAreaId ?? null,
+    positionsCount: vacancy.positionsCount ?? 1,
+    contractType: vacancy.contractType ?? null,
+    minEducationLevel: vacancy.minEducationLevel ?? null,
+    hasCommissions: vacancy.hasCommissions ?? false,
+    applicationDeadline: toDateOnly(vacancy.applicationDeadline),
     salaryMin: hideSalary ? null : toAmount(vacancy.salaryMin),
     salaryMax: hideSalary ? null : toAmount(vacancy.salaryMax),
     publishedAt: vacancy.publishedAt?.toISOString() ?? null,
+    expiresAt: vacancy.expiresAt?.toISOString() ?? null,
     refreshedAt: vacancy.refreshedAt?.toISOString() ?? null,
     isVerified: vacancy.isVerified,
     isFeatured: vacancy.isFeatured,
     isUrgent: vacancy.isUrgent,
     isConfidential: vacancy.isConfidential,
+    viewsCount: vacancy.viewsCount ?? 0,
     company:
       vacancy.isConfidential || !company
         ? null

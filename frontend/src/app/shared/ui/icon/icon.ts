@@ -59,6 +59,7 @@ export type IconName =
   | 'list'
   | 'history'
   | 'bell'
+  | 'bookmark'
   | 'logout';
 
 /**
@@ -106,6 +107,7 @@ const ICONS: Record<IconName, readonly IconShape[]> = {
     p('M15 12H3'),
   ],
   plus: [p('M12 5v14M5 12h14')],
+  bookmark: [p('M6 4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v17l-6-4-6 4z')],
   check: [p('M20 6L9 17l-5-5')],
   x: [p('M18 6L6 18M6 6l12 12')],
   chart: [p('M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6'), c(17, 6, 2)],

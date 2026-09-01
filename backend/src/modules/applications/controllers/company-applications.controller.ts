@@ -100,10 +100,10 @@ export class CompanyApplicationsController {
       this.actor(user, client),
     );
 
-    response.setHeader('Content-Type', result.resume.mimeType);
+    response.setHeader('Content-Type', result.mimeType);
     response.setHeader(
       'Content-Disposition',
-      `attachment; filename="${encodeURIComponent(result.resume.fileName)}"`,
+      `attachment; filename="${encodeURIComponent(result.fileName)}"`,
     );
 
     return new StreamableFile(result.stream);

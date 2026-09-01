@@ -143,11 +143,13 @@ SEED_ADMIN_EMAIL=tu@correo.com SEED_ADMIN_PASSWORD='TuPass#123' pnpm run seed:ad
 
 ---
 
-## 6) Frontend (SPA) en `demo.impulsojobs.com`
+## 6) Frontend en `demo.impulsojobs.com`
+
+> ⚠️ **Desde T16 (SEO) el build vuelve a ser SSR** (`outputMode: server` en `angular.json`): la lista y el detalle de vacantes se renderizan en el servidor con meta/OG/JSON-LD, igual que las landings `/trabajo/<area>-en-<estado>`. Eso pide desplegar el frontend como **app Node** (opción A). La opción estática (B) sigue funcionando pero **pierde el SSR** — los crawlers vuelven a recibir el cascarón CSR.
 
 ### 6.1 Compila (en tu máquina)
 
-`apiBaseUrl` ya apunta a `https://api.impulsojobs.com/api/v1`.
+`apiBaseUrl` ya apunta a `https://api.impulsojobs.com/api/v1` y `siteUrl` (canonical/OG) a `https://demo.impulsojobs.com`. Si el dominio cambia, ajusta **ambos** en `environment.production.ts` y añade el hostname a `security.allowedHosts` de `angular.json` (sin él, el motor SSR de Angular 20 rechaza el host y sirve CSR).
 
 ```bash
 cd frontend
@@ -155,11 +157,15 @@ pnpm install
 pnpm run build     # usa la config de producción (fileReplacements)
 ```
 
-Salida: **`frontend/dist/frontend/browser/`** (incluye el `.htaccess` para el ruteo SPA).
+Salida: `frontend/dist/frontend/` con **`browser/`** (estáticos + rutas prerenderizadas) y **`server/`** (el servidor SSR, `server.mjs`).
 
-### 6.2 Sube al subdominio
+### 6.2-A Despliegue SSR (recomendado — habilita el SEO de T16)
 
-Sube **todo el contenido** de `dist/frontend/browser/` a la **carpeta del subdominio `demo`** (`~/demo`). **Incluye el `.htaccess`** (activa “mostrar archivos ocultos” en el File Manager, o sube un `.zip` y extráelo).
+Igual que la API: cPanel → **Setup Node.js App** sobre la carpeta del subdominio `demo`, sube `dist/frontend/` completo, **Application startup file** = `server/server.mjs` (Passenger fija el `PORT` solo). Sin `.htaccess` de rewrite: el ruteo lo hace el servidor Node.
+
+### 6.2-B Despliegue estático (sin SSR, como hasta ahora)
+
+Sube el contenido de `dist/frontend/browser/` a `~/demo` **incluyendo el `.htaccess`**, pero cambia el fallback del rewrite de `index.html` a **`index.csr.html`** (con `outputMode: server`, `index.html` del root es la home prerenderizada; el cascarón CSR es `index.csr.html`).
 
 ### 6.3 SSL
 
@@ -183,7 +189,7 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 - 🧪 **El entorno virtual se activa por sesión:** cada Terminal nueva de la API requiere `source ~/nodevenv/api/.../bin/activate`.
 - 🔁 **Redeploy del backend:** activar venv → `git pull` (o subir cambios) → `pnpm install` → `pnpm run build` → `pnpm run migration:run:prod` → `pnpm run seed:rbac:prod` → **Restart** en la Node.js App.
   > `seed:rbac:prod` es idempotente y hay que ejecutarlo **siempre**: si la versión nueva añadió permisos (p. ej. `users.create`, `companies.create`), sin él los endpoints responden `403 PERMISSION_DENIED` aunque el código esté desplegado.
-- 🔁 **Redeploy del frontend:** recompilar (`pnpm run build`) y resubir el contenido de `dist/frontend/browser/` a `~/demo`.
+- 🔁 **Redeploy del frontend:** recompilar (`pnpm run build`) y resubir `dist/frontend/` (SSR, opción A: **Restart** de su Node.js App) o `dist/frontend/browser/` (estático, opción B).
 - 🔐 **bcryptjs:** se cambió `bcrypt` (nativo) por `bcryptjs` (JS puro) → sin compilación en el servidor. Los hashes existentes siguen siendo válidos.
 - 🚫 **Nunca subas** `node_modules`, el `dist` del backend, ni el `.env` con secretos.
 
@@ -197,3 +203,18 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 | `pnpm run seed:rbac:prod` | Siembra roles/permisos |
 | `pnpm run seed:admin:prod` | Crea/actualiza el admin |
 | `pnpm run seed:candidate:prod` / `seed:company:prod` | Cuentas de prueba verificadas |
+| `pnpm run billing:expire:prod` | Caduca promociones vencidas y revierte los distintivos |
+| `pnpm run vacancies:expire:prod` | Cierra vacantes cuya vigencia (`VACANCY_LIFETIME_DAYS`, 60 por defecto) venció |
+| `pnpm run views:consolidate:prod` | Suma los eventos de vista al contador `views_count` de cada vacante |
+
+## Tareas programadas (cron)
+
+Ninguno de los jobs corre solo: prográmalos en **cPanel → Cron Jobs** (una vez al día es suficiente). Recuerda activar el entorno virtual de Node de la app (§5.1) dentro del comando, por ejemplo:
+
+```bash
+0 6 * * * source /home/USUARIO/nodevenv/api/22/bin/activate && cd /home/USUARIO/api && pnpm run billing:expire:prod >> ~/logs/billing-expire.log 2>&1
+15 6 * * * source /home/USUARIO/nodevenv/api/22/bin/activate && cd /home/USUARIO/api && pnpm run vacancies:expire:prod >> ~/logs/vacancies-expire.log 2>&1
+30 6 * * * source /home/USUARIO/nodevenv/api/22/bin/activate && cd /home/USUARIO/api && pnpm run views:consolidate:prod >> ~/logs/views-consolidate.log 2>&1
+```
+
+La purga de cuentas (`purge:accounts:prod`) es deliberadamente manual (simulación por defecto, `-- --confirm` para borrar).

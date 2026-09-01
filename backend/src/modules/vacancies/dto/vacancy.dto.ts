@@ -7,17 +7,25 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
 } from 'class-validator';
 import { MX_STATE_CODES } from '@/common/catalogs/mx-states';
+import { PROFESSIONAL_AREA_IDS } from '@/common/catalogs/professional-areas';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import {
+  CONTRACT_TYPES,
+  ContractType,
+  EDUCATION_LEVELS,
+  EducationLevel,
   EMPLOYMENT_TYPES,
   EmploymentType,
   EXPERIENCE_LEVELS,
   ExperienceLevel,
+  PUBLIC_VACANCY_SORTS,
+  PublicVacancySort,
   VACANCY_STATUSES,
   VacancyStatus,
   WORK_MODES,
@@ -75,6 +83,55 @@ export class SaveVacancyDto {
     message: 'El nivel de experiencia no es válido.',
   })
   experienceLevel!: ExperienceLevel;
+
+  @ApiProperty({
+    example: 13,
+    description: 'Área profesional (catálogo embebido de 23 áreas).',
+  })
+  @Type(() => Number)
+  @IsInt({ message: 'El área profesional debe ser un número.' })
+  @IsIn([...PROFESSIONAL_AREA_IDS], {
+    message: 'El área profesional no es válida.',
+  })
+  professionalAreaId!: number;
+
+  @ApiPropertyOptional({ default: 1, description: 'Número de plazas.' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'El número de plazas debe ser un entero.' })
+  @Min(1)
+  @Max(999)
+  positionsCount?: number;
+
+  @ApiProperty({ enum: [...CONTRACT_TYPES] })
+  @IsIn([...CONTRACT_TYPES], { message: 'El tipo de contrato no es válido.' })
+  contractType!: ContractType;
+
+  @ApiPropertyOptional({
+    enum: [...EDUCATION_LEVELS],
+    description: 'Escolaridad mínima; omitir = sin requisito.',
+  })
+  @IsOptional()
+  @IsIn([...EDUCATION_LEVELS], { message: 'La escolaridad no es válida.' })
+  minEducationLevel?: EducationLevel;
+
+  @ApiPropertyOptional({
+    default: false,
+    description: 'El puesto paga comisiones además del salario base.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  hasCommissions?: boolean;
+
+  @ApiPropertyOptional({
+    example: '2026-09-30',
+    description: 'Fecha límite para postularse (YYYY-MM-DD, inclusive).',
+  })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'La fecha límite debe tener formato YYYY-MM-DD.',
+  })
+  applicationDeadline?: string;
 
   @ApiPropertyOptional({ description: 'Salario mensual mínimo en MXN.' })
   @IsOptional()
@@ -170,4 +227,30 @@ export class ListPublicVacanciesQueryDto extends PaginationQueryDto {
     message: 'El nivel de experiencia no es válido.',
   })
   experienceLevel?: ExperienceLevel;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'El área profesional debe ser un número.' })
+  @IsIn([...PROFESSIONAL_AREA_IDS], {
+    message: 'El área profesional no es válida.',
+  })
+  areaId?: number;
+
+  /** Vacantes que pagan al menos esta cifra (MXN mensuales). */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'El salario debe ser un número entero.' })
+  @Min(0)
+  @Max(MAX_MONTHLY_SALARY)
+  salaryMin?: number;
+
+  /** Publicadas en los últimos N días. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn([1, 3, 7, 15, 30], { message: 'El rango de fechas no es válido.' })
+  publishedWithinDays?: number;
+
+  @IsOptional()
+  @IsIn([...PUBLIC_VACANCY_SORTS], { message: 'El orden no es válido.' })
+  sort?: PublicVacancySort;
 }

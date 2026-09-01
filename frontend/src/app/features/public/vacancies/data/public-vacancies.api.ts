@@ -33,6 +33,12 @@ export class PublicVacanciesApi {
     if (filters.experienceLevel) {
       params = params.set('experienceLevel', filters.experienceLevel);
     }
+    if (filters.areaId) params = params.set('areaId', filters.areaId);
+    if (filters.salaryMin) params = params.set('salaryMin', filters.salaryMin);
+    if (filters.publishedWithinDays) {
+      params = params.set('publishedWithinDays', filters.publishedWithinDays);
+    }
+    if (filters.sort) params = params.set('sort', filters.sort);
 
     return this.http
       .get<ApiSuccessResponse<PublicVacanciesPage>>(this.base, { params })
