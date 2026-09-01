@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { IjIcon } from '@/shared/ui';
 import { CompanyApplication } from '@/features/company/applications/models/applications.models';
 
-export type ApplicationAction = 'status' | 'history' | 'resume';
+export type ApplicationAction = 'status' | 'history' | 'resume' | 'answers';
 
 export interface ApplicationActionEvent {
   action: ApplicationAction;
@@ -38,8 +38,20 @@ export interface ApplicationActionEvent {
                     {{ initials(item) }}
                   </span>
                   <div class="min-w-0">
-                    <div class="truncate text-sm font-semibold text-ink-900">
-                      {{ candidateName(item) }}
+                    <div class="flex items-center gap-1.5">
+                      @if (!item.readAt) {
+                        <span
+                          class="h-2 w-2 flex-shrink-0 rounded-full bg-brand"
+                          title="Sin leer"
+                        ></span>
+                      }
+                      <span
+                        class="truncate text-sm text-ink-900"
+                        [class.font-extrabold]="!item.readAt"
+                        [class.font-semibold]="!!item.readAt"
+                      >
+                        {{ candidateName(item) }}
+                      </span>
                     </div>
                     <div class="truncate text-[12.5px] text-muted">
                       {{ item.candidate?.professionalTitle || 'Sin título profesional' }}
@@ -63,6 +75,25 @@ export interface ApplicationActionEvent {
                 }
               </td>
               <td class="px-5 py-3.5">
+                @if (item.isExcluded) {
+                  <span
+                    class="inline-block rounded-md bg-red-50 px-2 py-1 text-[11.5px] font-bold text-red-700"
+                    title="Una respuesta excluyente lo descartó del filtro"
+                  >
+                    Descartado
+                  </span>
+                } @else if (item.score !== null) {
+                  <span
+                    class="inline-block rounded-md bg-brand-50 px-2 py-1 text-[11.5px] font-bold text-brand"
+                    title="Puntaje de las preguntas de filtrado"
+                  >
+                    {{ item.score }} pts
+                  </span>
+                } @else {
+                  <span class="text-[12px] text-muted">—</span>
+                }
+              </td>
+              <td class="px-5 py-3.5">
                 <span
                   class="inline-block rounded-md px-2 py-1 text-[11.5px] font-bold"
                   [class]="
@@ -79,6 +110,17 @@ export interface ApplicationActionEvent {
               </td>
               <td class="px-5 py-3.5">
                 <div class="flex items-center justify-end gap-1.5">
+                  @if (item.score !== null || item.isExcluded) {
+                    <button
+                      type="button"
+                      [class]="actionClass"
+                      title="Respuestas de filtrado"
+                      aria-label="Respuestas de filtrado"
+                      (click)="emit('answers', item)"
+                    >
+                      <ij-icon name="clipboard" [size]="15" />
+                    </button>
+                  }
                   <button
                     type="button"
                     [class]="actionClass + ' disabled:cursor-not-allowed disabled:opacity-40'"
@@ -121,7 +163,7 @@ export interface ApplicationActionEvent {
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="px-5 py-10 text-center text-[13.5px] text-muted">
+              <td colspan="7" class="px-5 py-10 text-center text-[13.5px] text-muted">
                 No hay postulaciones que coincidan con los filtros.
               </td>
             </tr>
@@ -139,6 +181,7 @@ export class ApplicationsTable {
     'Aspirante',
     'Vacante',
     'Contacto',
+    'Filtro',
     'Estado',
     'Postuló',
     '',

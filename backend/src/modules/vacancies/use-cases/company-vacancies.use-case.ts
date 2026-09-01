@@ -42,6 +42,8 @@ export interface VacancyData {
   salaryMin?: number;
   salaryMax?: number;
   salaryHidden?: boolean;
+  /** Sólo se honra si el plan otorgó `canBeConfidential`. */
+  isConfidential?: boolean;
 }
 
 export interface ListCompanyVacanciesCommand extends VacancyActor {
@@ -138,7 +140,11 @@ export class CompanyVacanciesUseCase {
     vacancy.isFeatured = false;
     vacancy.isUrgent = false;
     vacancy.isConfidential = false;
+    vacancy.canBeConfidential = false;
+    vacancy.screeningEnabled = false;
     vacancy.canEditTitleOnReactivate = false;
+    // Al crear aún no hay promoción, así que pedir confidencialidad falla aquí.
+    this.applyConfidentiality(vacancy, data.isConfidential);
 
     const saved = await this.vacancies.save(vacancy);
     await this.audit.record({
@@ -172,6 +178,7 @@ export class CompanyVacanciesUseCase {
     this.assertSalaryRange(data);
 
     this.apply(vacancy, data);
+    this.applyConfidentiality(vacancy, data.isConfidential);
     const saved = await this.vacancies.save(vacancy);
 
     await this.audit.record({
@@ -200,6 +207,24 @@ export class CompanyVacanciesUseCase {
     vacancy.salaryMin = data.salaryMin?.toString() ?? null;
     vacancy.salaryMax = data.salaryMax?.toString() ?? null;
     vacancy.salaryHidden = data.salaryHidden ?? false;
+  }
+
+  /**
+   * La confidencialidad la decide la empresa, pero la CAPACIDAD viene del plan
+   * (`urgent_confidential_badge`). Apagarla siempre está permitido.
+   */
+  private applyConfidentiality(vacancy: Vacancy, requested?: boolean): void {
+    if (requested === undefined || requested === vacancy.isConfidential) {
+      return;
+    }
+    if (requested && !vacancy.canBeConfidential) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.VACANCY_CONFIDENTIAL_NOT_ENABLED,
+        'La confidencialidad es un beneficio del plan contratado.',
+      );
+    }
+    vacancy.isConfidential = requested;
   }
 
   private assertSalaryRange(data: VacancyData): void {

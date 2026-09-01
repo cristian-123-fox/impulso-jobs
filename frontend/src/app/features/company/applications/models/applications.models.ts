@@ -52,9 +52,24 @@ export interface CompanyApplication {
   status: ApplicationStatus | null;
   appliedAt: string;
   updatedAt: string;
+  /** Null = ningún reclutador la ha abierto (contador de "no leídos"). */
+  readAt: string | null;
+  /** Puntaje de las preguntas de filtrado (M15). Null = sin preguntas. */
+  score: number | null;
+  /** Alguna respuesta fue excluyente. */
+  isExcluded: boolean;
   candidate: ApplicationCandidate | null;
   vacancy: ApplicationVacancy | null;
   resume: ApplicationResume | null;
+}
+
+/** Respuesta a una pregunta de filtrado, vista por la empresa. */
+export interface ApplicationAnswer {
+  id: string;
+  questionText: string;
+  answerText: string;
+  weight: number | null;
+  isExcluding: boolean;
 }
 
 export interface ApplicationStatusHistory {
@@ -75,6 +90,8 @@ export interface ApplicationsPage {
   limit: number;
   pages: number;
   stats: ApplicationStats;
+  /** Postulaciones sin abrir (respeta el filtro de vacante). */
+  unread: number;
 }
 
 export interface ApplicationsFilters {

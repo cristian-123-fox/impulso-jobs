@@ -1,11 +1,14 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   inject,
   input,
   OnInit,
   output,
+  signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   NonNullableFormBuilder,
@@ -13,6 +16,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import { piiWarning } from '@/shared/utils/pii';
 import {
   IjButton,
   IjInput,
@@ -142,6 +146,14 @@ function options<T extends string>(labels: Record<T, string>): IjOption[] {
         </div>
       </div>
 
+      @if (piiNotice(); as notice) {
+        <p
+          class="mt-3 rounded-lg bg-accent-amber-soft px-3 py-2 text-[13px] font-medium text-accent-amber"
+        >
+          {{ notice }}
+        </p>
+      }
+
       <label class="mt-4 flex items-center gap-2.5 text-[13.5px] text-body">
         <input
           type="checkbox"
@@ -150,6 +162,17 @@ function options<T extends string>(labels: Record<T, string>): IjOption[] {
         />
         No mostrar el salario en el portal
       </label>
+
+      @if (vacancy()?.canBeConfidential) {
+        <label class="mt-2 flex items-center gap-2.5 text-[13.5px] text-body">
+          <input
+            type="checkbox"
+            class="h-4 w-4 rounded border-line text-brand focus:ring-brand"
+            formControlName="isConfidential"
+          />
+          Vacante confidencial (oculta el nombre de la empresa en el portal)
+        </label>
+      }
 
       <div class="mt-6 flex justify-end gap-3 border-t border-line pt-4">
         <button
@@ -207,7 +230,21 @@ export class VacancyForm implements OnInit {
     salaryMin: this.fb.control<number | null>(null),
     salaryMax: this.fb.control<number | null>(null),
     salaryHidden: this.fb.control(false),
+    isConfidential: this.fb.control(false),
   });
+
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly piiNotice = signal<string | null>(null);
+
+  constructor() {
+    // Aviso (no bloqueo) si la descripción trae teléfono/correo/enlace.
+    this.form.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        const { description, requirements } = this.form.getRawValue();
+        this.piiNotice.set(piiWarning(`${description}\n${requirements}`));
+      });
+  }
 
   ngOnInit(): void {
     const vacancy = this.vacancy();
@@ -225,6 +262,7 @@ export class VacancyForm implements OnInit {
       salaryMin: vacancy.salaryMin,
       salaryMax: vacancy.salaryMax,
       salaryHidden: vacancy.salaryHidden,
+      isConfidential: vacancy.isConfidential,
     });
   }
 
@@ -264,6 +302,10 @@ export class VacancyForm implements OnInit {
     }
     if (value.salaryMin !== null) payload.salaryMin = Number(value.salaryMin);
     if (value.salaryMax !== null) payload.salaryMax = Number(value.salaryMax);
+    // La confidencialidad sólo viaja si el plan otorgó la capacidad.
+    if (this.vacancy()?.canBeConfidential) {
+      payload.isConfidential = value.isConfidential;
+    }
 
     this.save.emit(payload);
   }

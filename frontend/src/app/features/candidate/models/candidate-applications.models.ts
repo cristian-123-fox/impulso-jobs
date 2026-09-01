@@ -30,6 +30,12 @@ export interface CandidateApplication {
   vacancy: ApplicationVacancy | null;
 }
 
+export interface ApplicationAnswerPayload {
+  questionId: string;
+  optionId?: string;
+  answerText?: string;
+}
+
 export interface CandidateApplicationsPage {
   items: CandidateApplication[];
   total: number;

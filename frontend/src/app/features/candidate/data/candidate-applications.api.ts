@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
+  ApplicationAnswerPayload,
   CandidateApplication,
   CandidateApplicationsPage,
 } from '@/features/candidate/models/candidate-applications.models';
@@ -22,11 +23,15 @@ export class CandidateApplicationsApi {
       .pipe(map((r) => r.content));
   }
 
-  apply(vacancyId: string, resumeId?: string): Observable<CandidateApplication> {
+  apply(
+    vacancyId: string,
+    options?: { resumeId?: string; answers?: ApplicationAnswerPayload[] },
+  ): Observable<CandidateApplication> {
     return this.http
       .post<ApiSuccessResponse<CandidateApplication>>(this.base, {
         vacancyId,
-        ...(resumeId && { resumeId }),
+        ...(options?.resumeId && { resumeId: options.resumeId }),
+        ...(options?.answers?.length && { answers: options.answers }),
       })
       .pipe(map((r) => r.content));
   }

@@ -45,4 +45,20 @@ export class CandidateApplication extends BaseEntity {
 
   @Column({ name: 'applied_at', type: 'timestamp' })
   appliedAt!: Date;
+
+  /**
+   * Primera vez que la empresa interactuó con la postulación (detalle,
+   * historial, cambio de estado o descarga del CV). Null = "no leída".
+   * Es a nivel empresa, no por reclutador.
+   */
+  @Column({ name: 'read_at', type: 'timestamp', nullable: true })
+  readAt?: Date | null;
+
+  /** Suma de pesos de las respuestas de filtrado (M15). Null = sin preguntas. */
+  @Column({ name: 'score', type: 'int', nullable: true })
+  score?: number | null;
+
+  /** Alguna respuesta fue excluyente: el aspirante queda descartado del filtro. */
+  @Column({ name: 'is_excluded', type: 'boolean', default: false })
+  isExcluded!: boolean;
 }

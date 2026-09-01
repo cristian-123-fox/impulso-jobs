@@ -3,6 +3,7 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   effect,
   ElementRef,
@@ -18,14 +19,17 @@ import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { Role } from '@/core/models/role.enum';
 import { CandidateApplicationsApi } from '@/features/candidate/data/candidate-applications.api';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
-import { IconName, IjButton, IjIcon } from '@/shared/ui';
+import { IconName, IjButton, IjIcon, IjModal } from '@/shared/ui';
 import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
 import {
+  ApplicationAnswerPayload,
   EMPLOYMENT_TYPE_LABELS,
   EmploymentType,
   EXPERIENCE_LEVEL_LABELS,
   ExperienceLevel,
   PublicVacancy,
+  PublicVacancyQuestion,
+  VACANCY_REPORT_REASONS,
   WORK_MODE_LABELS,
   WorkMode,
 } from '@/features/public/vacancies/models/public-vacancies.models';
@@ -57,7 +61,7 @@ const BRAND_COLOR = '#e47c3f';
 @Component({
   selector: 'app-public-vacancy-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, IjButton, IjIcon],
+  imports: [DatePipe, RouterLink, IjButton, IjIcon, IjModal],
   template: `
     <section class="px-6 py-10 lg:px-[60px]">
       <div class="mx-auto max-w-[1100px]">
@@ -155,7 +159,7 @@ const BRAND_COLOR = '#e47c3f';
                             shape="rounded"
                             size="md"
                             [disabled]="applyState() === 'submitting'"
-                            (click)="apply(data.id)"
+                            (click)="onApplyClick(data.id)"
                           >
                             {{ applyState() === 'submitting' ? 'Enviando…' : 'Postularme' }}
                           </button>
@@ -217,9 +221,23 @@ const BRAND_COLOR = '#e47c3f';
                     ></div>
                   }
 
-                  <p class="mt-7 border-t border-line pt-4 text-[12.5px] text-muted">
-                    Publicada el {{ data.publishedAt | date: 'dd MMM yyyy' }}
-                  </p>
+                  <div
+                    class="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4"
+                  >
+                    <p class="text-[12.5px] text-muted">
+                      Publicada el {{ data.publishedAt | date: 'dd MMM yyyy' }}
+                    </p>
+                    @if (auth.currentUser()?.role === candidateRole) {
+                      <button
+                        type="button"
+                        class="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-muted transition-colors hover:text-red-600"
+                        (click)="openReport()"
+                      >
+                        <ij-icon name="alert-triangle" [size]="14" />
+                        Denunciar esta vacante
+                      </button>
+                    }
+                  </div>
                 </article>
 
                 <aside class="space-y-5">
@@ -285,6 +303,159 @@ const BRAND_COLOR = '#e47c3f';
                   </div>
                 </aside>
               </div>
+
+              @if (applyOpen()) {
+                <ij-modal
+                  title="Postularme"
+                  [subtitle]="data.title"
+                  (close)="applyOpen.set(false)"
+                >
+                  <p class="mb-4 text-[13px] text-muted">
+                    La empresa pide responder estas preguntas para postularte.
+                  </p>
+
+                  <div class="space-y-5">
+                    @for (question of questions(); track question.id) {
+                      <div>
+                        <p class="text-[13.5px] font-bold text-ink-900">
+                          {{ question.questionText }}
+                        </p>
+                        @if (question.questionType === 'CLOSED') {
+                          <div class="mt-2 space-y-1.5">
+                            @for (option of question.options; track option.id) {
+                              <label
+                                class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] text-body transition-colors hover:bg-surface"
+                                [class.border-brand]="draftOf(question.id)?.optionId === option.id"
+                                [class.bg-brand-50]="draftOf(question.id)?.optionId === option.id"
+                              >
+                                <input
+                                  type="radio"
+                                  [name]="'q-' + question.id"
+                                  class="h-4 w-4 text-brand"
+                                  [checked]="draftOf(question.id)?.optionId === option.id"
+                                  (change)="setOption(question.id, option.id)"
+                                />
+                                {{ option.optionText }}
+                              </label>
+                            }
+                          </div>
+                        } @else {
+                          <textarea
+                            rows="3"
+                            maxlength="1000"
+                            placeholder="Escribe tu respuesta"
+                            class="mt-2 w-full rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] text-ink-900 outline-none focus:border-brand"
+                            [value]="draftOf(question.id)?.answerText ?? ''"
+                            (input)="setAnswerText(question.id, $any($event.target).value)"
+                          ></textarea>
+                        }
+                      </div>
+                    }
+                  </div>
+
+                  @if (applyError(); as error) {
+                    <p class="mt-4 rounded-xl bg-red-50 px-4 py-2.5 text-[13px] font-semibold text-red-700">
+                      {{ error }}
+                    </p>
+                  }
+
+                  <div class="mt-6 flex justify-end gap-3 border-t border-line pt-4">
+                    <button
+                      type="button"
+                      class="rounded-xl border border-line bg-white px-4 py-2.5 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+                      (click)="applyOpen.set(false)"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      ij-button
+                      type="button"
+                      variant="primary"
+                      shape="rounded"
+                      size="md"
+                      [disabled]="!answersComplete() || applyState() === 'submitting'"
+                      (click)="submitApplication(data.id)"
+                    >
+                      {{ applyState() === 'submitting' ? 'Enviando…' : 'Enviar postulación' }}
+                    </button>
+                  </div>
+                </ij-modal>
+              }
+
+              @if (reportOpen()) {
+                <ij-modal
+                  title="Denunciar vacante"
+                  [subtitle]="data.title"
+                  size="sm"
+                  (close)="closeReport()"
+                >
+                  @if (reportState() === 'done') {
+                    <p class="rounded-xl bg-accent-green-soft px-4 py-3 text-[13.5px] font-semibold text-accent-green">
+                      Gracias por tu reporte. Nuestro equipo revisará esta vacante.
+                    </p>
+                    <div class="mt-5 flex justify-end">
+                      <button ij-button type="button" variant="primary" shape="rounded" size="md" (click)="closeReport()">
+                        Cerrar
+                      </button>
+                    </div>
+                  } @else {
+                    <div class="space-y-1.5">
+                      @for (reason of reportReasons; track reason.code) {
+                        <label
+                          class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] text-body transition-colors hover:bg-surface"
+                          [class.border-brand]="reportReason() === reason.code"
+                          [class.bg-brand-50]="reportReason() === reason.code"
+                        >
+                          <input
+                            type="radio"
+                            name="report-reason"
+                            class="h-4 w-4 text-brand"
+                            [checked]="reportReason() === reason.code"
+                            (change)="reportReason.set(reason.code)"
+                          />
+                          {{ reason.label }}
+                        </label>
+                      }
+                    </div>
+
+                    <textarea
+                      rows="3"
+                      maxlength="500"
+                      placeholder="Cuéntanos más (opcional)"
+                      class="mt-3 w-full rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] text-ink-900 outline-none focus:border-brand"
+                      [value]="reportComment()"
+                      (input)="reportComment.set($any($event.target).value)"
+                    ></textarea>
+
+                    @if (reportError(); as error) {
+                      <p class="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-[13px] font-semibold text-red-700">
+                        {{ error }}
+                      </p>
+                    }
+
+                    <div class="mt-5 flex justify-end gap-3 border-t border-line pt-4">
+                      <button
+                        type="button"
+                        class="rounded-xl border border-line bg-white px-4 py-2.5 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+                        (click)="closeReport()"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        ij-button
+                        type="button"
+                        variant="primary"
+                        shape="rounded"
+                        size="md"
+                        [disabled]="!reportReason() || reportState() === 'submitting'"
+                        (click)="submitReport(data.id)"
+                      >
+                        {{ reportState() === 'submitting' ? 'Enviando…' : 'Enviar denuncia' }}
+                      </button>
+                    </div>
+                  }
+                </ij-modal>
+              }
             }
           }
         }
@@ -307,6 +478,29 @@ export class PublicVacancyDetailPage {
   protected readonly shareLinks = signal<readonly ShareLink[]>([]);
   protected readonly mapCoords = signal<MapCoords | null>(null);
 
+  // Preguntas de filtrado (M15): se responden en un modal antes de postular.
+  protected readonly questions = signal<PublicVacancyQuestion[]>([]);
+  protected readonly applyOpen = signal(false);
+  private readonly answerDrafts = signal<Record<string, ApplicationAnswerPayload>>({});
+
+  // Denuncia de la vacante.
+  protected readonly reportReasons = VACANCY_REPORT_REASONS;
+  protected readonly reportOpen = signal(false);
+  protected readonly reportReason = signal('');
+  protected readonly reportComment = signal('');
+  protected readonly reportState = signal<'idle' | 'submitting' | 'done'>('idle');
+  protected readonly reportError = signal<string | null>(null);
+
+  protected readonly answersComplete = computed(() =>
+    this.questions().every((question) => {
+      const draft = this.answerDrafts()[question.id];
+      if (!draft) return false;
+      return question.questionType === 'CLOSED'
+        ? !!draft.optionId
+        : !!draft.answerText?.trim();
+    }),
+  );
+
   private readonly mapEl = viewChild<ElementRef<HTMLElement>>('mapEl');
   private map: import('leaflet').Map | undefined;
 
@@ -322,6 +516,7 @@ export class PublicVacancyDetailPage {
             this.state.set('loaded');
             this.shareLinks.set(this.buildShareLinks(vacancy));
             void this.resolveMapCoords(vacancy);
+            this.loadQuestions(vacancy.id);
           },
           error: () => this.state.set('error'),
         });
@@ -339,14 +534,35 @@ export class PublicVacancyDetailPage {
     this.destroyRef.onDestroy(() => this.map?.remove());
   }
 
-  protected apply(vacancyId: string): void {
+  /** Con preguntas se abre el cuestionario; sin ellas la postulación es directa. */
+  protected onApplyClick(vacancyId: string): void {
+    this.applyError.set(null);
+    if (this.questions().length > 0) {
+      this.answerDrafts.set({});
+      this.applyOpen.set(true);
+      return;
+    }
+    this.submitApplication(vacancyId);
+  }
+
+  protected submitApplication(vacancyId: string): void {
+    const questions = this.questions();
+    if (questions.length > 0 && !this.answersComplete()) return;
+
+    const answers = questions.map(
+      (question) => this.answerDrafts()[question.id],
+    );
+
     this.applyState.set('submitting');
     this.applyError.set(null);
     this.applicationsApi
-      .apply(vacancyId)
+      .apply(vacancyId, answers.length > 0 ? { answers } : undefined)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: () => this.applyState.set('applied'),
+        next: () => {
+          this.applyState.set('applied');
+          this.applyOpen.set(false);
+        },
         error: (error: unknown) => {
           const code =
             error instanceof HttpErrorResponse
@@ -354,15 +570,82 @@ export class PublicVacancyDetailPage {
               : undefined;
           if (code === 'APPLICATION_ALREADY_EXISTS') {
             this.applyState.set('applied');
+            this.applyOpen.set(false);
             return;
           }
           this.applyState.set('idle');
           this.applyError.set(
             code === 'APPLICATION_VACANCY_NOT_ACTIVE'
               ? 'Esta vacante ya no admite postulaciones.'
-              : 'No pudimos enviar tu postulación. Intenta de nuevo.',
+              : code === 'APPLICATION_ANSWERS_INVALID'
+                ? 'Revisa tus respuestas: todas las preguntas son obligatorias.'
+                : 'No pudimos enviar tu postulación. Intenta de nuevo.',
           );
         },
+      });
+  }
+
+  protected draftOf(questionId: string): ApplicationAnswerPayload | undefined {
+    return this.answerDrafts()[questionId];
+  }
+
+  protected setOption(questionId: string, optionId: string): void {
+    this.answerDrafts.update((drafts) => ({
+      ...drafts,
+      [questionId]: { questionId, optionId },
+    }));
+  }
+
+  protected setAnswerText(questionId: string, answerText: string): void {
+    this.answerDrafts.update((drafts) => ({
+      ...drafts,
+      [questionId]: { questionId, answerText },
+    }));
+  }
+
+  protected openReport(): void {
+    this.reportReason.set('');
+    this.reportComment.set('');
+    this.reportError.set(null);
+    this.reportState.set('idle');
+    this.reportOpen.set(true);
+  }
+
+  protected closeReport(): void {
+    this.reportOpen.set(false);
+  }
+
+  protected submitReport(vacancyId: string): void {
+    if (!this.reportReason()) return;
+    this.reportState.set('submitting');
+    this.reportError.set(null);
+    this.api
+      .report(vacancyId, this.reportReason(), this.reportComment().trim() || undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.reportState.set('done'),
+        error: (error: unknown) => {
+          const code =
+            error instanceof HttpErrorResponse
+              ? (error.error as ApiErrorResponse | null)?.errorCode
+              : undefined;
+          if (code === 'VACANCY_REPORT_DUPLICATED') {
+            this.reportState.set('done');
+            return;
+          }
+          this.reportState.set('idle');
+          this.reportError.set('No pudimos registrar la denuncia. Intenta de nuevo.');
+        },
+      });
+  }
+
+  private loadQuestions(vacancyId: string): void {
+    this.api
+      .getQuestions(vacancyId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (questions) => this.questions.set(questions),
+        error: () => this.questions.set([]),
       });
   }
 

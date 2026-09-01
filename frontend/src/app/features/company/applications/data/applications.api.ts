@@ -5,6 +5,7 @@ import { map } from 'rxjs/operators';
 import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
+  ApplicationAnswer,
   ApplicationResumeDownload,
   ApplicationStatus,
   ApplicationStatusHistory,
@@ -41,6 +42,13 @@ export class ApplicationsApi {
   get(id: string): Observable<CompanyApplication> {
     return this.http
       .get<ApiSuccessResponse<CompanyApplication>>(`${this.base}/${id}`)
+      .pipe(map((r) => r.content));
+  }
+
+  /** Respuestas a las preguntas de filtrado (M15). */
+  answers(id: string): Observable<ApplicationAnswer[]> {
+    return this.http
+      .get<ApiSuccessResponse<ApplicationAnswer[]>>(`${this.base}/${id}/answers`)
       .pipe(map((r) => r.content));
   }
 

@@ -26,6 +26,10 @@ export interface VacancyResponseDto {
   isFeatured: boolean;
   isUrgent: boolean;
   isConfidential: boolean;
+  /** Capacidad de confidencialidad otorgada por el plan. */
+  canBeConfidential: boolean;
+  /** Capacidad de definir preguntas de filtrado (plan). */
+  screeningEnabled: boolean;
   pauseCount: number;
   maxPauses: number;
   /** Pausas que aún puede consumir (nunca negativo). */
@@ -99,6 +103,8 @@ export function toVacancyResponse(vacancy: Vacancy): VacancyResponseDto {
     isFeatured: vacancy.isFeatured,
     isUrgent: vacancy.isUrgent,
     isConfidential: vacancy.isConfidential,
+    canBeConfidential: vacancy.canBeConfidential,
+    screeningEnabled: vacancy.screeningEnabled,
     pauseCount: vacancy.pauseCount,
     maxPauses: vacancy.maxPauses,
     pausesLeft: Math.max(0, vacancy.maxPauses - vacancy.pauseCount),

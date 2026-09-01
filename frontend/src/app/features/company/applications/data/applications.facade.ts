@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, tap } from 'rxjs';
 import { ApplicationsApi } from '@/features/company/applications/data/applications.api';
 import {
+  ApplicationAnswer,
   ApplicationResumeDownload,
   ApplicationStatus,
   ApplicationStats,
@@ -23,6 +24,7 @@ export class ApplicationsFacade {
   readonly applications = signal<CompanyApplication[]>([]);
   readonly statuses = signal<ApplicationStatus[]>([]);
   readonly stats = signal<ApplicationStats>({});
+  readonly unread = signal(0);
   readonly state = signal<LoadState>('idle');
   readonly total = signal(0);
   readonly page = signal(1);
@@ -50,6 +52,7 @@ export class ApplicationsFacade {
           this.total.set(result.total);
           this.pages.set(result.pages);
           this.stats.set(result.stats ?? {});
+          this.unread.set(result.unread ?? 0);
           this.state.set('loaded');
         },
         error: () => this.state.set('error'),
@@ -82,11 +85,29 @@ export class ApplicationsFacade {
   }
 
   history(id: string): Observable<ApplicationStatusHistory[]> {
-    return this.api.history(id);
+    return this.api.history(id).pipe(tap(() => this.markReadLocal(id)));
+  }
+
+  answers(id: string): Observable<ApplicationAnswer[]> {
+    return this.api.answers(id).pipe(tap(() => this.markReadLocal(id)));
   }
 
   downloadResume(id: string): Observable<ApplicationResumeDownload> {
-    return this.api.downloadResume(id);
+    return this.api.downloadResume(id).pipe(tap(() => this.markReadLocal(id)));
+  }
+
+  /**
+   * El backend marca la postulación como leída en cualquier interacción; aquí
+   * se refleja en la fila sin recargar toda la página.
+   */
+  private markReadLocal(id: string): void {
+    const item = this.applications().find((row) => row.id === id);
+    if (!item || item.readAt) return;
+    const readAt = new Date().toISOString();
+    this.applications.update((list) =>
+      list.map((row) => (row.id === id ? { ...row, readAt } : row)),
+    );
+    this.unread.update((count) => Math.max(0, count - 1));
   }
 
   /**

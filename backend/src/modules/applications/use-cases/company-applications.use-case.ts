@@ -13,9 +13,11 @@ import {
   CANDIDATE_RESUME_STORAGE,
 } from '@/modules/candidates/services/candidate-resume-storage.port';
 import {
+  ApplicationAnswerResponseDto,
   ApplicationStatusHistoryResponseDto,
   ApplicationStatusResponseDto,
   CompanyApplicationResponseDto,
+  toApplicationAnswerResponse,
   toApplicationCandidate,
   toApplicationResume,
   toApplicationStatusHistoryResponse,
@@ -23,6 +25,10 @@ import {
   toApplicationVacancy,
   toCompanyApplicationResponse,
 } from '@/modules/applications/dto/application-response.dto';
+import {
+  type IApplicationAnswerRepository,
+  APPLICATION_ANSWER_REPOSITORY,
+} from '@/modules/applications/repositories/application-answer.repository.interface';
 import { ApplicationStatus } from '@/modules/applications/entities/application-status.entity';
 import { CandidateApplication } from '@/modules/applications/entities/candidate-application.entity';
 import {
@@ -78,6 +84,8 @@ export type CompanyApplicationStats = Record<string, number>;
 
 export interface ListCompanyApplicationsResult extends PaginatedResponse<CompanyApplicationResponseDto> {
   stats: CompanyApplicationStats;
+  /** Postulaciones que ningún reclutador ha abierto (respeta el filtro de vacante). */
+  unread: number;
 }
 
 /**
@@ -103,6 +111,8 @@ export class CompanyApplicationsUseCase {
     private readonly resumes: ICandidateResumeRepository,
     @Inject(CANDIDATE_RESUME_STORAGE)
     private readonly resumeStorage: ICandidateResumeStorage,
+    @Inject(APPLICATION_ANSWER_REPOSITORY)
+    private readonly answers: IApplicationAnswerRepository,
     @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
     private readonly companyOwnership: VacancyOwnershipService,
     private readonly ownership: ApplicationOwnershipService,
@@ -130,17 +140,19 @@ export class CompanyApplicationsUseCase {
       limit: command.limit,
     });
 
-    const [items, stats] = await Promise.all([
+    const [items, stats, unread] = await Promise.all([
       this.decorate(rows),
       this.applications.countByCompanyGroupedByStatus(
         company.id,
         command.vacancyId,
       ),
+      this.applications.countUnreadByCompany(company.id, command.vacancyId),
     ]);
 
     return {
       ...toPaginated(items, total, command.page, command.limit),
       stats,
+      unread,
     };
   }
 
@@ -153,9 +165,26 @@ export class CompanyApplicationsUseCase {
       id,
       company.id,
     );
+    await this.markRead(application);
 
     const [item] = await this.decorate([application]);
     return item;
+  }
+
+  /** Respuestas de filtrado de la postulación (M15). */
+  async listAnswers(
+    id: string,
+    actor: CompanyApplicationActor,
+  ): Promise<ApplicationAnswerResponseDto[]> {
+    const company = await this.companyOwnership.requireCompany(actor.userId);
+    const application = await this.ownership.requireCompanyApplication(
+      id,
+      company.id,
+    );
+    await this.markRead(application);
+
+    const answers = await this.answers.findByApplicationId(application.id);
+    return answers.map(toApplicationAnswerResponse);
   }
 
   async listHistory(
@@ -167,6 +196,7 @@ export class CompanyApplicationsUseCase {
       id,
       company.id,
     );
+    await this.markRead(application);
 
     const [entries, catalog] = await Promise.all([
       this.historyEntries.findByApplicationId(application.id),
@@ -192,6 +222,8 @@ export class CompanyApplicationsUseCase {
       id,
       company.id,
     );
+
+    await this.markRead(application);
 
     const resume = application.resumeId
       ? await this.resumes.findByIdAndProfileId(
@@ -226,6 +258,16 @@ export class CompanyApplicationsUseCase {
         'No fue posible descargar la hoja de vida.',
       );
     }
+  }
+
+  /**
+   * Cualquier interacción de la empresa con la postulación (detalle, historial,
+   * respuestas, CV o cambio de estado) la marca como leída. Es a nivel empresa.
+   */
+  private async markRead(application: CandidateApplication): Promise<void> {
+    if (application.readAt) return;
+    application.readAt = new Date();
+    await this.applications.save(application);
   }
 
   /** Catálogo de estados disponibles para el selector del reclutador. */

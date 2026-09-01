@@ -14,16 +14,20 @@ import { Observable } from 'rxjs';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { IjButton, IjIcon, IjModal, IjOption, IjSelect } from '@/shared/ui';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
+import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
 import { VacanciesFacade } from '@/features/company/vacancies/data/vacancies.facade';
 import { VacancyForm } from '@/features/company/vacancies/components/vacancy-form/vacancy-form';
+import { VacancyQuestionsForm } from '@/features/company/vacancies/components/vacancy-questions-form/vacancy-questions-form';
 import {
   VacanciesTable,
   VacancyActionEvent,
 } from '@/features/company/vacancies/components/vacancies-table/vacancies-table';
 import {
   SaveVacancyPayload,
+  SaveVacancyQuestionPayload,
   VACANCY_STATUS_LABELS,
   Vacancy,
+  VacancyQuestion,
   VacancyStatus,
 } from '@/features/company/vacancies/models/vacancies.models';
 
@@ -35,6 +39,7 @@ import {
     AdminPagination,
     VacanciesTable,
     VacancyForm,
+    VacancyQuestionsForm,
     IjButton,
     IjIcon,
     IjModal,
@@ -181,10 +186,28 @@ import {
         />
       </ij-modal>
     }
+
+    @if (questionsFor(); as vacancy) {
+      <ij-modal
+        title="Preguntas de filtrado"
+        [subtitle]="vacancy.title"
+        size="lg"
+        (close)="closeQuestions()"
+      >
+        <app-vacancy-questions-form
+          [initial]="questionsData()"
+          [submitting]="questionsSaving()"
+          [error]="questionsError()"
+          (save)="onSaveQuestions(vacancy, $event)"
+          (cancel)="closeQuestions()"
+        />
+      </ij-modal>
+    }
   `,
 })
 export class VacanciesListPage {
   protected readonly facade = inject(VacanciesFacade);
+  private readonly vacanciesApi = inject(VacanciesApi);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -193,6 +216,10 @@ export class VacanciesListPage {
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
+  protected readonly questionsFor = signal<Vacancy | null>(null);
+  protected readonly questionsData = signal<VacancyQuestion[]>([]);
+  protected readonly questionsSaving = signal(false);
+  protected readonly questionsError = signal<string | null>(null);
 
   protected readonly statusOptions: readonly IjOption[] = [
     { value: '', label: 'Todos los estados' },
@@ -263,6 +290,9 @@ export class VacanciesListPage {
         this.formError.set(null);
         this.formOpen.set(true);
         return;
+      case 'questions':
+        this.openQuestions(vacancy);
+        return;
       case 'pause':
         this.run(this.facade.pause(vacancy.id), 'No se pudo pausar la vacante.');
         return;
@@ -312,6 +342,51 @@ export class VacanciesListPage {
         );
       },
     });
+  }
+
+  protected closeQuestions(): void {
+    this.questionsFor.set(null);
+    this.questionsData.set([]);
+    this.questionsError.set(null);
+  }
+
+  private openQuestions(vacancy: Vacancy): void {
+    this.actionError.set(null);
+    this.vacanciesApi
+      .getQuestions(vacancy.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (questions) => {
+          this.questionsData.set(questions);
+          this.questionsError.set(null);
+          this.questionsFor.set(vacancy);
+        },
+        error: () =>
+          this.actionError.set('No se pudieron cargar las preguntas.'),
+      });
+  }
+
+  protected onSaveQuestions(
+    vacancy: Vacancy,
+    payload: SaveVacancyQuestionPayload[],
+  ): void {
+    this.questionsSaving.set(true);
+    this.questionsError.set(null);
+    this.vacanciesApi
+      .saveQuestions(vacancy.id, payload)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.questionsSaving.set(false);
+          this.closeQuestions();
+        },
+        error: (error: unknown) => {
+          this.questionsSaving.set(false);
+          this.questionsError.set(
+            this.messageOf(error, 'No se pudieron guardar las preguntas.'),
+          );
+        },
+      });
   }
 
   /** Acciones de fila: refrescan sólo esa vacante y recalculan los totales. */

@@ -101,6 +101,7 @@ export class AdminLayout {
     { path: '/admin/empresas', label: 'Empresas', icon: 'building' },
     { path: '/admin/planes', label: 'Planes', icon: 'tag' },
     { path: '/admin/roles', label: 'Roles y permisos', icon: 'shield' },
+    { path: '/admin/denuncias', label: 'Denuncias', icon: 'alert-triangle' },
   ];
 
   protected onLogout(): void {

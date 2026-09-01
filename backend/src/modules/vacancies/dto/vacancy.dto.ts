@@ -96,6 +96,15 @@ export class SaveVacancyDto {
   @IsOptional()
   @IsBoolean()
   salaryHidden?: boolean;
+
+  @ApiPropertyOptional({
+    default: false,
+    description:
+      'Oculta la identidad de la empresa en el portal. Requiere el beneficio del plan (urgent_confidential_badge).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isConfidential?: boolean;
 }
 
 /** Cambio de estado explícito (cerrar, reactivar desde cerrada no aplica). */

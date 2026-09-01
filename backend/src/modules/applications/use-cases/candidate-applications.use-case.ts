@@ -32,11 +32,24 @@ import {
   type ICandidateApplicationRepository,
   CANDIDATE_APPLICATION_REPOSITORY,
 } from '@/modules/applications/repositories/candidate-application.repository.interface';
+import { ApplicationAnswer } from '@/modules/applications/entities/application-answer.entity';
+import {
+  type IApplicationAnswerRepository,
+  APPLICATION_ANSWER_REPOSITORY,
+} from '@/modules/applications/repositories/application-answer.repository.interface';
 import { ApplicationOwnershipService } from '@/modules/applications/services/application-ownership.service';
 import {
   type ICandidateResumeRepository,
   CANDIDATE_RESUME_REPOSITORY,
 } from '@/modules/candidates/repositories/candidate-resume.repository.interface';
+import {
+  EXCLUDING_WEIGHT,
+  VacancyQuestionType,
+} from '@/modules/vacancies/enums/vacancy-question.enums';
+import {
+  type IVacancyQuestionRepository,
+  VACANCY_QUESTION_REPOSITORY,
+} from '@/modules/vacancies/repositories/vacancy-question.repository.interface';
 import {
   type ICompanyRepository,
   COMPANY_REPOSITORY,
@@ -54,9 +67,23 @@ export interface CandidateApplicationActor {
   userAgent: string;
 }
 
+export interface CreateApplicationAnswerInput {
+  questionId: string;
+  optionId?: string;
+  answerText?: string;
+}
+
 export interface CreateApplicationCommand extends CandidateApplicationActor {
   vacancyId: string;
   resumeId?: string;
+  answers?: CreateApplicationAnswerInput[];
+}
+
+interface ScreeningResult {
+  score: number | null;
+  isExcluded: boolean;
+  /** Respuestas listas para persistir; `applicationId` se fija al guardar. */
+  answers: ApplicationAnswer[];
 }
 
 export interface ListCandidateApplicationsCommand extends CandidateApplicationActor {
@@ -86,6 +113,10 @@ export class CandidateApplicationsUseCase {
     @Inject(COMPANY_REPOSITORY) private readonly companies: ICompanyRepository,
     @Inject(CANDIDATE_RESUME_REPOSITORY)
     private readonly resumes: ICandidateResumeRepository,
+    @Inject(VACANCY_QUESTION_REPOSITORY)
+    private readonly questions: IVacancyQuestionRepository,
+    @Inject(APPLICATION_ANSWER_REPOSITORY)
+    private readonly answers: IApplicationAnswerRepository,
     private readonly ownership: ApplicationOwnershipService,
     private readonly audit: AuditService,
   ) {}
@@ -130,6 +161,10 @@ export class CandidateApplicationsUseCase {
     }
 
     const resumeId = await this.resolveResumeId(profile.id, command.resumeId);
+    const screening = await this.resolveScreening(
+      vacancy.id,
+      command.answers ?? [],
+    );
     const now = new Date();
 
     const saved = await runInTransaction(this.dataSource, async (manager) => {
@@ -140,8 +175,17 @@ export class CandidateApplicationsUseCase {
       application.resumeId = resumeId;
       application.statusCode = INITIAL_APPLICATION_STATUS;
       application.appliedAt = now;
+      application.score = screening.score;
+      application.isExcluded = screening.isExcluded;
 
       const stored = await this.applications.save(application, manager);
+
+      if (screening.answers.length > 0) {
+        screening.answers.forEach((answer) => {
+          answer.applicationId = stored.id;
+        });
+        await this.answers.saveMany(screening.answers, manager);
+      }
 
       // Línea inicial del historial: sin estado previo.
       const entry = new ApplicationStatusHistory();
@@ -272,6 +316,92 @@ export class CandidateApplicationsUseCase {
    * si no indica ninguna, la marcada por defecto. Postular sin CV está
    * permitido: el aspirante puede no haber subido ninguna todavía.
    */
+  /**
+   * Cruza las respuestas con las preguntas de la vacante (M15) y calcula el
+   * puntaje: cada opción suma su peso; una opción excluyente (-1) descarta la
+   * postulación sin sumar. Todas las preguntas son obligatorias.
+   */
+  private async resolveScreening(
+    vacancyId: string,
+    provided: CreateApplicationAnswerInput[],
+  ): Promise<ScreeningResult> {
+    const questions = await this.questions.findByVacancyId(vacancyId);
+    if (questions.length === 0) {
+      return { score: null, isExcluded: false, answers: [] };
+    }
+
+    const options = await this.questions.findOptionsByQuestionIds(
+      questions.map((question) => question.id),
+    );
+    const optionsByQuestion = new Map<string, typeof options>();
+    for (const option of options) {
+      const list = optionsByQuestion.get(option.questionId) ?? [];
+      list.push(option);
+      optionsByQuestion.set(option.questionId, list);
+    }
+    const givenByQuestion = new Map(
+      provided.map((answer) => [answer.questionId, answer]),
+    );
+
+    const answers: ApplicationAnswer[] = [];
+    let score = 0;
+    let isExcluded = false;
+
+    for (const question of questions) {
+      const given = givenByQuestion.get(question.id);
+      if (!given) {
+        throw this.invalidAnswers(
+          'Debes responder todas las preguntas de la vacante.',
+        );
+      }
+
+      const answer = new ApplicationAnswer();
+      answer.questionId = question.id;
+      answer.questionText = question.questionText;
+
+      if (question.questionType === VacancyQuestionType.CLOSED) {
+        const option = (optionsByQuestion.get(question.id) ?? []).find(
+          (item) => item.id === given.optionId,
+        );
+        if (!option) {
+          throw this.invalidAnswers(
+            'Selecciona una opción válida en cada pregunta.',
+          );
+        }
+        answer.optionId = option.id;
+        answer.answerText = option.optionText;
+        answer.weight = option.weight;
+        if (option.weight === EXCLUDING_WEIGHT) {
+          isExcluded = true;
+        } else {
+          score += option.weight;
+        }
+      } else {
+        const text = given.answerText?.trim();
+        if (!text) {
+          throw this.invalidAnswers(
+            'Escribe una respuesta en las preguntas abiertas.',
+          );
+        }
+        answer.optionId = null;
+        answer.answerText = text;
+        answer.weight = null;
+      }
+
+      answers.push(answer);
+    }
+
+    return { score, isExcluded, answers };
+  }
+
+  private invalidAnswers(message: string): AppException {
+    return new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.APPLICATION_ANSWERS_INVALID,
+      message,
+    );
+  }
+
   private async resolveResumeId(
     candidateProfileId: string,
     requestedId?: string,

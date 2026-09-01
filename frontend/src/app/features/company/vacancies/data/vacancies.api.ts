@@ -6,9 +6,11 @@ import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
   SaveVacancyPayload,
+  SaveVacancyQuestionPayload,
   VacanciesFilters,
   VacanciesPage,
   Vacancy,
+  VacancyQuestion,
 } from '@/features/company/vacancies/models/vacancies.models';
 
 /** Cliente HTTP de las vacantes de la empresa (desenvuelve el envelope). */
@@ -62,6 +64,24 @@ export class VacanciesApi {
 
   close(id: string): Observable<Vacancy> {
     return this.patch(`${id}/status`, { status: 'CLOSED' });
+  }
+
+  getQuestions(id: string): Observable<VacancyQuestion[]> {
+    return this.http
+      .get<ApiSuccessResponse<VacancyQuestion[]>>(`${this.base}/${id}/questions`)
+      .pipe(map((r) => r.content));
+  }
+
+  saveQuestions(
+    id: string,
+    questions: SaveVacancyQuestionPayload[],
+  ): Observable<VacancyQuestion[]> {
+    return this.http
+      .put<ApiSuccessResponse<VacancyQuestion[]>>(
+        `${this.base}/${id}/questions`,
+        { questions },
+      )
+      .pipe(map((r) => r.content));
   }
 
   private patch(path: string, body: unknown = {}): Observable<Vacancy> {

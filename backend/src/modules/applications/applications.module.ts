@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CandidateApplicationsController } from '@/modules/applications/controllers/candidate-applications.controller';
 import { CompanyApplicationsController } from '@/modules/applications/controllers/company-applications.controller';
+import { ApplicationAnswer } from '@/modules/applications/entities/application-answer.entity';
 import { ApplicationStatusHistory } from '@/modules/applications/entities/application-status-history.entity';
 import { ApplicationStatus } from '@/modules/applications/entities/application-status.entity';
 import { CandidateApplication } from '@/modules/applications/entities/candidate-application.entity';
+import { APPLICATION_ANSWER_REPOSITORY } from '@/modules/applications/repositories/application-answer.repository.interface';
+import { ApplicationAnswerRepository } from '@/modules/applications/repositories/application-answer.repository';
 import { APPLICATION_STATUS_HISTORY_REPOSITORY } from '@/modules/applications/repositories/application-status-history.repository.interface';
 import { ApplicationStatusHistoryRepository } from '@/modules/applications/repositories/application-status-history.repository';
 import { APPLICATION_STATUS_REPOSITORY } from '@/modules/applications/repositories/application-status.repository.interface';
@@ -30,6 +33,7 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
       CandidateApplication,
       ApplicationStatus,
       ApplicationStatusHistory,
+      ApplicationAnswer,
     ]),
     AuditModule,
     AuthModule,
@@ -52,6 +56,10 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     {
       provide: APPLICATION_STATUS_HISTORY_REPOSITORY,
       useClass: ApplicationStatusHistoryRepository,
+    },
+    {
+      provide: APPLICATION_ANSWER_REPOSITORY,
+      useClass: ApplicationAnswerRepository,
     },
     ApplicationOwnershipService,
     CandidateApplicationsUseCase,

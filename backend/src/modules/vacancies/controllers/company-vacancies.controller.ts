@@ -22,6 +22,10 @@ import { ResponseMessage } from '@/common/decorators/response-message.decorator'
 import type { AuthenticatedUser } from '@/common/types/authenticated-user';
 import { JwtAuthGuard } from '@/modules/iam/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.guard';
+import {
+  CompanyVacancyQuestionDto,
+  ReplaceVacancyQuestionsDto,
+} from '@/modules/vacancies/dto/vacancy-question.dto';
 import { VacancyResponseDto } from '@/modules/vacancies/dto/vacancy-response.dto';
 import {
   ChangeVacancyStatusDto,
@@ -34,6 +38,7 @@ import {
   ListCompanyVacanciesResult,
   VacancyActor,
 } from '@/modules/vacancies/use-cases/company-vacancies.use-case';
+import { VacancyQuestionsUseCase } from '@/modules/vacancies/use-cases/vacancy-questions.use-case';
 import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-status.use-case';
 
 @ApiTags('company-vacancies')
@@ -44,6 +49,7 @@ export class CompanyVacanciesController {
   constructor(
     private readonly vacancies: CompanyVacanciesUseCase,
     private readonly status: VacancyStatusUseCase,
+    private readonly questions: VacancyQuestionsUseCase,
   ) {}
 
   @Get()
@@ -96,6 +102,29 @@ export class CompanyVacanciesController {
     @ClientInfo() client: ClientInfoPayload,
   ): Promise<VacancyResponseDto> {
     return this.vacancies.update(id, dto, this.actor(user, client));
+  }
+
+  @Get(':id/questions')
+  @RequirePermissions('vacancies.read')
+  @ResponseMessage('Preguntas de filtrado obtenidas.')
+  listQuestions(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<CompanyVacancyQuestionDto[]> {
+    return this.questions.listForCompany(id, this.actor(user, client));
+  }
+
+  @Put(':id/questions')
+  @RequirePermissions('vacancies.update')
+  @ResponseMessage('Preguntas de filtrado actualizadas.')
+  replaceQuestions(
+    @Param('id') id: string,
+    @Body() dto: ReplaceVacancyQuestionsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<CompanyVacancyQuestionDto[]> {
+    return this.questions.replace(id, dto, this.actor(user, client));
   }
 
   @Patch(':id/status')

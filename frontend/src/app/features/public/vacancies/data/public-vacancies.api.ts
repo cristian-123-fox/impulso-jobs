@@ -8,6 +8,7 @@ import {
   PublicVacanciesFilters,
   PublicVacanciesPage,
   PublicVacancy,
+  PublicVacancyQuestion,
 } from '@/features/public/vacancies/models/public-vacancies.models';
 
 /** Portal de empleo. No requiere sesión: la API es abierta para leer. */
@@ -42,5 +43,25 @@ export class PublicVacanciesApi {
     return this.http
       .get<ApiSuccessResponse<PublicVacancy>>(`${this.base}/${id}`)
       .pipe(map((r) => r.content));
+  }
+
+  getQuestions(id: string): Observable<PublicVacancyQuestion[]> {
+    return this.http
+      .get<ApiSuccessResponse<PublicVacancyQuestion[]>>(
+        `${this.base}/${id}/questions`,
+      )
+      .pipe(map((r) => r.content));
+  }
+
+  /** Denuncia (requiere sesión de candidato; el interceptor adjunta el token). */
+  report(
+    id: string,
+    reasonCode: string,
+    comment?: string,
+  ): Observable<unknown> {
+    return this.http.post<ApiSuccessResponse<unknown>>(
+      `${this.base}/${id}/report`,
+      { reasonCode, ...(comment && { comment }) },
+    );
   }
 }

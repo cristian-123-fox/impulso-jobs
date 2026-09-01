@@ -135,6 +135,13 @@ export class EntitlementService {
 
     if (entitlements.verifiedPublication) vacancy.isVerified = true;
     if (entitlements.featuredRanking) vacancy.isFeatured = true;
+    // El badge Urgente se enciende solo; la confidencialidad es una CAPACIDAD:
+    // la empresa decide activarla desde su formulario de vacante.
+    if (entitlements.urgentConfidentialBadge) {
+      vacancy.isUrgent = true;
+      vacancy.canBeConfidential = true;
+    }
+    if (entitlements.screeningQuestions) vacancy.screeningEnabled = true;
     vacancy.maxPauses = entitlements.pauseReactivate;
     vacancy.canEditTitleOnReactivate = entitlements.editTitleOnReactivate;
     // Promocionar re-sube la vacante en el portal.
@@ -158,6 +165,11 @@ export class EntitlementService {
     vacancy.isFeatured = false;
     vacancy.isUrgent = false;
     vacancy.isVerified = false;
+    vacancy.isConfidential = false;
+    vacancy.canBeConfidential = false;
+    // Las preguntas ya definidas se conservan (y sus respuestas históricas);
+    // sólo se pierde la capacidad de editarlas hasta recomprar.
+    vacancy.screeningEnabled = false;
     // El tope de pausas vuelve al mínimo, pero nunca por debajo de las ya
     // consumidas: no tendría sentido dejar el contador en negativo.
     vacancy.maxPauses = Math.max(

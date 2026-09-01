@@ -144,22 +144,31 @@ Verificado contra el código el 2026-08-31. Primero lo que **ya tenemos** (para 
 | Datos fiscales SAT / RFC / régimen | M9 completo, RFC inmutable |
 | Autoservicio de compra (lo que CT NO tiene) | Checkout propio vía `PaymentProviderPort` — nuestra ventaja frente a su venta asistida; conservarla |
 
-## Quick wins (bajo costo, alto valor — pueden entrar apenas cierre la demo)
+## Quick wins — HECHOS (2026-08-31)
 
-### T10 · Preguntas de filtrado (killer questions) ⬜
-El código de feature `screening_questions` ya existe en el catálogo de planes **sin implementación detrás**. Especificación tomada del análisis (§3.1): máx. **5 preguntas** por vacante, tipo abierta/cerrada; cerrada con hasta 5 opciones y **peso por opción `-1` (excluyente) o `0–10`**. En la postulación: `application_answers`, y en `candidate_applications` los derivados `score` e `is_excluded`. La bandeja de empresa ordena por score y separa excluidos. Es lo que sostiene el ranking del ATS y es barato.
+### T10 · Preguntas de filtrado (killer questions) ✅
+Implementación completa de la especificación (§3.1):
+- **Backend:** tablas `vacancy_questions` + `vacancy_question_options` (peso `-1` excluyente | `0–10`) + `application_answers` (con **snapshot** del texto de la pregunta y del peso aplicado); `candidate_applications` ganó `score` e `is_excluded`. Endpoints: `GET/PUT /company/vacancies/:id/questions` (máx. 5; cerradas con 2–5 opciones), `GET /vacancies/:id/questions` (público, **sin pesos** — son secretos), `GET /company/applications/:id/answers`. El `POST /candidate/applications` valida y puntúa las respuestas en la misma transacción.
+- **Gate por plan:** el feature `screening_questions` ahora SÍ hace algo — `EntitlementService` activa `screening_enabled` en la vacante al liquidar la promoción (y lo revoca al expirar; las preguntas ya definidas se conservan). Sin el beneficio, `PUT questions` responde 403 `VACANCY_SCREENING_NOT_ENABLED`.
+- **Congelamiento:** con la primera postulación las preguntas quedan bloqueadas (409 `VACANCY_SCREENING_LOCKED`) — cambiar el cuestionario invalidaría los puntajes.
+- **Frontend:** editor de preguntas en modal (acción por fila en `/empresa/vacantes`, visible si el plan lo otorgó); el candidato responde en un modal al Postularme; la bandeja de empresa muestra columna "Filtro" ("N pts" / "Descartado") y modal de respuestas.
+- 3 pruebas unitarias nuevas del scoring (suite completa: 220 tests en verde).
 
-### T11 · Moderación anti-PII en descripciones ⬜
-Detectar teléfono/email/URL en descripción y (cuando exista T10) en preguntas. **Adoptamos la variante suave** que el propio análisis recomienda (§13.4.4): avisar en línea al reclutador, no rechazar la oferta completa. Regex + normalización de ofuscaciones ("arroba", "punto com"). Hoy no tenemos paywall de contacto, pero es higiene y queda listo si se adopta (ver decisión N1).
+### T11 · Moderación anti-PII ✅
+`shared/utils/pii.ts`: detecta teléfono (10+ dígitos), correo, enlaces y ofuscaciones ("arroba", "punto com", "whatsapp"). **Variante suave** (§13.4.4): banner ámbar de aviso en el formulario de vacante (descripción/requisitos) y en el editor de preguntas — no bloquea la publicación.
 
-### T12 · Denunciar vacante ⬜
-Catálogo exacto de 7 motivos (§8): ofensiva/discriminatoria · es anuncio · piden dinero · no responden · pagan mal · duplicada · otro. Endpoint público (con auth de candidato), entidad `vacancy_report`, cola en `/admin`. Usar "piden dinero" y "no responden" como señal de calidad del empleador, no solo buzón.
+### T12 · Denunciar vacante ✅
+- **Backend:** entidad `vacancy_reports` (única por usuario+vacante), catálogo de 7 motivos exacto (§8), `POST /vacancies/:id/report` (JWT, rol CANDIDATE en el use-case, 409 si duplica), y cola admin `GET /admin/vacancy-reports` + `PATCH :id/resolve` (rol ADMIN + permiso, doctrina de doble guard; reutiliza `vacancies.read`/`vacancies.status` — sin cambios al seed RBAC).
+- **Frontend:** link "Denunciar esta vacante" en el detalle público (solo candidatos) con modal de motivos + comentario; nueva área **`/admin/denuncias`** con filtro pendientes/resueltas y botón Resolver.
 
-### T13 · No leídos en postulaciones ⬜
-`candidate_applications` no tiene `readAt` — Computrabajo ordena su bandeja por "No leídos". Agregar `readAt` (se marca al abrir el detalle), contador de no leídos por vacante en la bandeja `/empresa/postulaciones`.
+### T13 · No leídos en postulaciones ✅
+`read_at` en `candidate_applications`: cualquier interacción de la empresa (detalle, historial, respuestas, CV o cambio de estado) la marca leída — a nivel empresa, no por reclutador. El listado devuelve `unread`; la UI muestra chip "N sin leer", punto naranja y nombre en negrita en las filas sin abrir, con actualización optimista al interactuar.
 
-### T14 · Coherencia billing: flags muertos y cuota no aplicada ⬜
-Dos hallazgos del cruce con el código: (a) **`isUrgent` e `isConfidential` no tienen escritor** — el feature `urgent_confidential_badge` se vende pero `EntitlementService.applyToVacancy` solo activa `isVerified`/`isFeatured`; (b) **`postingQuota` se guarda pero nunca se valida** al crear vacantes. Cablear ambos (o retirarlos del catálogo de features hasta que existan).
+### T14 · Coherencia billing ✅ (flags) · 🔷 (postingQuota)
+- ✅ `urgent_confidential_badge` ya escribe: activa `isUrgent` automáticamente y otorga la **capacidad** `can_be_confidential` — la confidencialidad la decide la empresa con un checkbox en su formulario (403 `VACANCY_CONFIDENTIAL_NOT_ENABLED` sin el beneficio). Al expirar la promoción se revocan urgente, confidencial y la capacidad.
+- 🔷 **`postingQuota` sigue sin aplicarse** — y es deliberado: hoy publicar es gratis e ilimitado y las suscripciones NO aplican beneficios a vacantes (solo cupo de talento). Aplicar la cuota exige primero diseñar "beneficios de suscripción sobre vacantes". Movido a decisión de negocio **N5**.
+
+**Nota de despliegue:** 3 migraciones nuevas (`1720000013000`–`1720000015000`) — correr `migration:run:prod`. No hay permisos nuevos (no requiere re-seed RBAC). Para probar preguntas/urgente/confidencial se necesita un plan activo con esos features y una promoción pagada sobre la vacante.
 
 ## Núcleo post-demo
 
@@ -187,6 +196,7 @@ Hoy la vacante **nunca vence sola** (solo la promoción expira y caen los badges
 - **N2 · Profundidad del masking en talento.** Nuestro buscador es lista-mínima → detalle completo (todo o nada) y la lista muestra **nombre real completo gratis**. CT muestra el CV profesional completo y enmascara solo lo identificable (§7) — convierte mejor y expone menos PII en el listado gratuito. Rediseñar el DTO de búsqueda es tarea mediana.
 - **N3 · Edad y género: NO adoptar.** El propio análisis lo desaconseja (§13.4.1, riesgo CONAPRED/LFPDPPP). Hoy no los tenemos — dejarlo como decisión documentada.
 - **N4 · Catálogo de CP con lat/lng + filtro por distancia.** Requiere catálogo de códigos postales georreferenciado (hoy municipio es texto libre). Costo alto; diferir hasta que haya volumen.
+- **N5 · ¿Qué limita `postingQuota`?** Hoy publicar es gratis e ilimitado y las suscripciones solo otorgan cupo de talento. Opciones: (a) la suscripción aplica beneficios (verificación, etc.) a hasta N vacantes — requiere diseñar ese flujo; (b) retirar el campo del catálogo. Mientras no se decida, el campo se guarda pero no se aplica.
 
 ## Diferido (backlog largo)
 

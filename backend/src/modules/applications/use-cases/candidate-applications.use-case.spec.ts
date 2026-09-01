@@ -15,13 +15,18 @@ import { CandidateProfile } from '@/modules/candidates/entities/candidate-profil
 import { CandidateResume } from '@/modules/candidates/entities/candidate-resume.entity';
 import { ICandidateResumeRepository } from '@/modules/candidates/repositories/candidate-resume.repository.interface';
 import { ICompanyRepository } from '@/modules/companies/repositories/company.repository.interface';
+import { IApplicationAnswerRepository } from '@/modules/applications/repositories/application-answer.repository.interface';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
+import { VacancyQuestion } from '@/modules/vacancies/entities/vacancy-question.entity';
+import { VacancyQuestionOption } from '@/modules/vacancies/entities/vacancy-question-option.entity';
 import {
   EmploymentType,
   ExperienceLevel,
   VacancyStatus,
   WorkMode,
 } from '@/modules/vacancies/enums/vacancy.enums';
+import { VacancyQuestionType } from '@/modules/vacancies/enums/vacancy-question.enums';
+import { IVacancyQuestionRepository } from '@/modules/vacancies/repositories/vacancy-question.repository.interface';
 import { IVacancyRepository } from '@/modules/vacancies/repositories/vacancy.repository.interface';
 
 function errorCodeOf(e: unknown): string | undefined {
@@ -89,6 +94,35 @@ function resume(overrides: Partial<CandidateResume> = {}): CandidateResume {
   });
 }
 
+function question(
+  id: string,
+  questionType: VacancyQuestionType,
+  questionText = '¿Pregunta?',
+): VacancyQuestion {
+  return Object.assign(new VacancyQuestion(), {
+    id,
+    vacancyId: 'vac-1',
+    questionText,
+    questionType,
+    sortOrder: 0,
+  });
+}
+
+function option(
+  id: string,
+  questionId: string,
+  weight: number,
+  optionText = 'Opción',
+): VacancyQuestionOption {
+  return Object.assign(new VacancyQuestionOption(), {
+    id,
+    questionId,
+    optionText,
+    weight,
+    sortOrder: 0,
+  });
+}
+
 const actor = {
   userId: 'user-1',
   role: Role.CANDIDATE,
@@ -104,6 +138,8 @@ describe('CandidateApplicationsUseCase', () => {
   let vacancies: jest.Mocked<IVacancyRepository>;
   let companies: jest.Mocked<ICompanyRepository>;
   let resumes: jest.Mocked<ICandidateResumeRepository>;
+  let questions: jest.Mocked<IVacancyQuestionRepository>;
+  let answers: jest.Mocked<IApplicationAnswerRepository>;
   let ownership: jest.Mocked<ApplicationOwnershipService>;
   let audit: jest.Mocked<AuditService>;
   let useCase: CandidateApplicationsUseCase;
@@ -157,6 +193,16 @@ describe('CandidateApplicationsUseCase', () => {
       findByIdAndProfileId: jest.fn().mockResolvedValue(resume()),
     } as unknown as jest.Mocked<ICandidateResumeRepository>;
 
+    questions = {
+      findByVacancyId: jest.fn().mockResolvedValue([]),
+      findOptionsByQuestionIds: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<IVacancyQuestionRepository>;
+
+    answers = {
+      saveMany: jest.fn((items: unknown[]) => Promise.resolve(items)),
+      findByApplicationId: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<IApplicationAnswerRepository>;
+
     ownership = {
       assertCandidateRole: jest.fn(),
       requireProfile: jest.fn().mockResolvedValue(profile()),
@@ -173,6 +219,8 @@ describe('CandidateApplicationsUseCase', () => {
       vacancies,
       companies,
       resumes,
+      questions,
+      answers,
       ownership,
       audit,
     );
@@ -201,6 +249,70 @@ describe('CandidateApplicationsUseCase', () => {
       expect(audit.record).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'applications.create' }),
       );
+    });
+
+    it('suma los pesos de las respuestas y guarda el snapshot (M15)', async () => {
+      questions.findByVacancyId.mockResolvedValue([
+        question('q1', VacancyQuestionType.CLOSED),
+        question('q2', VacancyQuestionType.OPEN),
+      ]);
+      questions.findOptionsByQuestionIds.mockResolvedValue([
+        option('o1', 'q1', 7),
+        option('o2', 'q1', -1),
+      ]);
+
+      await useCase.apply({
+        vacancyId: 'vac-1',
+        answers: [
+          { questionId: 'q1', optionId: 'o1' },
+          { questionId: 'q2', answerText: 'Cinco años de experiencia.' },
+        ],
+        ...actor,
+      });
+
+      const saved = applications.save.mock.calls[0][0];
+      expect(saved.score).toBe(7);
+      expect(saved.isExcluded).toBe(false);
+      expect(answers.saveMany).toHaveBeenCalledTimes(1);
+      const persisted = answers.saveMany.mock.calls[0][0] as {
+        questionText: string;
+        weight: number | null;
+      }[];
+      expect(persisted).toHaveLength(2);
+      expect(persisted[1].weight).toBeNull();
+    });
+
+    it('descarta al aspirante cuando elige una opción excluyente', async () => {
+      questions.findByVacancyId.mockResolvedValue([
+        question('q1', VacancyQuestionType.CLOSED),
+      ]);
+      questions.findOptionsByQuestionIds.mockResolvedValue([
+        option('o1', 'q1', 7),
+        option('o2', 'q1', -1),
+      ]);
+
+      await useCase.apply({
+        vacancyId: 'vac-1',
+        answers: [{ questionId: 'q1', optionId: 'o2' }],
+        ...actor,
+      });
+
+      const saved = applications.save.mock.calls[0][0];
+      expect(saved.isExcluded).toBe(true);
+      expect(saved.score).toBe(0);
+    });
+
+    it('rechaza postular sin responder las preguntas de la vacante', async () => {
+      questions.findByVacancyId.mockResolvedValue([
+        question('q1', VacancyQuestionType.CLOSED),
+      ]);
+
+      const thrown = await useCase
+        .apply({ vacancyId: 'vac-1', ...actor })
+        .catch((e: unknown) => e);
+
+      expect(errorCodeOf(thrown)).toBe(ErrorCode.APPLICATION_ANSWERS_INVALID);
+      expect(applications.save).not.toHaveBeenCalled();
     });
 
     it('adjunta la hoja de vida marcada por defecto cuando no se indica', async () => {

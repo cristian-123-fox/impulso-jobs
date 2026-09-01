@@ -20,6 +20,7 @@ import {
   ApplicationsTable,
 } from '@/features/company/applications/components/applications-table/applications-table';
 import {
+  ApplicationAnswer,
   ApplicationStatusHistory,
   CompanyApplication,
 } from '@/features/company/applications/models/applications.models';
@@ -43,7 +44,16 @@ import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
   template: `
     <div class="mx-auto max-w-[1180px]">
       <div class="mb-6">
-        <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Postulaciones</h1>
+        <div class="flex flex-wrap items-center gap-3">
+          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Postulaciones</h1>
+          @if (facade.unread() > 0) {
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1 text-[12px] font-bold text-white"
+            >
+              {{ facade.unread() }} sin leer
+            </span>
+          }
+        </div>
         <p class="mt-1.5 text-[13.5px] text-muted">
           Aspirantes que aplicaron a tus vacantes. Mueve cada uno por tu proceso.
         </p>
@@ -136,6 +146,67 @@ import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
       </ij-modal>
     }
 
+    @if (answersOf(); as application) {
+      <ij-modal
+        title="Respuestas de filtrado"
+        [subtitle]="subtitleOf(application)"
+        (close)="closeModals()"
+      >
+        @if (application.isExcluded) {
+          <p class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-[13px] font-semibold text-red-700">
+            Una respuesta excluyente descartó esta postulación del filtro.
+          </p>
+        } @else if (application.score !== null) {
+          <p class="mb-4 rounded-xl bg-brand-50 px-4 py-3 text-[13px] font-semibold text-brand">
+            Puntaje total: {{ application.score }} pts
+          </p>
+        }
+
+        @if (answersList().length === 0) {
+          <p class="rounded-xl bg-surface px-4 py-6 text-center text-[13.5px] text-muted">
+            Esta postulación no tiene respuestas registradas.
+          </p>
+        } @else {
+          <ol class="flex flex-col gap-3">
+            @for (answer of answersList(); track answer.id) {
+              <li class="rounded-xl bg-surface px-4 py-3">
+                <div class="text-[12.5px] font-bold text-muted">
+                  {{ answer.questionText }}
+                </div>
+                <div class="mt-1 flex items-start justify-between gap-3">
+                  <span class="text-[13.5px] font-semibold text-ink-900">
+                    {{ answer.answerText }}
+                  </span>
+                  @if (answer.isExcluding) {
+                    <span class="flex-shrink-0 rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-700">
+                      Excluyente
+                    </span>
+                  } @else if (answer.weight !== null) {
+                    <span class="flex-shrink-0 rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand">
+                      {{ answer.weight }} pts
+                    </span>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        }
+
+        <div class="mt-6 flex justify-end border-t border-line pt-4">
+          <button
+            ij-button
+            type="button"
+            variant="primary"
+            shape="rounded"
+            size="md"
+            (click)="closeModals()"
+          >
+            Cerrar
+          </button>
+        </div>
+      </ij-modal>
+    }
+
     @if (historyOf(); as application) {
       <ij-modal
         title="Historial de la postulación"
@@ -193,6 +264,8 @@ export class ApplicationsPage {
   protected readonly editing = signal<CompanyApplication | null>(null);
   protected readonly historyOf = signal<CompanyApplication | null>(null);
   protected readonly history = signal<ApplicationStatusHistory[]>([]);
+  protected readonly answersOf = signal<CompanyApplication | null>(null);
+  protected readonly answersList = signal<ApplicationAnswer[]>([]);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -245,6 +318,7 @@ export class ApplicationsPage {
     const { action, application } = event;
     if (action === 'status') {
       this.historyOf.set(null);
+      this.answersOf.set(null);
       this.formError.set(null);
       this.editing.set(application);
       return;
@@ -255,7 +329,23 @@ export class ApplicationsPage {
       return;
     }
 
+    if (action === 'answers') {
+      this.editing.set(null);
+      this.historyOf.set(null);
+      this.answersList.set([]);
+      this.answersOf.set(application);
+      this.facade
+        .answers(application.id)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (answers) => this.answersList.set(answers),
+          error: () => this.answersList.set([]),
+        });
+      return;
+    }
+
     this.editing.set(null);
+    this.answersOf.set(null);
     this.history.set([]);
     this.historyOf.set(application);
     this.facade
@@ -293,6 +383,7 @@ export class ApplicationsPage {
   protected closeModals(): void {
     this.editing.set(null);
     this.historyOf.set(null);
+    this.answersOf.set(null);
     this.formError.set(null);
   }
 

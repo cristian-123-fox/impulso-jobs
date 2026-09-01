@@ -79,6 +79,10 @@ export interface Vacancy {
   isFeatured: boolean;
   isUrgent: boolean;
   isConfidential: boolean;
+  /** Capacidad de confidencialidad otorgada por el plan. */
+  canBeConfidential: boolean;
+  /** Capacidad de preguntas de filtrado otorgada por el plan (M15). */
+  screeningEnabled: boolean;
   pauseCount: number;
   maxPauses: number;
   pausesLeft: number;
@@ -121,4 +125,33 @@ export interface SaveVacancyPayload {
   salaryMin?: number;
   salaryMax?: number;
   salaryHidden?: boolean;
+  /** Sólo se honra si el plan otorgó `canBeConfidential`. */
+  isConfidential?: boolean;
+}
+
+// ---- Preguntas de filtrado (M15) ----
+
+export type VacancyQuestionType = 'OPEN' | 'CLOSED';
+
+export interface VacancyQuestionOption {
+  id: string;
+  optionText: string;
+  /** -1 = excluyente; 0..10 suma al puntaje. */
+  weight: number;
+  isExcluding: boolean;
+  sortOrder: number;
+}
+
+export interface VacancyQuestion {
+  id: string;
+  questionText: string;
+  questionType: VacancyQuestionType;
+  sortOrder: number;
+  options: VacancyQuestionOption[];
+}
+
+export interface SaveVacancyQuestionPayload {
+  questionText: string;
+  questionType: VacancyQuestionType;
+  options?: { optionText: string; weight: number }[];
 }

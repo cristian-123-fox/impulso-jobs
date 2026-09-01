@@ -53,6 +53,7 @@ export class CandidateApplicationsController {
     return this.applications.apply({
       vacancyId: dto.vacancyId,
       resumeId: dto.resumeId,
+      answers: dto.answers,
       ...this.actor(user, client),
     });
   }

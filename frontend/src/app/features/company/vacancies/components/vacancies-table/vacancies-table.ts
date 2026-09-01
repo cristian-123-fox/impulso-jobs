@@ -19,6 +19,7 @@ const STATUS_BADGE: Record<VacancyStatus, string> = {
 export type VacancyAction =
   | 'open'
   | 'edit'
+  | 'questions'
   | 'pause'
   | 'reactivate'
   | 'refresh'
@@ -117,6 +118,17 @@ export interface VacancyActionEvent {
                       (click)="emit('refresh', vacancy)"
                     >
                       <ij-icon name="flash" [size]="15" />
+                    </button>
+                  }
+                  @if (vacancy.screeningEnabled) {
+                    <button
+                      type="button"
+                      [class]="actionClass"
+                      title="Preguntas de filtrado"
+                      aria-label="Preguntas de filtrado"
+                      (click)="emit('questions', vacancy)"
+                    >
+                      <ij-icon name="clipboard" [size]="15" />
                     </button>
                   }
                   @if (vacancy.status === active) {

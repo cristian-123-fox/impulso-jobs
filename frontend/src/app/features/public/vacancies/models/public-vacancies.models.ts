@@ -57,3 +57,31 @@ export interface PublicVacanciesFilters {
   page: number;
   limit: number;
 }
+
+/** Pregunta de filtrado en el flujo de postulación (sin pesos: son secretos). */
+export interface PublicVacancyQuestion {
+  id: string;
+  questionText: string;
+  questionType: 'OPEN' | 'CLOSED';
+  options: { id: string; optionText: string }[];
+}
+
+export interface ApplicationAnswerPayload {
+  questionId: string;
+  optionId?: string;
+  answerText?: string;
+}
+
+/** Catálogo cerrado de motivos de denuncia (espeja el backend). */
+export const VACANCY_REPORT_REASONS: readonly {
+  code: string;
+  label: string;
+}[] = [
+  { code: 'OFFENSIVE_DISCRIMINATORY', label: 'Es ofensiva y/o discriminatoria' },
+  { code: 'ADVERTISEMENT', label: 'Es un anuncio, no una oferta de empleo' },
+  { code: 'ASKS_FOR_MONEY', label: 'Me solicitan dinero' },
+  { code: 'NO_RESPONSE', label: 'No responden a los postulados' },
+  { code: 'LOW_PAY', label: 'Pagan muy poco o en malas condiciones' },
+  { code: 'DUPLICATE', label: 'Oferta duplicada' },
+  { code: 'OTHER', label: 'Otro motivo' },
+];

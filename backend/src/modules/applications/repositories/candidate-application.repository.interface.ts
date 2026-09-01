@@ -58,6 +58,11 @@ export interface ICandidateApplicationRepository {
     vacancyId: string,
     manager?: EntityManager,
   ): Promise<CandidateApplication[]>;
+  countUnreadByCompany(
+    companyId: string,
+    vacancyId?: string,
+    manager?: EntityManager,
+  ): Promise<number>;
   countByCompanyGroupedByStatus(
     companyId: string,
     vacancyId?: string,

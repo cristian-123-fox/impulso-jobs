@@ -94,6 +94,17 @@ export class Vacancy extends BaseEntity {
   @Column({ name: 'is_confidential', type: 'boolean', default: false })
   isConfidential!: boolean;
 
+  /**
+   * Capacidad de marcar la vacante como confidencial. La otorga el plan
+   * (`urgent_confidential_badge`); la empresa decide si la usa.
+   */
+  @Column({ name: 'can_be_confidential', type: 'boolean', default: false })
+  canBeConfidential!: boolean;
+
+  /** Capacidad de definir preguntas de filtrado (`screening_questions`, M15). */
+  @Column({ name: 'screening_enabled', type: 'boolean', default: false })
+  screeningEnabled!: boolean;
+
   // ---- Pausas y refresco ----
   @Column({ name: 'pause_count', type: 'int', default: 0 })
   pauseCount!: number;

@@ -1,3 +1,4 @@
+import { ApplicationAnswer } from '@/modules/applications/entities/application-answer.entity';
 import { ApplicationStatusHistory } from '@/modules/applications/entities/application-status-history.entity';
 import { ApplicationStatus } from '@/modules/applications/entities/application-status.entity';
 import { CandidateApplication } from '@/modules/applications/entities/candidate-application.entity';
@@ -70,9 +71,24 @@ export interface CompanyApplicationResponseDto {
   status: ApplicationStatusResponseDto | null;
   appliedAt: string;
   updatedAt: string;
+  /** Null = ningún reclutador la ha abierto todavía. */
+  readAt: string | null;
+  /** Puntaje de las preguntas de filtrado (M15). Null = sin preguntas. */
+  score: number | null;
+  /** Alguna respuesta fue excluyente. */
+  isExcluded: boolean;
   candidate: ApplicationCandidateDto | null;
   vacancy: ApplicationVacancyDto | null;
   resume: ApplicationResumeDto | null;
+}
+
+/** Respuesta de filtrado como la ve la empresa. */
+export interface ApplicationAnswerResponseDto {
+  id: string;
+  questionText: string;
+  answerText: string;
+  weight: number | null;
+  isExcluding: boolean;
 }
 
 export interface ApplicationStatusHistoryResponseDto {
@@ -173,9 +189,24 @@ export function toCompanyApplicationResponse(
     status: status ? toApplicationStatusResponse(status) : null,
     appliedAt: application.appliedAt.toISOString(),
     updatedAt: application.updatedAt.toISOString(),
+    readAt: application.readAt?.toISOString() ?? null,
+    score: application.score ?? null,
+    isExcluded: application.isExcluded,
     candidate,
     vacancy,
     resume,
+  };
+}
+
+export function toApplicationAnswerResponse(
+  answer: ApplicationAnswer,
+): ApplicationAnswerResponseDto {
+  return {
+    id: answer.id,
+    questionText: answer.questionText,
+    answerText: answer.answerText,
+    weight: answer.weight ?? null,
+    isExcluding: answer.weight === -1,
   };
 }
 

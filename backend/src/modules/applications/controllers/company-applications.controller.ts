@@ -20,6 +20,7 @@ import { RequirePermissions } from '@/common/decorators/require-permissions.deco
 import { ResponseMessage } from '@/common/decorators/response-message.decorator';
 import type { AuthenticatedUser } from '@/common/types/authenticated-user';
 import {
+  ApplicationAnswerResponseDto,
   ApplicationStatusHistoryResponseDto,
   ApplicationStatusResponseDto,
   CompanyApplicationResponseDto,
@@ -106,6 +107,17 @@ export class CompanyApplicationsController {
     );
 
     return new StreamableFile(result.stream);
+  }
+
+  @Get(':id/answers')
+  @RequirePermissions('applications.read')
+  @ResponseMessage('Respuestas obtenidas.')
+  answers(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<ApplicationAnswerResponseDto[]> {
+    return this.applications.listAnswers(id, this.actor(user, client));
   }
 
   @Get(':id/history')

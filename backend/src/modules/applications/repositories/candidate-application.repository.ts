@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, FindOptionsWhere, Repository } from 'typeorm';
+import { EntityManager, FindOptionsWhere, IsNull, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { CandidateApplication } from '@/modules/applications/entities/candidate-application.entity';
 import {
@@ -70,6 +70,20 @@ export class CandidateApplicationRepository
       order: { appliedAt: 'DESC' },
       skip: (criteria.page - 1) * criteria.limit,
       take: criteria.limit,
+    });
+  }
+
+  countUnreadByCompany(
+    companyId: string,
+    vacancyId?: string,
+    manager?: EntityManager,
+  ): Promise<number> {
+    return this.repo(manager).count({
+      where: {
+        companyId,
+        readAt: IsNull(),
+        ...(vacancyId && { vacancyId }),
+      },
     });
   }
 
