@@ -8,7 +8,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
+import { AdminError } from '@/features/admin/shared/admin-error/admin-error';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
+import { AdminTableSkeleton } from '@/features/admin/shared/admin-table-skeleton/admin-table-skeleton';
 import { ReportsApi } from '@/features/admin/reports/data/reports.api';
 import {
   REPORT_REASON_LABELS,
@@ -23,20 +26,37 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-reports-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, AdminPagination, IjIcon],
+  imports: [
+    DatePipe,
+    RouterLink,
+    AdminEmpty,
+    AdminError,
+    AdminPagination,
+    AdminTableSkeleton,
+    IjIcon,
+  ],
   template: `
     <div class="mx-auto max-w-[1180px]">
       <div class="mb-6">
         <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Denuncias</h1>
         <p class="mt-1.5 text-[13.5px] text-muted">
-          Reportes de candidatos sobre vacantes publicadas. "Solicitan dinero" y
-          "no responden" son señal de calidad del empleador.
+          Reportes de candidatos sobre vacantes publicadas. Varias denuncias sobre una misma
+          empresa son motivo para revisar al empleador.
         </p>
       </div>
 
-      <div class="mb-5 flex flex-wrap gap-2">
+      <div
+        role="tablist"
+        class="mb-4 flex gap-2 overflow-x-auto rounded-2xl bg-white p-1.5 shadow-card"
+      >
         @for (tab of tabs; track tab.value) {
-          <button type="button" [class]="tabClass(tab.value)" (click)="filter(tab.value)">
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="status() === tab.value"
+            [class]="tabClass(tab.value)"
+            (click)="filter(tab.value)"
+          >
             {{ tab.label }}
           </button>
         }
@@ -50,14 +70,13 @@ const PAGE_SIZE = 10;
 
       @switch (state()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-            Cargando denuncias…
-          </div>
+          <app-admin-table-skeleton label="Cargando denuncias…" />
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-            No se pudieron cargar las denuncias.
-          </div>
+          <app-admin-error
+            message="No se pudieron cargar las denuncias."
+            (retry)="load(page())"
+          />
         }
         @default {
           <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
@@ -78,19 +97,21 @@ const PAGE_SIZE = 10;
                       @if (report.vacancyTitle) {
                         <a
                           [routerLink]="['/vacantes', report.vacancyId]"
-                          class="text-sm font-semibold text-ink-900 hover:text-brand"
+                          class="text-sm font-semibold text-ink-900 hover:text-brand-strong"
                         >
                           {{ report.vacancyTitle }}
                         </a>
                       } @else {
                         <span class="text-sm text-muted">Vacante eliminada</span>
                       }
-                      <div class="text-[12.5px] text-muted">
-                        {{ report.companyName ?? '—' }}
-                      </div>
+                      @if (report.companyName) {
+                        <div class="text-[12.5px] text-muted">{{ report.companyName }}</div>
+                      }
                     </td>
                     <td class="px-5 py-3.5">
-                      <span class="inline-block rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-accent-amber">
+                      <span
+                        class="inline-block rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-accent-amber-strong"
+                      >
                         {{ reasonLabel(report.reasonCode) }}
                       </span>
                       @if (report.comment) {
@@ -105,7 +126,7 @@ const PAGE_SIZE = 10;
                         [class]="
                           report.status === 'PENDING'
                             ? 'bg-red-50 text-red-700'
-                            : 'bg-accent-green-soft text-accent-green'
+                            : 'bg-accent-green-soft text-accent-green-strong'
                         "
                       >
                         {{ statusLabel(report.status) }}
@@ -119,7 +140,7 @@ const PAGE_SIZE = 10;
                         @if (report.status === 'PENDING') {
                           <button
                             type="button"
-                            class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-brand"
+                            class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-accent-green-strong active:translate-y-[1px]"
                             (click)="resolve(report)"
                           >
                             <ij-icon name="check" [size]="14" />
@@ -131,8 +152,12 @@ const PAGE_SIZE = 10;
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="5" class="px-5 py-10 text-center text-[13.5px] text-muted">
-                      No hay denuncias con este filtro.
+                    <td colspan="5">
+                      <app-admin-empty
+                        icon="alert-triangle"
+                        message="No hay denuncias con este filtro."
+                        hint="Las denuncias las levantan los candidatos desde el detalle de cada vacante."
+                      />
                     </td>
                   </tr>
                 }
@@ -216,9 +241,11 @@ export class ReportsListPage {
   }
 
   protected tabClass(value: string): string {
-    const base = 'rounded-xl px-3.5 py-2 text-[13px] font-bold transition-colors';
+    const base =
+      'flex flex-1 min-w-fit items-center justify-center whitespace-nowrap rounded-xl px-4 ' +
+      'py-2.5 text-[13.5px] font-bold transition-colors';
     return this.status() === value
       ? `${base} bg-brand text-white`
-      : `${base} bg-white text-body shadow-card hover:bg-surface`;
+      : `${base} text-body hover:bg-surface`;
   }
 }

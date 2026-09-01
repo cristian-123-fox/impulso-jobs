@@ -86,7 +86,7 @@ interface FeatureRow {
                 <td class="px-4 py-3">
                   <div class="text-[13.5px] font-semibold text-ink-900">{{ row.name }}</div>
                   <div class="mt-0.5 text-[12px] text-muted">
-                    <code class="text-brand">{{ row.code }}</code>
+                    <code class="text-brand-strong">{{ row.code }}</code>
                     · {{ typeLabel(row.valueType) }}
                   </div>
                   @if (row.description) {
@@ -95,7 +95,7 @@ interface FeatureRow {
                 </td>
                 <td class="px-4 py-3 align-top">
                   @if (row.valueType === boolean) {
-                    <span class="text-[13px] text-muted">—</span>
+                    <span class="text-[13px] text-muted">Sin valor</span>
                   } @else {
                     <div class="flex flex-col gap-1.5">
                       <input

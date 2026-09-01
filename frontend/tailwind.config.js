@@ -5,7 +5,9 @@ module.exports = {
     extend: {
       colors: {
         // Marca (AGENTS.md §5.2): naranja CTA + azul corporativo
-        brand: { DEFAULT: "#e47c3f", 600: "#cf6d34", 50: "#fbefe9" },
+        // `strong`: texto pequeño sobre fondos suaves o blancos (WCAG AA ≥ 4.5:1);
+        // el naranja base queda para superficies, iconos grandes y hovers.
+        brand: { DEFAULT: "#e47c3f", 600: "#cf6d34", 50: "#fbefe9", strong: "#a34d1a" },
         ink: {
           DEFAULT: "#1f3b73",
           900: "#1a1a2e",
@@ -17,19 +19,24 @@ module.exports = {
         "footer-muted": "#9aa0b4",
         // Neutrales del portal
         body: "#35354a",
-        muted: "#8a8a9e",
+        muted: "#6d6d84",
         surface: "#f5f7fb",
         line: "#eceef3",
-        // Acentos decorativos (tarjetas de categoría, badges, logos)
+        // Acentos decorativos (tarjetas de categoría, badges, logos).
+        // Los `-strong` son el texto legible sobre su fondo `-soft` (WCAG AA);
+        // el tono base queda para iconos grandes y superficies.
         accent: {
           green: "#1fae6a",
           "green-soft": "#e6f7ef",
+          "green-strong": "#147a4d",
           pink: "#e8607a",
           "pink-soft": "#fdeef0",
           amber: "#f0a04b",
           "amber-soft": "#fef3e6",
+          "amber-strong": "#92560f",
           blue: "#2b6df4",
           "blue-soft": "#e9f0fe",
+          "blue-strong": "#1d4ed8",
         },
       },
       fontFamily: {

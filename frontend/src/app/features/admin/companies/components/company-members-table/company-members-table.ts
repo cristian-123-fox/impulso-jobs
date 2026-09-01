@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IjIcon } from '@/shared/ui';
+import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import {
   COMPANY_MEMBER_ROLE_LABELS,
   CompanyMember,
@@ -8,9 +9,9 @@ import {
 } from '@/features/admin/companies/models/companies.models';
 
 const ROLE_BADGE: Record<CompanyMemberRole, string> = {
-  [CompanyMemberRole.OWNER]: 'bg-brand-50 text-brand',
-  [CompanyMemberRole.ADMIN]: 'bg-accent-blue-soft text-accent-blue',
-  [CompanyMemberRole.RECRUITER]: 'bg-accent-green-soft text-accent-green',
+  [CompanyMemberRole.OWNER]: 'bg-brand-50 text-brand-strong',
+  [CompanyMemberRole.ADMIN]: 'bg-accent-blue-soft text-accent-blue-strong',
+  [CompanyMemberRole.RECRUITER]: 'bg-accent-green-soft text-accent-green-strong',
   [CompanyMemberRole.MEMBER]: 'bg-surface text-muted',
 };
 
@@ -18,7 +19,7 @@ const ROLE_BADGE: Record<CompanyMemberRole, string> = {
 @Component({
   selector: 'app-company-members-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, IjIcon],
+  imports: [DatePipe, IjIcon, AdminEmpty],
   template: `
     <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
       <table class="w-full min-w-[720px] border-collapse text-left">
@@ -37,7 +38,7 @@ const ROLE_BADGE: Record<CompanyMemberRole, string> = {
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
                   <span
-                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] text-[13px] font-bold"
+                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-[13px] font-bold"
                     [class]="roleBadge(member.companyRole)"
                   >
                     {{ initials(member.email) }}
@@ -59,7 +60,7 @@ const ROLE_BADGE: Record<CompanyMemberRole, string> = {
                 <div class="flex flex-wrap items-center gap-1.5">
                   @if (member.status === 'ACTIVE') {
                     <span
-                      class="inline-block rounded-md bg-accent-green-soft px-2 py-1 text-[11.5px] font-bold text-accent-green"
+                      class="inline-block rounded-md bg-accent-green-soft px-2 py-1 text-[11.5px] font-bold text-accent-green-strong"
                     >
                       Activo
                     </span>
@@ -72,7 +73,7 @@ const ROLE_BADGE: Record<CompanyMemberRole, string> = {
                   }
                   @if (!member.emailVerified) {
                     <span
-                      class="inline-block rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-[#b26a15]"
+                      class="inline-block rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-accent-amber-strong"
                       title="El correo no ha sido verificado: no puede iniciar sesión."
                     >
                       Sin verificar
@@ -87,7 +88,7 @@ const ROLE_BADGE: Record<CompanyMemberRole, string> = {
                 <div class="flex items-center justify-end gap-1.5">
                   <button
                     type="button"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px]"
                     title="Cambiar rol interno"
                     aria-label="Cambiar rol interno"
                     (click)="changeRole.emit(member)"
@@ -96,7 +97,7 @@ const ROLE_BADGE: Record<CompanyMemberRole, string> = {
                   </button>
                   <button
                     type="button"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
                     [title]="removeTitle(member)"
                     aria-label="Quitar del equipo"
                     [disabled]="isLastOwner(member)"
@@ -109,8 +110,12 @@ const ROLE_BADGE: Record<CompanyMemberRole, string> = {
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="px-5 py-10 text-center text-[13.5px] text-muted">
-                Esta empresa aún no tiene usuarios en su equipo.
+              <td colspan="5">
+                <app-admin-empty
+                  icon="users"
+                  message="Esta empresa aún no tiene usuarios en su equipo."
+                  hint="Usa el botón de arriba para vincular una cuenta existente o crear una nueva."
+                />
               </td>
             </tr>
           }

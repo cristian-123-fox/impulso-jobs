@@ -60,6 +60,7 @@ export type IconName =
   | 'history'
   | 'bell'
   | 'bookmark'
+  | 'trash'
   | 'logout';
 
 /**
@@ -208,6 +209,12 @@ const ICONS: Record<IconName, readonly IconShape[]> = {
     p('M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4'),
     p('M16 17l5-5-5-5'),
     p('M21 12H9'),
+  ],
+  trash: [
+    p('M4 7h16'),
+    p('M9 7V4h6v3'),
+    p('M6 7l1 14h10l1-14'),
+    p('M10 11v6M14 11v6'),
   ],
 };
 

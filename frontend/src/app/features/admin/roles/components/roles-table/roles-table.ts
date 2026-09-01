@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IjIcon } from '@/shared/ui';
+import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import { RoleSummary } from '@/features/admin/roles/models/roles.models';
 
 /** Acción solicitada sobre un rol desde la tabla. */
@@ -14,7 +15,7 @@ export interface RoleActionEvent {
 @Component({
   selector: 'app-roles-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon],
+  imports: [IjIcon, AdminEmpty],
   template: `
     <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
       <table class="w-full min-w-[720px] border-collapse text-left">
@@ -33,18 +34,20 @@ export interface RoleActionEvent {
               <td class="px-5 py-3.5">
                 <button
                   type="button"
-                  class="text-left text-sm font-semibold text-ink-900 transition-colors hover:text-brand"
+                  class="text-left text-sm font-semibold text-ink-900 transition-colors hover:text-brand-strong"
                   (click)="emit('open', role)"
                 >
                   {{ role.name }}
                 </button>
               </td>
               <td class="px-5 py-3.5">
-                <span class="rounded-md bg-brand-50 px-2 py-1 text-xs font-bold text-brand">
+                <span class="rounded-md bg-brand-50 px-2 py-1 text-xs font-bold text-brand-strong">
                   {{ role.code }}
                 </span>
               </td>
-              <td class="px-5 py-3.5 text-[13.5px] text-muted">{{ role.description || '—' }}</td>
+              <td class="px-5 py-3.5 text-[13.5px] text-muted">
+                {{ role.description || 'Sin descripción' }}
+              </td>
               <td class="px-5 py-3.5">
                 @if (role.isSystem) {
                   <span class="rounded-md bg-surface px-2 py-1 text-[11.5px] font-semibold text-muted">
@@ -52,7 +55,7 @@ export interface RoleActionEvent {
                   </span>
                 } @else {
                   <span
-                    class="rounded-md bg-accent-green-soft px-2 py-1 text-[11.5px] font-semibold text-accent-green"
+                    class="rounded-md bg-accent-green-soft px-2 py-1 text-[11.5px] font-semibold text-accent-green-strong"
                   >
                     Personalizado
                   </span>
@@ -80,7 +83,7 @@ export interface RoleActionEvent {
                   </button>
                   <button
                     type="button"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-body"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-body"
                     [title]="
                       role.isSystem ? 'Los roles de sistema no se eliminan' : 'Eliminar rol'
                     "
@@ -88,15 +91,20 @@ export interface RoleActionEvent {
                     [disabled]="role.isSystem"
                     (click)="emit('remove', role)"
                   >
-                    <ij-icon name="x" [size]="16" />
+                    <ij-icon name="trash" [size]="15" />
                   </button>
                 </div>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="px-5 py-10 text-center text-[13.5px] text-muted">
-                No hay roles. Ejecuta <code>pnpm run seed:rbac</code> o crea el primero.
+              <td colspan="5">
+                <app-admin-empty icon="shield" message="No hay roles.">
+                  <p class="max-w-[420px] text-[12.5px] text-muted">
+                    Ejecuta <code>pnpm run seed:rbac</code> o crea el primero con el botón de
+                    arriba.
+                  </p>
+                </app-admin-empty>
               </td>
             </tr>
           }
@@ -113,7 +121,7 @@ export class RolesTable {
 
   protected readonly actionClass =
     'flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body ' +
-    'transition-colors hover:bg-surface hover:text-brand';
+    'transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px]';
 
   protected emit(action: RoleAction, role: RoleSummary): void {
     this.action.emit({ action, role });

@@ -57,8 +57,8 @@ import {
                 : 'border-line text-muted'
             "
           >
-            <span class="font-bold text-ink-900">{{ label(role) }}</span>
-            — {{ hint(role) }}
+            <span class="font-bold text-ink-900">{{ label(role) }}:</span>
+            {{ hint(role) }}
           </li>
         }
       </ul>

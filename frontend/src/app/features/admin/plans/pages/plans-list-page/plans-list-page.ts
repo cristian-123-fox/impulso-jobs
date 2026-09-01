@@ -11,6 +11,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { IconName, IjButton, IjIcon, IjModal } from '@/shared/ui';
+import { AdminConfirm } from '@/features/admin/shared/admin-confirm/admin-confirm';
+import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
+import { AdminError } from '@/features/admin/shared/admin-error/admin-error';
+import { AdminTableSkeleton } from '@/features/admin/shared/admin-table-skeleton/admin-table-skeleton';
 import { PlansFacade } from '@/features/admin/plans/data/plans.facade';
 import { FeatureForm } from '@/features/admin/plans/components/feature-form/feature-form';
 import { PlanForm } from '@/features/admin/plans/components/plan-form/plan-form';
@@ -39,6 +43,10 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
   selector: 'app-plans-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AdminConfirm,
+    AdminEmpty,
+    AdminError,
+    AdminTableSkeleton,
     PlansTable,
     PlanForm,
     PlanFeaturesForm,
@@ -111,14 +119,13 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
 
       @switch (facade.state()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-            Cargando planes…
-          </div>
+          <app-admin-table-skeleton [rows]="4" label="Cargando planes…" />
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-            No se pudieron cargar los planes.
-          </div>
+          <app-admin-error
+            message="No se pudieron cargar los planes."
+            (retry)="facade.load()"
+          />
         }
         @default {
           <app-plans-table [plans]="facade.plans()" (action)="onAction($event)" />
@@ -162,7 +169,9 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
                     }
                   </td>
                   <td class="px-5 py-3.5">
-                    <code class="rounded-md bg-brand-50 px-2 py-1 text-[12px] font-bold text-brand">
+                    <code
+                      class="rounded-md bg-brand-50 px-2 py-1 text-[12px] font-bold text-brand-strong"
+                    >
                       {{ feature.code }}
                     </code>
                   </td>
@@ -174,7 +183,7 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
                     <div class="flex justify-end">
                       <button
                         type="button"
-                        class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand"
+                        class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px]"
                         title="Editar beneficio"
                         aria-label="Editar beneficio"
                         (click)="openCatalog(feature)"
@@ -186,9 +195,13 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="5" class="px-5 py-10 text-center text-[13.5px] text-muted">
-                    Sin beneficios en el catálogo. Ejecuta
-                    <code>pnpm run seed:plan-features</code> o crea el primero.
+                  <td colspan="5">
+                    <app-admin-empty icon="tag" message="Sin beneficios en el catálogo.">
+                      <p class="max-w-[420px] text-[12.5px] text-muted">
+                        Ejecuta <code>pnpm run seed:plan-features</code> o crea el primero con
+                        "Nuevo beneficio".
+                      </p>
+                    </app-admin-empty>
                   </td>
                 </tr>
               }
@@ -248,6 +261,17 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
         />
       </ij-modal>
     }
+
+    @if (deactivating(); as plan) {
+      <app-admin-confirm
+        title="Despublicar plan"
+        [message]="deactivateMessage(plan)"
+        confirmLabel="Despublicar"
+        tone="primary"
+        (confirm)="onDeactivateConfirmed(plan)"
+        (cancel)="deactivating.set(null)"
+      />
+    }
   `,
 })
 export class PlansListPage {
@@ -257,6 +281,7 @@ export class PlansListPage {
   protected readonly modal = signal<OpenModal>(null);
   protected readonly editingPlan = signal<Plan | null>(null);
   protected readonly editingFeature = signal<PlanFeatureCatalogItem | null>(null);
+  protected readonly deactivating = signal<Plan | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -270,19 +295,19 @@ export class PlansListPage {
         label: 'Planes en catálogo',
         value: stats.total,
         icon: 'tag' as IconName,
-        tone: 'bg-brand-50 text-brand',
+        tone: 'bg-brand-50 text-brand-strong',
       },
       {
         label: 'Publicados',
         value: stats.active,
         icon: 'check' as IconName,
-        tone: 'bg-accent-green-soft text-accent-green',
+        tone: 'bg-accent-green-soft text-accent-green-strong',
       },
       {
         label: 'Por publicación',
         value: stats.perPublication,
         icon: 'briefcase' as IconName,
-        tone: 'bg-accent-amber-soft text-accent-amber',
+        tone: 'bg-accent-amber-soft text-accent-amber-strong',
       },
       {
         label: 'Suscripciones',
@@ -342,18 +367,20 @@ export class PlansListPage {
         );
         return;
       case 'deactivate':
-        if (
-          !confirm(
-            `¿Despublicar "${plan.name}"? Dejará de aparecer en el portal; las compras existentes no se tocan.`,
-          )
-        ) {
-          return;
-        }
-        this.run(
-          this.facade.changeStatus(plan.id, false),
-          'No se pudo despublicar el plan.',
-        );
+        this.deactivating.set(plan);
     }
+  }
+
+  protected deactivateMessage(plan: Plan): string {
+    return `¿Despublicar "${plan.name}"? Dejará de aparecer en el portal; las compras existentes no se tocan.`;
+  }
+
+  protected onDeactivateConfirmed(plan: Plan): void {
+    this.deactivating.set(null);
+    this.run(
+      this.facade.changeStatus(plan.id, false),
+      'No se pudo despublicar el plan.',
+    );
   }
 
   protected onSavePlan(payload: SavePlanPayload): void {

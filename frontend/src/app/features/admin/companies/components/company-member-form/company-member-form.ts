@@ -231,7 +231,7 @@ export class CompanyMemberForm {
     const base =
       'flex-1 rounded-lg px-3 py-2 text-[13px] font-bold transition-colors';
     return source === this.source()
-      ? `${base} bg-white text-brand shadow-card`
+      ? `${base} bg-white text-brand-strong shadow-card`
       : `${base} text-muted hover:text-body`;
   }
 

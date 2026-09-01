@@ -19,7 +19,7 @@ import { IjIcon } from '@/shared/ui';
         <div class="flex items-center gap-2">
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-white text-body transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+            class="flex h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-body transition-colors hover:bg-surface active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Página anterior"
             [disabled]="page() <= 1"
             (click)="pageChange.emit(page() - 1)"
@@ -28,7 +28,7 @@ import { IjIcon } from '@/shared/ui';
           </button>
           <button
             type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-white text-body transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+            class="flex h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-body transition-colors hover:bg-surface active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Página siguiente"
             [disabled]="page() >= pages()"
             (click)="pageChange.emit(page() + 1)"

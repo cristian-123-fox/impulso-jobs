@@ -67,7 +67,7 @@ import { RoleSummary } from '@/features/admin/roles/models/roles.models';
         Todavía no hay roles personalizados.
         <a
           routerLink="/admin/roles"
-          class="font-semibold text-brand hover:text-brand-600"
+          class="font-semibold text-brand-strong hover:text-brand-600"
         >
           Créalos en Roles y permisos
         </a>

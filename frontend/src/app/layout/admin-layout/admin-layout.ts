@@ -35,8 +35,8 @@ interface AdminNavItem {
           @for (item of navItems; track item.path) {
             <a
               [routerLink]="item.path"
-              routerLinkActive="bg-brand-50 text-brand"
-              class="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-semibold text-body transition-colors hover:bg-surface"
+              routerLinkActive="bg-brand-50 text-brand-strong"
+              class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold text-body transition-colors hover:bg-surface"
             >
               <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
               {{ item.label }}
@@ -60,7 +60,7 @@ interface AdminNavItem {
             <button
               type="button"
               aria-label="Cerrar sesión"
-              class="flex h-[42px] w-[42px] items-center justify-center rounded-[11px] border border-line bg-surface text-body transition-colors hover:text-brand"
+              class="flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-line bg-surface text-body transition-colors hover:text-brand-strong active:translate-y-[1px]"
               (click)="onLogout()"
             >
               <ij-icon name="logout" [size]="19" [strokeWidth]="1.8" />
@@ -75,8 +75,8 @@ interface AdminNavItem {
           @for (item of navItems; track item.path) {
             <a
               [routerLink]="item.path"
-              routerLinkActive="bg-brand-50 text-brand"
-              class="flex flex-shrink-0 items-center gap-2 rounded-[11px] px-3 py-2 text-[13px] font-semibold text-body transition-colors hover:bg-surface"
+              routerLinkActive="bg-brand-50 text-brand-strong"
+              class="flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold text-body transition-colors hover:bg-surface"
             >
               <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
               {{ item.label }}

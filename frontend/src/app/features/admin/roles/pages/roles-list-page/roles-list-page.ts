@@ -11,6 +11,9 @@ import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { IjButton, IjIcon, IjModal } from '@/shared/ui';
+import { AdminConfirm } from '@/features/admin/shared/admin-confirm/admin-confirm';
+import { AdminError } from '@/features/admin/shared/admin-error/admin-error';
+import { AdminTableSkeleton } from '@/features/admin/shared/admin-table-skeleton/admin-table-skeleton';
 import { RolesFacade } from '@/features/admin/roles/data/roles.facade';
 import {
   CreateRolePayload,
@@ -25,7 +28,16 @@ import { RoleForm } from '@/features/admin/roles/components/role-form/role-form'
 @Component({
   selector: 'app-roles-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RolesTable, RoleForm, IjButton, IjIcon, IjModal],
+  imports: [
+    AdminConfirm,
+    AdminError,
+    AdminTableSkeleton,
+    RolesTable,
+    RoleForm,
+    IjButton,
+    IjIcon,
+    IjModal,
+  ],
   template: `
     <div class="mx-auto max-w-[1100px]">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -59,14 +71,13 @@ import { RoleForm } from '@/features/admin/roles/components/role-form/role-form'
 
       @switch (facade.rolesState()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-            Cargando roles…
-          </div>
+          <app-admin-table-skeleton label="Cargando roles…" />
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-            No se pudieron cargar los roles.
-          </div>
+          <app-admin-error
+            message="No se pudieron cargar los roles."
+            (retry)="facade.loadRoles()"
+          />
         }
         @default {
           <app-roles-table [roles]="facade.roles()" (action)="onAction($event)" />
@@ -89,6 +100,16 @@ import { RoleForm } from '@/features/admin/roles/components/role-form/role-form'
         />
       </ij-modal>
     }
+
+    @if (removing(); as role) {
+      <app-admin-confirm
+        title="Eliminar rol"
+        [message]="removeMessage(role)"
+        confirmLabel="Eliminar rol"
+        (confirm)="onRemoveConfirmed(role)"
+        (cancel)="removing.set(null)"
+      />
+    }
   `,
 })
 export class RolesListPage {
@@ -98,6 +119,7 @@ export class RolesListPage {
 
   protected readonly formOpen = signal(false);
   protected readonly editing = signal<RoleSummary | null>(null);
+  protected readonly removing = signal<RoleSummary | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -130,8 +152,12 @@ export class RolesListPage {
         this.formOpen.set(true);
         return;
       case 'remove':
-        this.onRemove(role);
+        this.removing.set(role);
     }
+  }
+
+  protected removeMessage(role: RoleSummary): string {
+    return `¿Eliminar el rol "${role.name}"? Se borrarán también sus permisos asignados.`;
   }
 
   protected onSave(payload: CreateRolePayload): void {
@@ -159,14 +185,8 @@ export class RolesListPage {
     });
   }
 
-  private onRemove(role: RoleSummary): void {
-    if (
-      !confirm(
-        `¿Eliminar el rol "${role.name}"? Se borrarán también sus permisos asignados.`,
-      )
-    ) {
-      return;
-    }
+  protected onRemoveConfirmed(role: RoleSummary): void {
+    this.removing.set(null);
     this.actionError.set(null);
     this.facade
       .deleteRole(role.id)

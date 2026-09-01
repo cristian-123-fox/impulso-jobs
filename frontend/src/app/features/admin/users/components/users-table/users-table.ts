@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { Role } from '@/core/models/role.enum';
 import { IjIcon } from '@/shared/ui';
+import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import {
   AdminUser,
   AssignedRole,
@@ -16,13 +17,13 @@ import {
 } from '@/features/admin/users/models/users.models';
 
 const AVATAR_TONE: Record<Role, string> = {
-  [Role.ADMIN]: 'bg-brand-50 text-brand',
-  [Role.EMPLOYER]: 'bg-accent-blue-soft text-accent-blue',
-  [Role.CANDIDATE]: 'bg-accent-green-soft text-accent-green',
+  [Role.ADMIN]: 'bg-brand-50 text-brand-strong',
+  [Role.EMPLOYER]: 'bg-accent-blue-soft text-accent-blue-strong',
+  [Role.CANDIDATE]: 'bg-accent-green-soft text-accent-green-strong',
 };
 
 const STATUS_BADGE: Record<UserStatus, string> = {
-  [UserStatus.ACTIVE]: 'bg-accent-green-soft text-accent-green',
+  [UserStatus.ACTIVE]: 'bg-accent-green-soft text-accent-green-strong',
   [UserStatus.INACTIVE]: 'bg-surface text-muted',
   [UserStatus.SUSPENDED]: 'bg-red-50 text-red-700',
 };
@@ -49,7 +50,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
 @Component({
   selector: 'app-users-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, IjIcon],
+  imports: [DatePipe, IjIcon, AdminEmpty],
   template: `
     <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
       <table class="w-full min-w-[760px] border-collapse text-left">
@@ -68,7 +69,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
                   <span
-                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] text-[13px] font-bold"
+                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-[13px] font-bold"
                     [class]="avatarTone()"
                   >
                     {{ initials(user) }}
@@ -89,7 +90,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
                   <div class="flex flex-wrap items-center gap-1.5">
                     @for (role of extraRoles(user); track role.id) {
                       <span
-                        class="inline-block rounded-md bg-accent-blue-soft px-2 py-1 text-[11.5px] font-bold text-accent-blue"
+                        class="inline-block rounded-md bg-accent-blue-soft px-2 py-1 text-[11.5px] font-bold text-accent-blue-strong"
                         [title]="role.code"
                       >
                         {{ role.name }}
@@ -102,18 +103,22 @@ const EMPTY_MESSAGE: Record<Role, string> = {
               }
 
               @if (isEmployer()) {
-                <td class="px-5 py-3.5 text-[13.5px] text-body">
-                  {{ user.companyName || '—' }}
+                <td class="px-5 py-3.5 text-[13.5px]">
+                  @if (user.companyName) {
+                    <span class="text-body">{{ user.companyName }}</span>
+                  } @else {
+                    <span class="text-muted">Sin empresa</span>
+                  }
                 </td>
                 <td class="px-5 py-3.5">
                   @if (user.companyRole) {
                     <span
-                      class="inline-block rounded-md bg-accent-blue-soft px-2 py-1 text-[11.5px] font-bold text-accent-blue"
+                      class="inline-block rounded-md bg-accent-blue-soft px-2 py-1 text-[11.5px] font-bold text-accent-blue-strong"
                     >
                       {{ companyRoleLabel(user.companyRole) }}
                     </span>
                   } @else {
-                    <span class="text-[13.5px] text-muted">—</span>
+                    <span class="text-[13.5px] text-muted">Sin rol</span>
                   }
                 </td>
               }
@@ -128,7 +133,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
                   </span>
                   @if (!user.emailVerified) {
                     <span
-                      class="inline-block rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-[#b26a15]"
+                      class="inline-block rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-accent-amber-strong"
                       title="El correo no ha sido verificado: no puede iniciar sesión."
                     >
                       Sin verificar
@@ -153,7 +158,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
                 <div class="flex items-center justify-end gap-1.5">
                   <button
                     type="button"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px]"
                     title="Editar"
                     aria-label="Editar usuario"
                     (click)="edit.emit(user)"
@@ -163,18 +168,18 @@ const EMPTY_MESSAGE: Record<Role, string> = {
                   @if (user.status === active) {
                     <button
                       type="button"
-                      class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-red-600 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
                       title="Desactivar"
                       aria-label="Desactivar usuario"
                       [disabled]="user.id === currentUserId()"
                       (click)="deactivate.emit(user)"
                     >
-                      <ij-icon name="shield" [size]="15" />
+                      <ij-icon name="pause" [size]="15" />
                     </button>
                   } @else {
                     <button
                       type="button"
-                      class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-accent-green"
+                      class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-accent-green-strong active:translate-y-[1px]"
                       title="Reactivar"
                       aria-label="Reactivar usuario"
                       (click)="activate.emit(user)"
@@ -184,24 +189,25 @@ const EMPTY_MESSAGE: Record<Role, string> = {
                   }
                   <button
                     type="button"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
                     title="Eliminar"
                     aria-label="Eliminar usuario"
                     [disabled]="user.id === currentUserId()"
                     (click)="remove.emit(user)"
                   >
-                    <ij-icon name="x" [size]="16" />
+                    <ij-icon name="trash" [size]="15" />
                   </button>
                 </div>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td
-                [attr.colspan]="headers().length"
-                class="px-5 py-10 text-center text-[13.5px] text-muted"
-              >
-                {{ emptyMessage() }}
+              <td [attr.colspan]="headers().length">
+                <app-admin-empty
+                  icon="users"
+                  [message]="emptyMessage()"
+                  hint="Ajusta los filtros o crea la cuenta desde el botón de arriba."
+                />
               </td>
             </tr>
           }

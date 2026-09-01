@@ -11,6 +11,9 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { MX_STATES, SAT_TAX_REGIMES } from '@/shared/catalogs/mx.catalogs';
 import { IjButton, IjIcon, IjModal } from '@/shared/ui';
+import { AdminConfirm } from '@/features/admin/shared/admin-confirm/admin-confirm';
+import { AdminError } from '@/features/admin/shared/admin-error/admin-error';
+import { AdminTableSkeleton } from '@/features/admin/shared/admin-table-skeleton/admin-table-skeleton';
 import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
 import { CompanyMembersTable } from '@/features/admin/companies/components/company-members-table/company-members-table';
 import { CompanyEditForm } from '@/features/admin/companies/components/company-edit-form/company-edit-form';
@@ -33,6 +36,9 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
+    AdminConfirm,
+    AdminError,
+    AdminTableSkeleton,
     CompanyMembersTable,
     CompanyEditForm,
     CompanyMemberForm,
@@ -45,7 +51,7 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
     <div class="mx-auto max-w-[1180px]">
       <a
         routerLink="/admin/empresas"
-        class="mb-4 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand"
+        class="mb-4 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand-strong"
       >
         <ij-icon name="chevron-left" [size]="16" />
         Empresas
@@ -53,21 +59,20 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
 
       @switch (state()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-            Cargando empresa…
-          </div>
+          <app-admin-table-skeleton [rows]="4" label="Cargando empresa…" />
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-            No se pudo cargar la empresa.
-          </div>
+          <app-admin-error
+            message="No se pudo cargar la empresa."
+            (retry)="load()"
+          />
         }
         @default {
           @if (company(); as data) {
             <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
               <div class="flex items-center gap-4">
                 <span
-                  class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-lg font-bold text-brand"
+                  class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-lg font-bold text-brand-strong"
                 >
                   {{ initials(data.businessName) }}
                 </span>
@@ -192,6 +197,16 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
         />
       </ij-modal>
     }
+
+    @if (removing(); as member) {
+      <app-admin-confirm
+        title="Quitar del equipo"
+        [message]="removeMessage(member)"
+        confirmLabel="Quitar del equipo"
+        (confirm)="onRemoveConfirmed(member)"
+        (cancel)="removing.set(null)"
+      />
+    }
   `,
 })
 export class CompanyDetailPage {
@@ -208,6 +223,7 @@ export class CompanyDetailPage {
   protected readonly showAdd = signal(false);
   protected readonly editingCompany = signal<AdminCompany | null>(null);
   protected readonly editing = signal<CompanyMember | null>(null);
+  protected readonly removing = signal<CompanyMember | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -216,7 +232,7 @@ export class CompanyDetailPage {
     this.load();
   }
 
-  private load(): void {
+  protected load(): void {
     this.state.set('loading');
     this.api
       .get(this.companyId)
@@ -338,13 +354,15 @@ export class CompanyDetailPage {
   }
 
   protected onRemove(member: CompanyMember): void {
-    if (
-      !confirm(
-        `¿Quitar a ${member.email} del equipo? Su cuenta se conserva, pero dejará de pertenecer a esta empresa.`,
-      )
-    ) {
-      return;
-    }
+    this.removing.set(member);
+  }
+
+  protected removeMessage(member: CompanyMember): string {
+    return `¿Quitar a ${member.email} del equipo? Su cuenta se conserva, pero dejará de pertenecer a esta empresa.`;
+  }
+
+  protected onRemoveConfirmed(member: CompanyMember): void {
+    this.removing.set(null);
     this.actionError.set(null);
     this.api
       .removeMember(this.companyId, member.userId)
@@ -377,10 +395,10 @@ export class CompanyDetailPage {
         label: 'Ubicación',
         value: `${STATE_NAMES.get(company.state) ?? company.state} · ${company.municipality}`,
       },
-      { label: 'Sector', value: company.economicSector || '—' },
-      { label: 'Correo corporativo', value: company.corporateEmail || '—' },
-      { label: 'Teléfono', value: company.phoneNumber || '—' },
-      { label: 'Sitio web', value: company.website || '—' },
+      { label: 'Sector', value: company.economicSector || 'Sin registrar' },
+      { label: 'Correo corporativo', value: company.corporateEmail || 'Sin registrar' },
+      { label: 'Teléfono', value: company.phoneNumber || 'Sin registrar' },
+      { label: 'Sitio web', value: company.website || 'Sin registrar' },
       { label: 'Usuario dueño', value: company.ownerEmail || 'Sin asignar' },
     ];
   }

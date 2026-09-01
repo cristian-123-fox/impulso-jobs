@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IjIcon } from '@/shared/ui';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import { AdminCompany } from '@/features/admin/companies/models/companies.models';
 
 const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
@@ -10,7 +11,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
 @Component({
   selector: 'app-companies-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, IjIcon],
+  imports: [DatePipe, IjIcon, AdminEmpty],
   template: `
     <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
       <table class="w-full min-w-[880px] border-collapse text-left">
@@ -29,7 +30,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
                   <span
-                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-brand-50 text-[13px] font-bold text-brand"
+                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-[13px] font-bold text-brand-strong"
                   >
                     {{ initials(company.businessName) }}
                   </span>
@@ -54,7 +55,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
                   <span class="text-body">{{ company.ownerEmail }}</span>
                 } @else {
                   <span
-                    class="rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-[#b26a15]"
+                    class="rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-accent-amber-strong"
                     title="La empresa no tiene una cuenta de acceso vinculada."
                   >
                     Sin usuario
@@ -71,7 +72,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
                 <div class="flex items-center justify-end gap-1.5">
                   <button
                     type="button"
-                    class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-brand"
+                    class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px]"
                     title="Ver la ficha y gestionar su equipo"
                     (click)="open.emit(company)"
                   >
@@ -80,7 +81,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
                   </button>
                   <button
                     type="button"
-                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px]"
                     title="Editar datos de la empresa"
                     aria-label="Editar empresa"
                     (click)="edit.emit(company)"
@@ -92,8 +93,12 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="px-5 py-10 text-center text-[13.5px] text-muted">
-                No hay empresas registradas todavía.
+              <td colspan="7">
+                <app-admin-empty
+                  icon="building"
+                  message="No hay empresas registradas todavía."
+                  hint="Crea la primera con el botón de arriba; puedes darle su cuenta de acceso en el mismo paso."
+                />
               </td>
             </tr>
           }

@@ -1,6 +1,7 @@
 import { CurrencyPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IjIcon } from '@/shared/ui';
+import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import {
   BILLING_PERIOD_LABELS,
   PLAN_TYPE_LABELS,
@@ -20,7 +21,7 @@ export interface PlanActionEvent {
 @Component({
   selector: 'app-plans-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, IjIcon],
+  imports: [CurrencyPipe, IjIcon, AdminEmpty],
   template: `
     <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
       <table class="w-full min-w-[920px] border-collapse text-left">
@@ -39,18 +40,20 @@ export interface PlanActionEvent {
               <td class="px-5 py-3.5">
                 <button
                   type="button"
-                  class="text-left text-sm font-semibold text-ink-900 transition-colors hover:text-brand"
+                  class="text-left text-sm font-semibold text-ink-900 transition-colors hover:text-brand-strong"
                   (click)="emit('edit', plan)"
                 >
                   {{ plan.name }}
                 </button>
                 <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                  <span class="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand">
+                  <span
+                    class="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-strong"
+                  >
                     {{ plan.code }}
                   </span>
                   @if (plan.isPopular) {
                     <span
-                      class="rounded-md bg-accent-amber-soft px-2 py-0.5 text-[11px] font-bold text-[#b26a15]"
+                      class="rounded-md bg-accent-amber-soft px-2 py-0.5 text-[11px] font-bold text-accent-amber-strong"
                     >
                       Más popular
                     </span>
@@ -79,7 +82,7 @@ export interface PlanActionEvent {
                   class="inline-block rounded-md px-2 py-1 text-[11.5px] font-bold"
                   [class]="
                     plan.isActive
-                      ? 'bg-accent-green-soft text-accent-green'
+                      ? 'bg-accent-green-soft text-accent-green-strong'
                       : 'bg-surface text-muted'
                   "
                 >
@@ -109,7 +112,7 @@ export interface PlanActionEvent {
                   @if (plan.isActive) {
                     <button
                       type="button"
-                      class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600"
+                      class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-[1px]"
                       title="Despublicar (deja de venderse)"
                       aria-label="Despublicar plan"
                       (click)="emit('deactivate', plan)"
@@ -132,8 +135,12 @@ export interface PlanActionEvent {
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="px-5 py-10 text-center text-[13.5px] text-muted">
-                Aún no hay planes. Crea el primero para que aparezca en el portal.
+              <td colspan="7">
+                <app-admin-empty
+                  icon="tag"
+                  message="Aún no hay planes."
+                  hint="Crea el primero con el botón de arriba para que aparezca en el portal."
+                />
               </td>
             </tr>
           }
@@ -158,7 +165,7 @@ export class PlansTable {
 
   protected readonly actionClass =
     'flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body ' +
-    'transition-colors hover:bg-surface hover:text-brand';
+    'transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px]';
 
   protected typeLabel(plan: Plan): string {
     return PLAN_TYPE_LABELS[plan.planType] ?? plan.planType;
@@ -171,7 +178,7 @@ export class PlansTable {
   /** Lo que "compra" el plan: días de publicación o vacantes incluidas. */
   protected scopeLabel(plan: Plan): string {
     if (plan.planType === PlanType.PER_PUBLICATION) {
-      return plan.validityDays ? `${plan.validityDays} días` : '—';
+      return plan.validityDays ? `${plan.validityDays} días` : 'Sin vigencia definida';
     }
     if (plan.postingQuota === null) return 'Sin cupo definido';
     return plan.postingQuota === 0

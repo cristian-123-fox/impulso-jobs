@@ -10,7 +10,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { IjButton, IjIcon, IjModal } from '@/shared/ui';
+import { AdminError } from '@/features/admin/shared/admin-error/admin-error';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
+import { AdminTableSkeleton } from '@/features/admin/shared/admin-table-skeleton/admin-table-skeleton';
 import { CompaniesFacade } from '@/features/admin/companies/data/companies.facade';
 import { CompaniesFilters } from '@/features/admin/companies/components/companies-filters/companies-filters';
 import { CompaniesTable } from '@/features/admin/companies/components/companies-table/companies-table';
@@ -26,7 +28,9 @@ import {
   selector: 'app-companies-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AdminError,
     AdminPagination,
+    AdminTableSkeleton,
     CompaniesFilters,
     CompaniesTable,
     CompanyCreateForm,
@@ -59,7 +63,7 @@ import {
 
       @if (created(); as message) {
         <p
-          class="mb-5 rounded-xl bg-accent-green-soft px-4 py-3 text-[13.5px] font-semibold text-accent-green"
+          class="mb-5 rounded-xl bg-accent-green-soft px-4 py-3 text-[13.5px] font-semibold text-accent-green-strong"
         >
           {{ message }}
         </p>
@@ -75,14 +79,13 @@ import {
 
       @switch (facade.state()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-            Cargando empresas…
-          </div>
+          <app-admin-table-skeleton label="Cargando empresas…" />
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-            No se pudieron cargar las empresas.
-          </div>
+          <app-admin-error
+            message="No se pudieron cargar las empresas."
+            (retry)="facade.load(facade.page())"
+          />
         }
         @default {
           <app-companies-table

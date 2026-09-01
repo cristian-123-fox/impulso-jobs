@@ -13,6 +13,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { IjButton, IjIcon, IjInput } from '@/shared/ui';
+import { AdminTableSkeleton } from '@/features/admin/shared/admin-table-skeleton/admin-table-skeleton';
 import { RolesFacade } from '@/features/admin/roles/data/roles.facade';
 import { RoleSummary } from '@/features/admin/roles/models/roles.models';
 import {
@@ -26,6 +27,7 @@ import {
   imports: [
     RouterLink,
     ReactiveFormsModule,
+    AdminTableSkeleton,
     PermissionMatrix,
     IjButton,
     IjIcon,
@@ -35,7 +37,7 @@ import {
     <div class="mx-auto max-w-[1100px]">
       <a
         routerLink="/admin/roles"
-        class="mb-4 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand"
+        class="mb-4 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand-strong"
       >
         <ij-icon name="chevron-left" [size]="16" />
         Volver a roles
@@ -44,7 +46,7 @@ import {
       @if (role(); as current) {
         <div class="mb-5 rounded-2xl bg-white p-5 shadow-card sm:p-6">
           <div class="mb-4 flex items-center gap-3">
-            <span class="rounded-md bg-brand-50 px-2.5 py-1 text-sm font-bold text-brand">
+            <span class="rounded-md bg-brand-50 px-2.5 py-1 text-sm font-bold text-brand-strong">
               {{ current.code }}
             </span>
             @if (current.isSystem) {
@@ -58,7 +60,9 @@ import {
             <ij-input label="Descripción" formControlName="description" />
             <div class="flex items-center justify-between sm:col-span-2">
               @if (saveState() === 'saved') {
-                <span class="text-[13px] font-semibold text-accent-green">Cambios guardados.</span>
+                <span class="text-[13px] font-semibold text-accent-green-strong">
+                  Cambios guardados.
+                </span>
               } @else {
                 <span></span>
               }
@@ -78,7 +82,8 @@ import {
 
         <h2 class="mb-1.5 text-lg font-bold text-ink-900">Permisos</h2>
         <p class="mb-4 text-[13.5px] text-muted">
-          Marca los permisos <code class="text-brand">component.action</code> que otorga este rol.
+          Marca los permisos <code class="text-brand-strong">component.action</code> que otorga
+          este rol.
         </p>
         <app-permission-matrix
           [groups]="facade.permissionGroups()"
@@ -87,7 +92,7 @@ import {
           (toggle)="onToggle($event)"
         />
       } @else {
-        <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">Cargando rol…</div>
+        <app-admin-table-skeleton [rows]="4" label="Cargando rol…" />
       }
     </div>
   `,

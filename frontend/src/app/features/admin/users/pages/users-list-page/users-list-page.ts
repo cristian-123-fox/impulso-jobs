@@ -13,7 +13,10 @@ import { AuthService } from '@/core/auth/auth.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { Role } from '@/core/models/role.enum';
 import { IjButton, IjIcon, IjModal } from '@/shared/ui';
+import { AdminConfirm } from '@/features/admin/shared/admin-confirm/admin-confirm';
+import { AdminError } from '@/features/admin/shared/admin-error/admin-error';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
+import { AdminTableSkeleton } from '@/features/admin/shared/admin-table-skeleton/admin-table-skeleton';
 import { UsersFacade } from '@/features/admin/users/data/users.facade';
 import { UsersFilters } from '@/features/admin/users/components/users-filters/users-filters';
 import { UsersTabs } from '@/features/admin/users/components/users-tabs/users-tabs';
@@ -40,7 +43,10 @@ const CREATE_TITLE: Record<Role, string> = {
   selector: 'app-users-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AdminConfirm,
+    AdminError,
     AdminPagination,
+    AdminTableSkeleton,
     UsersFilters,
     UsersTabs,
     UsersTable,
@@ -98,14 +104,13 @@ const CREATE_TITLE: Record<Role, string> = {
 
       @switch (facade.state()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-            Cargando usuarios…
-          </div>
+          <app-admin-table-skeleton label="Cargando usuarios…" />
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-            No se pudieron cargar los usuarios.
-          </div>
+          <app-admin-error
+            message="No se pudieron cargar los usuarios."
+            (retry)="facade.load(facade.page())"
+          />
         }
         @default {
           <app-users-table
@@ -159,6 +164,16 @@ const CREATE_TITLE: Record<Role, string> = {
         />
       </ij-modal>
     }
+
+    @if (removing(); as user) {
+      <app-admin-confirm
+        title="Eliminar cuenta"
+        [message]="removeMessage(user)"
+        confirmLabel="Eliminar cuenta"
+        (confirm)="onRemoveConfirmed(user)"
+        (cancel)="removing.set(null)"
+      />
+    }
   `,
 })
 export class UsersListPage {
@@ -171,6 +186,7 @@ export class UsersListPage {
 
   protected readonly showCreate = signal(false);
   protected readonly editing = signal<AdminUser | null>(null);
+  protected readonly removing = signal<AdminUser | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -281,10 +297,16 @@ export class UsersListPage {
   }
 
   protected onRemove(user: AdminUser): void {
+    this.removing.set(user);
+  }
+
+  protected removeMessage(user: AdminUser): string {
     const label = user.displayName || user.email;
-    if (!confirm(`¿Eliminar la cuenta de ${label}? Esta acción da de baja al usuario.`)) {
-      return;
-    }
+    return `¿Eliminar la cuenta de ${label}? Esta acción da de baja al usuario.`;
+  }
+
+  protected onRemoveConfirmed(user: AdminUser): void {
+    this.removing.set(null);
     this.actionError.set(null);
     this.facade
       .remove(user.id)
