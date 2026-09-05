@@ -81,11 +81,29 @@ interface MapCoords {
 /** Color de marca (tailwind.config.js) para el marcador del mapa. */
 const BRAND_COLOR = '#e47c3f';
 
+/** Skills quemadas por enquanto — se reemplazarán con datos del backend. */
+const JOB_SKILLS = [
+  'Html',
+  'Python',
+  'WordPress',
+  'JavaScript',
+  'Figma',
+  'Angular',
+  'Reactjs',
+  'Drupal',
+  'Joomla',
+];
+
 /** Detalle público de una vacante activa. Oculta la empresa si es confidencial. */
 @Component({
   selector: 'app-public-vacancy-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, RouterLink, IjButton, IjIcon, IjModal],
+  styles: `
+    .vacancy-banner {
+      background: linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%);
+    }
+  `,
   template: `
     <section class="px-6 py-10 lg:px-[60px]">
       <div class="mx-auto max-w-[1100px]">
@@ -124,54 +142,38 @@ const BRAND_COLOR = '#e47c3f';
             @if (vacancy(); as data) {
               <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <article class="rounded-2xl bg-white p-6 shadow-card sm:p-8">
-                  <div class="flex flex-wrap items-center gap-2">
-                    @if (data.isFeatured) {
-                      <span class="rounded-md bg-brand-50 px-2.5 py-1 text-[12px] font-bold text-brand">
-                        Destacada
-                      </span>
-                    }
-                    @if (data.isUrgent) {
-                      <span class="rounded-md bg-red-50 px-2.5 py-1 text-[12px] font-bold text-red-700">
-                        Urgente
-                      </span>
-                    }
-                    @if (data.isVerified) {
-                      <span class="rounded-md bg-accent-blue-soft px-2.5 py-1 text-[12px] font-bold text-accent-blue">
-                        Verificada
+                  <div class="vacancy-banner relative h-[280px] overflow-hidden rounded-2xl">
+                    @if (isNew()) {
+                      <span
+                        class="absolute top-4 left-4 z-10 rounded-md bg-accent-green px-3 py-1 text-[13px] font-bold text-white"
+                      >
+                        New
                       </span>
                     }
                   </div>
 
-                  <div class="mt-3 flex flex-wrap items-start justify-between gap-4">
-                    <h1 class="text-[28px] font-extrabold leading-tight text-ink-900">
-                      {{ data.title }}
-                    </h1>
+                  <div class="relative -mt-7 mb-2 flex items-end justify-between px-1">
+                    @if (data.company?.logoUrl; as logo) {
+                      <div
+                        class="flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white shadow-card"
+                      >
+                        <img [src]="logo" [alt]="data.company!.businessName" class="h-full w-full object-cover" />
+                      </div>
+                    }
+                  </div>
 
-                    <div class="flex flex-shrink-0 items-start gap-2">
+                  <div class="mt-10 flex flex-wrap items-start justify-between gap-4">
+                    <div class="min-w-0">
+                      <h1 class="text-[26px] font-extrabold leading-tight text-ink-900">
+                        {{ data.title }}
+                      </h1>
+                      <p class="mt-1 text-[14px]">
+                        <span class="text-accent-green font-semibold">/ {{ postedAgo() }}</span>
+                      </p>
+                    </div>
+
+                    <div class="flex flex-shrink-0 flex-wrap items-start justify-end gap-2">
                       @if (auth.currentUser()?.role === candidateRole) {
-                        <button
-                          type="button"
-                          [class]="saveButtonClass()"
-                          [disabled]="savePending()"
-                          [attr.aria-pressed]="saved()"
-                          (click)="toggleSave(data.id)"
-                        >
-                          <ij-icon name="bookmark" [size]="15" />
-                          {{ saved() ? 'Guardada' : 'Guardar' }}
-                        </button>
-                      }
-                      @if (!auth.currentUser()) {
-                        <a
-                          ij-button
-                          [routerLink]="['/auth/login']"
-                          [queryParams]="{ returnUrl: '/vacantes/' + data.id }"
-                          variant="primary"
-                          shape="rounded"
-                          size="md"
-                        >
-                          Postularme
-                        </a>
-                      } @else if (auth.currentUser()?.role === candidateRole) {
                         @if (applyState() === 'applied') {
                           <div class="text-right">
                             <span
@@ -192,35 +194,94 @@ const BRAND_COLOR = '#e47c3f';
                             ij-button
                             type="button"
                             variant="primary"
-                            shape="rounded"
-                            size="md"
+                            shape="pill"
+                            size="lg"
                             [disabled]="applyState() === 'submitting'"
                             (click)="onApplyClick(data.id)"
                           >
-                            {{ applyState() === 'submitting' ? 'Enviando…' : 'Postularme' }}
+                            {{ applyState() === 'submitting' ? 'Enviando…' : 'Aplicar ahora' }}
                           </button>
                         }
+                      } @else {
+                        <a
+                          ij-button
+                          [routerLink]="['/auth/login']"
+                          [queryParams]="{ returnUrl: vacancyPath(data) }"
+                          variant="primary"
+                          shape="pill"
+                          size="lg"
+                        >
+                          Aplicar ahora
+                        </a>
+                      }
+                      @if (auth.currentUser()?.role === candidateRole) {
+                        <button
+                          type="button"
+                          [class]="saveButtonClass()"
+                          [disabled]="savePending()"
+                          [attr.aria-pressed]="saved()"
+                          (click)="toggleSave(data.id)"
+                        >
+                          <ij-icon name="bookmark" [size]="15" />
+                          {{ saved() ? 'Guardada' : 'Guardar' }}
+                        </button>
                       }
                     </div>
                   </div>
 
+                  <p class="mt-3 inline-flex items-center gap-1.5 text-[14px] text-body">
+                    <ij-icon name="map-pin" [size]="16" class="text-muted" />
+                    {{ data.municipality }}, {{ stateName(data.state) }}
+                  </p>
+
+                  <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                      <span class="text-[15px] font-bold text-ink-900">
+                        {{ salary(data) }}
+                        <span class="text-accent-green font-semibold">/ Month</span>
+                      </span>
+                    </div>
+
+                    @if (data.applicationDeadline) {
+                      <p class="text-[13.5px] text-muted">
+                        Application ends:
+                        <span class="font-bold text-brand">{{ dateOnlyLabel(data.applicationDeadline) }}</span>
+                      </p>
+                    }
+                  </div>
+
                   @if (applyError(); as error) {
-                    <p class="mt-2 rounded-xl bg-red-50 px-4 py-2.5 text-[13px] font-semibold text-red-700">
+                    <p class="mt-4 rounded-xl bg-red-50 px-4 py-2.5 text-[13px] font-semibold text-red-700">
                       {{ error }}
                     </p>
                   }
 
-                  <h2 class="mt-6 text-base font-bold text-ink-900">Descripción</h2>
-                  <p class="mt-2 whitespace-pre-line text-[14.5px] leading-relaxed text-body">
+                  <h2 class="mt-8 text-lg font-bold text-ink-900">Job Description:</h2>
+                  <p class="mt-3 whitespace-pre-line text-[14.5px] leading-relaxed text-body">
                     {{ data.description }}
                   </p>
 
                   @if (data.requirements) {
-                    <h2 class="mt-6 text-base font-bold text-ink-900">Requisitos</h2>
-                    <p class="mt-2 whitespace-pre-line text-[14.5px] leading-relaxed text-body">
-                      {{ data.requirements }}
-                    </p>
+                    <h2 class="mt-8 text-lg font-bold text-ink-900">Requirements:</h2>
+                    <ul class="mt-3 space-y-3">
+                      @for (item of lines(data.requirements); track $index) {
+                        <li class="flex items-start gap-3 text-[14.5px] leading-relaxed text-body">
+                          <ij-icon name="check" [size]="18" class="mt-0.5 flex-shrink-0 text-accent-blue" [strokeWidth]="3" />
+                          <span>{{ item }}</span>
+                        </li>
+                      }
+                    </ul>
                   }
+
+                  <h2 class="mt-8 text-lg font-bold text-ink-900">Responsibilities:</h2>
+                  <ul class="mt-3 space-y-3">
+                    @for (item of lines(data.description); track $index) {
+                      <li class="flex items-start gap-3 text-[14.5px] leading-relaxed text-body">
+                        <ij-icon name="check" [size]="18" class="mt-0.5 flex-shrink-0 text-accent-blue" [strokeWidth]="3" />
+                        <span>{{ item }}</span>
+                      </li>
+                    }
+                  </ul>
 
                   @if (shareLinks().length > 0) {
                     <h2 class="mt-7 border-t border-line pt-5 text-base font-bold text-ink-900">
@@ -298,6 +359,21 @@ const BRAND_COLOR = '#e47c3f';
                         </div>
                       }
                     </dl>
+                  </div>
+
+                  <div class="rounded-2xl bg-white p-6 shadow-card">
+                    <h2 class="border-l-4 border-brand pl-3 text-lg font-bold text-ink-900">
+                      Job Skills
+                    </h2>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                      @for (skill of jobSkills; track skill) {
+                        <span
+                          class="rounded-full bg-slate-100 px-4 py-1.5 text-[13px] font-semibold text-orange-700"
+                        >
+                          {{ skill }}
+                        </span>
+                      }
+                    </div>
                   </div>
 
                   <div class="rounded-2xl bg-white p-6 shadow-card">
@@ -513,6 +589,7 @@ export class PublicVacancyDetailPage {
   private readonly platformId = inject(PLATFORM_ID);
 
   protected readonly candidateRole = Role.CANDIDATE;
+  protected readonly jobSkills = JOB_SKILLS;
   protected readonly vacancy = signal<PublicVacancy | null>(null);
   // Guardar vacante (T17): estado del toggle.
   protected readonly saved = signal(false);
@@ -545,6 +622,24 @@ export class PublicVacancyDetailPage {
         : !!draft.answerText?.trim();
     }),
   );
+
+  protected readonly isNew = computed(() => {
+    const v = this.vacancy();
+    if (!v?.publishedAt) return false;
+    const diff = Date.now() - new Date(v.publishedAt).getTime();
+    return diff < 7 * 24 * 60 * 60 * 1000;
+  });
+
+  protected readonly postedAgo = computed(() => {
+    const v = this.vacancy();
+    const dateStr = v?.refreshedAt ?? v?.publishedAt;
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / (24 * 60 * 60 * 1000));
+    if (days === 0) return 'Hoy';
+    if (days === 1) return '1 día';
+    return `${days} días`;
+  });
 
   private readonly mapEl = viewChild<ElementRef<HTMLElement>>('mapEl');
   private map: import('leaflet').Map | undefined;
@@ -860,6 +955,17 @@ export class PublicVacancyDetailPage {
     return STATE_NAMES.get(code) ?? code;
   }
 
+  protected lines(text: string): readonly string[] {
+    return text
+      .split(/\n/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+  }
+
+  protected vacancyPath(vacancy: PublicVacancy): string {
+    return vacancyPath(vacancy);
+  }
+
   protected details(vacancy: PublicVacancy): readonly DetailItem[] {
     const items: DetailItem[] = [
       {
@@ -958,7 +1064,7 @@ export class PublicVacancyDetailPage {
   }
 
   /** `YYYY-MM-DD` → fecha larga es-MX, sin correr el día por zona horaria. */
-  private dateOnlyLabel(dateOnly: string): string {
+  protected dateOnlyLabel(dateOnly: string): string {
     return new Intl.DateTimeFormat('es-MX', {
       dateStyle: 'long',
       timeZone: 'UTC',
@@ -1064,7 +1170,7 @@ export class PublicVacancyDetailPage {
     ];
   }
 
-  private salary(vacancy: PublicVacancy): string {
+  protected salary(vacancy: PublicVacancy): string {
     const { salaryMin, salaryMax } = vacancy;
     if (salaryMin === null && salaryMax === null) return 'A convenir';
     const format = (amount: number) =>
@@ -1073,10 +1179,9 @@ export class PublicVacancyDetailPage {
         currency: 'MXN',
         maximumFractionDigits: 0,
       }).format(amount);
-    const range =
-      salaryMin !== null && salaryMax !== null
-        ? `${format(salaryMin)} – ${format(salaryMax)}`
-        : format((salaryMin ?? salaryMax)!);
-    return vacancy.hasCommissions ? `${range} + comisiones` : range;
+    if (salaryMin !== null && salaryMax !== null) {
+      return `${format(salaryMin)} – ${format(salaryMax)}`;
+    }
+    return format((salaryMin ?? salaryMax)!);
   }
 }
