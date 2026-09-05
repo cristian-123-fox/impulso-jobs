@@ -266,7 +266,7 @@ const JOB_SKILLS = [
                     <ul class="mt-3 space-y-3">
                       @for (item of lines(data.requirements); track $index) {
                         <li class="flex items-start gap-3 text-[14.5px] leading-relaxed text-body">
-                          <ij-icon name="check" [size]="18" class="mt-0.5 flex-shrink-0 text-accent-blue" [strokeWidth]="3" />
+                          <ij-icon name="check" [size]="18" class="mt-0.5 flex-shrink-0 text-amber-600" [strokeWidth]="3" />
                           <span>{{ item }}</span>
                         </li>
                       }
@@ -277,7 +277,7 @@ const JOB_SKILLS = [
                   <ul class="mt-3 space-y-3">
                     @for (item of lines(data.description); track $index) {
                       <li class="flex items-start gap-3 text-[14.5px] leading-relaxed text-body">
-                        <ij-icon name="check" [size]="18" class="mt-0.5 flex-shrink-0 text-accent-blue" [strokeWidth]="3" />
+                        <ij-icon name="check" [size]="18" class="mt-0.5 flex-shrink-0 text-amber-600" [strokeWidth]="3" />
                         <span>{{ item }}</span>
                       </li>
                     }
@@ -368,7 +368,7 @@ const JOB_SKILLS = [
                     <div class="mt-4 flex flex-wrap gap-2">
                       @for (skill of jobSkills; track skill) {
                         <span
-                          class="rounded-full bg-slate-100 px-4 py-1.5 text-[13px] font-semibold text-orange-700"
+                          class="rounded-full bg-brand-50 px-4 py-1.5 text-[13px] font-semibold text-brand-600"
                         >
                           {{ skill }}
                         </span>
