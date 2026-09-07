@@ -91,6 +91,7 @@ export interface PublicVacancyCompanyDto {
   businessName: string;
   economicSector: string | null;
   logoUrl: string | null;
+  website: string | null;
   state: string;
   municipality: string;
 }
@@ -182,6 +183,7 @@ export function toPublicVacancyResponse(
             businessName: company.businessName,
             economicSector: company.economicSector ?? null,
             logoUrl: company.logoUrl ?? null,
+            website: company.website ?? null,
             state: company.state,
             municipality: company.municipality,
           },

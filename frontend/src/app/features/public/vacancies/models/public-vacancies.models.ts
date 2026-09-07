@@ -20,6 +20,7 @@ export interface PublicVacancyCompany {
   businessName: string;
   economicSector: string | null;
   logoUrl: string | null;
+  website: string | null;
   state: string;
   municipality: string;
 }

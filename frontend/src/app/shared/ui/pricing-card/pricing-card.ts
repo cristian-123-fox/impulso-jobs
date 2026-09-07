@@ -51,6 +51,18 @@ const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
         </div>
 
         <div class="px-9 pt-6">
+          @if (plan().summary) {
+            <div class="mb-5 flex flex-col gap-1.5">
+              @for (line of plan().summary.split('\n'); track $index) {
+                @if (line.trim()) {
+                  <div class="flex items-start gap-2">
+                    <ij-icon name="check" [size]="14" [strokeWidth]="3" class="mt-0.5 shrink-0 text-brand" />
+                    <span class="text-[14px] leading-5 text-ink-500">{{ line.trim() }}</span>
+                  </div>
+                }
+              }
+            </div>
+          }
           <div class="mb-[30px] flex flex-col gap-4">
             @for (feature of plan().features; track feature.label) {
               <div class="flex items-center gap-3">

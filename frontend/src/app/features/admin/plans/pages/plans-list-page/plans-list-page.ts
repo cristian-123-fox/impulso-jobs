@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  afterNextRender,
   computed,
   inject,
   signal,
@@ -319,8 +320,10 @@ export class PlansListPage {
   });
 
   constructor() {
-    this.facade.load();
-    this.facade.loadFeatures();
+    afterNextRender(() => {
+      this.facade.load();
+      this.facade.loadFeatures();
+    });
   }
 
   protected valueTypeLabel(feature: PlanFeatureCatalogItem): string {
