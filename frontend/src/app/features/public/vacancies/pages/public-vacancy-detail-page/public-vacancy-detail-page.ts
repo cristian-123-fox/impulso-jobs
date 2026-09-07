@@ -109,7 +109,7 @@ const JOB_SKILLS = [
       <div class="mx-auto max-w-[1100px]">
         <a
           routerLink="/vacantes"
-          class="mb-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand"
+          class="mb-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand-strong"
         >
           <ij-icon name="chevron-left" [size]="16" />
           Todas las vacantes
@@ -184,7 +184,7 @@ const JOB_SKILLS = [
                             </span>
                             <a
                               routerLink="/candidato/postulaciones"
-                              class="mt-1.5 block text-[12.5px] font-semibold text-brand hover:underline"
+                              class="mt-1.5 block text-[12.5px] font-semibold text-brand-strong hover:underline"
                             >
                               Ver mis postulaciones
                             </a>
@@ -245,7 +245,7 @@ const JOB_SKILLS = [
                     @if (data.applicationDeadline) {
                       <p class="text-[13.5px] text-muted">
                         Application ends:
-                        <span class="font-bold text-brand">{{ dateOnlyLabel(data.applicationDeadline) }}</span>
+                        <span class="font-bold text-brand-strong">{{ dateOnlyLabel(data.applicationDeadline) }}</span>
                       </p>
                     }
                   </div>
@@ -344,7 +344,7 @@ const JOB_SKILLS = [
                       @for (item of details(data); track item.label) {
                         <div class="flex items-start gap-3">
                           <span
-                            class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand"
+                            class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-strong"
                           >
                             <ij-icon [name]="item.icon" [size]="17" />
                           </span>
@@ -368,7 +368,7 @@ const JOB_SKILLS = [
                     <div class="mt-4 flex flex-wrap gap-2">
                       @for (skill of jobSkills; track skill) {
                         <span
-                          class="rounded-full bg-brand-50 px-4 py-1.5 text-[13px] font-semibold text-brand-600"
+                          class="rounded-full bg-brand-50 px-4 py-1.5 text-[13px] font-semibold text-brand-strong"
                         >
                           {{ skill }}
                         </span>
@@ -379,7 +379,7 @@ const JOB_SKILLS = [
                   <div class="rounded-2xl bg-white p-6 shadow-card">
                     <div class="flex items-center gap-3">
                       <span
-                        class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-brand-50 text-base font-extrabold text-brand"
+                        class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-brand-50 text-base font-extrabold text-brand-strong"
                       >
                         @if (data.company?.logoUrl; as logo) {
                           <img [src]="logo" alt="" class="h-full w-full object-cover" />
@@ -443,7 +443,7 @@ const JOB_SKILLS = [
                                 <input
                                   type="radio"
                                   [name]="'q-' + question.id"
-                                  class="h-4 w-4 text-brand"
+                                  class="h-4 w-4 text-brand-strong"
                                   [checked]="draftOf(question.id)?.optionId === option.id"
                                   (change)="setOption(question.id, option.id)"
                                 />
@@ -521,7 +521,7 @@ const JOB_SKILLS = [
                           <input
                             type="radio"
                             name="report-reason"
-                            class="h-4 w-4 text-brand"
+                            class="h-4 w-4 text-brand-strong"
                             [checked]="reportReason() === reason.code"
                             (change)="reportReason.set(reason.code)"
                           />
@@ -736,7 +736,7 @@ export class PublicVacancyDetailPage {
     const companyName = vacancy.company?.businessName ?? 'Empresa confidencial';
     const place = `${vacancy.municipality}, ${this.stateName(vacancy.state)}`;
     this.seo.setPage({
-      title: `${vacancy.title} — ${companyName} en ${place} | Impulso Jobs`,
+      title: `${vacancy.title}, ${companyName} en ${place} | Impulso Jobs`,
       description: vacancy.description,
       canonicalPath: vacancyPath(vacancy),
       image: vacancy.company?.logoUrl ?? undefined,
@@ -813,7 +813,7 @@ export class PublicVacancyDetailPage {
     const base =
       'inline-flex h-[42px] items-center gap-1.5 rounded-xl border px-3.5 text-[13px] font-bold transition-colors disabled:opacity-60 ';
     return this.saved()
-      ? base + 'border-brand bg-brand-50 text-brand'
+      ? base + 'border-brand bg-brand-50 text-brand-strong'
       : base + 'border-line bg-white text-body hover:bg-surface';
   }
 
@@ -1072,7 +1072,7 @@ export class PublicVacancyDetailPage {
   }
 
   private publishedLabel(vacancy: PublicVacancy): string {
-    if (!vacancy.publishedAt) return '—';
+    if (!vacancy.publishedAt) return 'Sin fecha';
     return new Intl.DateTimeFormat('es-MX', { dateStyle: 'long' }).format(
       new Date(vacancy.publishedAt),
     );
@@ -1180,7 +1180,7 @@ export class PublicVacancyDetailPage {
         maximumFractionDigits: 0,
       }).format(amount);
     if (salaryMin !== null && salaryMax !== null) {
-      return `${format(salaryMin)} – ${format(salaryMax)}`;
+      return `${format(salaryMin)} a ${format(salaryMax)}`;
     }
     return format((salaryMin ?? salaryMax)!);
   }

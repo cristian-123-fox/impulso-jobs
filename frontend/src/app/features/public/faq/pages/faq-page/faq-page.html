@@ -1,4 +1,8 @@
-<app-faq-hero [content]="facade.hero()" />
+<ij-page-header
+  [title]="facade.hero().title"
+  [lead]="facade.hero().description"
+  breadcrumb="Preguntas frecuentes"
+/>
 <app-faq-accordion
   [tabs]="facade.tabs()"
   [activeTabId]="activeTabId()"

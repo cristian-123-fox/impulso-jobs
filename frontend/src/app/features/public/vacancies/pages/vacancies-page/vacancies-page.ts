@@ -101,7 +101,7 @@ function options(labels: Record<string, string>, empty: string): IjOption[] {
           <div class="flex items-center gap-2">
             <button
               type="submit"
-              class="h-[46px] rounded-xl bg-brand px-6 text-[13.5px] font-bold text-white transition-colors hover:bg-brand-600"
+              class="h-[46px] rounded-xl bg-brand-700 px-6 text-[13.5px] font-bold text-white transition-colors hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
             >
               Buscar
             </button>
@@ -281,6 +281,7 @@ export class VacanciesPage {
       void this.router.navigateByUrl('/vacantes');
       return;
     }
+    if (!landing) this.applyQueryParams();
     this.applySeo(landing);
 
     // T16: la ruta se sirve con SSR. En el servidor se carga la primera página
@@ -293,6 +294,34 @@ export class VacanciesPage {
       this.load(1);
     } else {
       afterNextRender(() => this.load(1));
+    }
+  }
+
+  /**
+   * Filtros que llegan por query string, p. ej. desde el buscador de la home:
+   * `/vacantes?q=ventas&area=23&estado=JAL`.
+   *
+   * Esta página no leía ningún query param, sólo el `:landing` de la ruta SEO.
+   * El buscador del hero navegaba aquí con lo que el usuario había escrito y se
+   * descartaba en silencio: siempre se veía el listado sin filtrar.
+   *
+   * Se validan contra los catálogos: un `area` o `estado` inventado en la URL
+   * se ignora en vez de mandarse a la API.
+   */
+  private applyQueryParams(): void {
+    const params = this.route.snapshot.queryParamMap;
+
+    const query = params.get('q')?.trim();
+    if (query) this.query.set(query);
+
+    const areaId = Number(params.get('area'));
+    if (PROFESSIONAL_AREAS.some((area) => area.id === areaId)) {
+      this.areaId.set(String(areaId));
+    }
+
+    const stateCode = params.get('estado');
+    if (stateCode && MX_STATES.some((state) => state.code === stateCode)) {
+      this.stateCode.set(stateCode);
     }
   }
 

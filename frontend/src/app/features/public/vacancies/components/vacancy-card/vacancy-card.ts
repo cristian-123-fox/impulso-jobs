@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { vacancyPath } from '@/shared/utils/seo';
@@ -28,10 +34,16 @@ const NEW_BADGE_DAYS = 7;
       [class.ring-brand]="vacancy().isFeatured"
     >
       <span
-        class="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-brand-50 text-[19px] font-extrabold text-brand sm:h-20 sm:w-20"
+        class="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-brand-50 text-[19px] font-extrabold text-brand-strong sm:h-20 sm:w-20"
       >
-        @if (vacancy().company?.logoUrl; as logo) {
-          <img [src]="logo" alt="" class="h-full w-full object-cover" />
+        @if (logoUrl(); as logo) {
+          <img
+            [src]="logo"
+            alt=""
+            class="h-full w-full object-cover"
+            loading="lazy"
+            (error)="onLogoError()"
+          />
         } @else {
           {{ initials() }}
         }
@@ -40,7 +52,7 @@ const NEW_BADGE_DAYS = 7;
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <h3 class="text-[15.5px] font-bold text-ink-900">{{ vacancy().title }}</h3>
-          <span class="text-[12.5px] font-semibold text-accent-green">
+          <span class="text-[12.5px] font-semibold text-accent-green-strong">
             / {{ postedAgo() }}
           </span>
         </div>
@@ -48,7 +60,7 @@ const NEW_BADGE_DAYS = 7;
         @if (vacancy().isFeatured || vacancy().isUrgent || vacancy().isVerified) {
           <div class="mt-1 flex flex-wrap items-center gap-1.5">
             @if (vacancy().isFeatured) {
-              <span class="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand">
+              <span class="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-strong">
                 Destacada
               </span>
             }
@@ -58,7 +70,7 @@ const NEW_BADGE_DAYS = 7;
               </span>
             }
             @if (vacancy().isVerified) {
-              <span class="rounded-md bg-accent-blue-soft px-2 py-0.5 text-[11px] font-bold text-accent-blue">
+              <span class="rounded-md bg-accent-blue-soft px-2 py-0.5 text-[11px] font-bold text-accent-blue-strong">
                 Verificada
               </span>
             }
@@ -74,18 +86,18 @@ const NEW_BADGE_DAYS = 7;
           <span>{{ employmentLabel() }} · {{ workModeLabel() }}</span>
         </p>
 
-        <p class="mt-2 truncate text-[13.5px] font-semibold text-brand">
+        <p class="mt-2 truncate text-[13.5px] font-semibold text-brand-strong">
           {{ companyName() }}
         </p>
       </div>
 
       <div class="hidden flex-shrink-0 flex-col items-end justify-between gap-2 text-right sm:flex">
         @if (isNew()) {
-          <span class="rounded-md bg-accent-green px-2.5 py-1 text-[11.5px] font-bold text-white">
+          <span class="rounded-md bg-accent-green-strong px-2.5 py-1 text-[11.5px] font-bold text-white">
             Nueva
           </span>
         } @else {
-          <span class="rounded-md bg-brand-50 px-2.5 py-1 text-[11.5px] font-bold text-brand">
+          <span class="rounded-md bg-brand-50 px-2.5 py-1 text-[11.5px] font-bold text-brand-strong">
             {{ employmentLabel() }}
           </span>
         }
@@ -97,13 +109,29 @@ const NEW_BADGE_DAYS = 7;
           }
         </div>
 
-        <span class="text-[13px] font-bold text-brand">Ver vacante</span>
+        <span class="text-[13px] font-bold text-brand-strong">Ver vacante</span>
       </div>
     </a>
   `,
 })
 export class VacancyCard {
   readonly vacancy = input.required<PublicVacancy>();
+
+  /**
+   * Un `logoUrl` que devuelve 404 dejaba un recuadro vacío en la tarjeta (le
+   * pasa hoy a las empresas sembradas, que apuntan a un CDN inexistente). Al
+   * fallar la carga se cae a las iniciales, que es el mismo aspecto que tiene
+   * una empresa sin logo.
+   */
+  private readonly logoFailed = signal(false);
+
+  protected readonly logoUrl = computed(() =>
+    this.logoFailed() ? null : this.vacancy().company?.logoUrl,
+  );
+
+  protected onLogoError(): void {
+    this.logoFailed.set(true);
+  }
 
   /** URL canónica con slug (T16). */
   protected detailPath(): string {
@@ -166,7 +194,7 @@ export class VacancyCard {
         maximumFractionDigits: 0,
       }).format(amount);
     if (salaryMin !== null && salaryMax !== null) {
-      return `${format(salaryMin)} – ${format(salaryMax)}`;
+      return `${format(salaryMin)} a ${format(salaryMax)}`;
     }
     return format((salaryMin ?? salaryMax)!);
   }

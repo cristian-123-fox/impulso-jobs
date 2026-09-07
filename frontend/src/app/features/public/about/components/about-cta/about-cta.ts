@@ -1,41 +1,46 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { IjButton, IjIcon } from '@/shared/ui';
+import { RouterLink } from '@angular/router';
+import { IjButton } from '@/shared/ui';
+import { IjReveal } from '@/shared/directives/reveal';
 import { AboutCtaContent } from '@/features/public/about/models/about.models';
 
+/**
+ * Cierre con las dos puertas de entrada.
+ *
+ * La versión anterior traía una imagen cuyo `src` era una llamada a la API de
+ * text-to-image de una herramienta de desarrollo, con el prompt entero en la
+ * URL: un artefacto que se coló del prototipo y que en producción no carga.
+ * El panel usa brand-700, no el naranja de marca, que con texto blanco se
+ * queda en 2.90:1.
+ */
 @Component({
   selector: 'app-about-cta',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjButton, IjIcon],
+  imports: [IjButton, RouterLink, IjReveal],
   template: `
-    <section class="relative overflow-hidden bg-[#f6f8fb] py-[70px]">
+    <section class="px-6 py-20 lg:px-[60px]">
       <div
-        class="absolute inset-0 opacity-70"
-        style="background-image: radial-gradient(#e0e4ec 1.4px, transparent 1.4px); background-size: 22px 22px;"
-      ></div>
-
-      <div
-        class="relative z-[1] mx-auto grid max-w-[1120px] items-end gap-0 px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-[60px]"
+        ijReveal
+        class="mx-auto max-w-[1080px] rounded-2xl bg-brand-700 px-8 py-14 text-center text-white sm:px-14"
       >
-        <div class="relative hidden h-[400px] lg:block">
-          <img
-            [src]="content().imageSrc"
-            [alt]="content().imageAlt"
-            class="h-full w-full object-cover object-top"
-          />
-        </div>
-
-        <div class="relative rounded-md bg-brand px-8 py-[52px] text-white lg:-top-5 lg:px-12">
-          <p class="mb-[14px] text-sm font-medium opacity-85">{{ content().eyebrow }}</p>
-          <h2 class="mb-5 text-[34px] font-bold leading-[1.25] text-white">
-            {{ content().title }}
-          </h2>
-          <p class="mb-[30px] max-w-[460px] text-sm leading-[1.7] opacity-85">
-            {{ content().description }}
-          </p>
-          <button ij-button type="button" variant="white">
-            {{ content().buttonLabel }}
-            <ij-icon name="arrow-up" [size]="15" />
-          </button>
+        <h2 class="mx-auto max-w-[20ch] text-3xl font-bold leading-tight text-white sm:text-[36px]">
+          {{ content().title }}
+        </h2>
+        <p class="mx-auto mt-4 max-w-[56ch] text-[15px] leading-relaxed text-white/90">
+          {{ content().description }}
+        </p>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          <a ij-button routerLink="/auth/registro" variant="white" size="md">
+            Crear cuenta gratis
+          </a>
+          <a
+            ij-button
+            routerLink="/auth/registro/empresa"
+            size="md"
+            class="bg-transparent text-white ring-1 ring-inset ring-white/70 hover:bg-white/15"
+          >
+            Publicar una vacante
+          </a>
         </div>
       </div>
     </section>

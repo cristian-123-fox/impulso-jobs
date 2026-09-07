@@ -1,66 +1,68 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { IjButton, IjIcon } from '@/shared/ui';
+import { IjReveal } from '@/shared/directives/reveal';
 import { Testimonial } from '@/features/public/home/models/home.models';
-import { MediaFrame } from '@/features/public/home/components/media-frame/media-frame';
 
-/** Sección de testimonios de clientes. */
+/**
+ * Testimonios. Dos citas cortas con atribución completa (nombre, rol y ciudad);
+ * antes firmaban "Nikola Tesla" y "Ada Lovelace" sobre un placeholder gris, que
+ * es la forma más rápida de que nadie se crea la sección.
+ *
+ * Se retiraron las flechas de carrusel: no navegaban a ninguna parte y con dos
+ * elementos no hay nada que paginar.
+ */
 @Component({
   selector: 'app-testimonials',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjButton, MediaFrame],
+  imports: [IjReveal],
   template: `
     <section class="px-6 py-16 lg:px-[60px]">
       <div class="mx-auto max-w-[1000px]">
-        <div class="mb-11">
-          <p class="mb-2 text-[15px] font-semibold text-brand">
-            Testimonios de clientes
-          </p>
-          <h2 class="text-3xl font-bold leading-tight text-ink-900 sm:text-[36px]">
-            Lo que dicen quienes ya nos usaron
-          </h2>
-        </div>
+        <h2
+          class="mb-11 max-w-[20ch] text-3xl font-bold leading-tight text-ink-900 sm:text-[36px]"
+        >
+          Lo que dice quien ya encontró trabajo aquí
+        </h2>
 
         <div class="grid gap-7 md:grid-cols-2">
-          @for (testimonial of testimonials(); track testimonial.name) {
-            <div
-              class="flex flex-col gap-6 rounded-xl bg-surface p-8 sm:flex-row sm:items-start"
+          @for (
+            testimonial of testimonials();
+            track testimonial.name;
+            let i = $index
+          ) {
+            <figure
+              ijReveal
+              [revealDelay]="i * 110"
+              class="flex gap-5 rounded-xl bg-surface p-8"
             >
-              <div
-                class="h-32 w-28 shrink-0 overflow-hidden rounded-[10px]"
+              <!--
+                Iniciales, no una foto de stock. Poner la cara de un
+                desconocido bajo el testimonio de otra persona es inventar dos
+                cosas en vez de una; cuando haya retratos reales con permiso,
+                aquí va la etiqueta img.
+              -->
+              <span
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-50 text-lg font-bold text-brand-strong"
+                aria-hidden="true"
               >
-                <app-media-frame icon="user" />
-              </div>
+                {{ initials(testimonial.name) }}
+              </span>
               <div>
-                <svg
-                  width="40"
-                  height="30"
-                  viewBox="0 0 40 30"
-                  class="mb-3 fill-brand/90"
-                  aria-hidden="true"
+                <blockquote
+                  class="text-[15px] leading-relaxed text-body before:mr-0.5 before:content-['“'] after:content-['”']"
                 >
-                  <path
-                    d="M0 30V16C0 7 5 1 15 0v6c-5 1-7 4-7 8h7v16H0zm22 0V16C22 7 27 1 37 0v6c-5 1-7 4-7 8h7v16H22z"
-                  />
-                </svg>
-                <p class="mb-4 text-sm leading-relaxed text-body/80">
                   {{ testimonial.quote }}
-                </p>
-                <h5 class="text-[15px] font-semibold text-ink-900">
-                  {{ testimonial.name }}
-                </h5>
-                <p class="text-[13px] text-muted">{{ testimonial.role }}</p>
+                </blockquote>
+                <figcaption class="mt-4">
+                  <span class="block text-[15px] font-semibold text-ink-900">
+                    {{ testimonial.name }}
+                  </span>
+                  <span class="block text-[13px] text-muted">
+                    {{ testimonial.role }}
+                  </span>
+                </figcaption>
               </div>
-            </div>
+            </figure>
           }
-        </div>
-
-        <div class="mt-9 flex justify-center gap-2.5">
-          <button ij-button type="button" variant="soft" shape="circle" aria-label="Anterior">
-            <ij-icon name="chevron-left" [size]="15" [strokeWidth]="2.5" />
-          </button>
-          <button ij-button type="button" shape="circle" aria-label="Siguiente">
-            <ij-icon name="chevron-right" [size]="15" [strokeWidth]="2.5" />
-          </button>
         </div>
       </div>
     </section>
@@ -68,4 +70,14 @@ import { MediaFrame } from '@/features/public/home/components/media-frame/media-
 })
 export class Testimonials {
   readonly testimonials = input.required<readonly Testimonial[]>();
+
+  /** "Ximena Alcántara" -> "XA". */
+  protected initials(name: string): string {
+    return name
+      .split(' ')
+      .slice(0, 2)
+      .map((part) => part[0] ?? '')
+      .join('')
+      .toUpperCase();
+  }
 }

@@ -1,84 +1,131 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  signal,
+} from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { IjButton, IjIcon } from '@/shared/ui';
-import { Company, Stat } from '@/features/public/home/models/home.models';
-import { SectionHeading } from '@/features/public/home/components/section-heading/section-heading';
+import { IjReveal } from '@/shared/directives/reveal';
+import { HomeCompany } from '@/features/public/home/models/home.models';
 
-/** Sección de empresas destacadas + franja de estadísticas de la plataforma. */
+/** Cuántas empresas hacen que un muro de logos parezca un muro. */
+const MIN_WALL = 3;
+
+/**
+ * Banda para empresas: la vía de conversión B2B del portal.
+ *
+ * Sustituye a la sección "Empresas destacadas", que mostraba cinco empresas
+ * llamadas "Company Business" o "Company Name" cuyos logos eran capturas de
+ * WhatsApp, y una franja de métricas inventadas ("10M+ usuarios activos al
+ * día", "50M+ historias compartidas") para un portal que aún no ha abierto.
+ *
+ * El muro de logos ahora sale de las empresas con vacante real y sólo se
+ * dibuja cuando hay suficientes para que se lea como un muro. Con menos, la
+ * sección se queda en la propuesta para empresas, que siempre es cierta.
+ */
 @Component({
   selector: 'app-top-companies',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjButton, SectionHeading],
+  imports: [IjIcon, IjButton, RouterLink, IjReveal],
   template: `
-    <section class="px-6 pb-8 pt-16 lg:px-[60px]">
-      <app-section-heading eyebrow="Empresas destacadas">
-        Consigue empleo en las mejores empresas
-      </app-section-heading>
+    <section class="px-6 py-16 lg:px-[60px]">
+      <div
+        ijReveal
+        class="mx-auto max-w-[1120px] overflow-hidden rounded-[28px] bg-ink-950 px-8 py-12 text-white sm:px-12 lg:px-16"
+      >
+        <div class="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <h2 class="text-3xl font-bold leading-tight text-white sm:text-[36px]">
+              ¿Estás contratando?
+            </h2>
+            <p class="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-footer-fg">
+              Publica tu vacante, recibe postulaciones ordenadas en un solo
+              panel y filtra con preguntas de descarte antes de la primera
+              llamada.
+            </p>
 
-      <div class="mx-auto mt-11 flex max-w-[1000px] items-center gap-4 sm:gap-5">
-        <button
-          ij-button
-          type="button"
-          shape="circle"
-          class="shrink-0"
-          aria-label="Anterior"
-        >
-          <ij-icon name="chevron-left" [size]="14" [strokeWidth]="2.5" />
-        </button>
+            <ul class="mt-7 flex flex-col gap-3">
+              @for (point of points; track point) {
+                <li class="flex items-start gap-3 text-[15px] text-footer-fg">
+                  <span
+                    class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-700 text-white"
+                  >
+                    <ij-icon name="check" [size]="12" [strokeWidth]="3" />
+                  </span>
+                  {{ point }}
+                </li>
+              }
+            </ul>
 
-        <div class="grid flex-1 grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
-          @for (company of companies(); track company.name) {
-            <div class="flex flex-col items-center gap-3">
-              <div
-                class="flex h-[92px] w-[92px] items-center justify-center overflow-hidden rounded-[20px] border border-line bg-white p-3 shadow-card"
+            <div class="mt-8 flex flex-wrap gap-3">
+              <a ij-button routerLink="/auth/registro/empresa" size="md">
+                Publicar una vacante
+              </a>
+              <a
+                ij-button
+                routerLink="/planes"
+                variant="white"
+                size="md"
               >
-                @if (company.logoSrc) {
-                  <img
-                    [src]="company.logoSrc"
-                    [alt]="company.logoAlt || company.name"
-                    class="h-full w-full object-contain"
-                    loading="lazy"
-                  />
-                } @else if (company.icon) {
-                  <ij-icon [name]="company.icon" [size]="26" [strokeWidth]="1.8" />
+                Ver planes
+              </a>
+            </div>
+          </div>
+
+          @if (showWall()) {
+            <div>
+              <p class="text-[13px] font-semibold tracking-wide text-footer-muted">
+                Ya publican con nosotros
+              </p>
+              <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
+                @for (company of companies(); track company.name) {
+                  <div
+                    class="flex h-[76px] items-center justify-center rounded-2xl bg-white/[0.07] px-3 ring-1 ring-white/10"
+                    [attr.title]="company.name"
+                  >
+                    @if (company.logoUrl && !broken().has(company.name)) {
+                      <img
+                        [src]="company.logoUrl"
+                        [alt]="company.name"
+                        class="max-h-10 max-w-full object-contain"
+                        loading="lazy"
+                        (error)="onLogoError(company.name)"
+                      />
+                    } @else {
+                      <!-- Sin logo (o roto): monograma, no un hueco vacío. -->
+                      <span class="text-center text-[13px] font-semibold text-white/85">
+                        {{ company.name }}
+                      </span>
+                    }
+                  </div>
                 }
               </div>
-              <span class="text-center text-[13px] font-medium text-body">{{
-                company.name
-              }}</span>
             </div>
           }
         </div>
-
-        <button
-          ij-button
-          type="button"
-          shape="circle"
-          class="shrink-0"
-          aria-label="Siguiente"
-        >
-          <ij-icon name="chevron-right" [size]="14" [strokeWidth]="2.5" />
-        </button>
-      </div>
-
-      <!-- Franja de estadísticas -->
-      <div
-        class="mx-auto mt-14 grid max-w-[640px] grid-cols-1 rounded-xl bg-white px-10 py-6 shadow-card sm:grid-cols-3"
-      >
-        @for (stat of stats(); track stat.label; let last = $last) {
-          <div
-            class="px-2 py-2 text-center sm:text-left"
-            [class.sm:border-r]="!last"
-            [class.border-line]="!last"
-          >
-            <div class="text-[30px] font-bold text-brand">{{ stat.value }}</div>
-            <div class="text-[13px] text-muted">{{ stat.label }}</div>
-          </div>
-        }
       </div>
     </section>
   `,
 })
 export class TopCompanies {
-  readonly companies = input.required<readonly Company[]>();
-  readonly stats = input.required<readonly Stat[]>();
+  readonly companies = input.required<readonly HomeCompany[]>();
+
+  protected readonly points: readonly string[] = [
+    'Preguntas de descarte para filtrar antes de entrevistar',
+    'Currículum del candidato guardado tal como estaba al postularse',
+    'Vacantes destacadas y distintivos por periodo, sin permanencia',
+  ];
+
+  /** Logos que devolvieron 404: se recuerdan para no reintentar en cada render. */
+  protected readonly broken = signal(new Set<string>());
+
+  protected readonly showWall = computed(
+    () => this.companies().length >= MIN_WALL,
+  );
+
+  protected onLogoError(name: string): void {
+    this.broken.update((set) => new Set(set).add(name));
+  }
 }

@@ -4,7 +4,8 @@ export { IjBadge } from '@/shared/ui/badge/badge';
 export { IjLogo } from '@/shared/ui/logo/logo';
 export { IjModal } from '@/shared/ui/modal/modal';
 export { IjPricingCard } from '@/shared/ui/pricing-card/pricing-card';
-export { TONE_SOFT, type Tone } from '@/shared/ui/tone';
+export { IjPageHeader } from '@/shared/ui/page-header/page-header';
+export { TONE_SOFT, TONE_TEXT, type Tone } from '@/shared/ui/tone';
 
 // Controles de formulario (CVA + Tailwind + CDK)
 export { IjInput } from '@/shared/ui/input/input';

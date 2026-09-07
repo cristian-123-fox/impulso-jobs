@@ -202,11 +202,11 @@ const STEP_CONTROLS: string[][] = [
 
         <p class="mt-6 text-center text-[13.5px] text-muted">
           ¿Representas a una empresa?
-          <a routerLink="/auth/registro/empresa" class="font-semibold text-brand hover:text-brand-600">Regístrate como empresa</a>
+          <a routerLink="/auth/registro/empresa" class="font-semibold text-brand-strong hover:text-brand-600">Regístrate como empresa</a>
         </p>
         <p class="mt-1.5 text-center text-[13.5px] text-muted">
           ¿Ya tienes cuenta?
-          <a routerLink="/auth/login" class="font-semibold text-brand hover:text-brand-600">Inicia sesión</a>
+          <a routerLink="/auth/login" class="font-semibold text-brand-strong hover:text-brand-600">Inicia sesión</a>
         </p>
       }
     </div>

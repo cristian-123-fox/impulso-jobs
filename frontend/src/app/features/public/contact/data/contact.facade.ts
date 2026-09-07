@@ -1,46 +1,62 @@
 import { Injectable, signal } from '@angular/core';
 import {
+  BRAND_ADDRESS_LINE,
+  BRAND_EMAILS,
+  BRAND_OFFICE,
+  BRAND_PHONES,
+} from '@/shared/catalogs/brand.catalogs';
+import {
   ContactHeroContent,
   ContactInfoCard,
   ContactMapLocation,
 } from '@/features/public/contact/models/contact.models';
 
 /**
- * Facade del feature de contacto. Expone el contenido estático de la página
- * para desacoplar la vista de la futura integración con API o CMS.
+ * Facade del feature de contacto.
+ *
+ * Los datos salen de `brand.catalogs.ts`, que es el único sitio donde viven la
+ * dirección, los teléfonos y los correos. Antes esta página situaba la oficina
+ * en Bogotá con teléfonos +57, mientras el footer daba una dirección distinta y
+ * el producto entero es de México.
  */
 @Injectable({ providedIn: 'root' })
 export class ContactFacade {
   private readonly _hero = signal<ContactHeroContent>({
     eyebrow: 'Contacto',
-    title: 'Hablemos sobre tu próxima contratación',
+    title: 'Hablemos de tu próxima contratación',
     description:
       'Escríbenos si necesitas ayuda publicando vacantes, gestionando candidatos o resolviendo dudas sobre la plataforma.',
   });
 
   private readonly _infoCards = signal<readonly ContactInfoCard[]>([
     {
-      icon: 'map-pin',
-      title: 'Visítanos en Bogotá',
-      lines: ['Cra. 15 #93-47, Oficina 402', 'Bogotá, Colombia'],
+      icon: 'mail',
+      title: 'Correo',
+      lines: [BRAND_EMAILS.general, BRAND_EMAILS.companies],
+      hrefs: [`mailto:${BRAND_EMAILS.general}`, `mailto:${BRAND_EMAILS.companies}`],
     },
     {
       icon: 'phone',
-      title: 'Llámanos o escríbenos',
-      lines: ['+57 601 555 1234', '+57 320 555 9876'],
+      title: 'Teléfono y WhatsApp',
+      lines: [BRAND_PHONES.office, BRAND_PHONES.mobile],
+      hrefs: [
+        `tel:${BRAND_PHONES.office.replace(/\s+/g, '')}`,
+        `tel:${BRAND_PHONES.mobile.replace(/\s+/g, '')}`,
+      ],
     },
     {
-      icon: 'mail',
-      title: 'Soporte y ventas',
-      lines: ['hola@impulsojobs.com', 'empresas@impulsojobs.com'],
+      icon: 'map-pin',
+      title: 'Oficina',
+      lines: [BRAND_OFFICE.street, `${BRAND_OFFICE.locality}, ${BRAND_OFFICE.city}`],
+      hrefs: [],
     },
   ]);
 
   private readonly _office = signal<ContactMapLocation>({
-    badgeTitle: 'Oficina principal',
-    badgeAddress: 'Cra. 15 #93-47, Bogotá, Colombia',
-    officeName: 'Impulso Jobs Hub',
-    officeAddress: 'Zona financiera, Chapinero, Bogotá',
+    officeName: 'Impulso Jobs',
+    address: BRAND_ADDRESS_LINE,
+    lat: BRAND_OFFICE.lat,
+    lng: BRAND_OFFICE.lng,
   });
 
   readonly hero = this._hero.asReadonly();

@@ -35,7 +35,7 @@ import { IjIcon } from '@/shared/ui/icon/icon';
   template: `
     @if (label()) {
       <label [class]="labelClass">
-        {{ label() }}@if (required()) { <span class="text-brand">*</span> }
+        {{ label() }}@if (required()) { <span class="text-brand-strong">*</span> }
       </label>
     }
 
@@ -91,7 +91,7 @@ import { IjIcon } from '@/shared/ui/icon/icon';
           >
             <span class="truncate">{{ opt.label }}</span>
             @if (opt.value === value()) {
-              <ij-icon name="check" [size]="15" class="text-brand" />
+              <ij-icon name="check" [size]="15" class="text-brand-strong" />
             }
           </div>
         }

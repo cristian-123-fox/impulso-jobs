@@ -145,7 +145,7 @@ const STEP_CONTROLS: string[][] = [
                 [error]="invalid('businessName') ? 'El nombre comercial es obligatorio.' : null" formControlName="businessName" />
               <div class="grid grid-cols-2 gap-3">
                 <ij-input label="RFC" placeholder="ABC123456T12" [required]="true"
-                  [error]="invalid('rfc') ? 'RFC inválido (12–13 caracteres).' : null" formControlName="rfc" />
+                  [error]="invalid('rfc') ? 'RFC inválido (12 a 13 caracteres).' : null" formControlName="rfc" />
                 <ij-input label="Código postal" inputmode="numeric" placeholder="44100" [maxLength]="5" [required]="true"
                   [error]="invalid('postalCode') ? 'C.P. de 5 dígitos.' : null" formControlName="postalCode" />
               </div>
@@ -192,11 +192,11 @@ const STEP_CONTROLS: string[][] = [
 
         <p class="mt-6 text-center text-[13.5px] text-muted">
           ¿Eres candidato?
-          <a routerLink="/auth/registro" class="font-semibold text-brand hover:text-brand-600">Regístrate como candidato</a>
+          <a routerLink="/auth/registro" class="font-semibold text-brand-strong hover:text-brand-600">Regístrate como candidato</a>
         </p>
         <p class="mt-1.5 text-center text-[13.5px] text-muted">
           ¿Ya tienes cuenta?
-          <a routerLink="/auth/login" class="font-semibold text-brand hover:text-brand-600">Inicia sesión</a>
+          <a routerLink="/auth/login" class="font-semibold text-brand-strong hover:text-brand-600">Inicia sesión</a>
         </p>
       }
     </div>

@@ -2,15 +2,19 @@ import { IconName, Tone } from '@/shared/ui';
 
 export interface AboutHeroContent {
   readonly title: string;
+  readonly lead: string;
   readonly breadcrumbLabel: string;
 }
 
-export interface AboutCategory {
-  readonly jobsLabel: string;
-  readonly name: string;
+/** Bloque "para quién es": una columna por tipo de usuario. */
+export interface AboutAudience {
   readonly icon: IconName;
   readonly tone: Tone;
-  readonly featured?: boolean;
+  readonly title: string;
+  readonly description: string;
+  readonly features: readonly string[];
+  readonly ctaLabel: string;
+  readonly ctaPath: string;
 }
 
 export interface AboutStep {
@@ -19,19 +23,16 @@ export interface AboutStep {
   readonly description: string;
   readonly icon: IconName;
   readonly tone: Tone;
-  readonly shifted?: boolean;
+}
+
+/** Dato de cobertura. Sólo cifras comprobables contra los catálogos. */
+export interface AboutFact {
+  readonly value: string;
+  readonly label: string;
+  readonly detail: string;
 }
 
 export interface AboutCtaContent {
-  readonly eyebrow: string;
   readonly title: string;
   readonly description: string;
-  readonly buttonLabel: string;
-  readonly imageSrc: string;
-  readonly imageAlt: string;
-}
-
-export interface AboutCompany {
-  readonly name: string;
-  readonly icon: IconName;
 }

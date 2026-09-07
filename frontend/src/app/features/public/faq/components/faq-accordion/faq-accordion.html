@@ -1,15 +1,12 @@
 <section class="px-6 py-20 lg:px-[60px]">
   <div class="mx-auto max-w-[900px]">
-    <div class="mb-10 flex flex-wrap justify-center gap-3">
+    <div class="mb-10 flex flex-wrap justify-center gap-3" role="tablist">
       @for (tab of tabs(); track tab.id) {
         <button
           type="button"
-          class="rounded-lg px-5 py-3 text-sm font-semibold transition-all"
-          [class.bg-brand]="activeTabId() === tab.id"
-          [class.text-white]="activeTabId() === tab.id"
-          [class.shadow-float]="activeTabId() === tab.id"
-          [class.bg-brand/10]="activeTabId() !== tab.id"
-          [class.text-brand]="activeTabId() !== tab.id"
+          role="tab"
+          [attr.aria-selected]="activeTabId() === tab.id"
+          [class]="tabClass(tab.id)"
           (click)="tabSelected.emit(tab.id)"
         >
           {{ tab.label }}
@@ -27,29 +24,18 @@
 
     <div class="flex flex-col gap-4">
       @for (item of items(); track item.id) {
-        <article
-          class="overflow-hidden rounded-2xl border transition-colors"
-          [class.border-brand/20]="openItemId() === item.id"
-          [class.bg-brand/5]="openItemId() === item.id"
-          [class.border-line]="openItemId() !== item.id"
-          [class.bg-white]="openItemId() !== item.id"
-        >
+        <article [class]="itemClass(item.id)">
           <button
             type="button"
-            class="flex w-full items-center justify-between gap-4 px-6 py-5 text-left"
+            class="flex w-full items-center justify-between gap-4 px-6 py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-700"
             [attr.aria-expanded]="openItemId() === item.id"
+            [attr.aria-controls]="'faq-' + item.id"
             (click)="itemToggled.emit(item.id)"
           >
             <span class="text-base font-semibold text-ink-900 sm:text-lg">
               {{ item.question }}
             </span>
-            <span
-              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border"
-              [class.border-brand]="openItemId() === item.id"
-              [class.text-brand]="openItemId() === item.id"
-              [class.border-line]="openItemId() !== item.id"
-              [class.text-muted]="openItemId() !== item.id"
-            >
+            <span [class]="chevronClass(item.id)">
               <ij-icon
                 [name]="openItemId() === item.id ? 'chevron-up' : 'chevron-down'"
                 [size]="18"
@@ -58,7 +44,7 @@
           </button>
 
           @if (openItemId() === item.id) {
-            <div class="px-6 pb-6">
+            <div class="px-6 pb-6" [id]="'faq-' + item.id">
               <p class="text-[15px] leading-7 text-muted">{{ item.answer }}</p>
             </div>
           }

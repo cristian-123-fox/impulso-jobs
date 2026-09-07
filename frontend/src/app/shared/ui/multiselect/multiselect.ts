@@ -36,7 +36,7 @@ import { IjIcon } from '@/shared/ui/icon/icon';
   template: `
     @if (label()) {
       <label [class]="labelClass">
-        {{ label() }}@if (required()) { <span class="text-brand">*</span> }
+        {{ label() }}@if (required()) { <span class="text-brand-strong">*</span> }
       </label>
     }
 
@@ -49,12 +49,12 @@ import { IjIcon } from '@/shared/ui/icon/icon';
     >
       @for (opt of selectedOptions(); track opt.value) {
         <span
-          class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 py-1 pl-2.5 pr-1.5 text-[12.5px] font-semibold text-brand"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 py-1 pl-2.5 pr-1.5 text-[12.5px] font-semibold text-brand-strong"
         >
           {{ opt.label }}
           <button
             type="button"
-            class="inline-flex h-[17px] w-[17px] items-center justify-center rounded bg-brand/15 leading-none text-brand hover:bg-brand/25"
+            class="inline-flex h-[17px] w-[17px] items-center justify-center rounded bg-brand/15 leading-none text-brand-strong hover:bg-brand/25"
             [attr.aria-label]="'Quitar ' + opt.label"
             (click)="remove(opt.value, $event)"
           >
@@ -97,7 +97,7 @@ import { IjIcon } from '@/shared/ui/icon/icon';
           >
             <span class="truncate">{{ opt.label }}</span>
             @if (isSelected(opt.value)) {
-              <ij-icon name="check" [size]="15" class="text-brand" />
+              <ij-icon name="check" [size]="15" class="text-brand-strong" />
             }
           </div>
         }

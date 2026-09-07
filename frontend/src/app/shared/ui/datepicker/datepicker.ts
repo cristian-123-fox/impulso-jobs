@@ -54,7 +54,7 @@ function iso(y: number, m: number, d: number): string {
   template: `
     @if (label()) {
       <label [class]="labelClass">
-        {{ label() }}@if (required()) { <span class="text-brand">*</span> }
+        {{ label() }}@if (required()) { <span class="text-brand-strong">*</span> }
       </label>
     }
 
@@ -102,7 +102,7 @@ function iso(y: number, m: number, d: number): string {
           <button
             type="button"
             aria-label="Elegir año"
-            class="rounded-lg px-2.5 py-1 text-[13.5px] font-bold text-ink-900 transition-colors hover:bg-surface hover:text-brand"
+            class="rounded-lg px-2.5 py-1 text-[13.5px] font-bold text-ink-900 transition-colors hover:bg-surface hover:text-brand-strong"
             (click)="onHeaderClick()"
           >
             {{ headerLabel() }}
@@ -124,7 +124,7 @@ function iso(y: number, m: number, d: number): string {
                 <button
                   type="button"
                   class="flex h-[38px] items-center justify-center rounded-lg text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-                  [class]="y.selected ? 'bg-brand font-bold text-white' : 'font-medium text-ink-900 hover:bg-surface'"
+                  [class]="y.selected ? 'bg-brand-700 font-bold text-white' : 'font-medium text-ink-900 hover:bg-surface'"
                   [disabled]="y.disabled"
                   (click)="pickYear(y.year)"
                 >
@@ -139,7 +139,7 @@ function iso(y: number, m: number, d: number): string {
                 <button
                   type="button"
                   class="flex h-[38px] items-center justify-center rounded-lg text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-30"
-                  [class]="m.selected ? 'bg-brand font-bold text-white' : 'font-medium text-ink-900 hover:bg-surface'"
+                  [class]="m.selected ? 'bg-brand-700 font-bold text-white' : 'font-medium text-ink-900 hover:bg-surface'"
                   [disabled]="m.disabled"
                   (click)="pickMonth(m.index)"
                 >
@@ -218,7 +218,7 @@ export class IjDatepicker extends IjControlBase<string> {
   protected readonly headerLabel = computed(() => {
     switch (this.view()) {
       case 'years':
-        return `${this.yearBase()} – ${this.yearBase() + 11}`;
+        return `${this.yearBase()} - ${this.yearBase() + 11}`;
       case 'months':
         return String(this.viewYear());
       default:
@@ -298,8 +298,8 @@ export class IjDatepicker extends IjControlBase<string> {
   });
 
   protected dayClass(c: DayCell): string {
-    if (c.selected) return 'bg-brand font-bold text-white';
-    if (c.today) return 'font-bold text-brand hover:bg-surface';
+    if (c.selected) return 'bg-brand-700 font-bold text-white';
+    if (c.today) return 'font-bold text-brand-strong hover:bg-surface';
     return 'font-medium text-ink-900 hover:bg-surface';
   }
 

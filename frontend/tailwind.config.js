@@ -7,7 +7,17 @@ module.exports = {
         // Marca (AGENTS.md §5.2): naranja CTA + azul corporativo
         // `strong`: texto pequeño sobre fondos suaves o blancos (WCAG AA ≥ 4.5:1);
         // el naranja base queda para superficies, iconos grandes y hovers.
-        brand: { DEFAULT: "#e47c3f", 600: "#cf6d34", 50: "#fbefe9", strong: "#a34d1a" },
+        // `DEFAULT` es el naranja de superficie: fondos tenues, bordes, iconos
+        // grandes y decoración. NO alcanza WCAG AA como relleno bajo texto
+        // blanco (2.90:1), así que los CTA rellenos usan `700` (4.89:1) y el
+        // texto pequeño de marca usa `strong` (5.78:1 sobre blanco).
+        brand: {
+          DEFAULT: "#e47c3f",
+          600: "#cf6d34",
+          700: "#b3571d",
+          50: "#fbefe9",
+          strong: "#a34d1a",
+        },
         ink: {
           DEFAULT: "#1f3b73",
           900: "#1a1a2e",
@@ -31,6 +41,7 @@ module.exports = {
           "green-strong": "#147a4d",
           pink: "#e8607a",
           "pink-soft": "#fdeef0",
+          "pink-strong": "#b8213d",
           amber: "#f0a04b",
           "amber-soft": "#fef3e6",
           "amber-strong": "#92560f",
@@ -65,10 +76,22 @@ module.exports = {
           "30%,50%,70%": { transform: "translateX(-4px)" },
           "40%,60%": { transform: "translateX(4px)" },
         },
+        // Entrada de secciones al hacer scroll (la dispara `ijReveal`).
+        // Sólo `transform`/`opacity`: ambas van por compositor, sin layout.
+        "reveal-up": {
+          from: { opacity: "0", transform: "translateY(18px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        "marquee-x": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "header-down": "header-down .35s ease-out",
         shake: "shake .5s",
+        "reveal-up": "reveal-up .55s cubic-bezier(.16,1,.3,1) both",
+        "marquee-x": "marquee-x 38s linear infinite",
       },
     },
   },

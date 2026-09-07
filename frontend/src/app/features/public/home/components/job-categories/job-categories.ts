@@ -1,81 +1,87 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { IjButton, IjIcon, TONE_SOFT } from '@/shared/ui';
-import { JobCategory } from '@/features/public/home/models/home.models';
+import { RouterLink } from '@angular/router';
+import { IjIcon, TONE_SOFT } from '@/shared/ui';
+import { IjReveal } from '@/shared/directives/reveal';
+import { HomeArea } from '@/features/public/home/models/home.models';
+import { SectionHeading } from '@/features/public/home/components/section-heading/section-heading';
 
-/** Sección de categorías de empleo con carrusel (controles) y CTA. */
+/**
+ * Índice de áreas profesionales. Ocho áreas más la puerta a las 23 del
+ * catálogo: nueve celdas para nueve destinos, sin huecos ni relleno.
+ *
+ * Se retiraron las flechas de carrusel: no tenían handler, así que eran dos
+ * botones que no hacían nada. Una rejilla no necesita paginarse.
+ */
 @Component({
   selector: 'app-job-categories',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjButton],
+  imports: [IjIcon, RouterLink, SectionHeading, IjReveal],
   template: `
     <section class="bg-surface px-6 py-[72px] lg:px-[60px]">
       <div class="mx-auto max-w-[1180px]">
-        <div
-          class="mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
+        <app-section-heading
+          align="left"
+          eyebrow="Empleos por área"
+          lead="Explora las áreas con más movimiento y filtra en un clic las vacantes que encajan con tu experiencia."
         >
-          <div class="max-w-[520px]">
-            <p class="mb-2 text-[15px] font-semibold text-brand">
-              Empleos por categoría
-            </p>
-            <h2 class="text-3xl font-bold leading-tight text-ink-900 sm:text-[36px]">
-              Elige la categoría que deseas
-            </h2>
-          </div>
-          <p class="max-w-[360px] text-sm leading-relaxed text-muted">
-            Explora las áreas con más oportunidades y encuentra vacantes que se
-            ajusten a tu experiencia y objetivos profesionales.
-          </p>
-        </div>
+          Elige el área en la que quieres trabajar
+        </app-section-heading>
 
-        <div class="mb-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          @for (category of categories(); track category.name) {
+        <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          @for (area of areas(); track area.areaId; let i = $index) {
             <a
-              href="#"
-              class="block rounded-xl bg-white p-6 shadow-card transition-transform hover:-translate-y-1"
+              ijReveal
+              [revealDelay]="i * 55"
+              [routerLink]="['/vacantes']"
+              [queryParams]="{ area: area.areaId }"
+              class="group flex items-center gap-4 rounded-xl bg-white p-5 shadow-card transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
             >
-              <div
+              <span
                 [class]="
-                  'mb-5 flex h-14 w-14 items-center justify-center rounded-xl ' +
-                  soft[category.tone]
+                  'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ' +
+                  soft[area.tone]
                 "
               >
-                <ij-icon [name]="category.icon" [size]="26" [strokeWidth]="1.8" />
-              </div>
-              <h4 class="mb-1.5 text-[17px] font-semibold text-ink-900">
-                {{ category.jobsLabel }}
-              </h4>
-              <p class="text-sm text-muted">{{ category.name }}</p>
+                <ij-icon [name]="area.icon" [size]="24" [strokeWidth]="1.8" />
+              </span>
+              <span class="min-w-0">
+                <span class="block text-[15px] font-semibold text-ink-900">
+                  {{ area.name }}
+                </span>
+                <span
+                  class="mt-0.5 block text-[13px] text-muted transition-colors group-hover:text-brand-strong"
+                >
+                  Ver vacantes
+                </span>
+              </span>
             </a>
           }
-        </div>
 
-        <div class="flex items-center justify-between">
-          <div class="flex gap-2.5">
-            <button
-              ij-button
-              type="button"
-              variant="soft"
-              shape="circle"
-              aria-label="Anterior"
+          <!-- Novena celda: la salida al catálogo completo, no un hueco. -->
+          <a
+            ijReveal
+            [revealDelay]="areas().length * 55"
+            routerLink="/vacantes"
+            class="flex items-center gap-4 rounded-xl bg-ink-950 p-5 text-white shadow-card transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-float focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0"
+          >
+            <span
+              class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10"
             >
-              <ij-icon name="chevron-left" [size]="15" [strokeWidth]="2.5" />
-            </button>
-            <button
-              ij-button
-              type="button"
-              shape="circle"
-              aria-label="Siguiente"
-            >
-              <ij-icon name="chevron-right" [size]="15" [strokeWidth]="2.5" />
-            </button>
-          </div>
-          <a ij-button href="#" size="sm">Ver todas las categorías</a>
+              <ij-icon name="search" [size]="24" [strokeWidth]="1.8" />
+            </span>
+            <span>
+              <span class="block text-[15px] font-semibold">Las 23 áreas</span>
+              <span class="mt-0.5 block text-[13px] text-white/70">
+                Ver el catálogo completo
+              </span>
+            </span>
+          </a>
         </div>
       </div>
     </section>
   `,
 })
 export class JobCategories {
-  readonly categories = input.required<readonly JobCategory[]>();
+  readonly areas = input.required<readonly HomeArea[]>();
   protected readonly soft = TONE_SOFT;
 }

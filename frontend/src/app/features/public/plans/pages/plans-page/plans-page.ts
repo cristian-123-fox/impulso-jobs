@@ -9,16 +9,21 @@ import {
 } from '@angular/core';
 import { BillingToggle } from '@/features/public/plans/components/billing-toggle/billing-toggle';
 import { PlansGrid } from '@/features/public/plans/components/plans-grid/plans-grid';
-import { PlansHero } from '@/features/public/plans/components/plans-hero/plans-hero';
 import { PlansFacade } from '@/features/public/plans/data/plans.facade';
 import { BillingCycle } from '@/features/public/plans/models/plans.models';
+import { IjPageHeader } from '@/shared/ui';
+import { SeoService } from '@/core/services/seo.service';
 
 @Component({
   selector: 'app-plans-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PlansHero, BillingToggle, PlansGrid],
+  imports: [IjPageHeader, BillingToggle, PlansGrid],
   template: `
-    <app-plans-hero [content]="facade.hero()" />
+    <ij-page-header
+      [title]="facade.hero().title"
+      [lead]="facade.hero().description"
+      [breadcrumb]="facade.hero().breadcrumbLabel"
+    />
 
     <section class="bg-white px-6 py-20 lg:px-[60px] lg:py-[80px]">
       <div class="mx-auto max-w-[1180px]">
@@ -42,7 +47,7 @@ import { BillingCycle } from '@/features/public/plans/models/plans.models';
             </p>
           </div>
         } @else {
-          <p class="mb-3 text-[15px] font-semibold text-brand">Elige tu plan</p>
+          <p class="mb-3 text-[15px] font-semibold text-brand-strong">Elige tu plan</p>
           <h2 class="text-[40px] font-extrabold tracking-[-0.02em] text-ink-900 lg:text-[48px]">
             Impulsa tus vacantes
           </h2>
@@ -76,6 +81,13 @@ export class PlansPage {
   );
 
   constructor() {
+    inject(SeoService).setPage({
+      title: 'Planes y precios | Impulso Jobs',
+      description:
+        'Planes para publicar vacantes en Impulso Jobs. Precios en pesos mexicanos, con IVA incluido y sin permanencia.',
+      canonicalPath: '/planes',
+    });
+
     // Ruta prerenderizada: la API sólo se consulta en el navegador.
     afterNextRender(() => this.facade.load());
 

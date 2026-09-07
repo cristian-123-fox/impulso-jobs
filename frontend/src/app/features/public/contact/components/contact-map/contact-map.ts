@@ -1,9 +1,29 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { ContactMapLocation } from '@/features/public/contact/models/contact.models';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  inject,
+  input,
+  viewChild,
+} from '@angular/core';
 import { IjIcon } from '@/shared/ui';
+import { ContactMapLocation } from '@/features/public/contact/models/contact.models';
+
+/** Naranja de marca para el marcador. Leaflet pinta en canvas, no con Tailwind. */
+const BRAND_COLOR = '#b3571d';
 
 /**
- * Mapa ilustrativo de la oficina principal, inspirado en el mockup original.
+ * Mapa de la oficina.
+ *
+ * Antes era un mapa **dibujado a mano con divs**: una cuadrícula de gradientes
+ * y tres rectángulos rotados que simulaban calles, sin ninguna relación con un
+ * lugar real. Y eso con `leaflet` ya instalado y en uso en el detalle de
+ * vacante. Aquí se reutiliza ese mismo patrón: import dinámico (Leaflet toca
+ * `window` al cargar, así que no puede entrar en el bundle de SSR) y
+ * `circleMarker` en vez del marcador por defecto, cuyos PNG se rompen con el
+ * bundler.
  */
 @Component({
   selector: 'app-contact-map',
@@ -14,55 +34,82 @@ import { IjIcon } from '@/shared/ui';
       <div
         class="relative mx-auto h-[420px] max-w-[1240px] overflow-hidden rounded-[32px] bg-surface"
       >
-        <div
-          class="absolute inset-0 opacity-80"
-          style="background-image:
-            linear-gradient(to right, rgba(223, 227, 234, 0.9) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(223, 227, 234, 0.9) 1px, transparent 1px);
-            background-size: 118px 100%, 100% 88px;"
-        ></div>
-        <div
-          class="absolute -left-[5%] top-[38%] h-7 w-[110%] -rotate-6 bg-line"
-        ></div>
-        <div
-          class="absolute -left-[5%] top-[61%] h-5 w-[110%] rotate-[4deg] bg-accent-green-soft"
-        ></div>
-        <div
-          class="absolute left-[52%] top-[20%] h-[72%] w-[8%] rotate-[10deg] bg-line"
-        ></div>
+        <div #map class="h-full w-full" role="img" [attr.aria-label]="mapLabel()"></div>
 
         <div
-          class="absolute left-6 top-6 max-w-[250px] rounded-2xl bg-white px-5 py-4 shadow-card"
+          class="pointer-events-none absolute right-6 top-6 z-[500] max-w-[280px] rounded-2xl bg-white px-5 py-4 shadow-float"
         >
-          <p class="text-sm font-semibold text-ink-900">{{ location().badgeTitle }}</p>
-          <p class="mt-1 text-xs leading-5 text-muted">{{ location().badgeAddress }}</p>
-        </div>
-
-        <div
-          class="absolute left-1/2 top-[44%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
-        >
-          <div
-            class="flex h-14 w-14 items-center justify-center rounded-full bg-ink-900 text-white shadow-float"
+          <p class="flex items-center gap-2 text-sm font-semibold text-ink-900">
+            <ij-icon name="map-pin" [size]="16" class="text-brand-strong" />
+            {{ location().officeName }}
+          </p>
+          <p class="mt-1 text-xs leading-5 text-muted">{{ location().address }}</p>
+          <a
+            [href]="directionsUrl()"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="pointer-events-auto mt-2 inline-block text-xs font-semibold text-brand-strong hover:underline"
           >
-            <ij-icon name="map-pin" [size]="28" />
-          </div>
-          <div class="mt-4 rounded-2xl bg-white px-5 py-4 text-center shadow-card">
-            <p class="text-sm font-semibold text-ink-900">{{ location().officeName }}</p>
-            <p class="mt-1 text-xs leading-5 text-muted">{{ location().officeAddress }}</p>
-          </div>
+            Cómo llegar
+          </a>
         </div>
-
-        <button
-          type="button"
-          class="absolute bottom-5 right-5 flex h-11 w-11 items-center justify-center rounded-full bg-white text-muted shadow-card transition-colors hover:text-brand"
-          aria-label="Ver mapa a pantalla completa"
-        >
-          <ij-icon name="plus" [size]="18" />
-        </button>
       </div>
     </section>
   `,
 })
 export class ContactMap {
   readonly location = input.required<ContactMapLocation>();
+
+  private readonly mapEl = viewChild.required<ElementRef<HTMLElement>>('map');
+  private map: import('leaflet').Map | undefined;
+
+  protected mapLabel(): string {
+    return `Mapa con la ubicación de ${this.location().officeName}: ${this.location().address}`;
+  }
+
+  protected directionsUrl(): string {
+    const { lat, lng } = this.location();
+    return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`;
+  }
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+
+    // Sólo en el navegador: `afterNextRender` no corre en SSR/prerender.
+    afterNextRender(() => {
+      void this.initLeaflet();
+    });
+
+    destroyRef.onDestroy(() => {
+      this.map?.remove();
+      this.map = undefined;
+    });
+  }
+
+  private async initLeaflet(): Promise<void> {
+    // Leaflet es CJS: según el interop, el namespace puede venir en `default`.
+    const mod = await import('leaflet');
+    const L =
+      (mod as unknown as { default?: typeof import('leaflet') }).default ?? mod;
+    if (this.map) return;
+
+    const { lat, lng } = this.location();
+    this.map = L.map(this.mapEl().nativeElement, {
+      scrollWheelZoom: false,
+      attributionControl: true,
+    }).setView([lat, lng], 16);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(this.map);
+
+    L.circleMarker([lat, lng], {
+      radius: 10,
+      color: BRAND_COLOR,
+      weight: 3,
+      fillColor: BRAND_COLOR,
+      fillOpacity: 0.35,
+    }).addTo(this.map);
+  }
 }

@@ -1,68 +1,54 @@
 import { IconName, Tone } from '@/shared/ui';
 
+/** Estado de una sección que depende de la API. */
+export type LoadState = 'loading' | 'loaded' | 'error';
+
 /** Paso del proceso "Cómo funciona". */
 export interface WorkStep {
   readonly num: string;
   readonly title: string;
   readonly description: string;
-  readonly tone: Tone;
-}
-
-/** Categoría de empleos. */
-export interface JobCategory {
   readonly icon: IconName;
-  readonly jobsLabel: string;
-  readonly name: string;
   readonly tone: Tone;
 }
 
-/** Empresa destacada. */
-export interface Company {
+/**
+ * Área profesional destacada en la home. `areaId` es el id real del catálogo
+ * (T15), así que la tarjeta puede enlazar a un filtro que la API entiende.
+ */
+export interface HomeArea {
+  readonly areaId: number;
   readonly name: string;
-  readonly icon?: IconName;
-  readonly logoSrc?: string;
-  readonly logoAlt?: string;
+  readonly icon: IconName;
+  readonly tone: Tone;
 }
 
-/** Vacante publicada (tarjeta de listado). */
-export interface JobListing {
-  readonly title: string;
-  readonly posted: string;
-  readonly logoText: string;
-  readonly logoTone: Tone;
-  readonly badge: string;
-  readonly badgeTone: Tone;
-  readonly salary: string;
-  readonly location: string;
-  readonly url: string;
+/** Empresa que publica en el portal, tal como se muestra en el muro de logos. */
+export interface HomeCompany {
+  readonly name: string;
+  readonly logoUrl: string | null;
 }
 
-/** Testimonio de cliente. */
+/** Testimonio de una persona que usó el portal. */
 export interface Testimonial {
   readonly name: string;
   readonly role: string;
   readonly quote: string;
 }
 
-/** Artículo del blog. */
-export interface Article {
-  readonly author: string;
-  readonly title: string;
-  readonly date: string;
-  readonly excerpt: string;
-}
-
-/** Dato/indicador (tarjetas flotantes del hero y franja de estadísticas). */
-export interface Stat {
+/** Tarjeta flotante del hero. El icono y el tono son obligatorios. */
+export interface HeroStat {
   readonly value: string;
   readonly label: string;
-  readonly icon?: IconName;
-  readonly tone?: Tone;
+  readonly icon: IconName;
+  readonly tone: Tone;
 }
 
 /** Criterio de búsqueda emitido por el buscador del hero. */
 export interface JobSearchCriteria {
   readonly query: string;
-  readonly category: string;
-  readonly location: string;
+  /** Id del área profesional, como string (viene de un `<select>`). */
+  readonly area: string;
+  /** Código ISO del estado (`CMX`, `JAL`…). */
+  readonly state: string;
 }

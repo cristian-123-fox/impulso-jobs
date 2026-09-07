@@ -25,7 +25,7 @@ import {
           class="rounded-full px-6 py-2.5 text-sm font-medium transition-colors"
           [class.bg-brand]="activeOption() === option.id"
           [class.text-white]="activeOption() === option.id"
-          [class.text-brand]="activeOption() !== option.id"
+          [class.text-brand-strong]="activeOption() !== option.id"
           [attr.aria-selected]="activeOption() === option.id"
           (click)="cycleChange.emit(option.id)"
         >

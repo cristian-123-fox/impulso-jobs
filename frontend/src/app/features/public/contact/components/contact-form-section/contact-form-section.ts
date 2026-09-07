@@ -15,6 +15,7 @@ import {
   ContactInfoCard,
 } from '@/features/public/contact/models/contact.models';
 import { IjButton, IjIcon, IjInput, IjTextarea } from '@/shared/ui';
+import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
 
 /**
  * Sección principal de contacto: formulario reactivo tipado + canales de apoyo.
@@ -30,21 +31,21 @@ import { IjButton, IjIcon, IjInput, IjTextarea } from '@/shared/ui';
         class="mx-auto grid max-w-[1180px] gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]"
       >
         <div>
-          <p class="mb-2 text-[15px] font-semibold text-brand">Envíanos un mensaje</p>
+          <p class="mb-2 text-[15px] font-semibold text-brand-strong">Envíanos un mensaje</p>
           <h2 class="text-4xl font-bold leading-tight text-ink-900 sm:text-[42px]">
             Cuéntanos cómo podemos ayudarte
           </h2>
           <p class="mt-4 max-w-[680px] text-[15px] leading-7 text-muted">
-            Resolvemos dudas de candidatos y empresas. Déjanos tus datos y te
-            responderemos tan pronto como sea posible.
+            Resolvemos dudas de candidatos y empresas. Al enviar se abre tu
+            gestor de correo con el mensaje ya redactado.
           </p>
 
-          @if (successMessage()) {
+          @if (statusMessage()) {
             <div
-              class="mt-6 rounded-xl border border-accent-green/15 bg-accent-green-soft px-5 py-4 text-sm text-body"
+              class="mt-6 rounded-xl border border-accent-green/25 bg-accent-green-soft px-5 py-4 text-sm leading-relaxed text-body"
               role="status"
             >
-              {{ successMessage() }}
+              {{ statusMessage() }}
             </div>
           }
 
@@ -77,6 +78,20 @@ import { IjButton, IjIcon, IjInput, IjTextarea } from '@/shared/ui';
             >
               Enviar mensaje
             </button>
+            <!--
+              No hay endpoint de contacto (el módulo de notificaciones y el SMTP
+              están pendientes: MAILER_PORT sigue en ConsoleMailerAdapter). En
+              vez de fingir un acuse de recibo, el envío abre el gestor de
+              correo con todo redactado, que sí llega a su destino.
+            -->
+            <p class="text-[13px] leading-relaxed text-muted">
+              También puedes escribirnos directo a
+              <a
+                [href]="'mailto:' + generalEmail"
+                class="font-medium text-brand-strong hover:underline"
+                >{{ generalEmail }}</a
+              >.
+            </p>
           </form>
         </div>
 
@@ -90,14 +105,24 @@ import { IjButton, IjIcon, IjInput, IjTextarea } from '@/shared/ui';
             @for (item of infoCards(); track item.title) {
               <div class="flex gap-4 rounded-2xl border border-line/80 p-4 sm:gap-5 sm:p-5">
                 <div
-                  class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand"
+                  class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-strong"
                 >
                   <ij-icon [name]="item.icon" [size]="24" />
                 </div>
                 <div>
                   <h3 class="text-lg font-semibold text-ink-900">{{ item.title }}</h3>
-                  @for (line of item.lines; track line) {
-                    <p class="mt-1 text-sm leading-6 text-muted">{{ line }}</p>
+                  @for (line of item.lines; track line; let i = $index) {
+                    @if (item.hrefs[i]; as href) {
+                      <p class="mt-1 text-sm leading-6">
+                        <a
+                          [href]="href"
+                          class="text-muted transition-colors hover:text-brand-strong hover:underline"
+                          >{{ line }}</a
+                        >
+                      </p>
+                    } @else {
+                      <p class="mt-1 text-sm leading-6 text-muted">{{ line }}</p>
+                    }
                   }
                 </div>
               </div>
@@ -120,8 +145,10 @@ import { IjButton, IjIcon, IjInput, IjTextarea } from '@/shared/ui';
 })
 export class ContactFormSection {
   readonly infoCards = input.required<readonly ContactInfoCard[]>();
-  readonly successMessage = input<string | null>(null);
+  readonly statusMessage = input<string | null>(null);
   readonly formSubmitted = output<ContactFormValue>();
+
+  protected readonly generalEmail = BRAND_EMAILS.general;
 
   private readonly fb = inject(NonNullableFormBuilder);
 

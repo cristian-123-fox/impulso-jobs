@@ -38,9 +38,9 @@ export class AuthStepper {
   protected dotClass(index: number): string {
     const base =
       'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12.5px] font-bold transition-colors ';
-    if (index < this.current()) return base + 'bg-brand text-white';
+    if (index < this.current()) return base + 'bg-brand-700 text-white';
     if (index === this.current())
-      return base + 'bg-brand text-white ring-4 ring-brand/15';
+      return base + 'bg-brand-700 text-white ring-4 ring-brand/15';
     return base + 'bg-surface text-muted';
   }
 }

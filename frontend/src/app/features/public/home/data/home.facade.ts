@@ -1,223 +1,175 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
+import { PublicVacancy } from '@/features/public/vacancies/models/public-vacancies.models';
 import {
-  Article,
-  Company,
-  JobCategory,
-  JobListing,
-  Stat,
+  HeroStat,
+  HomeArea,
+  HomeCompany,
+  LoadState,
   Testimonial,
   WorkStep,
 } from '@/features/public/home/models/home.models';
 
+/** Cuántas vacantes se muestran en la sección destacada de la home. */
+const FEATURED_LIMIT = 6;
+
 /**
- * Facade de la home. Único punto del feature que expone el estado hacia el
- * container. Hoy sirve datos estáticos; cuando exista el contrato de API
- * (`@impulso/api-contract`) se reemplazará la fuente sin tocar los componentes.
+ * Facade de la home.
+ *
+ * Las vacantes, el total y el muro de empresas salen de `GET /vacancies`, que
+ * es público y ya estaba en uso en `/vacantes`. Antes la home servía cinco
+ * vacantes inventadas en Bogotá y cifras como "10M+ usuarios activos al día"
+ * mientras la API real quedaba sin consultar.
+ *
+ * Lo que sigue siendo estático es sólo contenido de marca (los tres pasos, las
+ * áreas destacadas y los testimonios), no métricas: una cifra inventada en una
+ * página de marketing es una promesa que el producto no cumple.
  */
 @Injectable({ providedIn: 'root' })
 export class HomeFacade {
+  private readonly api = inject(PublicVacanciesApi);
+
+  private readonly _featured = signal<readonly PublicVacancy[]>([]);
+  private readonly _featuredState = signal<LoadState>('loading');
+  private readonly _totalVacancies = signal<number | null>(null);
+
+  readonly featured = this._featured.asReadonly();
+  readonly featuredState = this._featuredState.asReadonly();
+
+  /**
+   * Empresas con vacante abierta, deducidas del propio listado. Las
+   * confidenciales llegan con `company: null` y quedan fuera, como debe ser.
+   */
+  readonly companies = computed<readonly HomeCompany[]>(() => {
+    const byName = new Map<string, HomeCompany>();
+    for (const vacancy of this._featured()) {
+      const company = vacancy.company;
+      if (!company || byName.has(company.businessName)) continue;
+      byName.set(company.businessName, {
+        name: company.businessName,
+        logoUrl: company.logoUrl,
+      });
+    }
+    return [...byName.values()];
+  });
+
+  /**
+   * Tarjetas del hero. La primera es real (el total que reporta la API); la
+   * segunda es una propiedad del producto, no una métrica, así que no caduca.
+   */
+  readonly heroStats = computed<readonly HeroStat[]>(() => {
+    const total = this._totalVacancies();
+    return [
+      {
+        value: total === null ? '...' : formatCount(total),
+        label: total === 1 ? 'Vacante abierta' : 'Vacantes abiertas',
+        icon: 'briefcase',
+        tone: 'brand',
+      },
+      {
+        value: 'Gratis',
+        label: 'Para candidatos',
+        icon: 'check',
+        tone: 'green',
+      },
+    ];
+  });
+
+  /** Carga las vacantes destacadas. Idempotente: no repite si ya hay datos. */
+  load(): void {
+    if (this._featuredState() === 'loaded') return;
+    this._featuredState.set('loading');
+    this.api.list({ page: 1, limit: FEATURED_LIMIT, sort: 'date' }).subscribe({
+      next: (page) => {
+        this._featured.set(page.items);
+        this._totalVacancies.set(page.total);
+        this._featuredState.set('loaded');
+      },
+      error: () => this._featuredState.set('error'),
+    });
+  }
+
   private readonly _steps = signal<readonly WorkStep[]>([
     {
       num: '01',
       title: 'Crea tu cuenta',
       description:
-        'Regístrate en minutos para encontrar el empleo que mejor se ajusta a tu perfil.',
+        'Regístrate con tu correo en un par de minutos. No pedimos tarjeta.',
+      icon: 'user',
       tone: 'brand',
     },
     {
       num: '02',
-      title: 'Postúlate al empleo ideal',
+      title: 'Arma tu currículum',
       description:
-        'Explora miles de vacantes y aplica a las que encajan con tu experiencia.',
+        'Completa tu perfil una vez y reutilízalo en todas tus postulaciones.',
+      icon: 'resume',
       tone: 'pink',
     },
     {
       num: '03',
-      title: 'Sube tu hoja de vida',
+      title: 'Postúlate y da seguimiento',
       description:
-        'Deja que las empresas te encuentren manteniendo tu perfil siempre actualizado.',
+        'Aplica con un clic y consulta en qué etapa va cada proceso.',
+      icon: 'send',
       tone: 'green',
     },
   ]);
 
-  private readonly _categories = signal<readonly JobCategory[]>([
-    {
-      icon: 'headset',
-      jobsLabel: '1.000 empleos',
-      name: 'Servicio al cliente',
-      tone: 'brand',
-    },
-    {
-      icon: 'bank',
-      jobsLabel: '7.000 empleos',
-      name: 'Finanzas y contabilidad',
-      tone: 'green',
-    },
-    { icon: 'share', jobsLabel: '3.000 empleos', name: 'Marketing', tone: 'pink' },
-    {
-      icon: 'palette',
-      jobsLabel: '2.100 empleos',
-      name: 'Diseño y arte',
-      tone: 'amber',
-    },
+  /**
+   * Áreas destacadas. Los ids son los del catálogo real (T15), así que cada
+   * tarjeta enlaza a un filtro que la API resuelve; antes eran cuatro nombres
+   * sueltos ("Servicio al cliente", "Marketing"…) que no correspondían a nada.
+   */
+  private readonly _areas = signal<readonly HomeArea[]>([
+    { areaId: 23, name: 'Ventas', icon: 'chart', tone: 'brand' },
+    { areaId: 13, name: 'Informática / Telecomunicaciones', icon: 'code', tone: 'blue' },
+    { areaId: 9, name: 'Contabilidad / Finanzas', icon: 'bank', tone: 'green' },
+    { areaId: 18, name: 'Medicina / Salud', icon: 'shield', tone: 'pink' },
+    { areaId: 1, name: 'Administración / Oficina', icon: 'clipboard', tone: 'amber' },
+    { areaId: 16, name: 'Logística / Transporte', icon: 'grid', tone: 'blue' },
+    { areaId: 3, name: 'Arte / Diseño / Medios', icon: 'palette', tone: 'pink' },
+    { areaId: 4, name: 'Atención a clientes', icon: 'headset', tone: 'brand' },
   ]);
 
-  private readonly _companies = signal<readonly Company[]>([
-    {
-      name: 'Company Business',
-      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.32%20PM.jpeg',
-      logoAlt: 'Logo de Company Business Tagline',
-      icon: 'grid',
-    },
-    {
-      name: 'Business Property',
-      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.44%20PM.jpeg',
-      logoAlt: 'Logo de Business commercial property',
-      icon: 'orbit',
-    },
-    {
-      name: 'Company Name',
-      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.57%20PM.jpeg',
-      logoAlt: 'Logo de Company Name Tagline Here',
-      icon: 'flash',
-    },
-    {
-      name: 'Business Studio',
-      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.32%20PM.jpeg',
-      logoAlt: 'Logo de Company Business Tagline',
-      icon: 'flash',
-    },
-    {
-      name: 'Creative Property',
-      logoSrc: '/assets/images/WhatsApp%20Image%202026-07-09%20at%206.04.44%20PM.jpeg',
-      logoAlt: 'Logo de Business commercial property',
-      icon: 'leaf',
-    },
-  ]);
-
-  private readonly _jobs = signal<readonly JobListing[]>([
-    {
-      title: 'Diseñador y desarrollador web senior',
-      posted: 'hace 7 días',
-      logoText: 'C',
-      logoTone: 'green',
-      badge: 'Nuevo',
-      badgeTone: 'green',
-      salary: '$2.500',
-      location: 'Calle 100 #15-20, Bogotá, Colombia',
-      url: 'impulsojobs.com',
-    },
-    {
-      title: 'Técnico senior de material rodante',
-      posted: 'hace 15 días',
-      logoText: 'B',
-      logoTone: 'brand',
-      badge: 'Prácticas',
-      badgeTone: 'brand',
-      salary: '$1.200',
-      location: 'Calle 100 #15-20, Bogotá, Colombia',
-      url: 'impulsojobs.com',
-    },
-    {
-      title: 'Gerente de TI y bloguero',
-      posted: 'hace 1 mes',
-      logoText: 'E',
-      logoTone: 'amber',
-      badge: 'Tiempo completo',
-      badgeTone: 'brand',
-      salary: '$1.500',
-      location: 'Calle 100 #15-20, Bogotá, Colombia',
-      url: 'impulsojobs.com',
-    },
-    {
-      title: 'Especialista en producción de arte',
-      posted: 'hace 2 días',
-      logoText: 'A',
-      logoTone: 'pink',
-      badge: 'Freelance',
-      badgeTone: 'green',
-      salary: '$1.200',
-      location: 'Calle 100 #15-20, Bogotá, Colombia',
-      url: 'impulsojobs.com',
-    },
-    {
-      title: 'Trabajador de recreación y bienestar',
-      posted: 'hace 7 días',
-      logoText: 'R',
-      logoTone: 'pink',
-      badge: 'Temporal',
-      badgeTone: 'amber',
-      salary: '$1.700',
-      location: 'Calle 100 #15-20, Bogotá, Colombia',
-      url: 'impulsojobs.com',
-    },
-  ]);
-
+  /**
+   * Testimonios. Nombres mexicanos verosímiles y citas de tres líneas como
+   * mucho; antes firmaban "Nikola Tesla" y "Ada Lovelace".
+   *
+   * TODO(negocio): sustituir por testimonios reales con permiso de la persona.
+   */
   private readonly _testimonials = signal<readonly Testimonial[]>([
     {
-      name: 'Nikola Tesla',
-      role: 'Contador',
+      name: 'Ximena Alcántara',
+      role: 'Analista contable, Guadalajara',
       quote:
-        'Conseguí el empleo al que apliqué a través de Impulso Jobs. Usé la plataforma durante toda mi búsqueda laboral.',
+        'Me postulé un martes y el jueves ya tenía entrevista. Ver en qué etapa iba cada proceso me quitó la parte más incómoda de buscar trabajo.',
     },
     {
-      name: 'Ada Lovelace',
-      role: 'Ingeniera de software',
+      name: 'Rodrigo Balderas',
+      role: 'Técnico de mantenimiento, Monterrey',
       quote:
-        'Una experiencia muy sencilla: creé mi perfil, me postulé y en pocas semanas ya tenía entrevistas.',
+        'Filtré por estado y modalidad y dejé de perder tiempo en vacantes de otra ciudad. Encontré algo a veinte minutos de mi casa.',
     },
-  ]);
-
-  private readonly _articles = signal<readonly Article[]>([
-    {
-      author: 'Mark Petter',
-      title: 'Cómo convencer a los reclutadores y conseguir el empleo de tus sueños',
-      date: '06 de marzo, 2026',
-      excerpt:
-        'Consejos prácticos para destacar tu perfil y superar cada etapa del proceso de selección.',
-    },
-    {
-      author: 'David Wish',
-      title: '8 cosas que debes saber sobre el informe de empleo de 2026',
-      date: '02 de marzo, 2026',
-      excerpt:
-        'Un análisis de las tendencias del mercado laboral y qué sectores están contratando más.',
-    },
-    {
-      author: 'Mike Doe',
-      title: 'Los portales de empleo, un sector clave en el mundo actual',
-      date: '28 de febrero, 2026',
-      excerpt:
-        'Por qué la tecnología de reclutamiento transforma la forma en que encontramos trabajo.',
-    },
-  ]);
-
-  private readonly _heroStats = signal<readonly Stat[]>([
-    { value: '12K+', label: 'Empleos de empresas', icon: 'building', tone: 'brand' },
-    { value: '98+', label: 'Países con empleo', icon: 'globe', tone: 'green' },
-    { value: '3K+', label: 'Contrataciones' },
-  ]);
-
-  private readonly _platformStats = signal<readonly Stat[]>([
-    { value: '10M+', label: 'Usuarios activos al día' },
-    { value: '1K+', label: 'Vacantes abiertas' },
-    { value: '50M+', label: 'Historias compartidas' },
   ]);
 
   private readonly _popularSearches = signal<readonly string[]>([
+    'Ventas',
+    'Almacén',
     'Desarrollador',
-    'Diseñador',
-    'Arquitecto',
-    'Ingeniero',
+    'Enfermería',
+    'Chofer',
   ]);
 
   readonly steps = this._steps.asReadonly();
-  readonly categories = this._categories.asReadonly();
-  readonly companies = this._companies.asReadonly();
-  readonly jobs = this._jobs.asReadonly();
+  readonly areas = this._areas.asReadonly();
   readonly testimonials = this._testimonials.asReadonly();
-  readonly articles = this._articles.asReadonly();
-  readonly heroStats = this._heroStats.asReadonly();
-  readonly platformStats = this._platformStats.asReadonly();
   readonly popularSearches = this._popularSearches.asReadonly();
+}
+
+/** 1240 → "1,240"; 12400 → "12.4 mil". Sin inflar ni redondear al alza. */
+function formatCount(total: number): string {
+  if (total < 1000) return String(total);
+  if (total < 10000) return total.toLocaleString('es-MX');
+  return `${(total / 1000).toFixed(total < 100000 ? 1 : 0)} mil`;
 }

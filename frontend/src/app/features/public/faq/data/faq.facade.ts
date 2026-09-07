@@ -47,28 +47,28 @@ export class FaqFacade {
       categoryId: 'general',
       question: '¿Cómo funciona Impulso Jobs para candidatos y empresas?',
       answer:
-        'Los candidatos crean su perfil, cargan su hoja de vida y postulan a vacantes desde un solo panel. Las empresas publican ofertas, administran candidatos y hacen seguimiento del proceso de selección desde su dashboard.',
+        'Los candidatos crean su perfil, arman su currículum y se postulan desde un solo panel. Las empresas publican vacantes, revisan a los candidatos y siguen cada proceso de selección desde el suyo.',
     },
     {
       id: 'general-ciudades',
       categoryId: 'general',
       question: '¿Puedo usar la plataforma desde cualquier ciudad?',
       answer:
-        'Sí. Impulso Jobs funciona en todo Colombia y admite vacantes presenciales, híbridas y remotas. Puedes filtrar por ubicación, modalidad y categoría para encontrar oportunidades más relevantes.',
+        'Sí. Impulso Jobs cubre los 32 estados de la república y admite vacantes presenciales, híbridas y remotas. Puedes filtrar por estado, municipio, modalidad y área profesional.',
     },
     {
       id: 'general-soporte',
       categoryId: 'general',
       question: '¿Dónde encuentro ayuda si tengo una duda puntual?',
       answer:
-        'Puedes escribirnos desde la página de contacto o comunicarte con el equipo de soporte. También iremos ampliando esta sección de preguntas frecuentes a medida que publiquemos nuevas funcionalidades.',
+        'Escríbenos desde la página de contacto o directo a nuestro correo. Esta sección se irá ampliando conforme publiquemos nuevas funciones.',
     },
     {
       id: 'empleos-publicacion',
       categoryId: 'empleos',
       question: '¿Dónde se muestra mi vacante una vez publicada?',
       answer:
-        'La vacante aparece en el listado público de empleos, en búsquedas por categoría y ubicación, y en recomendaciones dentro de la plataforma. Si tu plan incluye promoción, también recibe mayor visibilidad en zonas destacadas.',
+        'La vacante aparece en el listado público, en las búsquedas por área profesional y por estado, y en las páginas de cada área. Si tu plan incluye promoción, además se marca como destacada.',
     },
     {
       id: 'empleos-tiempo',
@@ -82,7 +82,7 @@ export class FaqFacade {
       categoryId: 'empleos',
       question: '¿Cuándo empezaré a recibir postulaciones?',
       answer:
-        'Las postulaciones comienzan a llegar tan pronto la vacante está visible para los candidatos. El volumen depende del perfil buscado, la descripción del cargo, el salario y la modalidad de trabajo.',
+        'En cuanto la vacante queda visible. El volumen depende del perfil que buscas, de qué tan clara sea la descripción, del salario y de la modalidad.',
     },
     {
       id: 'pagos-cupon',
@@ -96,14 +96,14 @@ export class FaqFacade {
       categoryId: 'pagos',
       question: '¿Recibo factura o comprobante por mi pago?',
       answer:
-        'Sí. Cada compra genera un comprobante y, cuando aplique, la factura correspondiente con los datos de facturación registrados por la empresa. Recomendamos mantener esta información actualizada en tu perfil.',
+        'Sí. Cada compra genera un comprobante y, cuando aplique, la factura con los datos fiscales de la empresa: RFC, régimen fiscal y uso de CFDI. Conviene mantenerlos al día en el perfil.',
     },
     {
       id: 'pagos-cancelacion',
       categoryId: 'pagos',
       question: '¿Cuál es la política de cancelación o cambios de plan?',
       answer:
-        'Puedes solicitar cambios de plan o resolver novedades de facturación contactando a soporte. Cada caso se revisa según el estado del servicio, beneficios consumidos y condiciones comerciales vigentes.',
+        'Escribe a soporte para cambiar de plan o resolver un tema de facturación. Cada caso se revisa según el estado del servicio, los beneficios ya consumidos y las condiciones vigentes.',
     },
     {
       id: 'cuenta-password',

@@ -1,99 +1,140 @@
 import { Injectable, signal } from '@angular/core';
+import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import { PROFESSIONAL_AREAS } from '@/shared/catalogs/professional-areas.catalogs';
 import {
-  AboutCategory,
-  AboutCompany,
+  AboutAudience,
   AboutCtaContent,
+  AboutFact,
   AboutHeroContent,
   AboutStep,
 } from '@/features/public/about/models/about.models';
 
 /**
- * Facade del feature "nosotros". Mantiene el contenido desacoplado de la vista
- * para facilitar futuros cambios desde API o CMS.
+ * Facade de "Nosotros".
+ *
+ * La página anterior no hablaba de la empresa: era una rejilla de categorías
+ * inventadas ("9,185 empleos" repetido en cuatro tarjetas), un muro de logos
+ * falsos con el texto "TU MARCA AQUÍ" impreso debajo, y un CTA cuya imagen
+ * apuntaba a la API interna de text-to-image de una herramienta de desarrollo.
+ *
+ * Lo que queda describe lo que el producto hace de verdad, y las cifras de
+ * cobertura se cuentan de los catálogos en tiempo de ejecución, así que no
+ * pueden quedar desfasadas.
+ *
+ * TODO(negocio): falta la parte que sólo la empresa puede escribir (historia,
+ * misión, equipo). Cuando exista, entra como una sección más entre el hero y
+ * "para quién es".
  */
 @Injectable({ providedIn: 'root' })
 export class AboutFacade {
   private readonly _hero = signal<AboutHeroContent>({
-    title: 'Nosotros',
+    title: 'Una bolsa de trabajo hecha para México',
+    lead: 'Impulso Jobs conecta a quien busca empleo con las empresas que contratan, con filtros que entienden cómo se busca trabajo aquí: por área, por estado y por modalidad.',
     breadcrumbLabel: 'Nosotros',
   });
 
-  private readonly _categories = signal<readonly AboutCategory[]>([
-    { jobsLabel: '9,185 empleos', name: 'Desarrollo de negocios', icon: 'chart', tone: 'brand' },
-    { jobsLabel: '3,205 empleos', name: 'Gestion de proyectos', icon: 'clipboard', tone: 'brand' },
-    { jobsLabel: '2,100 empleos', name: 'Redaccion de contenido', icon: 'pen', tone: 'brand' },
-    { jobsLabel: '1,500 empleos', name: 'Servicio al cliente', icon: 'headset', tone: 'brand', featured: true },
-    { jobsLabel: '9,185 empleos', name: 'Finanzas', icon: 'bank', tone: 'brand' },
-    { jobsLabel: '3,205 empleos', name: 'Marketing', icon: 'share', tone: 'brand' },
-    { jobsLabel: '2,100 empleos', name: 'Diseno y arte', icon: 'palette', tone: 'brand' },
-    { jobsLabel: '1,500 empleos', name: 'Desarrollo web', icon: 'code', tone: 'brand' },
-  ]);
-
-  private readonly _bullets = signal<readonly string[]>([
-    'Vacantes confiables y de calidad',
-    'Oportunidades nacionales e internacionales',
-    'Sin costos ocultos para candidatos',
-    'Empresas destacadas en un solo lugar',
+  private readonly _audiences = signal<readonly AboutAudience[]>([
+    {
+      icon: 'user',
+      tone: 'brand',
+      title: 'Si buscas empleo',
+      description:
+        'Todo el lado del candidato es gratuito, incluidas las postulaciones.',
+      features: [
+        'Filtra por área, estado, modalidad, experiencia y salario mínimo',
+        'Un solo currículum para todas tus postulaciones',
+        'Consulta en qué etapa va cada proceso',
+        'Guarda vacantes para decidir después',
+        'Decide si tu perfil es visible para las empresas',
+      ],
+      ctaLabel: 'Crear cuenta gratis',
+      ctaPath: '/auth/registro',
+    },
+    {
+      icon: 'building',
+      tone: 'green',
+      title: 'Si contratas',
+      description:
+        'Publica, filtra y ordena tus procesos desde un panel propio.',
+      features: [
+        'Preguntas de descarte para filtrar antes de entrevistar',
+        'El currículum queda congelado tal como estaba al postularse',
+        'Vacantes destacadas y distintivos por periodo',
+        'Varios usuarios por empresa, con permisos por rol',
+        'Facturación con datos fiscales y uso de CFDI',
+      ],
+      ctaLabel: 'Publicar una vacante',
+      ctaPath: '/auth/registro/empresa',
+    },
   ]);
 
   private readonly _steps = signal<readonly AboutStep[]>([
     {
       num: '01',
       title: 'Crea tu cuenta',
-      description: 'Registrate para acceder a vacantes, empresas y herramientas de perfil profesional.',
-      icon: 'clipboard',
+      description:
+        'Regístrate con tu correo. No pedimos tarjeta ni datos de pago.',
+      icon: 'user',
       tone: 'brand',
     },
     {
       num: '02',
-      title: 'Encuentra tu empleo',
-      description: 'Filtra por categoria, experiencia o modalidad para descubrir oportunidades relevantes.',
-      icon: 'search',
+      title: 'Arma tu currículum',
+      description:
+        'Experiencia, estudios e idiomas. Se completa una vez y se reutiliza.',
+      icon: 'resume',
       tone: 'amber',
-      shifted: true,
     },
     {
       num: '03',
-      title: 'Postúlate fácil',
-      description: 'Aplica a tus vacantes favoritas en pocos pasos y haz seguimiento a tu proceso.',
-      icon: 'resume',
+      title: 'Encuentra la vacante',
+      description:
+        'Filtra por área, estado y modalidad, u ordena por fecha o salario.',
+      icon: 'search',
       tone: 'pink',
     },
     {
       num: '04',
-      title: 'Sube tu hoja de vida',
-      description: 'Haz visible tu perfil para que grandes empresas te encuentren mas rapido.',
-      icon: 'arrow-up',
+      title: 'Postúlate y da seguimiento',
+      description:
+        'Aplica con un clic y consulta el avance de cada proceso en tu panel.',
+      icon: 'send',
       tone: 'green',
-      shifted: true,
+    },
+  ]);
+
+  /**
+   * Cifras de cobertura. Se cuentan de los catálogos, no se escriben a mano:
+   * si mañana el catálogo de áreas crece, la página lo refleja sola.
+   */
+  private readonly _facts = signal<readonly AboutFact[]>([
+    {
+      value: String(PROFESSIONAL_AREAS.length),
+      label: 'Áreas profesionales',
+      detail:
+        'Desde producción y logística hasta salud, ingeniería o ventas.',
+    },
+    {
+      value: String(MX_STATES.length),
+      label: 'Estados de la república',
+      detail: 'Cobertura nacional, con filtro por estado y municipio.',
+    },
+    {
+      value: '$0',
+      label: 'Costo para el candidato',
+      detail: 'Crear cuenta, armar tu currículum y postularte no cuesta nada.',
     },
   ]);
 
   private readonly _cta = signal<AboutCtaContent>({
-    eyebrow: 'Explora una nueva etapa',
-    title:
-      'No solo busques. Deja que te encuentren y pon tu perfil frente a grandes empleadores',
+    title: 'Empieza por donde te toque',
     description:
-      'Crea tu perfil, sube tu hoja de vida y recibe oportunidades de empresas que estan contratando talento como el tuyo.',
-    buttonLabel: 'Sube tu hoja de vida',
-    imageSrc:
-      'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=professional%20Latina%20woman%20in%20smart%20business%20casual%20holding%20documents%2C%20standing%20confidently%20in%20a%20bright%20modern%20office%2C%20realistic%20corporate%20recruitment%20photography%2C%20soft%20natural%20light%2C%20clean%20background%2C%20full%20body%20portrait%2C%20high-end%20website%20hero%20image&image_size=portrait_4_3',
-    imageAlt: 'Profesional sosteniendo documentos en una oficina moderna',
+      'Si buscas trabajo, crear tu cuenta toma un par de minutos. Si contratas, puedes publicar tu primera vacante hoy mismo.',
   });
 
-  private readonly _companies = signal<readonly AboutCompany[]>([
-    { name: 'Green Power', icon: 'leaf' },
-    { name: 'Innovation', icon: 'grid' },
-    { name: 'Flash Tech', icon: 'flash' },
-    { name: 'Digital', icon: 'orbit' },
-    { name: 'Technology', icon: 'flash' },
-    { name: 'Energy', icon: 'orbit' },
-  ]);
-
   readonly hero = this._hero.asReadonly();
-  readonly categories = this._categories.asReadonly();
-  readonly bullets = this._bullets.asReadonly();
+  readonly audiences = this._audiences.asReadonly();
   readonly steps = this._steps.asReadonly();
+  readonly facts = this._facts.asReadonly();
   readonly cta = this._cta.asReadonly();
-  readonly companies = this._companies.asReadonly();
 }

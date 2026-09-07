@@ -29,7 +29,7 @@ const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
       <div class="relative overflow-hidden">
         @if (plan().recommended) {
           <span
-            class="absolute right-4 top-4 z-10 rounded-md bg-accent-green px-[14px] py-1.5 text-xs font-semibold text-white"
+            class="absolute right-4 top-4 z-10 rounded-md bg-accent-green-strong px-[14px] py-1.5 text-xs font-semibold text-white"
           >
             Recomendado
           </span>
@@ -39,11 +39,11 @@ const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
           <div [class]="decoClasses()"></div>
           <div class="absolute left-9 top-10 z-[1]">
             <h3 [class]="titleClasses()">{{ plan().name }}</h3>
-            <div class="mt-2 flex items-end gap-2">
+            <div class="mt-2">
               <span class="text-[40px] font-extrabold leading-none text-ink-900">
-                {{ priceLabel() }}/
+                {{ priceLabel() }}
               </span>
-              <span class="pb-1 text-[15px] font-semibold text-ink-900">
+              <span class="mt-1 block text-[13px] font-medium text-muted">
                 {{ periodLabel() }}
               </span>
             </div>
@@ -56,8 +56,8 @@ const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
               @for (line of plan().summary.split('\n'); track $index) {
                 @if (line.trim()) {
                   <div class="flex items-start gap-2">
-                    <ij-icon name="check" [size]="14" [strokeWidth]="3" class="mt-0.5 shrink-0 text-brand" />
-                    <span class="text-[14px] leading-5 text-ink-500">{{ line.trim() }}</span>
+                    <ij-icon name="check" [size]="14" [strokeWidth]="3" class="mt-0.5 shrink-0 text-brand-strong" />
+                    <span class="text-[14px] leading-5 text-muted">{{ line.trim() }}</span>
                   </div>
                 }
               }
@@ -68,8 +68,8 @@ const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
               <div class="flex items-center gap-3">
                 <span
                   class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center"
-                  [class.text-brand]="feature.included"
-                  [class.text-[#c0c4cf]]="!feature.included"
+                  [class.text-brand-strong]="feature.included"
+                  [class.text-muted]="!feature.included"
                 >
                   <ij-icon
                     [name]="feature.included ? 'check' : 'x'"
@@ -80,7 +80,7 @@ const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
                 <span
                   class="text-[15px] font-medium leading-6"
                   [class.text-ink-900]="feature.included"
-                  [class.text-[#a0a0b4]]="!feature.included"
+                  [class.text-muted]="!feature.included"
                 >
                   {{ feature.label }}
                 </span>
@@ -137,10 +137,10 @@ export class IjPricingCard {
   protected readonly titleClasses = computed(() => {
     const accent =
       this.plan().accent === 'amber'
-        ? 'text-accent-amber'
+        ? 'text-accent-amber-strong'
         : this.plan().accent === 'pink'
-          ? 'text-accent-pink'
-          : 'text-brand';
+          ? 'text-accent-pink-strong'
+          : 'text-brand-strong';
 
     return ['text-[20px] font-semibold', accent].join(' ');
   });

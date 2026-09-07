@@ -161,11 +161,17 @@ Salida: `frontend/dist/frontend/` con **`browser/`** (estáticos + rutas prerend
 
 ### 6.2-A Despliegue SSR (recomendado — habilita el SEO de T16)
 
-Igual que la API: cPanel → **Setup Node.js App** sobre la carpeta del subdominio `demo`, sube `dist/frontend/` completo, **Application startup file** = `server/server.mjs` (Passenger fija el `PORT` solo). Sin `.htaccess` de rewrite: el ruteo lo hace el servidor Node.
+Igual que la API: cPanel → **Setup Node.js App** sobre la carpeta del subdominio `demo`, sube `dist/frontend/` completo, **Application startup file** = `server/server.mjs` (Passenger fija el `PORT` solo). El ruteo lo hace el servidor Node.
 
-### 6.2-B Despliegue estático (sin SSR, como hasta ahora)
+> El `.htaccess` viaja dentro de `browser/`, no en la raíz de la app, así que Apache no lo lee y no estorba. Lo que **sí** rompe es mezclar los dos modos: si además copias el contenido de `browser/` a la raíz del subdominio, Apache empieza a atender las rutas con ese `.htaccess` en vez de Passenger. Elige A **o** B, no las dos.
 
-Sube el contenido de `dist/frontend/browser/` a `~/demo` **incluyendo el `.htaccess`**, pero cambia el fallback del rewrite de `index.html` a **`index.csr.html`** (con `outputMode: server`, `index.html` del root es la home prerenderizada; el cascarón CSR es `index.csr.html`).
+### 6.2-B Despliegue estático (sin SSR)
+
+Sube el contenido de `dist/frontend/browser/` a `~/demo` **incluyendo el `.htaccess`**, que ya viene con el fallback correcto (`index.csr.html`). No hay ningún paso manual.
+
+> ⚠️ **No cambies ese fallback a `index.html`.** Con `outputMode: server`, el `index.html` de la raíz **no** es el cascarón de la app: son 249 bytes con un `<meta http-equiv="refresh" url="/vacantes">`, resultado de prerenderizar la ruta `''` que redirige a `vacantes`. Como `/vacantes` es `RenderMode.Server` y **no se prerenderiza**, el fallback lo atiende: devuelve el stub, el stub redirige a `/vacantes`, y así indefinidamente. Es un **bucle infinito de redirecciones** y el sitio no carga nunca.
+
+> ⚠️ **HTTPS por duplicado.** Si activas *Force HTTPS Redirect* en cPanel, deja comentado el bloque `RewriteCond %{HTTPS} off` del `.htaccess`. Las dos reglas a la vez producen otro bucle.
 
 ### 6.3 SSL
 
@@ -175,7 +181,9 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 
 ## 7) Verificación final
 
-- `https://demo.impulsojobs.com` carga la app y **recargar en rutas internas** (`/panel`, etc.) **no da 404** (gracias al `.htaccess`).
+- `https://demo.impulsojobs.com` carga y **recargar en rutas internas** (`/vacantes`, `/nosotros`, `/planes`) **no da 404 ni entra en bucle de redirecciones**.
+- Comprueba el modo desde tu máquina: `curl -sI https://demo.impulsojobs.com/vacantes` debe responder `200`, y `curl -s https://demo.impulsojobs.com/vacantes | head -c 200` **no** debe contener `http-equiv="refresh"`. Si lo contiene, el fallback del `.htaccess` está mal (§6.2-B).
+- En SSR (opción A), `curl -s https://demo.impulsojobs.com/vacantes` debe traer las vacantes ya renderizadas (busca `app-vacancy-card`). Si sólo ves el cascarón, el SSR no está activo: revisa que el *startup file* sea `server/server.mjs` y que el hostname esté en `security.allowedHosts` de `angular.json`.
 - Inicia sesión con el usuario admin sembrado.
 - La API responde desde el subdominio y **sin errores de CORS**.
 

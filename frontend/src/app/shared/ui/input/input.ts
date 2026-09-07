@@ -24,7 +24,7 @@ type InputType = 'text' | 'email' | 'number' | 'tel' | 'password' | 'url';
   template: `
     @if (label()) {
       <label [class]="labelClass" [attr.for]="controlId">
-        {{ label() }}@if (required()) { <span class="text-brand">*</span> }
+        {{ label() }}@if (required()) { <span class="text-brand-strong">*</span> }
       </label>
     }
     <div [class]="boxClass()">

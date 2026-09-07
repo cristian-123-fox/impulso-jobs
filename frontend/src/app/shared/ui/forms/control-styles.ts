@@ -63,7 +63,7 @@ export const IJ_SEARCH =
 export function ijOptionClass(active: boolean, highlighted = false): string {
   const base =
     'flex cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-[13.5px] transition-colors';
-  if (active) return `${base} bg-surface font-bold text-brand`;
+  if (active) return `${base} bg-surface font-bold text-brand-strong`;
   if (highlighted) return `${base} bg-surface font-medium text-ink-900`;
   return `${base} font-medium text-ink-900 hover:bg-surface`;
 }

@@ -6,9 +6,10 @@ import {
   signal,
 } from '@angular/core';
 import { FaqAccordion } from '@/features/public/faq/components/faq-accordion/faq-accordion';
-import { FaqHero } from '@/features/public/faq/components/faq-hero/faq-hero';
 import { FaqFacade } from '@/features/public/faq/data/faq.facade';
 import { FaqCategoryId } from '@/features/public/faq/models/faq.models';
+import { IjPageHeader } from '@/shared/ui';
+import { SeoService } from '@/core/services/seo.service';
 
 /**
  * Container del feature FAQ. Orquesta la categoría activa y el elemento abierto
@@ -17,7 +18,7 @@ import { FaqCategoryId } from '@/features/public/faq/models/faq.models';
 @Component({
   selector: 'app-faq-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FaqHero, FaqAccordion],
+  imports: [IjPageHeader, FaqAccordion],
   templateUrl: './faq-page.html',
 })
 export class FaqPage {
@@ -25,6 +26,15 @@ export class FaqPage {
 
   protected readonly activeTabId = signal<FaqCategoryId>('general');
   protected readonly openItemId = signal<string | null>('general-como-funciona');
+
+  constructor() {
+    inject(SeoService).setPage({
+      title: 'Preguntas frecuentes | Impulso Jobs',
+      description:
+        'Dudas sobre vacantes, postulaciones, planes y tu cuenta en Impulso Jobs, respondidas.',
+      canonicalPath: '/faq',
+    });
+  }
 
   protected readonly visibleItems = computed(() =>
     this.facade

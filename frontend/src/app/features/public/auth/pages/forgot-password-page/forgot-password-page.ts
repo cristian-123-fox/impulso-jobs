@@ -45,7 +45,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
             ¿No lo ves? Revisa tu carpeta de spam o
             <button
               type="button"
-              class="font-semibold text-brand transition-colors hover:text-brand-600"
+              class="font-semibold text-brand-strong transition-colors hover:text-brand-600"
               (click)="reset()"
             >
               intenta con otro correo
@@ -53,7 +53,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
           </p>
           <a
             routerLink="/auth/login"
-            class="mt-6 inline-flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-brand transition-colors hover:text-brand-600"
+            class="mt-6 inline-flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-brand-strong transition-colors hover:text-brand-600"
           >
             <ij-icon name="chevron-left" [size]="16" />
             Volver a iniciar sesión
@@ -95,7 +95,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 
         <a
           routerLink="/auth/login"
-          class="mt-6 flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand"
+          class="mt-6 flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand-strong"
         >
           <ij-icon name="chevron-left" [size]="16" />
           Volver a iniciar sesión

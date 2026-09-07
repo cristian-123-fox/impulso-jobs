@@ -1,34 +1,61 @@
-# Impulso Jobs — SPA Angular en Apache/cPanel
-# Sube el contenido de dist/frontend/browser/ (incluido este .htaccess) a la
-# carpeta del dominio (p. ej. public_html/).
+# Impulso Jobs - Apache/cPanel, despliegue ESTATICO (opcion B de DEPLOY-CPANEL.md)
+#
+# Este archivo se copia a dist/frontend/browser/ en el build. Solo tiene efecto
+# si sirves esa carpeta con Apache. En el despliegue SSR (opcion A, la
+# recomendada) el ruteo lo hace Node y este archivo se ignora.
+#
+# ##########################################################################
+# EL FALLBACK ES index.csr.html, NO index.html. NO LO CAMBIES.
+#
+# Con `outputMode: server` en angular.json, `index.html` de la raiz NO es el
+# cascaron de la aplicacion: es un stub de 249 bytes con un
+# <meta http-equiv="refresh" url="/vacantes">, generado al prerenderizar la
+# ruta '' que redirige a 'vacantes'.
+#
+# Si el fallback apunta a index.html se produce un BUCLE INFINITO de
+# redirecciones y el sitio no carga nunca:
+#   1. el navegador pide /vacantes
+#   2. /vacantes no existe como archivo (es RenderMode.Server, no se
+#      prerenderiza), asi que entra el fallback
+#   3. el fallback devuelve index.html, que es el stub
+#   4. el stub redirige a /vacantes -> volver al paso 1
+#
+# index.csr.html si es el cascaron CSR y arranca Angular con normalidad.
+# ##########################################################################
 
 RewriteEngine On
 RewriteBase /
 
-# Redirige HTTP -> HTTPS (opcional; deja comentado si usas otro método de SSL)
+# Redirige HTTP -> HTTPS (opcional; deja comentado si usas otro metodo de SSL).
+# OJO: si en cPanel ya activaste "Force HTTPS Redirect", NO descomentes esto,
+# porque las dos reglas juntas tambien producen un bucle de redirecciones.
 # RewriteCond %{HTTPS} off
 # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Ruteo del lado del cliente: si el recurso no existe como archivo/carpeta,
-# entrega index.html para que Angular resuelva la ruta.
+# Un archivo o carpeta que existe se sirve tal cual. Esto cubre los assets y
+# tambien las rutas prerenderizadas (/inicio/index.html, /nosotros/index.html,
+# /planes/, /faq/, /contacto/, /auth/**), que asi conservan su HTML servido.
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
-RewriteRule ^ index.html [L]
 
-# --- Compresión ---
+# El resto (/vacantes, /vacantes/<uuid>-<slug>, /trabajo/<landing>) lo resuelve
+# Angular en el cliente a partir del cascaron CSR.
+RewriteRule ^ index.csr.html [L]
+
+# --- Compresion ---
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json image/svg+xml
 </IfModule>
 
-# --- Caché ---
+# --- Cache ---
 <IfModule mod_headers.c>
-  # Los assets llevan hash en el nombre (outputHashing: all) -> caché larga.
+  # Los assets llevan hash en el nombre (outputHashing: all) -> cache larga.
   <FilesMatch "\.(js|css|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|webp|ico)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
-  # index.html nunca se cachea, para que un nuevo deploy se tome de inmediato.
-  <FilesMatch "^index\.html$">
+  # Los HTML de entrada nunca se cachean, para que un deploy se tome de inmediato.
+  <FilesMatch "^index(\.csr)?\.html$">
     Header set Cache-Control "no-cache, no-store, must-revalidate"
   </FilesMatch>
 </IfModule>

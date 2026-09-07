@@ -86,7 +86,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
                 } @else {
                   <button
                     type="button"
-                    class="font-bold text-brand underline transition-opacity hover:text-brand-600 disabled:opacity-60"
+                    class="font-bold text-brand-strong underline transition-opacity hover:text-brand-600 disabled:opacity-60"
                     [disabled]="resendStatus() === 'sending'"
                     (click)="resendRequested.emit()"
                   >
@@ -157,7 +157,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
         </label>
         <a
           routerLink="/auth/recuperar-password"
-          class="text-[13.5px] font-semibold text-brand transition-colors hover:text-brand-600"
+          class="text-[13.5px] font-semibold text-brand-strong transition-colors hover:text-brand-600"
         >
           ¿Olvidaste tu contraseña?
         </a>
@@ -214,7 +214,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 
       <p class="mt-6 text-center text-[13.5px] text-muted">
         ¿No tienes cuenta?
-        <a [routerLink]="registerLink()" class="font-semibold text-brand transition-colors hover:text-brand-600">
+        <a [routerLink]="registerLink()" class="font-semibold text-brand-strong transition-colors hover:text-brand-600">
           Crea una cuenta
         </a>
       </p>
@@ -226,7 +226,17 @@ export class LoginForm {
   readonly errorMessage = input<string | null>(null);
   readonly showResend = input(false);
   readonly resendStatus = input<ResendStatus>('idle');
-  readonly showSocialLogins = input(true);
+  /**
+   * Apagado por defecto: el backend no expone OAuth. Sus rutas de auth son
+   * login, refresh, logout, register, verificación de correo y recuperación de
+   * contraseña; no hay ningún callback social. Los tres botones eran
+   * `<button>` sin handler, así que en la pantalla más crítica del embudo el
+   * usuario pulsaba "Ingresar con Google" y no pasaba nada.
+   *
+   * El bloque se queda en la plantilla: cuando exista OAuth basta con pasar
+   * `[showSocialLogins]="true"` y engancharlos.
+   */
+  readonly showSocialLogins = input(false);
   readonly submitted = output<LoginCredentials>();
   readonly resendRequested = output<void>();
 
@@ -262,7 +272,7 @@ export class LoginForm {
   protected segClass(type: AccountType): string {
     const base = 'rounded-lg py-2.5 text-sm font-semibold transition-colors';
     return this.accountType() === type
-      ? `${base} bg-white text-brand shadow-sm`
+      ? `${base} bg-white text-brand-strong shadow-sm`
       : `${base} text-muted hover:text-body`;
   }
 
