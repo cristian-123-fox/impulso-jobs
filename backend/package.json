@@ -30,6 +30,7 @@
     "seed:applications": "ts-node -r tsconfig-paths/register src/database/seed-application-statuses.ts",
     "seed:plan-features": "ts-node -r tsconfig-paths/register src/database/seed-plan-features.ts",
     "purge:accounts": "ts-node -r tsconfig-paths/register src/database/purge-accounts.ts",
+    "uploads:rehost": "ts-node -r tsconfig-paths/register src/database/rehost-uploaded-files.ts",
     "billing:expire": "ts-node -r tsconfig-paths/register src/database/expire-promotions.ts",
     "vacancies:expire": "ts-node -r tsconfig-paths/register src/database/expire-vacancies.ts",
     "views:consolidate": "ts-node -r tsconfig-paths/register src/database/consolidate-vacancy-views.ts",
@@ -42,6 +43,7 @@
     "seed:applications:prod": "node dist/database/seed-application-statuses",
     "seed:plan-features:prod": "node dist/database/seed-plan-features",
     "purge:accounts:prod": "node dist/database/purge-accounts",
+    "uploads:rehost:prod": "node dist/database/rehost-uploaded-files",
     "billing:expire:prod": "node dist/database/expire-promotions",
     "vacancies:expire:prod": "node dist/database/expire-vacancies",
     "views:consolidate:prod": "node dist/database/consolidate-vacancy-views"

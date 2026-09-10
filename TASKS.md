@@ -4,7 +4,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
-- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. Ninguna empezada.
+- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T23 hecha** (2026-09-10); el resto sin empezar.
 
 ---
 
@@ -261,7 +261,7 @@ Reviews/rating de empresa · IA (crear oferta, sugerir skills, matching — cód
 
 # Parte C · Backlog solicitado (septiembre 2026)
 
-Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. Ninguna está empezada. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
+Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. Sólo T23 está cerrada. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
 
 ## Resumen para el gestor de tareas
 
@@ -269,7 +269,7 @@ Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contr
 |---|---|---|---|---|---|
 | T21 | Módulo de notificaciones (plataforma + correo) | Feature / infra | Alta | L (5–8 d) | SMTP real |
 | T22 | Aviso de plan por vencer + cancelación automática | Feature | Alta | M (3–4 d) | T21 · 🔷 N8 |
-| T23 | Imágenes subidas con URL `localhost` en la demo | **Bug** | **Bloqueante demo** | XS (2–4 h) | — |
+| T23 ✅ | Imágenes subidas con URL `localhost` en la demo | **Bug** | **Bloqueante demo** | XS (2–4 h) | — |
 | T24 | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
 | T25 | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | 🔷 N9 |
 | T26 | Traducciones del sitio (i18n) | Feature / transversal | Media | L (5–8 d+) | 🔷 N6 |
@@ -342,7 +342,24 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ---
 
-### T23 · Bug · Las imágenes subidas apuntan a `localhost` en la demo ⬜ 🔴
+### T23 · Bug · Las imágenes subidas apuntan a `localhost` en la demo ✅
+
+**Hecho (2026-09-10) — código listo; queda un paso de despliegue.** El bug era de configuración, así que el trabajo fue *que no pueda repetirse* y *poder reparar lo ya guardado*:
+
+1. **Arranque en fallo (opción a).** `resolveAppPublicUrl()` (`common/storage/public-base-url.ts`) centraliza la base pública: normaliza (quita barras finales), **valida que sea http(s) absoluta** y, con `NODE_ENV=production` sin `APP_PUBLIC_URL`, **lanza**. `main.ts` la llama antes de `NestFactory.create` y sale con código 1 y el mensaje explicando que la URL se persiste en BD; en desarrollo sigue cayendo a `http://localhost:PORT` pero **avisando por consola**. El adaptador ya no arma la URL a mano.
+2. **Backfill `pnpm uploads:rehost`** (`database/rehost-uploaded-files.ts`, gemelo `:prod`): reescribe el host de `companies.logo_url` y `candidate_profiles.profile_photo_url` al `APP_PUBLIC_URL` actual. **Simulación por defecto** (patrón de `purge:accounts`), `-- --confirm` para escribir y `-- --from=<origen>` para acotar. Sólo toca archivos nuestros —valida la clave `/uploads/<carpeta>/<uuid>.<ext>` con `storageKeyFromUrl`—, así que un logo con URL externa pegada a mano en el perfil no se toca. No mueve archivos de disco: ya están en su sitio. Sirve igual el día que cambie el dominio.
+3. **Documentación:** `.env.example` (`NODE_ENV` + por qué `APP_PUBLIC_URL` no es opcional) y DEPLOY-CPANEL.md (§ 5.5 con el procedimiento de rehost, `NODE_ENV=production` en el `.env` de ejemplo y la comprobación de que `~/api/uploads` sobrevivió al deploy).
+4. **Tests:** `public-base-url.spec.ts` (9 casos) cubre normalización, fallback de desarrollo, fallo en producción, URL sin esquema y las tres ramas del rehost. Suite completa en verde (38 suites / 247 tests).
+
+**Pendiente de despliegue (no es código):** definir `APP_PUBLIC_URL=https://<subdominio-del-api>` —y `NODE_ENV=production`— en el `.env` de demo y producción, reiniciar, correr `pnpm run uploads:rehost:prod` (primero en simulación) y comprobar `ls ~/api/uploads/public/company-logos`. Hasta ese paso las imágenes viejas de la demo se siguen viendo rotas.
+
+**Decisión tomada — se guarda la URL absoluta (opción a), no la clave relativa (b).** La (b) es lo correcto de fondo, pero obliga a quitar el `@IsUrl` de los DTOs de foto/logo, a migrar los datos y a componer la URL en **todos** los mapeadores de salida (perfil de empresa, admin, card y detalle público de vacante, talento, postulaciones). **Sigue abierta y es el momento de decidirla en T24**, cuando se añada `vacancies.image_url`: si se hace, el criterio debe ser el mismo en las tres columnas y `rehost-uploaded-files.ts` es justo el sitio donde vive la migración de datos.
+
+---
+
+<details>
+<summary>Ficha original de la tarea</summary>
+
 
 **Reporte QA:** "en demo no se pueden subir imágenes, no quedan guardadas" — la URL resultante es `http://localhost:3000/uploads/company-logos/f08e21b1-58f9-471c-8a41-b190efbd63f4.jpg`.
 
@@ -362,6 +379,8 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 - Subir un logo en la demo devuelve una URL con el dominio público y la imagen se ve en `/empresa/perfil`, en la card de vacante y en el detalle público.
 - Los logos subidos **antes** del fix también se ven (backfill aplicado).
 - Levantar el backend en producción sin `APP_PUBLIC_URL` falla con un mensaje claro (si se elige la opción a).
+
+</details>
 
 ---
 
@@ -460,7 +479,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ## Orden sugerido (Parte C)
 
-1. **T23** — bug de horas, y hoy es lo que peor se ve en la demo.
+1. ~~**T23**~~ ✅ hecha — falta sólo definir `APP_PUBLIC_URL` en el servidor y correr `uploads:rehost:prod`.
 2. **T27** — barato, muy visible, cierra un hueco de UX ya anotado desde T2.
 3. **T21** — desbloquea de paso la verificación de correo y el reset de contraseña en producción (hoy inservibles sin SMTP).
 4. **T22** — necesita T21, y tapa un agujero real de negocio (planes vencidos que nunca caducan).

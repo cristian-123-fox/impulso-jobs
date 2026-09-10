@@ -6,6 +6,7 @@ import {
   SavePublicFile,
 } from '@/common/storage/public-file-storage.port';
 import { uploadsDir } from '@/common/storage/uploads-dir';
+import { resolveAppPublicUrl } from '@/common/storage/public-base-url';
 
 /**
  * Implementación en disco local (decisión de despliegue: cPanel sin bucket).
@@ -16,10 +17,10 @@ import { uploadsDir } from '@/common/storage/uploads-dir';
 @Injectable()
 export class LocalPublicFileStorageAdapter implements PublicFileStoragePort {
   private readonly baseDir = resolve(uploadsDir(), 'public');
-  private readonly baseUrl = (
-    process.env.APP_PUBLIC_URL?.trim() ||
-    `http://localhost:${process.env.PORT ?? 3000}`
-  ).replace(/\/+$/, '');
+  // La URL que se compone aquí se PERSISTE en BD, así que la base no puede
+  // caer a localhost sin avisar en un servidor real (T23): resolveAppPublicUrl
+  // valida el formato y, en producción, lanza si falta APP_PUBLIC_URL.
+  private readonly baseUrl = resolveAppPublicUrl();
 
   async save(file: SavePublicFile): Promise<void> {
     const fullPath = this.resolveContained(file.key);

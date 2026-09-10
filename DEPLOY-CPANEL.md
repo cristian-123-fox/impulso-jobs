@@ -93,6 +93,8 @@ node -v && npm -v                               # deben responder
 `nano .env` (usa `backend/.env.example` como referencia):
 
 ```env
+NODE_ENV=production
+
 DB_TYPE=mysql
 DB_HOST=localhost
 DB_PORT=3306
@@ -113,6 +115,15 @@ APP_PUBLIC_URL=https://api.impulsojobs.com
 ```
 
 Genera cada secreto con: `openssl rand -hex 32`.
+
+> ⚠️ **`APP_PUBLIC_URL` no es opcional.** La URL que compone se **guarda en la
+> fila** (`companies.logo_url`, `candidate_profiles.profile_photo_url`), así que
+> si falta, cada logo o foto que se suba queda con `http://localhost:3000/...`:
+> el archivo sí se escribe en disco, pero el navegador no puede abrirlo y
+> *parece* que la subida no se guardó (fue el bug T23 de la demo). Con
+> `NODE_ENV=production` y sin la variable, el backend **no arranca** y lo dice
+> por consola. Si ya hay filas rotas, definirla no las repara: hay que
+> reescribirlas con `pnpm uploads:rehost` (§ 5.5).
 
 > **Archivos subidos:** viven en `~/api/uploads/` (se crea solo). `uploads/public/`
 > se sirve en `https://api.impulsojobs.com/uploads/...` (fotos y logos);
@@ -140,6 +151,27 @@ SEED_ADMIN_EMAIL=tu@correo.com SEED_ADMIN_PASSWORD='TuPass#123' pnpm run seed:ad
 
 - `https://api.impulsojobs.com/api/v1` responde.
 - `https://api.impulsojobs.com/docs` muestra Swagger.
+
+### 5.5 Si ya se subieron imágenes sin `APP_PUBLIC_URL`
+
+Reescribe el host de las filas afectadas (**simula por defecto**, sólo escribe
+con `--confirm`). Toca únicamente lo que subió el propio backend
+(`/uploads/<carpeta>/<uuid>.<ext>`); las URLs externas se quedan como están.
+No mueve archivos: los de disco ya están en su sitio.
+
+```bash
+source ~/nodevenv/api/20/bin/activate && cd ~/api
+pnpm run uploads:rehost:prod                 # simulación: lista lo que cambiaría
+pnpm run uploads:rehost:prod -- --confirm    # aplica
+```
+
+Sirve igual el día que cambie el dominio del API. Si alguna empresa tiene un
+logo con URL externa legítima, acota con `-- --from=http://localhost:3000`.
+
+> **Comprueba también que `~/api/uploads/` sobrevivió al último deploy** —
+> `ls ~/api/uploads/public/company-logos | head`. Es una carpeta ignorada por
+> git, así que un `git pull` no la toca; lo que sí la borra es limpiar el
+> directorio a mano o recrear la app. Inclúyela en los respaldos de cPanel.
 
 ---
 
@@ -214,6 +246,7 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 | `pnpm run billing:expire:prod` | Caduca promociones vencidas y revierte los distintivos |
 | `pnpm run vacancies:expire:prod` | Cierra vacantes cuya vigencia (`VACANCY_LIFETIME_DAYS`, 60 por defecto) venció |
 | `pnpm run views:consolidate:prod` | Suma los eventos de vista al contador `views_count` de cada vacante |
+| `pnpm run uploads:rehost:prod` | Reescribe el host de las URLs de imagen ya guardadas (§ 5.5). Simulación salvo `-- --confirm` |
 
 ## Tareas programadas (cron)
 
@@ -225,4 +258,4 @@ Ninguno de los jobs corre solo: prográmalos en **cPanel → Cron Jobs** (una ve
 30 6 * * * source /home/USUARIO/nodevenv/api/22/bin/activate && cd /home/USUARIO/api && pnpm run views:consolidate:prod >> ~/logs/views-consolidate.log 2>&1
 ```
 
-La purga de cuentas (`purge:accounts:prod`) es deliberadamente manual (simulación por defecto, `-- --confirm` para borrar).
+La purga de cuentas (`purge:accounts:prod`) y el rehost de imágenes (`uploads:rehost:prod`) son deliberadamente manuales (simulación por defecto, `-- --confirm` para escribir).

@@ -7,8 +7,20 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { uploadsDir } from './common/storage/uploads-dir';
+import { resolveAppPublicUrl } from './common/storage/public-base-url';
 
 async function bootstrap() {
+  // Antes de levantar nada: la base de las URLs de archivos subidos se guarda
+  // en BD, así que un despliegue sin APP_PUBLIC_URL debe fallar aquí —con un
+  // mensaje legible— y no persistir URLs `localhost` que el navegador no puede
+  // abrir (T23).
+  try {
+    resolveAppPublicUrl();
+  } catch (error) {
+    console.error(`\n${(error as Error).message}\n`);
+    process.exit(1);
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix('api/v1');
