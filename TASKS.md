@@ -4,6 +4,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
+- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. Ninguna empezada.
 
 ---
 
@@ -255,3 +256,213 @@ Reviews/rating de empresa · IA (crear oferta, sugerir skills, matching — cód
 3. Rechazo duro de la oferta por PII (T11 usa aviso en línea).
 4. Filtros de edad/género (N3).
 5. Doble reloj opaco 60/30 sin comunicarlo (T20).
+
+---
+
+# Parte C · Backlog solicitado (septiembre 2026)
+
+Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. Ninguna está empezada. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
+
+## Resumen para el gestor de tareas
+
+| # | Título | Tipo | Prioridad | Estimación | Depende de |
+|---|---|---|---|---|---|
+| T21 | Módulo de notificaciones (plataforma + correo) | Feature / infra | Alta | L (5–8 d) | SMTP real |
+| T22 | Aviso de plan por vencer + cancelación automática | Feature | Alta | M (3–4 d) | T21 · 🔷 N8 |
+| T23 | Imágenes subidas con URL `localhost` en la demo | **Bug** | **Bloqueante demo** | XS (2–4 h) | — |
+| T24 | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
+| T25 | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | 🔷 N9 |
+| T26 | Traducciones del sitio (i18n) | Feature / transversal | Media | L (5–8 d+) | 🔷 N6 |
+| T27 | Nombre y foto del usuario logueado en el portal | Mejora UX | Media | S (1 d) | — |
+
+Estimaciones a ojo, para ordenar el tablero — no son compromisos.
+
+---
+
+### T21 · Módulo de notificaciones (plataforma + correo) ⬜
+
+**Qué se pide:** notificaciones dentro de la plataforma (campana / bandeja) y por correo electrónico.
+
+**Estado hoy (verificado 2026-09-10):**
+- **No existe módulo de notificaciones.** `MailerPort` (`backend/src/modules/iam/auth/services/mailer.port.ts`) sólo sabe dos cosas —`sendPasswordReset` y `sendEmailVerification`— y vive **dentro de `iam/auth`**: no es un servicio transversal.
+- El único adaptador es `ConsoleMailerAdapter`, que **escribe el enlace en el log en lugar de enviarlo**. No hay SMTP configurado (CLAUDE.md, DEPLOY-CPANEL.md).
+- La campana del panel se eliminó en T3/T8 justamente porque era decorativa.
+
+**Alcance propuesto:**
+1. **Sacar el correo de `iam/auth`** a `common/mailer/` (o al propio `modules/notifications/`): `MailerPort` genérico `send({ to, subject, template, data })` + plantillas. Los dos correos actuales pasan a ser plantillas; el binding sigue siendo un `useClass`, como hoy.
+2. **Adaptador SMTP real** (`SmtpMailerAdapter` con nodemailer; env `SMTP_HOST/PORT/USER/PASS/FROM`), conservando `ConsoleMailerAdapter` como default de desarrollo. **Esto desbloquea de paso la verificación de correo y el reset de contraseña en producción, hoy inservibles.**
+3. **Notificaciones en plataforma:** tabla `notifications` (`user_id`, `type`, `title`, `body`, `link`, `read_at`, `created_at`) + `NotificationService.notify(userId, type, payload)` que escribe la fila y, según preferencias, dispara el correo.
+4. **Endpoints:** `GET /notifications` (paginado, filtro no leídas) · `GET /notifications/unread-count` · `PATCH /notifications/:id/read` · `POST /notifications/read-all`. Permiso nuevo `notifications.read` → ⚠️ **re-correr `pnpm seed:rbac`** o responde 403.
+5. **Preferencias por usuario** (qué llega por correo y qué sólo en plataforma), enganchadas a la configuración que ya existe (`candidate_profile_settings` y su equivalente de empresa).
+6. **Frontend:** campana con badge de no leídas en los tres layouts (candidato, empresa, admin) + panel desplegable + página `/notificaciones`. **Sin websockets**: polling o refresco al navegar — decisión explícita por el despliegue en cPanel.
+
+**Catálogo inicial de eventos:**
+- *Candidato:* cambio de estado de su postulación (M11 ya guarda el historial), vacante guardada que se cierra, verificación de correo.
+- *Empresa:* nueva postulación recibida, **plan por vencer (T22)**, promoción caducada (`billing:expire` ya existe), denuncia resuelta.
+- *Admin:* denuncia nueva (T12), pago manual pendiente de confirmar.
+
+**Criterios de aceptación:**
+- Un correo real llega a una bandeja externa (Gmail) desde el entorno de demo.
+- Cambiar el estado de una postulación crea la fila en `notifications` **y** envía el correo al candidato; la campana refleja el contador.
+- Marcar como leída baja el contador y persiste tras recargar.
+- Las preferencias se respetan: desactivar "por correo" deja la notificación en plataforma y no envía nada.
+- **Un fallo de SMTP no tumba la operación de negocio** — el envío es best-effort y queda en el log (mismo criterio que el snapshot de T19).
+
+**Riesgos:** sin cola (BullMQ está en el backlog diferido) el envío es síncrono; si el volumen crece habrá que meter cola. El hosting cPanel puede bloquear el puerto SMTP saliente — **confirmarlo con el proveedor antes de estimar en firme**.
+
+---
+
+### T22 · Aviso de plan por vencer y cancelación automática ⬜
+
+**Qué se pide:** avisar a la empresa cuando queda cierto tiempo para que acabe su plan y, si no renueva, cancelarlo automáticamente.
+
+**Estado hoy (verificado 2026-09-10) — el hueco es mayor de lo que parece:**
+- `CompanySubscription` ya tiene `currentPeriodEnd` (con índice `idx_company_subscriptions_period_end`, listo para la consulta) y `autoRenew`.
+- **`SubscriptionStatus.EXPIRED` está declarado en el enum y no se asigna en ningún punto del código.** Tampoco existe `findExpiredActiveSubscriptions` en el repositorio (sí existe el gemelo de promociones, `findExpiredActivePromotions`).
+- `findLiveSubscriptionByCompany` filtra por `LIVE_SUBSCRIPTION_STATUSES` (`billing.repository.ts:24`) = PENDING_PAYMENT / ACTIVE / PAST_DUE, **sin mirar la fecha**. Consecuencia real: **una suscripción vencida se sigue considerando activa indefinidamente** y la empresa conserva los beneficios del plan para siempre.
+- `autoRenew` se escribe (true al suscribir, false al cancelar) pero **nunca se lee**.
+- `pnpm billing:expire` sólo caduca **promociones de vacante**, no suscripciones.
+
+**Alcance propuesto:**
+1. `findExpiredActiveSubscriptions(now)` en el repositorio — gemelo exacto del de promociones.
+2. **`ExpireSubscriptionsUseCase`** copiando el patrón de `ExpirePromotionsUseCase`: una suscripción por transacción, `status = EXPIRED`, revocar entitlements vía `EntitlementService`, auditar `subscriptions.expire`, y que un fallo no detenga el lote. **Colgarlo del job `billing:expire` existente** (+ gemelo `:prod`) en vez de crear otro cron.
+3. **Avisos escalonados** antes del vencimiento, configurables con `SUBSCRIPTION_EXPIRY_NOTICE_DAYS` (default `30,7,1`): notificación en plataforma + correo (T21) con CTA a renovar. **Idempotencia obligatoria** — registrar el aviso ya enviado (tabla/columna `subscription_notices`) o el cron diario reenvía el mismo correo cada día.
+4. **Vigencia comunicada desde el día 1** (misma decisión que T20, "sin relojes opacos"): "Tu plan vence el X" en el área de facturación de la empresa, y banner cuando falten ≤ N días.
+5. **Semántica de "cancelar":** al expirar se revocan los **beneficios**, pero **los datos se conservan** — vacantes publicadas, postulaciones recibidas y CVs ya desbloqueados siguen accesibles (decisión "no copiar" #2). Hay que definir exactamente qué se apaga: cupo de talento, distintivos, ¿poder publicar vacantes nuevas? → 🔷 **N8**, ligada a N5.
+6. Con `autoRenew = true` y el adaptador manual **no hay cobro automático**: hoy "renovar" es una orden nueva. Cuando exista Stripe, el webhook de renovación ya cae en `SettlePaymentUseCase` sin cambios.
+
+**Criterios de aceptación:**
+- Una suscripción con `currentPeriodEnd` en el pasado queda `EXPIRED` tras correr `billing:expire`, con su registro de auditoría.
+- Tras expirar, `findLiveSubscriptionByCompany` deja de devolverla y la empresa pierde el cupo de talento (402 `TALENT_QUOTA_EXHAUSTED`).
+- La empresa recibe aviso a 30 / 7 / 1 días, **una sola vez por umbral**, aunque el cron corra a diario.
+- Vacantes publicadas y postulaciones recibidas siguen visibles después de expirar.
+- Spec unitario del caso de uso (patrón `expire-vacancies.use-case.spec.ts`).
+
+**Riesgos:** tocar `LIVE_SUBSCRIPTION_STATUSES` cambia el comportamiento de entitlements de **todas** las empresas — revisar `EntitlementService` antes de mover nada.
+
+---
+
+### T23 · Bug · Las imágenes subidas apuntan a `localhost` en la demo ⬜ 🔴
+
+**Reporte QA:** "en demo no se pueden subir imágenes, no quedan guardadas" — la URL resultante es `http://localhost:3000/uploads/company-logos/f08e21b1-58f9-471c-8a41-b190efbd63f4.jpg`.
+
+**Causa (verificada) — sí se guardan; lo que está mal es la URL:** el archivo **se escribe correctamente en disco**. `LocalPublicFileStorageAdapter` construye su `baseUrl` con `process.env.APP_PUBLIC_URL` y **cae a `http://localhost:${PORT}` cuando la variable no está definida** (`local-public-file-storage.adapter.ts:19`). En el servidor de demo `APP_PUBLIC_URL` no está puesta, así que se persiste una URL que sólo resuelve dentro del propio servidor: el navegador no puede cargarla y **parece** que la subida no se guardó.
+
+**Agravante — la URL se persiste absoluta en BD:** `company.logoUrl = this.storage.publicUrl(key)` (`company-profile.use-case.ts:166`; igual para la foto del candidato). Por eso **definir la variable no arregla las filas ya guardadas**: hay que reescribirlas.
+
+**Fix:**
+1. **Inmediato:** definir `APP_PUBLIC_URL=https://<subdominio-del-api>` en el `.env` de demo y de producción, y reiniciar la app. Ya estaba documentado en `.env.example:70` y en DEPLOY-CPANEL.md — simplemente se omitió al desplegar.
+2. **Backfill:** migración o script que reescriba el host en las filas existentes de `companies.logo_url` y `candidate_profiles.photo_url` (`UPDATE … SET col = REPLACE(col, 'http://localhost:3000', '<host nuevo>')`).
+3. **Que no vuelva a pasar** — elegir una:
+   - **(a) Arrancar en fallo (recomendada, barata):** si `NODE_ENV=production` y falta `APP_PUBLIC_URL`, lanzar en el bootstrap en lugar de caer silenciosamente a localhost.
+   - **(b) Guardar la clave relativa** (`company-logos/<uuid>.jpg`) y componer la URL absoluta en el DTO de salida. Es lo correcto de fondo — sobrevive a cambios de dominio y a una migración a S3 — pero obliga a quitar el `@IsUrl` de los DTOs de foto/logo (nota conocida al cierre de la Parte A) y a migrar los datos. **Preferible si se aborda junto con T24.**
+4. **Verificar la persistencia del directorio:** confirmar en el servidor real que `~/api/uploads` sobrevive al deploy por `git pull` (está documentado, conviene comprobarlo).
+
+**Criterios de aceptación:**
+- Subir un logo en la demo devuelve una URL con el dominio público y la imagen se ve en `/empresa/perfil`, en la card de vacante y en el detalle público.
+- Los logos subidos **antes** del fix también se ven (backfill aplicado).
+- Levantar el backend en producción sin `APP_PUBLIC_URL` falla con un mensaje claro (si se elige la opción a).
+
+---
+
+### T24 · Imagen de referencia en la vacante ⬜
+
+**Qué se pide:** al publicar una vacante, poder subir una imagen de referencia.
+
+**Estado hoy:** `Vacancy` **no tiene ninguna columna de imagen** (verificado sobre `vacancy.entity.ts`); la card y el detalle público muestran el **logo de la empresa**. Toda la mecánica de subida ya existe y es reutilizable tal cual (viene de T9): puerto `PUBLIC_FILE_STORAGE` + `LocalPublicFileStorageAdapter`, validación por *magic bytes* en `common/storage/image-upload.ts`, `FileInterceptor` con `limits.fileSize`, códigos de error y borrado del archivo anterior al reemplazar.
+
+**Alcance propuesto:**
+- Migración: `vacancies.image_url` (varchar, nullable). **Ojo con T23:** decidir aquí si se guarda clave relativa o URL absoluta, y aplicar el mismo criterio en ambas tareas.
+- `POST /company/vacancies/:id/image` (multipart) + `DELETE`, acotado por ownership (`company_id`), patrón calcado de `POST /company/profile/logo`. Límite 5 MB, jpg/png/webp. Códigos nuevos `VACANCY_IMAGE_INVALID_TYPE` / `VACANCY_IMAGE_TOO_LARGE`. Auditar subida y borrado.
+- Exponer `imageUrl` en el DTO público y en el de empresa.
+- **Frontend:** control de subida con preview en `vacancy-form` (el alta/edición vive en `ij-modal`); usar la imagen como cabecera en `public-vacancy-detail-page`. **La card de la lista sigue con el logo** salvo decisión contraria.
+- **SEO:** si hay imagen, usarla en OG y en el campo `image` del JSON-LD `JobPosting` (`seo.service.ts`).
+
+**Preguntas para negocio 🔷 (N7):** ¿la imagen es para todos los planes o es un beneficio monetizado, como Destacada? ¿Recorte fijo (p. ej. 1200×630, que serviría también de OG) o libre?
+
+**Criterios de aceptación:** subir / reemplazar / quitar desde el alta y la edición; la imagen aparece en el detalle público y en la vista previa al compartir; una vacante sin imagen se ve exactamente como hoy; el archivo anterior se borra del disco al reemplazar.
+
+---
+
+### T25 · Skills requeridas en la vacante ⬜
+
+**Qué se pide:** poder indicar las skills requeridas en la vacante.
+
+**Estado hoy:** la relación **no existe** (ya quedó anotada como pendiente en T6). **Pero el lado del candidato sí existe:** `candidate_skills` (`name` varchar(100), `level`, `years_experience`) — sirve de precedente de modelo y, sobre todo, es la mitad que falta para el matching.
+
+**Decisión previa 🔷 (N9) — texto libre vs. catálogo normalizado:**
+- `candidate_skills.name` es **texto libre**. Si la vacante también lo es, "Excel", "excel" y "Microsoft Excel" no cruzan nunca y **el matching futuro nace roto**.
+- Recomendación: **tabla `skills` normalizada** (`id`, `name`, `slug` único) + `vacancy_skills`, y migración progresiva de `candidate_skills` a esa tabla, con autocomplete que sugiere las existentes y permite crear nuevas. Cuesta más ahora y es la única opción que sostiene "sugerir skills" y "matching" (ambos ya reservados como códigos de feature de IA en el backlog diferido).
+
+**Alcance propuesto:**
+- Migración `vacancy_skills` (`vacancy_id`, `skill_id` o `name`, `is_required` bool, orden). Tope razonable (p. ej. 15) validado en el DTO.
+- Alta y edición **junto con la vacante** (mismo `PUT`, no un endpoint aparte) — patrón de las preguntas de filtrado de T10.
+- Exponer en el DTO público y pintarlas como chips en el detalle (el diseño de T6 ya las contemplaba).
+- **Filtro público por skill** en `GET /vacancies`, sumado a los filtros de T15, con su índice.
+- **Frontend:** `ij-multiselect` / `ij-autocomplete` ya están en el UI kit — no hace falta componente nuevo.
+
+**Criterios de aceptación:** crear una vacante con N skills y verlas en el detalle público; editarlas sin perder el resto de campos; filtrar la lista pública por una skill; una vacante sin skills se ve como hoy.
+
+**Extensión natural (fuera de alcance a propósito):** ordenar postulantes por skills coincidentes — es el primer paso del matching y no debe bloquear esta entrega.
+
+---
+
+### T26 · Traducciones del sitio (i18n) ⬜
+
+**Qué se pide:** traducciones del sitio web.
+
+**Estado hoy:** **no hay ninguna infraestructura de i18n.** No están `@angular/localize`, ngx-translate ni Transloco; lo único que aparece es el target `extract-i18n` que trae el scaffold del CLI (`angular.json:96`). **Todos los textos están escritos a mano en español dentro de los templates**, y también hay español en el backend (mensajes de error, `message` del envelope, plantillas de correo). Los catálogos —estados MX, áreas profesionales, regímenes SAT— son intrínsecamente mexicanos y no se traducen.
+
+**Decisión previa 🔷 (N6) — qué idiomas y para qué:** ¿inglés para empresas internacionales? ¿el objetivo real es sólo neutralizar regionalismos? El esfuerzo cambia radicalmente según la respuesta; **hasta tenerla, esta tarea no es estimable con precisión.**
+
+**Decisión técnica 🔷 — `@angular/localize` vs. Transloco:**
+- **`@angular/localize`** (i18n oficial): traducción en tiempo de build → **un bundle por idioma**, mejor rendimiento y SEO (URLs `/es/`, `/en/`), pero **no permite cambiar de idioma sin recargar** y multiplica el despliegue SSR (una app Node por idioma, o un router delante).
+- **Transloco / ngx-translate:** JSON en runtime, cambio de idioma instantáneo, un solo bundle. Más simple de desplegar en cPanel; el SEO multi-idioma (`hreflang`, canonical por idioma) hay que armarlo a mano.
+- **Recomendación: Transloco**, por el despliegue en cPanel y porque el portal ya corre como una sola app Node SSR.
+
+**Alcance propuesto (en fases, para no bloquear el resto):**
+1. Instalar la librería y **extraer los textos del portal público** a `es.json` (navbar, footer, home, vacantes, detalle, planes, contacto, faq). Sin traducir todavía: es el grueso del trabajo y es puro refactor.
+2. Selector de idioma + persistencia (localStorage y `lang` en `<html>`), `hreflang` y canonical por idioma en `seo.service.ts`.
+3. Traducir a los idiomas que decida negocio.
+4. Áreas privadas (`/candidato`, `/empresa`, `/admin`) — **diferibles**: son usuarios recurrentes de un solo mercado.
+5. **Backend:** los `message` del envelope van en español, pero el frontend **ya conmuta sobre `errorCode`** (el contrato estable) → **los errores se traducen en el cliente por `errorCode`, no traduciendo el backend**. Lo que sí necesita idioma son las plantillas de correo (T21) → guardar el idioma preferido en el usuario.
+6. Formatos: fechas y **moneda MXN** por locale (`registerLocaleData`).
+
+**Criterios de aceptación:** cambiar de idioma traduce el portal público sin recargar y la elección persiste; el HTML servido por SSR ya sale en el idioma correcto (**sin parpadeo al hidratar**); `hreflang` correcto; un texto sin traducir cae al español sin romper la vista.
+
+**Riesgo:** es la tarea **más transversal** del backlog — toca todos los templates. Hacerla antes de que el portal se estabilice implica re-tocarla entera. Sugerencia: arrancar la fase 1 sólo cuando el diseño del portal público esté cerrado.
+
+---
+
+### T27 · Nombre y foto del usuario logueado en el portal público ⬜
+
+**Qué se pide:** que al navegar el portal estando logueado se vean el nombre y la foto del usuario, para que quede claro que la sesión está activa.
+
+**Estado hoy (verificado):** el navbar público **ya detecta la sesión**, pero muestra un genérico — `account()` (`navbar.ts:176`) devuelve `{ label: 'Mi cuenta' }` con un icono `user` estático. La causa es la misma que ya se anotó en T2: **`AuthUser` sólo trae `{ id, email, role }`** (`auth.models.ts:3`), sin nombre ni foto. El área del candidato lo resuelve pidiendo `GET /candidate/profile` (`ensureProfile()`, `candidate-layout.ts:171`), pero **eso sólo sirve para candidatos**: una empresa necesitaría `GET /company/profile`, y el navbar público es común a los tres roles.
+
+**Alcance propuesto:**
+1. **Backend — la pieza que falta: `GET /auth/me`.** Hoy `auth.controller.ts` sólo expone login / refresh / logout. Devolvería `{ id, email, role, displayName, avatarUrl }` resolviendo nombre e imagen **según el rol** (candidato → perfil + foto; empresa → nombre comercial o de contacto + logo; admin → nombre del usuario). Un solo endpoint evita que el frontend adivine a qué API pegar según el rol.
+   - *Alternativa más barata:* incluir `displayName`/`avatarUrl` en la respuesta de login y de refresh. Ahorra un request, pero se desactualiza si el usuario cambia su foto. **Recomendado: `/auth/me`, llamado al hidratar la sesión.**
+2. **Frontend:** ampliar `AuthUser` con `displayName`/`avatarUrl`; `AuthService` cachea el resultado (una llamada por sesión, no por navegación). El navbar pasa a **menú de usuario**: avatar (foto o iniciales, como ya hace el header del candidato) + nombre + desplegable con "Ir a mi cuenta" (`ROLE_HOME`) y **"Cerrar sesión"**, que hoy el portal público no ofrece.
+3. **SSR:** el navbar se renderiza en servidor, donde no hay sesión → pintar el estado anónimo en SSR y resolver la sesión en cliente (`afterNextRender`), **reservando el espacio** para que no salte el layout al hidratar.
+4. **Móvil:** el mismo bloque dentro del menú hamburguesa.
+
+**Criterios de aceptación:** logueado como candidato y como empresa, el navbar muestra foto o iniciales + nombre en todas las páginas públicas; anónimo se ve igual que hoy; cerrar sesión desde el navbar funciona y vuelve al estado anónimo sin recargar; sin parpadeo ni salto de layout al hidratar.
+
+---
+
+## Decisiones que necesita el negocio (Parte C) 🔷
+
+- **N6 · Idiomas del sitio (T26).** ¿Cuáles y para qué público? Sin esto la tarea no es estimable.
+- **N7 · Imagen de vacante (T24).** ¿Para todos los planes o beneficio monetizado? ¿Recorte fijo o libre?
+- **N8 · Qué apaga exactamente la expiración del plan (T22).** Ligada a N5 (`postingQuota`).
+- **N9 · Skills: catálogo normalizado o texto libre (T25).** Condiciona el matching futuro.
+
+## Orden sugerido (Parte C)
+
+1. **T23** — bug de horas, y hoy es lo que peor se ve en la demo.
+2. **T27** — barato, muy visible, cierra un hueco de UX ya anotado desde T2.
+3. **T21** — desbloquea de paso la verificación de correo y el reset de contraseña en producción (hoy inservibles sin SMTP).
+4. **T22** — necesita T21, y tapa un agujero real de negocio (planes vencidos que nunca caducan).
+5. **T24** y **T25** — features de producto, independientes entre sí.
+6. **T26** — la última: es transversal y conviene hacerla con el diseño ya estable.
