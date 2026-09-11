@@ -26,6 +26,10 @@ import {
   CompanyVacancyQuestionDto,
   ReplaceVacancyQuestionsDto,
 } from '@/modules/vacancies/dto/vacancy-question.dto';
+import {
+  CompanyVacancySkillDto,
+  ReplaceVacancySkillsDto,
+} from '@/modules/vacancies/dto/vacancy-skill.dto';
 import { VacancyResponseDto } from '@/modules/vacancies/dto/vacancy-response.dto';
 import {
   ChangeVacancyStatusDto,
@@ -33,12 +37,14 @@ import {
   ReactivateVacancyDto,
   SaveVacancyDto,
 } from '@/modules/vacancies/dto/vacancy.dto';
+import { Skill } from '@/modules/vacancies/entities/skill.entity';
 import {
   CompanyVacanciesUseCase,
   ListCompanyVacanciesResult,
   VacancyActor,
 } from '@/modules/vacancies/use-cases/company-vacancies.use-case';
 import { VacancyQuestionsUseCase } from '@/modules/vacancies/use-cases/vacancy-questions.use-case';
+import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
 import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-status.use-case';
 
 @ApiTags('company-vacancies')
@@ -50,6 +56,7 @@ export class CompanyVacanciesController {
     private readonly vacancies: CompanyVacanciesUseCase,
     private readonly status: VacancyStatusUseCase,
     private readonly questions: VacancyQuestionsUseCase,
+    private readonly skills: VacancySkillsUseCase,
   ) {}
 
   @Get()
@@ -171,6 +178,39 @@ export class CompanyVacanciesController {
     @ClientInfo() client: ClientInfoPayload,
   ): Promise<VacancyResponseDto> {
     return this.status.refresh(id, this.actor(user, client));
+  }
+
+  @Get(':id/skills')
+  @RequirePermissions('vacancies.read')
+  @ResponseMessage('Skills de la vacante obtenidas.')
+  listSkills(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<CompanyVacancySkillDto[]> {
+    return this.skills.listForCompany(id, this.actor(user, client));
+  }
+
+  @Put(':id/skills')
+  @RequirePermissions('vacancies.update')
+  @ResponseMessage('Skills de la vacante actualizadas.')
+  replaceSkills(
+    @Param('id') id: string,
+    @Body() dto: ReplaceVacancySkillsDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<CompanyVacancySkillDto[]> {
+    return this.skills.replace(id, dto, this.actor(user, client));
+  }
+
+  @Get('skills/search')
+  @RequirePermissions('vacancies.read')
+  @ResponseMessage('Skills encontradas.')
+  searchSkills(
+    @Query('q') query: string,
+    @Query('limit') limit?: number,
+  ): Promise<Skill[]> {
+    return this.skills.searchSkills(query ?? '', limit ?? 10);
   }
 
   private actor(

@@ -27,6 +27,11 @@ import {
   VACANCY_REPOSITORY,
 } from '@/modules/vacancies/repositories/vacancy.repository.interface';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
+import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
+import {
+  CompanyVacancySkillDto,
+  SaveVacancySkillDto,
+} from '@/modules/vacancies/dto/vacancy-skill.dto';
 
 export interface VacancyActor {
   userId: string;
@@ -55,6 +60,8 @@ export interface VacancyData {
   salaryHidden?: boolean;
   /** Sólo se honra si el plan otorgó `canBeConfidential`. */
   isConfidential?: boolean;
+  /** Skills requeridas/deseadas para la vacante (T25). */
+  skills?: SaveVacancySkillDto[];
 }
 
 export interface ListCompanyVacanciesCommand extends VacancyActor {
@@ -88,6 +95,7 @@ export class CompanyVacanciesUseCase {
     @Inject(VACANCY_REPOSITORY) private readonly vacancies: IVacancyRepository,
     private readonly ownership: VacancyOwnershipService,
     private readonly audit: AuditService,
+    private readonly skillsUseCase: VacancySkillsUseCase,
   ) {}
 
   async list(
@@ -110,9 +118,21 @@ export class CompanyVacanciesUseCase {
       this.vacancies.countByCompany(company.id, VacancyStatus.CLOSED),
     ]);
 
+    // Cargar skills para cada vacante
+    const vacancyIds = rows.map((r) => r.id);
+    const skillsByVacancy = new Map<string, CompanyVacancySkillDto[]>();
+    await Promise.all(
+      vacancyIds.map(async (id) => {
+        const skills = await this.skillsUseCase.listForCompany(id, command);
+        skillsByVacancy.set(id, skills);
+      }),
+    );
+
     return {
       ...toPaginated(
-        rows.map(toVacancyResponse),
+        rows.map((vacancy) =>
+          toVacancyResponse(vacancy, skillsByVacancy.get(vacancy.id) ?? []),
+        ),
         total,
         command.page,
         command.limit,
@@ -124,7 +144,8 @@ export class CompanyVacanciesUseCase {
   async get(id: string, actor: VacancyActor): Promise<VacancyResponseDto> {
     const company = await this.ownership.requireCompany(actor.userId);
     const vacancy = await this.ownership.requireOwnVacancy(id, company.id);
-    return toVacancyResponse(vacancy);
+    const skills = await this.skillsUseCase.listForCompany(id, actor);
+    return toVacancyResponse(vacancy, skills);
   }
 
   async create(
@@ -176,7 +197,18 @@ export class CompanyVacanciesUseCase {
       metadata: { companyId: company.id, title: saved.title },
     });
 
-    return toVacancyResponse(saved);
+    // Guardar skills si se proporcionaron
+    let skills: CompanyVacancySkillDto[] = [];
+    if (data.skills && data.skills.length > 0) {
+      await this.skillsUseCase.replace(
+        saved.id,
+        { skills: data.skills },
+        actor,
+      );
+      skills = await this.skillsUseCase.listForCompany(saved.id, actor);
+    }
+
+    return toVacancyResponse(saved, skills);
   }
 
   async update(
@@ -211,7 +243,17 @@ export class CompanyVacanciesUseCase {
       metadata: { companyId: company.id },
     });
 
-    return toVacancyResponse(saved);
+    // Actualizar skills si se proporcionaron
+    if (data.skills !== undefined) {
+      await this.skillsUseCase.replace(
+        saved.id,
+        { skills: data.skills ?? [] },
+        actor,
+      );
+    }
+
+    const skills = await this.skillsUseCase.listForCompany(saved.id, actor);
+    return toVacancyResponse(saved, skills);
   }
 
   /** Copia los campos editables. Los distintivos y el plan no se tocan aquí. */

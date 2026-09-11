@@ -14,6 +14,7 @@ import {
   PublicVacancyResponseDto,
   toPublicVacancyResponse,
 } from '@/modules/vacancies/dto/vacancy-response.dto';
+import { PublicVacancySkillDto } from '@/modules/vacancies/dto/vacancy-skill.dto';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import {
   type IVacancyRepository,
@@ -24,6 +25,7 @@ import {
   type IVacancyViewEventRepository,
   VACANCY_VIEW_EVENT_REPOSITORY,
 } from '@/modules/vacancies/repositories/vacancy-view-event.repository.interface';
+import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
 
 /**
  * Portal público de vacantes. No requiere sesión: cualquiera puede buscar
@@ -39,13 +41,24 @@ export class PublicVacanciesUseCase {
     @Inject(COMPANY_REPOSITORY) private readonly companies: ICompanyRepository,
     @Inject(VACANCY_VIEW_EVENT_REPOSITORY)
     private readonly viewEvents: IVacancyViewEventRepository,
+    private readonly skillsUseCase: VacancySkillsUseCase,
   ) {}
 
   async list(
     criteria: PublicVacancySearch,
   ): Promise<PaginatedResponse<PublicVacancyResponseDto>> {
     const [rows, total] = await this.vacancies.findAndCountPublic(criteria);
-    const items = await this.withCompanies(rows);
+
+    // Cargar skills en lote para todas las vacantes de la página
+    const skillsByVacancy = new Map<string, PublicVacancySkillDto[]>();
+    await Promise.all(
+      rows.map(async (vacancy) => {
+        const skills = await this.skillsUseCase.listPublic(vacancy.id);
+        skillsByVacancy.set(vacancy.id, skills);
+      }),
+    );
+
+    const items = await this.withCompanies(rows, skillsByVacancy);
     return toPaginated(items, total, criteria.page, criteria.limit);
   }
 
@@ -60,7 +73,11 @@ export class PublicVacanciesUseCase {
     }
     // T18: evento de vista. El contador visible se consolida una vez al día.
     this.recordView(vacancy.id);
-    const [item] = await this.withCompanies([vacancy]);
+    const skills = await this.skillsUseCase.listPublic(vacancy.id);
+    const skillsMap = new Map<string, PublicVacancySkillDto[]>([
+      [vacancy.id, skills],
+    ]);
+    const [item] = await this.withCompanies([vacancy], skillsMap);
     return item;
   }
 
@@ -78,6 +95,7 @@ export class PublicVacanciesUseCase {
   /** Resuelve las empresas en lote, omitiendo las vacantes confidenciales. */
   private async withCompanies(
     rows: Vacancy[],
+    skillsByVacancy?: Map<string, PublicVacancySkillDto[]>,
   ): Promise<PublicVacancyResponseDto[]> {
     const visibleIds = [
       ...new Set(rows.filter((v) => !v.isConfidential).map((v) => v.companyId)),
@@ -89,6 +107,7 @@ export class PublicVacanciesUseCase {
       toPublicVacancyResponse(
         vacancy,
         vacancy.isConfidential ? null : (byId.get(vacancy.companyId) ?? null),
+        skillsByVacancy?.get(vacancy.id) ?? [],
       ),
     );
   }

@@ -84,7 +84,7 @@ backend/src/
 │  │  └─ account/            ✅ # baja de cuenta, restauración y export ARCO (LFPDPPP)
 │  ├─ companies/             ✅ # perfil de empresa (fiscal/CFDI) + company_users + back-office
 │  ├─ candidates/            ✅ # perfil, experiencia, educación, idiomas, skills, hoja de vida, configuración
-│  ├─ vacancies/             ✅ # vacantes (CRUD, estado, pausar/reactivar/refrescar) + listado público
+│  ├─ vacancies/             ✅ # vacantes (CRUD, estado, pausar/reactivar/refrescar) + listado público + skills
 │  ├─ applications/          ✅ # postulaciones, catálogo de estados e historial de transiciones
 │  ├─ talent/                ✅ # banco de talento: búsqueda de candidatos + cupo de visitas
 │  ├─ billing/               ✅ # planes, beneficios, promociones, suscripciones y órdenes
@@ -145,8 +145,8 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 | Perfil del candidato y subrecursos | `modules/candidates/` | `candidate/profile` (+ `photo`, `experience`, `education`, `languages`, `skills`) | ✅ |
 | Hoja de vida | `modules/candidates/` | `candidate/resumes` (+ `:id/select`, `:id/download`) | ✅ |
 | Configuración del candidato | `modules/candidates/` | `GET/PUT candidate/profile-settings` | ✅ |
-| Vacantes (gestión) | `modules/vacancies/` | `company/vacancies` CRUD + `:id/{status,pause,reactivate,refresh}` | ✅ |
-| Vacantes (público) | `modules/vacancies/` | `GET vacancies` · `GET vacancies/:id` | ✅ |
+| Vacantes (gestión) | `modules/vacancies/` | `company/vacancies` CRUD + `:id/{status,pause,reactivate,refresh}` + `:id/skills` | ✅ |
+| Vacantes (público) | `modules/vacancies/` | `GET vacancies` · `GET vacancies/:id` · `GET vacancies?skillId=` | ✅ |
 | Auditoría | `modules/audit/` (`AuditService`, invocado desde los use-cases) | — (sin endpoint de consulta aún) | ✅ |
 | Postulaciones del aspirante | `modules/applications/` | `POST/GET candidate/applications` · `GET :id` · `GET :id/history` | ✅ |
 | Postulaciones vistas por la empresa | `modules/applications/` | `GET company/applications` (+ `statuses`, `:id`, `:id/history`) · `PUT :id/status` | ✅ |

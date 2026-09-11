@@ -15,6 +15,7 @@ import {
 import { MX_STATE_CODES } from '@/common/catalogs/mx-states';
 import { PROFESSIONAL_AREA_IDS } from '@/common/catalogs/professional-areas';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { SaveVacancySkillDto } from '@/modules/vacancies/dto/vacancy-skill.dto';
 import {
   CONTRACT_TYPES,
   ContractType,
@@ -162,6 +163,14 @@ export class SaveVacancyDto {
   @IsOptional()
   @IsBoolean()
   isConfidential?: boolean;
+
+  @ApiPropertyOptional({
+    type: [SaveVacancySkillDto],
+    description: 'Skills requeridas/deseadas para la vacante (máx. 15).',
+  })
+  @IsOptional()
+  @Type(() => SaveVacancySkillDto)
+  skills?: SaveVacancySkillDto[];
 }
 
 /** Cambio de estado explícito (cerrar, reactivar desde cerrada no aplica). */
@@ -253,4 +262,9 @@ export class ListPublicVacanciesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsIn([...PUBLIC_VACANCY_SORTS], { message: 'El orden no es válido.' })
   sort?: PublicVacancySort;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(36)
+  skillId?: string;
 }
