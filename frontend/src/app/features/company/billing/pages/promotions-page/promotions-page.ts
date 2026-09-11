@@ -28,6 +28,19 @@ import {
 import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
 import { VacancyStatus } from '@/features/company/vacancies/models/vacancies.models';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Desde cuándo se resalta el vencimiento; espeja el umbral mayor del backend. */
+const EXPIRY_WARNING_DAYS = 30;
+
+/** A partir de aquí el aviso pasa de ámbar a rojo. */
+const URGENT_DAYS = 7;
+
+interface ExpiryNotice {
+  readonly urgent: boolean;
+  readonly message: string;
+}
+
 /** Promociones de vacantes y suscripción anual de la empresa. */
 @Component({
   selector: 'app-promotions-page',
@@ -91,6 +104,20 @@ import { VacancyStatus } from '@/features/company/vacancies/models/vacancies.mod
               <p class="mt-1 text-[12.5px] text-muted">
                 Renovación automática: {{ subscription.autoRenew ? 'activada' : 'cancelada' }}
               </p>
+              @if (expiry(); as expiry) {
+                <p
+                  role="status"
+                  class="mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold"
+                  [class]="
+                    expiry.urgent
+                      ? 'bg-red-50 text-red-700'
+                      : 'bg-amber-50 text-amber-700'
+                  "
+                >
+                  <ij-icon name="clock" [size]="16" class="mt-px flex-shrink-0" />
+                  <span>{{ expiry.message }}</span>
+                </p>
+              }
             </div>
             @if (subscription.autoRenew) {
               <button
@@ -383,6 +410,39 @@ export class PromotionsPage {
   protected valueOf(value: string): string {
     return value === '-1' ? 'ilimitado' : value;
   }
+
+  /**
+   * Aviso de vencimiento en la propia ficha del plan (T22). El portal no debe
+   * tener relojes opacos: la fecha se muestra desde el día 1 y, al entrar en
+   * la ventana de aviso, se destaca.
+   *
+   * El umbral espeja el mayor de `SUBSCRIPTION_EXPIRY_NOTICE_DAYS` del
+   * backend (30 por defecto), que es quien manda los correos; aquí sólo se
+   * decide cuándo resaltarlo.
+   */
+  protected readonly expiry = computed<ExpiryNotice | null>(() => {
+    const subscription = this.facade.subscription();
+    const endsAt = subscription?.currentPeriodEnd;
+    if (!endsAt) return null;
+
+    const end = new Date(endsAt).getTime();
+    if (Number.isNaN(end)) return null;
+
+    const daysLeft = Math.ceil((end - Date.now()) / DAY_MS);
+    if (daysLeft <= 0) {
+      return {
+        urgent: true,
+        message: 'Tu plan venció. Renuévalo para recuperar los beneficios.',
+      };
+    }
+    if (daysLeft > EXPIRY_WARNING_DAYS) return null;
+
+    const when = daysLeft === 1 ? 'mañana' : `en ${daysLeft} días`;
+    return {
+      urgent: daysLeft <= URGENT_DAYS,
+      message: `Tu plan vence ${when}. Renuévalo para no perder los beneficios.`,
+    };
+  });
 
   protected statusOf(status: string): string {
     return (

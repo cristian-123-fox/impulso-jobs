@@ -4,7 +4,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
-- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T23 y T27 hechas** (2026-09-10 y 2026-09-11); el resto sin empezar.
+- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21, T22, T23 y T27 hechas**; quedan T24, T25 y T26.
 
 ---
 
@@ -261,14 +261,14 @@ Reviews/rating de empresa · IA (crear oferta, sugerir skills, matching — cód
 
 # Parte C · Backlog solicitado (septiembre 2026)
 
-Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T23 y T27 están cerradas. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
+Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T21, T22, T23 y T27 están cerradas. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
 
 ## Resumen para el gestor de tareas
 
 | # | Título | Tipo | Prioridad | Estimación | Depende de |
 |---|---|---|---|---|---|
-| T21 | Módulo de notificaciones (plataforma + correo) | Feature / infra | Alta | L (5–8 d) | SMTP real |
-| T22 | Aviso de plan por vencer + cancelación automática | Feature | Alta | M (3–4 d) | T21 · 🔷 N8 |
+| T21 ✅ | Módulo de notificaciones (plataforma + correo) | Feature / infra | Alta | L (5–8 d) | SMTP real |
+| T22 ✅ | Aviso de plan por vencer + cancelación automática | Feature | Alta | M (3–4 d) | T21 · 🔷 N8 |
 | T23 ✅ | Imágenes subidas con URL `localhost` en la demo | **Bug** | **Bloqueante demo** | XS (2–4 h) | — |
 | T24 | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
 | T25 | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | 🔷 N9 |
@@ -279,7 +279,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ---
 
-### T21 · Módulo de notificaciones (plataforma + correo) ⬜
+### T21 · Módulo de notificaciones (plataforma + correo) ✅
 
 **Qué se pide:** notificaciones dentro de la plataforma (campana / bandeja) y por correo electrónico.
 
@@ -312,11 +312,33 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ---
 
-### T22 · Aviso de plan por vencer y cancelación automática ⬜
+### T22 · Aviso de plan por vencer y cancelación automática ✅
 
-**Qué se pide:** avisar a la empresa cuando queda cierto tiempo para que acabe su plan y, si no renueva, cancelarlo automáticamente.
+**Hecho (2026-09-11).** Se implementó el alcance propuesto. Antes, dos correcciones al diagnóstico de la ficha, verificadas en el código:
 
-**Estado hoy (verificado 2026-09-10) — el hueco es mayor de lo que parece:**
+- **El cupo de talento NO se conservaba para siempre.** `grantTalentVisits` guarda el grant con `expiresAt = currentPeriodEnd` y `findActiveGrants` filtra por `MoreThan(now)`: el cupo muere solo al acabar el periodo.
+- **El daño real era otro y peor.** Como `EXPIRED` no se asignaba nunca, `findLiveSubscriptionByCompany` seguía devolviendo la suscripción muerta y `subscribe()` respondía `SUBSCRIPTION_ALREADY_EXISTS`: **la empresa quedaba bloqueada para renovar**, y su área de facturación mostraba como vigente un plan caducado.
+
+**N8 — decisión tomada: al expirar sólo cambia el estado.** No queda nada más que apagar. El cupo ya caduca solo (arriba), los distintivos de vacante los aplica `applyToVacancy`, que **sólo** corre en la rama de *promociones* —una suscripción nunca los pone— y el `postingQuota` de N5 no existe en el código. Los datos se conservan, como pedía la decisión #5.
+
+1. **Repositorio** — `findExpiredActiveSubscriptions(now)` (ACTIVE y PAST_DUE con periodo vencido; las PENDING_PAYMENT no tienen fin de periodo) y `findSubscriptionsExpiringBefore(now, limit)`.
+2. **`ExpireSubscriptionsUseCase`** — `status = EXPIRED` + auditoría `subscriptions.expire`, una suscripción por transacción y un fallo no detiene el lote (patrón de `ExpirePromotionsUseCase`).
+3. **`NotifySubscriptionExpiryUseCase`** — umbrales de `SUBSCRIPTION_EXPIRY_NOTICE_DAYS` (default `30,7,1`; vacío los desactiva). Notifica en plataforma **y** por correo vía T21, sólo a **OWNER/ADMIN** de la empresa (y a todo el equipo si no hay ninguno, antes que a nadie). Audita `subscriptions.expiry_notice`.
+   - **Idempotencia:** tabla nueva `subscription_notices` con único `(subscription_id, period_end, threshold_days)`, escrito con `insert()` que choca contra el índice — mismo patrón que `registerEventOnce`. `period_end` entra en la clave para que **una renovación vuelva a avisar**. El acuse se escribe *antes* de notificar: preferimos perder un aviso ante una caída que mandarlo dos veces.
+   - **Un solo aviso por ventana:** se comunica el umbral **más urgente** que aplica y se marcan como consumidos los mayores. Si no, al avisar a 7 días el umbral de 30 volvería a cumplirse al día siguiente (`6 <= 30`) y dispararía otro correo.
+4. **`findLiveSubscriptionByCompany` ahora recibe `now`** y descarta las de periodo vencido aunque el cron aún no las haya marcado. Es lo que desbloquea la renovación **sin depender del cron** (si no, la empresa esperaría hasta 24 h). El riesgo que anotaba la ficha no se materializó: `LIVE_SUBSCRIPTION_STATUSES` no se tocó y el método sólo se usa en `CompanySubscriptionUseCase` (3 sitios), no en entitlements.
+5. **Job** — colgado del `billing:expire` existente, sin cron nuevo: promociones → suscripciones → avisos, en ese orden (avisar después de expirar evita anunciar lo que acaba de vencer).
+6. **Frontend** — la ficha del plan ya mostraba "vigente hasta X"; se le añade un aviso destacado a ≤ 30 días (ámbar), ≤ 7 días (rojo) y un mensaje propio si ya venció.
+
+**Verificado:** 10 casos nuevos en `expire-subscriptions.use-case.spec.ts` y `notify-subscription-expiry.use-case.spec.ts` (incluidos "no reenvía aunque el job corra a diario" y "tras avisar a 7 todavía avisa al llegar a 1"); suite backend completa **41 suites / 262 tests en verde**; build del frontend con prerender. Y **end-to-end contra Postgres**: suscripción a 7 días → 1 aviso + correo renderizado a `empresa@impulso.test`; segunda pasada → 0 avisos; periodo movido al pasado → `EXPIRED` con su fila de auditoría; `GET /company/subscriptions/current` deja de devolverla y `GET /notifications/unread-count` responde 1.
+
+**Despliegue:** `migration:run:prod` (tabla `subscription_notices`) y enganchar `pnpm billing:expire:prod` a un cron **diario**. Sin permisos nuevos. Los correos sólo salen de verdad con `SMTP_*` configurado (T21); sin ellas el adaptador de consola los escribe en el log.
+
+**Nota (fuera de T22):** al empezar, el backend estaba **roto en `main`** por el merge de T21 — `nodemailer` declarado pero sin instalar, migraciones 21 y 22 sin aplicar, `seed:rbac` sin re-correr, y 17 tests en rojo en `candidate-applications` y `vacancy-status` porque sus specs no se actualizaron al añadir la dependencia de notificaciones. Todo eso quedó arreglado de paso.
+
+**Qué se pedía:** avisar a la empresa cuando queda cierto tiempo para que acabe su plan y, si no renueva, cancelarlo automáticamente.
+
+**Estado antes de la tarea (verificado 2026-09-10) — con los dos matices corregidos arriba:**
 - `CompanySubscription` ya tiene `currentPeriodEnd` (con índice `idx_company_subscriptions_period_end`, listo para la consulta) y `autoRenew`.
 - **`SubscriptionStatus.EXPIRED` está declarado en el enum y no se asigna en ningún punto del código.** Tampoco existe `findExpiredActiveSubscriptions` en el repositorio (sí existe el gemelo de promociones, `findExpiredActivePromotions`).
 - `findLiveSubscriptionByCompany` filtra por `LIVE_SUBSCRIPTION_STATUSES` (`billing.repository.ts:24`) = PENDING_PAYMENT / ACTIVE / PAST_DUE, **sin mirar la fecha**. Consecuencia real: **una suscripción vencida se sigue considerando activa indefinidamente** y la empresa conserva los beneficios del plan para siempre.
@@ -487,14 +509,14 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 - **N6 · Idiomas del sitio (T26).** ¿Cuáles y para qué público? Sin esto la tarea no es estimable.
 - **N7 · Imagen de vacante (T24).** ¿Para todos los planes o beneficio monetizado? ¿Recorte fijo o libre?
-- **N8 · Qué apaga exactamente la expiración del plan (T22).** Ligada a N5 (`postingQuota`).
+- ~~**N8 · Qué apaga exactamente la expiración del plan (T22).**~~ ✅ resuelta al implementar T22: sólo el estado, porque no queda nada más que apagar (ver la ficha). Si algún día existe `postingQuota` (N5), el punto de extensión es `ExpireSubscriptionsUseCase`.
 - **N9 · Skills: catálogo normalizado o texto libre (T25).** Condiciona el matching futuro.
 
 ## Orden sugerido (Parte C)
 
 1. ~~**T23**~~ ✅ hecha — falta sólo definir `APP_PUBLIC_URL` en el servidor y correr `uploads:rehost:prod`.
 2. ~~**T27**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos.
-3. **T21** — desbloquea de paso la verificación de correo y el reset de contraseña en producción (hoy inservibles sin SMTP).
-4. **T22** — necesita T21, y tapa un agujero real de negocio (planes vencidos que nunca caducan).
+3. ~~**T21**~~ ✅ hecha — queda configurar `SMTP_*` en el servidor; sin ellas el adaptador de consola sólo escribe el correo en el log.
+4. ~~**T22**~~ ✅ hecha — despliegue: `migration:run:prod` (tabla `subscription_notices`) y enganchar `billing:expire` a un cron diario.
 5. **T24** y **T25** — features de producto, independientes entre sí.
 6. **T26** — la última: es transversal y conviene hacerla con el diseño ya estable.

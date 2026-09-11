@@ -11,6 +11,7 @@ import { PlanFeature } from '@/modules/billing/entities/plan-feature.entity';
 import { Plan } from '@/modules/billing/entities/plan.entity';
 import { ProcessedPaymentEvent } from '@/modules/billing/entities/processed-payment-event.entity';
 import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entity';
+import { SubscriptionNotice } from '@/modules/billing/entities/subscription-notice.entity';
 import { VacancyPromotion } from '@/modules/billing/entities/vacancy-promotion.entity';
 import { BILLING_REPOSITORY } from '@/modules/billing/repositories/billing.repository.interface';
 import { BillingRepository } from '@/modules/billing/repositories/billing.repository';
@@ -22,11 +23,16 @@ import { PAYMENT_PROVIDER } from '@/modules/billing/services/payment-provider.po
 import { PricingService } from '@/modules/billing/services/pricing.service';
 import { CompanySubscriptionUseCase } from '@/modules/billing/use-cases/company-subscription.use-case';
 import { ExpirePromotionsUseCase } from '@/modules/billing/use-cases/expire-promotions.use-case';
+import { ExpireSubscriptionsUseCase } from '@/modules/billing/use-cases/expire-subscriptions.use-case';
+import { NotifySubscriptionExpiryUseCase } from '@/modules/billing/use-cases/notify-subscription-expiry.use-case';
 import { PlanCatalogUseCase } from '@/modules/billing/use-cases/plan-catalog.use-case';
 import { SettlePaymentUseCase } from '@/modules/billing/use-cases/settle-payment.use-case';
 import { VacancyPromotionUseCase } from '@/modules/billing/use-cases/vacancy-promotion.use-case';
+import { CompaniesModule } from '@/modules/companies/companies.module';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
+import { UsersModule } from '@/modules/iam/users/users.module';
 import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { TalentModule } from '@/modules/talent/talent.module';
 import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
 
@@ -49,12 +55,16 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
       CompanySubscription,
       PromotionOrder,
       ProcessedPaymentEvent,
+      SubscriptionNotice,
     ]),
     AuditModule,
     AuthModule,
     PermissionsModule,
+    UsersModule,
     VacanciesModule,
     TalentModule,
+    CompaniesModule,
+    NotificationsModule,
   ],
   controllers: [
     PublicPlansController,
@@ -74,7 +84,15 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     CompanySubscriptionUseCase,
     SettlePaymentUseCase,
     ExpirePromotionsUseCase,
+    ExpireSubscriptionsUseCase,
+    NotifySubscriptionExpiryUseCase,
   ],
-  exports: [PLAN_REPOSITORY, BILLING_REPOSITORY, ExpirePromotionsUseCase],
+  exports: [
+    PLAN_REPOSITORY,
+    BILLING_REPOSITORY,
+    ExpirePromotionsUseCase,
+    ExpireSubscriptionsUseCase,
+    NotifySubscriptionExpiryUseCase,
+  ],
 })
 export class BillingModule {}

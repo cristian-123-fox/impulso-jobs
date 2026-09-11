@@ -2,6 +2,7 @@ import { EntityManager } from 'typeorm';
 import { CompanySubscription } from '@/modules/billing/entities/company-subscription.entity';
 import { ProcessedPaymentEvent } from '@/modules/billing/entities/processed-payment-event.entity';
 import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entity';
+import { SubscriptionNotice } from '@/modules/billing/entities/subscription-notice.entity';
 import { VacancyPromotion } from '@/modules/billing/entities/vacancy-promotion.entity';
 
 export const BILLING_REPOSITORY = 'BILLING_REPOSITORY';
@@ -47,15 +48,45 @@ export interface IBillingRepository {
     id: string,
     manager?: EntityManager,
   ): Promise<CompanySubscription | null>;
-  /** Suscripción vigente o pendiente de pago de la empresa. */
+  /**
+   * Suscripción vigente o pendiente de pago de la empresa. Descarta las que ya
+   * pasaron su `currentPeriodEnd` aunque el job de expiración todavía no las
+   * haya marcado: si no, la empresa queda sin poder renovar hasta el cron.
+   */
   findLiveSubscriptionByCompany(
     companyId: string,
+    now: Date,
     manager?: EntityManager,
   ): Promise<CompanySubscription | null>;
+  /** Suscripciones en curso cuyo periodo ya venció (trabajo de expiración). */
+  findExpiredActiveSubscriptions(
+    now: Date,
+    manager?: EntityManager,
+  ): Promise<CompanySubscription[]>;
+  /**
+   * Suscripciones activas que vencen entre `now` y `limit`: las candidatas a
+   * recibir un aviso previo.
+   */
+  findSubscriptionsExpiringBefore(
+    now: Date,
+    limit: Date,
+    manager?: EntityManager,
+  ): Promise<CompanySubscription[]>;
   saveSubscription(
     subscription: CompanySubscription,
     manager?: EntityManager,
   ): Promise<CompanySubscription>;
+
+  // ---- Avisos de vencimiento (T22) ---------------------------------------
+  /**
+   * Registra el acuse del aviso y devuelve `true` si es la primera vez que se
+   * envía ese umbral para ese periodo. `false` significa duplicado: el job ya
+   * avisó y no debe reenviar. Mismo patrón que `registerEventOnce`.
+   */
+  registerSubscriptionNoticeOnce(
+    notice: SubscriptionNotice,
+    manager?: EntityManager,
+  ): Promise<boolean>;
 
   // ---- Órdenes -----------------------------------------------------------
   findOrderById(

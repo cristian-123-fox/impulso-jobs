@@ -80,7 +80,10 @@ export class CompanySubscriptionUseCase {
       );
     }
 
-    const live = await this.billing.findLiveSubscriptionByCompany(company.id);
+    const live = await this.billing.findLiveSubscriptionByCompany(
+      company.id,
+      new Date(),
+    );
     if (live) {
       throw new AppException(
         HttpStatus.CONFLICT,
@@ -162,6 +165,7 @@ export class CompanySubscriptionUseCase {
     const company = await this.ownership.requireCompany(actor.userId);
     const subscription = await this.billing.findLiveSubscriptionByCompany(
       company.id,
+      new Date(),
     );
     if (!subscription) return null;
 
@@ -174,6 +178,7 @@ export class CompanySubscriptionUseCase {
     const company = await this.ownership.requireCompany(actor.userId);
     const subscription = await this.billing.findLiveSubscriptionByCompany(
       company.id,
+      new Date(),
     );
     if (!subscription) {
       throw new AppException(

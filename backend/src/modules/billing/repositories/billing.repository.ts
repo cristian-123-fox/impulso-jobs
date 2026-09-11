@@ -1,9 +1,19 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, In, LessThanOrEqual, Repository } from 'typeorm';
+import {
+  And,
+  EntityManager,
+  In,
+  IsNull,
+  LessThanOrEqual,
+  MoreThan,
+  Repository,
+} from 'typeorm';
 import { CompanySubscription } from '@/modules/billing/entities/company-subscription.entity';
 import { ProcessedPaymentEvent } from '@/modules/billing/entities/processed-payment-event.entity';
 import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entity';
+import { SubscriptionNotice } from '@/modules/billing/entities/subscription-notice.entity';
 import { VacancyPromotion } from '@/modules/billing/entities/vacancy-promotion.entity';
 import {
   PaymentStatus,
@@ -27,6 +37,12 @@ const LIVE_SUBSCRIPTION_STATUSES = [
   SubscriptionStatus.PAST_DUE,
 ];
 
+/** Estados que el trabajo de expiración puede caducar (T22). */
+const EXPIRABLE_SUBSCRIPTION_STATUSES = [
+  SubscriptionStatus.ACTIVE,
+  SubscriptionStatus.PAST_DUE,
+];
+
 @Injectable()
 export class BillingRepository implements IBillingRepository {
   private readonly logger = new Logger(BillingRepository.name);
@@ -40,6 +56,8 @@ export class BillingRepository implements IBillingRepository {
     private readonly orders: Repository<PromotionOrder>,
     @InjectRepository(ProcessedPaymentEvent)
     private readonly events: Repository<ProcessedPaymentEvent>,
+    @InjectRepository(SubscriptionNotice)
+    private readonly notices: Repository<SubscriptionNotice>,
   ) {}
 
   private promoRepo(manager?: EntityManager): Repository<VacancyPromotion> {
@@ -54,6 +72,10 @@ export class BillingRepository implements IBillingRepository {
 
   private orderRepo(manager?: EntityManager): Repository<PromotionOrder> {
     return manager ? manager.getRepository(PromotionOrder) : this.orders;
+  }
+
+  private noticeRepo(manager?: EntityManager): Repository<SubscriptionNotice> {
+    return manager ? manager.getRepository(SubscriptionNotice) : this.notices;
   }
 
   private eventRepo(
@@ -125,12 +147,67 @@ export class BillingRepository implements IBillingRepository {
 
   findLiveSubscriptionByCompany(
     companyId: string,
+    now: Date,
     manager?: EntityManager,
   ): Promise<CompanySubscription | null> {
+    // El estado no basta: hasta que corre el job de expiración, una
+    // suscripción vencida sigue en ACTIVE y bloqueaba la renovación. Las
+    // PENDING_PAYMENT no tienen fin de periodo todavía, de ahí el `IsNull`.
+    const base = { companyId, status: In(LIVE_SUBSCRIPTION_STATUSES) };
     return this.subRepo(manager).findOne({
-      where: { companyId, status: In(LIVE_SUBSCRIPTION_STATUSES) },
+      where: [
+        { ...base, currentPeriodEnd: IsNull() },
+        { ...base, currentPeriodEnd: MoreThan(now) },
+      ],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  findExpiredActiveSubscriptions(
+    now: Date,
+    manager?: EntityManager,
+  ): Promise<CompanySubscription[]> {
+    return this.subRepo(manager).find({
+      where: {
+        status: In(EXPIRABLE_SUBSCRIPTION_STATUSES),
+        currentPeriodEnd: LessThanOrEqual(now),
+      },
+      order: { currentPeriodEnd: 'ASC' },
+    });
+  }
+
+  findSubscriptionsExpiringBefore(
+    now: Date,
+    limit: Date,
+    manager?: EntityManager,
+  ): Promise<CompanySubscription[]> {
+    return this.subRepo(manager).find({
+      where: {
+        status: SubscriptionStatus.ACTIVE,
+        currentPeriodEnd: And(MoreThan(now), LessThanOrEqual(limit)),
+      },
+      order: { currentPeriodEnd: 'ASC' },
+    });
+  }
+
+  async registerSubscriptionNoticeOnce(
+    notice: SubscriptionNotice,
+    manager?: EntityManager,
+  ): Promise<boolean> {
+    try {
+      // `insert()` va por query builder: el id se pone aquí y no se confía al
+      // hook `@BeforeInsert` de BaseEntity.
+      notice.id ||= randomUUID();
+      await this.noticeRepo(manager).insert(notice);
+      return true;
+    } catch (error) {
+      this.logger.debug(
+        `Aviso duplicado ${notice.subscriptionId}/${notice.thresholdDays}d: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return false;
+    }
   }
 
   saveSubscription(

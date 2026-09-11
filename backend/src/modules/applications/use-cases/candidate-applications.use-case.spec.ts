@@ -3,6 +3,8 @@ import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
 import { AuditService } from '@/modules/audit/audit.service';
+import { ICompanyUserRepository } from '@/modules/companies/repositories/company-user.repository.interface';
+import { NotificationService } from '@/modules/notifications/services/notification.service';
 import { ApplicationStatus } from '@/modules/applications/entities/application-status.entity';
 import { CandidateApplication } from '@/modules/applications/entities/candidate-application.entity';
 import { ApplicationStatusCode } from '@/modules/applications/enums/application-status.enum';
@@ -146,6 +148,8 @@ describe('CandidateApplicationsUseCase', () => {
   let answers: jest.Mocked<IApplicationAnswerRepository>;
   let ownership: jest.Mocked<ApplicationOwnershipService>;
   let audit: jest.Mocked<AuditService>;
+  let companyUsers: jest.Mocked<ICompanyUserRepository>;
+  let notifications: jest.Mocked<NotificationService>;
   let useCase: CandidateApplicationsUseCase;
 
   beforeEach(() => {
@@ -225,6 +229,15 @@ describe('CandidateApplicationsUseCase', () => {
 
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
 
+    companyUsers = {
+      findByCompanyId: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<ICompanyUserRepository>;
+
+    notifications = {
+      notify: jest.fn().mockResolvedValue(undefined),
+      sendNotificationEmail: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<NotificationService>;
+
     useCase = new CandidateApplicationsUseCase(
       dataSource,
       applications,
@@ -237,8 +250,10 @@ describe('CandidateApplicationsUseCase', () => {
       snapshotStorage,
       questions,
       answers,
+      companyUsers,
       ownership,
       audit,
+      notifications,
     );
   });
 

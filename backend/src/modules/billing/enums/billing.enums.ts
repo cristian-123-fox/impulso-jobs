@@ -86,3 +86,30 @@ export const BILLING_CURRENCY = 'MXN';
  */
 export const OXXO_MIN_AMOUNT = 10;
 export const OXXO_MAX_AMOUNT = 10_000;
+
+/**
+ * Umbrales de aviso antes de que venza la suscripción, en días (T22).
+ * El análisis desaconseja los relojes opacos: la empresa debe enterarse con
+ * tiempo, no descubrirlo cuando ya perdió los beneficios.
+ */
+export const DEFAULT_SUBSCRIPTION_EXPIRY_NOTICE_DAYS = [30, 7, 1];
+
+/**
+ * Umbrales efectivos, configurables con `SUBSCRIPTION_EXPIRY_NOTICE_DAYS`
+ * (lista separada por comas, p. ej. `30,7,1`). Se devuelven de mayor a menor y
+ * sin duplicados; una lista vacía desactiva los avisos.
+ */
+export function subscriptionExpiryNoticeDays(): number[] {
+  const raw = process.env.SUBSCRIPTION_EXPIRY_NOTICE_DAYS;
+  if (raw === undefined) return [...DEFAULT_SUBSCRIPTION_EXPIRY_NOTICE_DAYS];
+  if (raw.trim() === '') return [];
+
+  const parsed = raw
+    .split(',')
+    .map((part) => Number(part.trim()))
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .map((value) => Math.floor(value));
+
+  if (parsed.length === 0) return [];
+  return [...new Set(parsed)].sort((a, b) => b - a);
+}

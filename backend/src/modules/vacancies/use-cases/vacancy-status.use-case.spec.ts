@@ -8,6 +8,7 @@ import {
   VacancyStatus,
   WorkMode,
 } from '@/modules/vacancies/enums/vacancy.enums';
+import { INotifyVacancyClosedPort } from '@/modules/vacancies/ports/notify-vacancy-closed.port';
 import { IVacancyRepository } from '@/modules/vacancies/repositories/vacancy.repository.interface';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
 import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-status.use-case';
@@ -49,6 +50,7 @@ describe('VacancyStatusUseCase', () => {
   let vacancies: jest.Mocked<IVacancyRepository>;
   let ownership: jest.Mocked<VacancyOwnershipService>;
   let audit: jest.Mocked<AuditService>;
+  let notifyVacancyClosed: jest.Mocked<INotifyVacancyClosedPort>;
   let useCase: VacancyStatusUseCase;
   let current: Vacancy;
 
@@ -63,7 +65,16 @@ describe('VacancyStatusUseCase', () => {
     } as unknown as jest.Mocked<VacancyOwnershipService>;
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
 
-    useCase = new VacancyStatusUseCase(vacancies, ownership, audit);
+    notifyVacancyClosed = {
+      execute: jest.fn().mockResolvedValue(undefined),
+    };
+
+    useCase = new VacancyStatusUseCase(
+      vacancies,
+      ownership,
+      audit,
+      notifyVacancyClosed,
+    );
   });
 
   describe('pause', () => {
