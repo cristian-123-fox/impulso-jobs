@@ -1,10 +1,15 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, finalize, map, shareReplay, tap } from 'rxjs/operators';
 import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
-import { AuthUser, LoginResponse } from '@/core/models/auth.models';
+import {
+  AuthUser,
+  CurrentUserResponse,
+  LoginResponse,
+} from '@/core/models/auth.models';
 import { Role } from '@/core/models/role.enum';
 import { TokenStorageService } from '@/core/auth/token-storage.service';
 
@@ -24,6 +29,7 @@ export class AuthService {
   private readonly storage = inject(TokenStorageService);
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiBaseUrl;
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   private readonly user = signal<AuthUser | null>(this.storage.user);
   readonly currentUser = this.user.asReadonly();
@@ -32,15 +38,63 @@ export class AuthService {
   /** Renovación en curso compartida para no lanzar varias a la vez. */
   private refresh$?: Observable<string>;
 
+  /** `GET /auth/me` en curso o ya resuelto: una llamada por carga de la app. */
+  private identity$?: Observable<AuthUser | null>;
+
   setSession(response: LoginResponse): void {
     this.storage.setSession(response.accessToken, response.refreshToken, response.user);
     this.user.set(response.user);
+    // La respuesta del login no trae nombre ni foto: se piden acto seguido.
+    this.identity$ = undefined;
+    this.loadIdentity().subscribe();
   }
 
   clearSession(): void {
     this.storage.clear();
     this.user.set(null);
     this.refresh$ = undefined;
+    this.identity$ = undefined;
+  }
+
+  /**
+   * T27: completa la sesión con nombre e imagen (`GET /auth/me`). El login sólo
+   * devuelve `{ id, email, role }` y el nombre vive en el perfil del dominio,
+   * distinto por rol; un único endpoint evita que el cliente adivine.
+   *
+   * Se cachea por carga de la app —no por navegación— y sólo corre en el
+   * navegador: en SSR no hay sesión que hidratar. Un fallo es silencioso: el
+   * navbar se queda con el correo, que ya está en `localStorage`.
+   */
+  loadIdentity(): Observable<AuthUser | null> {
+    if (!this.identity$) {
+      if (!this.isBrowser || !this.user()) return of(null);
+      this.identity$ = this.http
+        .get<ApiSuccessResponse<CurrentUserResponse>>(`${this.base}/auth/me`)
+        .pipe(
+          map((response) => response.content),
+          tap((identity) => this.mergeIdentity(identity)),
+          map(() => this.user()),
+          catchError(() => of(this.user())),
+          shareReplay({ bufferSize: 1, refCount: false }),
+        );
+    }
+    return this.identity$;
+  }
+
+  /**
+   * El rol manda sobre lo guardado: si cambió en servidor, la sesión en curso
+   * debe reflejarlo (de ahí que se sobrescriba y no se mezcle a la inversa).
+   */
+  private mergeIdentity(identity: CurrentUserResponse): void {
+    const merged: AuthUser = {
+      id: identity.id,
+      email: identity.email,
+      role: identity.role,
+      displayName: identity.displayName,
+      avatarUrl: identity.avatarUrl,
+    };
+    this.user.set(merged);
+    this.storage.setUser(merged);
   }
 
   hasRefreshToken(): boolean {

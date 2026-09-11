@@ -40,6 +40,12 @@ export class TokenStorageService {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   }
 
+  /** Reescribe sólo el usuario (T27: enriquecerlo con nombre y foto). */
+  setUser(user: AuthUser): void {
+    if (!this.isBrowser) return;
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  }
+
   setAccess(access: string): void {
     if (!this.isBrowser) return;
     localStorage.setItem(ACCESS_KEY, access);

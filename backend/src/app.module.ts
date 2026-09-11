@@ -9,6 +9,7 @@ import { RolesModule } from '@/modules/iam/roles/roles.module';
 import { RegistrationModule } from '@/modules/iam/registration/registration.module';
 import { AdminUsersModule } from '@/modules/iam/users/admin-users.module';
 import { AccountModule } from '@/modules/iam/account/account.module';
+import { SessionModule } from '@/modules/iam/session/session.module';
 import { ApplicationsModule } from '@/modules/applications/applications.module';
 import { BillingModule } from '@/modules/billing/billing.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
@@ -32,6 +33,7 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     BillingModule,
     AccountModule,
     AdminUsersModule,
+    SessionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

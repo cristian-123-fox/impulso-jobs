@@ -4,7 +4,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
-- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T23 hecha** (2026-09-10); el resto sin empezar.
+- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T23 y T27 hechas** (2026-09-10 y 2026-09-11); el resto sin empezar.
 
 ---
 
@@ -261,7 +261,7 @@ Reviews/rating de empresa · IA (crear oferta, sugerir skills, matching — cód
 
 # Parte C · Backlog solicitado (septiembre 2026)
 
-Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. Sólo T23 está cerrada. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
+Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T23 y T27 están cerradas. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
 
 ## Resumen para el gestor de tareas
 
@@ -273,7 +273,7 @@ Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contr
 | T24 | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
 | T25 | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | 🔷 N9 |
 | T26 | Traducciones del sitio (i18n) | Feature / transversal | Media | L (5–8 d+) | 🔷 N6 |
-| T27 | Nombre y foto del usuario logueado en el portal | Mejora UX | Media | S (1 d) | — |
+| T27 ✅ | Nombre y foto del usuario logueado en el portal | Mejora UX | Media | S (1 d) | — |
 
 Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
@@ -453,13 +453,26 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ---
 
-### T27 · Nombre y foto del usuario logueado en el portal público ⬜
+### T27 · Nombre y foto del usuario logueado en el portal público ✅
 
-**Qué se pide:** que al navegar el portal estando logueado se vean el nombre y la foto del usuario, para que quede claro que la sesión está activa.
+**Hecho (2026-09-11).** Se implementó el alcance propuesto tal cual, con una desviación de ubicación explicada abajo:
 
-**Estado hoy (verificado):** el navbar público **ya detecta la sesión**, pero muestra un genérico — `account()` (`navbar.ts:176`) devuelve `{ label: 'Mi cuenta' }` con un icono `user` estático. La causa es la misma que ya se anotó en T2: **`AuthUser` sólo trae `{ id, email, role }`** (`auth.models.ts:3`), sin nombre ni foto. El área del candidato lo resuelve pidiendo `GET /candidate/profile` (`ensureProfile()`, `candidate-layout.ts:171`), pero **eso sólo sirve para candidatos**: una empresa necesitaría `GET /company/profile`, y el navbar público es común a los tres roles.
+1. **`GET /auth/me`** — devuelve `{ id, email, role, displayName, avatarUrl }` resolviendo por rol: candidato → `candidate_profiles` (nombre + apellido, `profile_photo_url`); empresa → membresía → `companies` (`business_name`, `logo_url`); admin → correo, porque **`users` no tiene columna de nombre** (tampoco la tenía antes: no se inventó una para esto). Cualquier perfil a medio completar cae también al correo, que siempre existe. Se lee del repositorio y no del JWT a propósito: el token se emitió al iniciar sesión y no refleja un cambio posterior de foto o de nombre comercial. Sin `@RequirePermissions` —leer la propia identidad es universal, como `/auth/logout`—, así que **no hace falta re-correr `seed:rbac`**. Sin migración: no toca el esquema.
+   - **Desviación:** el endpoint **no vive en `AuthController`** sino en `modules/iam/session/` (`SessionController`, mismo prefijo `auth`). Resolver el nombre obliga a leer de `candidates` y `companies`, y ambos módulos importan `AuthModule`: meterlo allí cerraba un ciclo de DI. Es el mismo motivo por el que existen `AdminUsersModule` y `AccountModule`.
+2. **Frontend** — `AuthUser` gana `displayName`/`avatarUrl` (opcionales: el login no los devuelve). `AuthService.loadIdentity()` cachea la llamada **por carga de la app**, no por navegación (`shareReplay` + `identity$`), sólo corre en el navegador y **falla en silencio**: si `/auth/me` no responde, el navbar se queda con el correo que ya está en `localStorage`. `setSession()` la dispara al iniciar sesión y `clearSession()` la invalida. El resultado se persiste con `TokenStorageService.setUser()`, así que la siguiente carga pinta el nombre sin esperar a la red.
+3. **Navbar** — menú de usuario con avatar (foto o iniciales; con un correo, sus dos primeras letras), nombre truncado y desplegable con nombre + correo, "Ir a mi cuenta" (`ROLE_HOME`) y **"Cerrar sesión"**, que el portal público no ofrecía. Cierra al pulsar fuera, con `Escape` y al navegar.
+4. **SSR** — el servidor no tiene sesión, y mostrarla en el primer render del cliente dejaría un DOM distinto al servido: la sesión se revela tras `afterNextRender` (`hydrated`). El hueco reserva `min-w-[172px]` —lo que mide el disparador completo: avatar 32 + nombre 96 + chevron 14 + separaciones—, de modo que ni el nombre más largo ensancha el bloque y el cambio no desplaza el resto de la barra; el nombre se trunca en el disparador y va completo en el desplegable. Verificado sobre el server SSR: `/inicio` sale con "Ingresar" y el hueco reservado, sin menú de usuario. De paso deja de fallar igual `postJobPath()`, que ya leía la sesión en el primer render.
+5. **Móvil** — cabecera con avatar + nombre + correo dentro del hamburguesa, y "Ir a mi cuenta" / "Cerrar sesión" junto a las acciones.
 
-**Alcance propuesto:**
+**Verificado:** `get-current-user.use-case.spec.ts` (5 casos: candidato, empresa, admin, empleador sin membresía y cuenta borrada); suite backend completa en verde (39 suites / 252 tests); build del frontend con prerender de las 14 rutas estáticas; y `GET /auth/me` probado contra la BD con los tres seeds — candidato → "María Ferreira", empresa → "Northwind MX" + logo, admin → correo, y 401 sin token.
+
+**Nota:** el header del área de empresa (`company-layout.ts`) sigue mostrando el correo en vez del nombre comercial. Queda fuera del alcance de esta ficha —que es el portal público—, pero ahora es un cambio de dos líneas: `AuthService.loadIdentity()` ya tiene el dato.
+
+**Qué se pedía:** que al navegar el portal estando logueado se vean el nombre y la foto del usuario, para que quede claro que la sesión está activa.
+
+**Estado antes de la tarea (verificado el 2026-09-10):** el navbar público **ya detectaba la sesión**, pero mostraba un genérico — `account()` (`navbar.ts:176`) devuelve `{ label: 'Mi cuenta' }` con un icono `user` estático. La causa es la misma que ya se anotó en T2: **`AuthUser` sólo trae `{ id, email, role }`** (`auth.models.ts:3`), sin nombre ni foto. El área del candidato lo resuelve pidiendo `GET /candidate/profile` (`ensureProfile()`, `candidate-layout.ts:171`), pero **eso sólo sirve para candidatos**: una empresa necesitaría `GET /company/profile`, y el navbar público es común a los tres roles.
+
+**Alcance propuesto (se siguió; ver arriba lo que cambió):**
 1. **Backend — la pieza que falta: `GET /auth/me`.** Hoy `auth.controller.ts` sólo expone login / refresh / logout. Devolvería `{ id, email, role, displayName, avatarUrl }` resolviendo nombre e imagen **según el rol** (candidato → perfil + foto; empresa → nombre comercial o de contacto + logo; admin → nombre del usuario). Un solo endpoint evita que el frontend adivine a qué API pegar según el rol.
    - *Alternativa más barata:* incluir `displayName`/`avatarUrl` en la respuesta de login y de refresh. Ahorra un request, pero se desactualiza si el usuario cambia su foto. **Recomendado: `/auth/me`, llamado al hidratar la sesión.**
 2. **Frontend:** ampliar `AuthUser` con `displayName`/`avatarUrl`; `AuthService` cachea el resultado (una llamada por sesión, no por navegación). El navbar pasa a **menú de usuario**: avatar (foto o iniciales, como ya hace el header del candidato) + nombre + desplegable con "Ir a mi cuenta" (`ROLE_HOME`) y **"Cerrar sesión"**, que hoy el portal público no ofrece.
@@ -480,7 +493,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 ## Orden sugerido (Parte C)
 
 1. ~~**T23**~~ ✅ hecha — falta sólo definir `APP_PUBLIC_URL` en el servidor y correr `uploads:rehost:prod`.
-2. **T27** — barato, muy visible, cierra un hueco de UX ya anotado desde T2.
+2. ~~**T27**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos.
 3. **T21** — desbloquea de paso la verificación de correo y el reset de contraseña en producción (hoy inservibles sin SMTP).
 4. **T22** — necesita T21, y tapa un agujero real de negocio (planes vencidos que nunca caducan).
 5. **T24** y **T25** — features de producto, independientes entre sí.
