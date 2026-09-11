@@ -1,8 +1,15 @@
 import 'reflect-metadata';
-import { EntityTarget, ObjectLiteral } from 'typeorm';
+import {
+  EntityTarget,
+  FindOptionsWhere,
+  IsNull,
+  Not,
+  ObjectLiteral,
+} from 'typeorm';
 import { AppDataSource } from './typeorm.config';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
 import { Company } from '@/modules/companies/entities/company.entity';
+import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import {
   rehostUploadedFileUrl,
   resolveAppPublicUrl,
@@ -10,8 +17,9 @@ import {
 
 /**
  * Backfill de T23: las URLs de los archivos subidos se guardan **absolutas** en
- * BD, así que las filas escritas mientras `APP_PUBLIC_URL` no estaba definida
- * quedaron con `http://localhost:3000/uploads/...` y la imagen se ve rota.
+ * BD —logo de empresa, foto del candidato e imagen de vacante (T24)—, así que
+ * las filas escritas mientras `APP_PUBLIC_URL` no estaba definida quedaron con
+ * `http://localhost:3000/uploads/...` y la imagen se ve rota.
  * Definir la variable arregla las subidas nuevas, no las viejas: esto las
  * reescribe al host actual.
  *
@@ -32,6 +40,13 @@ import {
 interface RehostTarget<T extends ObjectLiteral> {
   label: string;
   entity: EntityTarget<T>;
+  /**
+   * Filtro en BD para traer sólo las filas que pueden tener algo que
+   * reescribir. Importa desde que entró `vacancies`: es la primera tabla de la
+   * lista que puede ser grande, y sin esto el script se traía el catálogo
+   * entero a memoria.
+   */
+  where: FindOptionsWhere<T>;
   read: (row: T) => string | null | undefined;
   write: (row: T, url: string) => void;
   describe: (row: T) => string;
@@ -41,6 +56,7 @@ const TARGETS = [
   {
     label: 'companies.logo_url',
     entity: Company,
+    where: { logoUrl: Not(IsNull()) },
     read: (row: Company) => row.logoUrl,
     write: (row: Company, url: string) => {
       row.logoUrl = url;
@@ -50,12 +66,23 @@ const TARGETS = [
   {
     label: 'candidate_profiles.profile_photo_url',
     entity: CandidateProfile,
+    where: { profilePhotoUrl: Not(IsNull()) },
     read: (row: CandidateProfile) => row.profilePhotoUrl,
     write: (row: CandidateProfile, url: string) => {
       row.profilePhotoUrl = url;
     },
     describe: (row: CandidateProfile) => `${row.firstName} ${row.lastName}`,
   } satisfies RehostTarget<CandidateProfile>,
+  {
+    label: 'vacancies.image_url',
+    entity: Vacancy,
+    where: { imageUrl: Not(IsNull()) },
+    read: (row: Vacancy) => row.imageUrl,
+    write: (row: Vacancy, url: string) => {
+      row.imageUrl = url;
+    },
+    describe: (row: Vacancy) => row.title ?? row.id,
+  } satisfies RehostTarget<Vacancy>,
 ];
 
 async function rehost<T extends ObjectLiteral>(
@@ -65,9 +92,9 @@ async function rehost<T extends ObjectLiteral>(
   confirmed: boolean,
 ): Promise<number> {
   const repo = AppDataSource.getRepository(target.entity);
-  // Tablas pequeñas (empresas y perfiles): se filtra en memoria para no
-  // depender del nombre de columna ni de la sintaxis de cada motor.
-  const rows = await repo.find({ withDeleted: true });
+  // El filtro va por propiedad de la entidad, no por SQL a mano: TypeORM lo
+  // traduce a la columna de cada motor y sigue siendo portable MySQL/Postgres.
+  const rows = await repo.find({ where: target.where, withDeleted: true });
 
   let changed = 0;
   for (const row of rows) {
@@ -89,7 +116,7 @@ async function rehost<T extends ObjectLiteral>(
   }
 
   console.log(
-    `${target.label}: ${changed} de ${rows.length} fila(s) ${confirmed ? 'reescrita(s)' : 'por reescribir'}.`,
+    `${target.label}: ${changed} de ${rows.length} fila(s) con archivo ${confirmed ? 'reescrita(s)' : 'por reescribir'}.`,
   );
   return changed;
 }

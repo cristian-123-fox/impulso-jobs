@@ -40,7 +40,10 @@ export class VacancyImageUseCase {
     actor: VacancyImageActor,
   ): Promise<string | null> {
     const company = await this.ownership.requireCompany(actor.userId);
-    const vacancy = await this.ownership.requireOwnVacancy(vacancyId, company.id);
+    const vacancy = await this.ownership.requireOwnVacancy(
+      vacancyId,
+      company.id,
+    );
     const { file: validFile, extension } = requireValidImage(file, {
       invalidType: ErrorCode.VACANCY_IMAGE_INVALID_TYPE,
       tooLarge: ErrorCode.VACANCY_IMAGE_TOO_LARGE,
@@ -71,7 +74,10 @@ export class VacancyImageUseCase {
     actor: VacancyImageActor,
   ): Promise<void> {
     const company = await this.ownership.requireCompany(actor.userId);
-    const vacancy = await this.ownership.requireOwnVacancy(vacancyId, company.id);
+    const vacancy = await this.ownership.requireOwnVacancy(
+      vacancyId,
+      company.id,
+    );
 
     if (!vacancy.imageUrl) return;
 

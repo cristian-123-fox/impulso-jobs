@@ -3,7 +3,9 @@ import { storageKeyFromUrl } from '@/common/storage/image-upload';
 /**
  * Base pública del backend (`APP_PUBLIC_URL`). Con ella se componen las URLs de
  * los archivos subidos y —hoy— se **persisten en base de datos**
- * (`companies.logo_url`, `candidate_profiles.profile_photo_url`).
+ * (`companies.logo_url`, `candidate_profiles.profile_photo_url` y
+ * `vacancies.image_url`). Si aparece una cuarta columna así, añádela también a
+ * `rehost-uploaded-files.ts`, que es la herramienta que repara lo ya guardado.
  *
  * Por eso no puede caer en silencio a `localhost` en un servidor real: la fila
  * queda con una URL que sólo resuelve dentro del propio servidor, el navegador
@@ -16,7 +18,8 @@ const DEFAULT_PORT = 3000;
 export const APP_PUBLIC_URL_MISSING_MESSAGE = [
   'Falta APP_PUBLIC_URL.',
   'Es la base de las URLs de las imágenes subidas (logo de empresa, foto del',
-  'candidato) y se guarda tal cual en la base de datos: sin ella se',
+  'candidato, imagen de vacante) y se guarda tal cual en la base de datos:',
+  'sin ella se',
   'persistirían URLs http://localhost:PORT que ningún navegador puede abrir.',
   'Define APP_PUBLIC_URL=https://<subdominio-del-api> en el .env y reinicia.',
 ].join(' ');

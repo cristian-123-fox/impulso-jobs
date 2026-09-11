@@ -408,6 +408,8 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ### T24 · Imagen de referencia en la vacante ✅
 
+**Añadido el 2026-09-11 al resolver el merge:** T24 guarda `vacancies.image_url` como **URL absoluta**, el mismo criterio que T23 —correcto y coherente—, pero no se dio de alta en `uploads:rehost`, que sólo cubría el logo de empresa y la foto del candidato. Es justo el riesgo que anotaba T23 ("el criterio debe ser el mismo en las tres columnas y `rehost-uploaded-files.ts` es donde vive la migración de datos"): un deploy sin `APP_PUBLIC_URL` dejaba imágenes de vacante con `localhost` **sin forma de repararlas**. Ya está añadida como tercer objetivo del script, y de paso el script filtra en BD (`WHERE image_url IS NOT NULL`) en vez de traerse la tabla entera a memoria — `vacancies` es la primera de la lista que puede ser grande.
+
 **Qué se pide:** al publicar una vacante, poder subir una imagen de referencia.
 
 **Estado hoy:** `Vacancy` **no tiene ninguna columna de imagen** (verificado sobre `vacancy.entity.ts`); la card y el detalle público muestran el **logo de la empresa**. Toda la mecánica de subida ya existe y es reutilizable tal cual (viene de T9): puerto `PUBLIC_FILE_STORAGE` + `LocalPublicFileStorageAdapter`, validación por *magic bytes* en `common/storage/image-upload.ts`, `FileInterceptor` con `limits.fileSize`, códigos de error y borrado del archivo anterior al reemplazar.

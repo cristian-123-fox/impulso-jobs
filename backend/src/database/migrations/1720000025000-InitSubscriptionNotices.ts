@@ -8,9 +8,12 @@ import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
  * idempotencia del job diario: sin él, el cron reenviaría el mismo aviso cada
  * día mientras la suscripción siguiera dentro del umbral. `period_end` entra
  * en la clave para que una renovación pueda volver a avisar.
+ *
+ * Numerada 25000 y no 23000: T25 (`InitVacancySkills`) se llevó ese hueco en
+ * paralelo y dos migraciones con el mismo timestamp dejan el orden indefinido.
  */
-export class InitSubscriptionNotices1720000023000 implements MigrationInterface {
-  name = 'InitSubscriptionNotices1720000023000';
+export class InitSubscriptionNotices1720000025000 implements MigrationInterface {
+  name = 'InitSubscriptionNotices1720000025000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
