@@ -51,6 +51,8 @@ export interface VacancyResponseDto {
   canEditTitleOnReactivate: boolean;
   /** Vistas consolidadas (T18); se actualizan una vez al día. */
   viewsCount: number;
+  /** Imagen de referencia de la vacante (T24). */
+  imageUrl: string | null;
   /** Skills requeridas/deseadas para la vacante (T25). */
   skills: CompanyVacancySkillDto[];
 }
@@ -89,6 +91,8 @@ export interface PublicVacancyResponseDto {
   isConfidential: boolean;
   /** Vistas consolidadas (T18); se actualizan una vez al día. */
   viewsCount: number;
+  /** Imagen de referencia de la vacante (T24). */
+  imageUrl: string | null;
   /** Skills requeridas/deseadas para la vacante (T25). */
   skills: PublicVacancySkillDto[];
   company: PublicVacancyCompanyDto | null;
@@ -152,6 +156,7 @@ export function toVacancyResponse(
     pausesLeft: Math.max(0, vacancy.maxPauses - vacancy.pauseCount),
     canEditTitleOnReactivate: vacancy.canEditTitleOnReactivate,
     viewsCount: vacancy.viewsCount ?? 0,
+    imageUrl: vacancy.imageUrl ?? null,
     skills,
   };
 }
@@ -188,6 +193,7 @@ export function toPublicVacancyResponse(
     isUrgent: vacancy.isUrgent,
     isConfidential: vacancy.isConfidential,
     viewsCount: vacancy.viewsCount ?? 0,
+    imageUrl: vacancy.imageUrl ?? null,
     skills,
     company:
       vacancy.isConfidential || !company

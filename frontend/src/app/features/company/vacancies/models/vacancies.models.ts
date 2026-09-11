@@ -138,6 +138,8 @@ export interface Vacancy {
   canEditTitleOnReactivate: boolean;
   /** Vistas consolidadas (T18); se actualizan una vez al día. */
   viewsCount: number;
+  /** Imagen de referencia de la vacante (T24). */
+  imageUrl: string | null;
 }
 
 export interface VacancyStats {

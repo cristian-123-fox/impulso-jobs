@@ -142,7 +142,16 @@ const JOB_SKILLS = [
             @if (vacancy(); as data) {
               <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <article class="rounded-2xl bg-white p-6 shadow-card sm:p-8">
-                  <div class="vacancy-banner relative h-[280px] overflow-hidden rounded-2xl">
+                  <div class="relative h-[280px] overflow-hidden rounded-2xl">
+                    @if (data.imageUrl) {
+                      <img
+                        [src]="data.imageUrl"
+                        [alt]="data.title"
+                        class="h-full w-full object-cover"
+                      />
+                    } @else {
+                      <div class="vacancy-banner h-full w-full"></div>
+                    }
                     @if (isNew()) {
                       <span
                         class="absolute top-4 left-4 z-10 rounded-md bg-accent-green px-3 py-1 text-[13px] font-bold text-white"
@@ -739,7 +748,7 @@ export class PublicVacancyDetailPage {
       title: `${vacancy.title}, ${companyName} en ${place} | Impulso Jobs`,
       description: vacancy.description,
       canonicalPath: vacancyPath(vacancy),
-      image: vacancy.company?.logoUrl ?? undefined,
+      image: vacancy.imageUrl ?? vacancy.company?.logoUrl ?? undefined,
     });
     this.seo.setJsonLd(JSON_LD_ID, this.jobPostingJsonLd(vacancy));
   }
@@ -763,6 +772,7 @@ export class PublicVacancyDetailPage {
         name: vacancy.company?.businessName ?? 'Empresa confidencial',
         ...(vacancy.company?.logoUrl && { logo: vacancy.company.logoUrl }),
       },
+      ...(vacancy.imageUrl && { image: vacancy.imageUrl }),
       jobLocation: {
         '@type': 'Place',
         address: {

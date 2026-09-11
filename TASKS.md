@@ -270,7 +270,7 @@ Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contr
 | T21 | Módulo de notificaciones (plataforma + correo) | Feature / infra | Alta | L (5–8 d) | SMTP real |
 | T22 | Aviso de plan por vencer + cancelación automática | Feature | Alta | M (3–4 d) | T21 · 🔷 N8 |
 | T23 ✅ | Imágenes subidas con URL `localhost` en la demo | **Bug** | **Bloqueante demo** | XS (2–4 h) | — |
-| T24 | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
+| T24 ✅ | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
 | T25 ✅ | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | 🔷 N9 |
 | T26 | Traducciones del sitio (i18n) | Feature / transversal | Media | L (5–8 d+) | 🔷 N6 |
 | T27 ✅ | Nombre y foto del usuario logueado en el portal | Mejora UX | Media | S (1 d) | — |
@@ -384,7 +384,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ---
 
-### T24 · Imagen de referencia en la vacante ⬜
+### T24 · Imagen de referencia en la vacante ✅
 
 **Qué se pide:** al publicar una vacante, poder subir una imagen de referencia.
 
@@ -495,5 +495,5 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 2. ~~**T27**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos.
 3. **T21** — desbloquea de paso la verificación de correo y el reset de contraseña en producción (hoy inservibles sin SMTP).
 4. **T22** — necesita T21, y tapa un agujero real de negocio (planes vencidos que nunca caducan).
-5. **T24** y ~~**T25**~~ ✅ hecha — skills normalizadas en backend, pendiente el frontend de chips.
+5. ~~**T24**~~ ✅ hecha y ~~**T25**~~ ✅ hecha — skills normalizadas en backend, pendiente el frontend de chips.
 6. **T26** — la última: es transversal y conviene hacerla con el diseño ya estable.

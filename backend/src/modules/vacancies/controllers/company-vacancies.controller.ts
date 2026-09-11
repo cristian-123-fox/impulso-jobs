@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -9,9 +10,16 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  IMAGE_MULTER_LIMIT_BYTES,
+  type UploadedImageFile,
+} from '@/common/storage/image-upload';
 import {
   ClientInfo,
   type ClientInfoPayload,
@@ -46,6 +54,7 @@ import {
 import { VacancyQuestionsUseCase } from '@/modules/vacancies/use-cases/vacancy-questions.use-case';
 import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
 import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-status.use-case';
+import { VacancyImageUseCase } from '@/modules/vacancies/use-cases/vacancy-image.use-case';
 
 @ApiTags('company-vacancies')
 @ApiBearerAuth()
@@ -57,6 +66,7 @@ export class CompanyVacanciesController {
     private readonly status: VacancyStatusUseCase,
     private readonly questions: VacancyQuestionsUseCase,
     private readonly skills: VacancySkillsUseCase,
+    private readonly image: VacancyImageUseCase,
   ) {}
 
   @Get()
@@ -211,6 +221,47 @@ export class CompanyVacanciesController {
     @Query('limit') limit?: number,
   ): Promise<Skill[]> {
     return this.skills.searchSkills(query ?? '', limit ?? 10);
+  }
+
+  @Post(':id/image')
+  @RequirePermissions('vacancies.update')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: IMAGE_MULTER_LIMIT_BYTES } }),
+  )
+  @ResponseMessage('Imagen de la vacante actualizada.')
+  uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: UploadedImageFile | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<{ imageUrl: string | null }> {
+    return this.image
+      .uploadImage(id, file, this.actor(user, client))
+      .then((imageUrl) => ({ imageUrl }));
+  }
+
+  @Delete(':id/image')
+  @RequirePermissions('vacancies.update')
+  @HttpCode(HttpStatus.OK)
+  @ResponseMessage('Imagen de la vacante eliminada.')
+  deleteImage(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<{ imageUrl: null }> {
+    return this.image
+      .deleteImage(id, this.actor(user, client))
+      .then(() => ({ imageUrl: null }));
   }
 
   private actor(

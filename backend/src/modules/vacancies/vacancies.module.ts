@@ -1,5 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LocalPublicFileStorageAdapter } from '@/common/storage/local-public-file-storage.adapter';
+import { PUBLIC_FILE_STORAGE } from '@/common/storage/public-file-storage.port';
 import { ApplicationsModule } from '@/modules/applications/applications.module';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
@@ -37,6 +39,7 @@ import { ExpireVacanciesUseCase } from '@/modules/vacancies/use-cases/expire-vac
 import { PublicVacanciesUseCase } from '@/modules/vacancies/use-cases/public-vacancies.use-case';
 import { VacancyQuestionsUseCase } from '@/modules/vacancies/use-cases/vacancy-questions.use-case';
 import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
+import { VacancyImageUseCase } from '@/modules/vacancies/use-cases/vacancy-image.use-case';
 import { VacancyReportsUseCase } from '@/modules/vacancies/use-cases/vacancy-reports.use-case';
 import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-status.use-case';
 
@@ -81,12 +84,14 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
     },
     { provide: SKILL_REPOSITORY, useClass: SkillRepository },
     { provide: VACANCY_SKILL_REPOSITORY, useClass: VacancySkillRepository },
+    { provide: PUBLIC_FILE_STORAGE, useClass: LocalPublicFileStorageAdapter },
     VacancyOwnershipService,
     CompanyVacanciesUseCase,
     VacancyStatusUseCase,
     PublicVacanciesUseCase,
     VacancyQuestionsUseCase,
     VacancySkillsUseCase,
+    VacancyImageUseCase,
     VacancyReportsUseCase,
     // Jobs sin endpoint, invocados por los scripts de cron:
     // `vacancies:expire` (T20) y `views:consolidate` (T18).

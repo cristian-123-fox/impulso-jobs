@@ -188,4 +188,8 @@ export class Vacancy extends BaseEntity {
    */
   @Column({ name: 'views_count', type: 'int', default: 0 })
   viewsCount!: number;
+
+  /** Imagen de referencia de la vacante (T24). URL absoluta, nullable. */
+  @Column({ name: 'image_url', type: 'varchar', length: 500, nullable: true })
+  imageUrl?: string | null;
 }
