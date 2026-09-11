@@ -1,8 +1,10 @@
-<ij-page-header
-  [title]="facade.hero().title"
-  [lead]="facade.hero().description"
-  breadcrumb="Preguntas frecuentes"
-/>
+<ng-container *transloco="let t">
+  <ij-page-header
+    [title]="t('faq.hero.title')"
+    [lead]="t('faq.hero.description')"
+    [breadcrumb]="t('faq.breadcrumb')"
+  />
+</ng-container>
 <app-faq-accordion
   [tabs]="facade.tabs()"
   [activeTabId]="activeTabId()"

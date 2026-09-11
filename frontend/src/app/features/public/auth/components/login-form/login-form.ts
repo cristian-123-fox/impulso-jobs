@@ -13,6 +13,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import {
   AccountType,
   LoginCredentials,
@@ -30,18 +32,32 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
   selector: 'app-login-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon, IjInput],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    IjButton,
+    IjIcon,
+    IjInput,
+    TranslocoDirective,
+  ],
   template: `
     <form
+      *transloco="let t"
       novalidate
       [formGroup]="form"
       [class.animate-shake]="isError()"
       class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9"
       (ngSubmit)="onSubmit()"
     >
-      <h1 class="text-[25px] font-bold tracking-tight text-ink-900">Inicia sesión</h1>
+      <h1 class="text-[25px] font-bold tracking-tight text-ink-900">
+        {{ t('auth.login.title') }}
+      </h1>
       <p class="mt-2 text-[15px] text-muted">
-        Ingresa a tu cuenta de {{ accountType() === 'company' ? 'empresa' : 'candidato' }}
+        {{
+          accountType() === 'company'
+            ? t('auth.login.subtitleCompany')
+            : t('auth.login.subtitleCandidate')
+        }}
       </p>
 
       <!-- Selector de tipo de cuenta -->
@@ -53,7 +69,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
           [class]="segClass('candidate')"
           (click)="accountType.set('candidate')"
         >
-          Candidato
+          {{ t('auth.login.candidate') }}
         </button>
         <button
           type="button"
@@ -62,7 +78,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
           [class]="segClass('company')"
           (click)="accountType.set('company')"
         >
-          Empresa
+          {{ t('auth.login.company') }}
         </button>
       </div>
 
@@ -75,13 +91,13 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
           <ij-icon name="alert-triangle" [size]="18" class="mt-0.5 shrink-0" />
           <div class="flex-1 text-[13.5px]">
             <p class="font-semibold">
-              {{ errorMessage() ?? 'No pudimos iniciar sesión. Inténtalo de nuevo.' }}
+              {{ errorMessage() ?? t('auth.login.genericError') }}
             </p>
             @if (showResend()) {
               <div class="mt-2">
                 @if (resendStatus() === 'sent') {
                   <span class="font-semibold text-accent-green">
-                    Te reenviamos el enlace de verificación a tu correo.
+                    {{ t('auth.login.resendSent') }}
                   </span>
                 } @else {
                   <button
@@ -90,10 +106,16 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
                     [disabled]="resendStatus() === 'sending'"
                     (click)="resendRequested.emit()"
                   >
-                    {{ resendStatus() === 'sending' ? 'Reenviando…' : 'Reenviar correo de verificación' }}
+                    {{
+                      resendStatus() === 'sending'
+                        ? t('auth.login.resending')
+                        : t('auth.login.resend')
+                    }}
                   </button>
                   @if (resendStatus() === 'error') {
-                    <span class="ml-2 text-red-600">No se pudo reenviar. Intenta de nuevo.</span>
+                    <span class="ml-2 text-red-600">
+                      {{ t('auth.login.resendError') }}
+                    </span>
                   }
                 }
               </div>
@@ -108,17 +130,17 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
           class="mt-5 flex items-center gap-2.5 rounded-xl border border-accent-green/25 bg-accent-green-soft px-3.5 py-3 text-[13.5px] font-semibold text-accent-green"
         >
           <ij-icon name="check" [size]="18" [strokeWidth]="2.6" />
-          <span>Sesión iniciada. Redirigiendo…</span>
+          <span>{{ t('auth.login.success') }}</span>
         </div>
       }
 
       <!-- Correo -->
       <div class="mt-6">
         <ij-input
-          label="Correo electrónico"
+          [label]="t('auth.common.email')"
           type="email"
           autocomplete="email"
-          placeholder="tucorreo@ejemplo.com"
+          [placeholder]="t('auth.common.emailPlaceholder')"
           formControlName="email"
         />
       </div>
@@ -126,7 +148,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
       <!-- Contraseña -->
       <div class="mt-5">
         <ij-input
-          label="Contraseña"
+          [label]="t('auth.common.password')"
           [type]="showPassword() ? 'text' : 'password'"
           autocomplete="current-password"
           placeholder="••••••••"
@@ -136,7 +158,11 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
             ijSuffix
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
-            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            [attr.aria-label]="
+              showPassword()
+                ? t('auth.common.hidePassword')
+                : t('auth.common.showPassword')
+            "
             [attr.aria-pressed]="showPassword()"
             (click)="togglePassword()"
           >
@@ -153,13 +179,13 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
             formControlName="remember"
             class="h-[17px] w-[17px] cursor-pointer rounded accent-brand"
           />
-          Recordar sesión
+          {{ t('auth.login.remember') }}
         </label>
         <a
           routerLink="/auth/recuperar-password"
           class="text-[13.5px] font-semibold text-brand-strong transition-colors hover:text-brand-600"
         >
-          ¿Olvidaste tu contraseña?
+          {{ t('auth.login.forgot') }}
         </a>
       </div>
 
@@ -186,21 +212,35 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
       @if (showSocialLogins()) {
         <div class="mt-7">
           <div class="flex items-center gap-3.5">
-            <span class="whitespace-nowrap text-[13.5px] font-semibold text-body">O ingresa con</span>
+            <span class="whitespace-nowrap text-[13.5px] font-semibold text-body">
+              {{ t('auth.login.socialDivider') }}
+            </span>
             <span class="h-px flex-1 bg-line"></span>
           </div>
           <div class="mt-4 flex justify-center gap-3">
-            <button type="button" [class]="socialClass" aria-label="Ingresar con LinkedIn">
+            <button
+              type="button"
+              [class]="socialClass"
+              [attr.aria-label]="t('auth.login.socialWith', { provider: 'LinkedIn' })"
+            >
               <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0ZM.2 8.2h4.56V24H.2V8.2Zm7.14 0h4.37v2.16h.06c.61-1.15 2.1-2.36 4.32-2.36 4.62 0 5.47 3.04 5.47 6.99V24h-4.56v-6.99c0-1.67-.03-3.82-2.33-3.82-2.33 0-2.69 1.82-2.69 3.7V24H7.34V8.2Z" />
               </svg>
             </button>
-            <button type="button" [class]="socialClass" aria-label="Ingresar con X">
+            <button
+              type="button"
+              [class]="socialClass"
+              [attr.aria-label]="t('auth.login.socialWith', { provider: 'X' })"
+            >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M18.24 2.25h3.31l-7.23 8.26L22.75 21.75h-6.66l-5.22-6.82-5.97 6.82H1.58l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23Zm-1.16 17.52h1.83L7.02 4.13H5.05L17.08 19.77Z" />
               </svg>
             </button>
-            <button type="button" [class]="socialClass" aria-label="Ingresar con Google">
+            <button
+              type="button"
+              [class]="socialClass"
+              [attr.aria-label]="t('auth.login.socialWith', { provider: 'Google' })"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M23.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.86c2.26-2.09 3.57-5.17 3.57-8.87Z" />
                 <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A12 12 0 0 0 12 24Z" />
@@ -213,9 +253,9 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
       }
 
       <p class="mt-6 text-center text-[13.5px] text-muted">
-        ¿No tienes cuenta?
+        {{ t('auth.login.noAccount') }}
         <a [routerLink]="registerLink()" class="font-semibold text-brand-strong transition-colors hover:text-brand-600">
-          Crea una cuenta
+          {{ t('auth.login.createAccount') }}
         </a>
       </p>
     </form>
@@ -241,6 +281,7 @@ export class LoginForm {
   readonly resendRequested = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly i18n = inject(AppTranslateService);
 
   protected readonly form = this.fb.group({
     email: this.fb.control('', [Validators.required, Validators.email]),
@@ -257,7 +298,13 @@ export class LoginForm {
   protected readonly isError = computed(() => this.status() === 'error');
 
   protected readonly submitLabel = computed(() =>
-    this.isLoading() ? 'Ingresando…' : this.isSuccess() ? 'Sesión iniciada' : 'Ingresar',
+    this.i18n.t(
+      this.isLoading()
+        ? 'auth.login.submitting'
+        : this.isSuccess()
+          ? 'auth.login.submitted'
+          : 'auth.login.submit',
+    ),
   );
 
   protected readonly registerLink = computed(() =>

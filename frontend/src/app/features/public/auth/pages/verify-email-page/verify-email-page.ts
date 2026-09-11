@@ -14,6 +14,8 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import {
   VerifyResendStatus,
@@ -34,9 +36,9 @@ const INPUT_BASE =
   selector: 'app-verify-email-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon],
+  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon, TranslocoDirective],
   template: `
-    <div class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
+    <div *transloco="let t" class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
       @switch (state()) {
         @case ('verifying') {
           <div class="flex flex-col items-center py-8 text-center">
@@ -44,7 +46,7 @@ const INPUT_BASE =
               class="h-8 w-8 animate-spin rounded-full border-[3px] border-brand/25 border-t-brand"
               aria-hidden="true"
             ></span>
-            <p class="mt-4 text-[14.5px] text-muted">Verificando tu correo…</p>
+            <p class="mt-4 text-[14.5px] text-muted">{{ t('auth.verify.verifying') }}</p>
           </div>
         }
 
@@ -56,10 +58,14 @@ const INPUT_BASE =
               <ij-icon name="check" [size]="28" [strokeWidth]="2.6" />
             </span>
             <h1 class="text-[22px] font-bold tracking-tight text-ink-900">
-              {{ alreadyVerified() ? 'Tu correo ya estaba verificado' : 'Correo verificado' }}
+              {{
+                alreadyVerified()
+                  ? t('auth.verify.alreadyTitle')
+                  : t('auth.verify.successTitle')
+              }}
             </h1>
             <p class="mt-2 text-[14.5px] leading-relaxed text-muted">
-              Tu cuenta está lista. Ya puedes iniciar sesión.
+              {{ t('auth.verify.successBody') }}
             </p>
             <a
               ij-button
@@ -69,7 +75,7 @@ const INPUT_BASE =
               size="lg"
               class="mt-6 w-full shadow-search"
             >
-              Iniciar sesión
+              {{ t('auth.common.login') }}
             </a>
           </div>
         }
@@ -83,11 +89,10 @@ const INPUT_BASE =
               <ij-icon name="alert-triangle" [size]="26" />
             </span>
             <h1 class="text-[22px] font-bold tracking-tight text-ink-900">
-              Enlace inválido o expirado
+              {{ t('auth.verify.invalidTitle') }}
             </h1>
             <p class="mt-2 text-[14.5px] leading-relaxed text-muted">
-              Este enlace de verificación ya no sirve. Ingresa tu correo y te enviaremos
-              uno nuevo.
+              {{ t('auth.verify.invalidBody') }}
             </p>
           </div>
 
@@ -97,24 +102,26 @@ const INPUT_BASE =
               class="mt-6 flex items-center gap-2.5 rounded-xl border border-accent-green/25 bg-accent-green-soft px-3.5 py-3 text-[13.5px] font-semibold text-accent-green"
             >
               <ij-icon name="mail" [size]="18" />
-              <span>Si el correo requiere verificación, te enviamos un nuevo enlace.</span>
+              <span>{{ t('auth.verify.resent') }}</span>
             </div>
           } @else {
             <form novalidate class="mt-6" [formGroup]="form" (ngSubmit)="onResend()">
               <label for="ve-email" class="mb-2 block text-sm font-semibold text-ink-900">
-                Correo electrónico
+                {{ t('auth.common.email') }}
               </label>
               <input
                 id="ve-email"
                 type="email"
                 formControlName="email"
                 autocomplete="email"
-                placeholder="tucorreo@ejemplo.com"
+                [placeholder]="t('auth.common.emailPlaceholder')"
                 [class]="inputClass()"
                 [attr.aria-invalid]="emailInvalid()"
               />
               @if (emailInvalid()) {
-                <p class="mt-1.5 text-xs font-medium text-red-600">Ingresa un correo válido.</p>
+                <p class="mt-1.5 text-xs font-medium text-red-600">
+                  {{ t('auth.common.emailError') }}
+                </p>
               }
               <button
                 ij-button
@@ -131,7 +138,11 @@ const INPUT_BASE =
                     aria-hidden="true"
                   ></span>
                 }
-                {{ resendStatus() === 'loading' ? 'Enviando…' : 'Enviar nuevo enlace' }}
+                {{
+                  resendStatus() === 'loading'
+                    ? t('auth.common.sending')
+                    : t('auth.verify.resend')
+                }}
               </button>
             </form>
           }
@@ -141,7 +152,7 @@ const INPUT_BASE =
             class="mt-6 flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand-strong"
           >
             <ij-icon name="chevron-left" [size]="16" />
-            Volver a iniciar sesión
+            {{ t('auth.common.backToLogin') }}
           </a>
         }
       }

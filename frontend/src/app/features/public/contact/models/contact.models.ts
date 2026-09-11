@@ -1,14 +1,12 @@
 import { IconName } from '@/shared/ui';
 
-export interface ContactHeroContent {
-  readonly eyebrow: string;
-  readonly title: string;
-  readonly description: string;
-}
-
+/**
+ * Tarjeta de canal de contacto. El título va por clave (T26); las líneas no:
+ * son correos, teléfonos y una dirección, que no se traducen.
+ */
 export interface ContactInfoCard {
   readonly icon: IconName;
-  readonly title: string;
+  readonly titleKey: string;
   readonly lines: readonly string[];
   /** `mailto:`/`tel:` por línea; vacío cuando el dato no es accionable. */
   readonly hrefs: readonly string[];

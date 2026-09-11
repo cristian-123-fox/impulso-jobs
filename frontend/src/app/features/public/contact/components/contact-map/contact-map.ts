@@ -8,6 +8,7 @@ import {
   input,
   viewChild,
 } from '@angular/core';
+import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { IjIcon } from '@/shared/ui';
 import { ContactMapLocation } from '@/features/public/contact/models/contact.models';
 
@@ -28,9 +29,9 @@ const BRAND_COLOR = '#b3571d';
 @Component({
   selector: 'app-contact-map',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon],
+  imports: [IjIcon, TranslocoDirective],
   template: `
-    <section class="px-6 pb-20 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 pb-20 lg:px-[60px]">
       <div
         class="relative mx-auto h-[420px] max-w-[1240px] overflow-hidden rounded-[32px] bg-surface"
       >
@@ -50,7 +51,7 @@ const BRAND_COLOR = '#b3571d';
             rel="noopener noreferrer"
             class="pointer-events-auto mt-2 inline-block text-xs font-semibold text-brand-strong hover:underline"
           >
-            Cómo llegar
+            {{ t('contact.map.directions') }}
           </a>
         </div>
       </div>
@@ -61,10 +62,14 @@ export class ContactMap {
   readonly location = input.required<ContactMapLocation>();
 
   private readonly mapEl = viewChild.required<ElementRef<HTMLElement>>('map');
+  private readonly transloco = inject(TranslocoService);
   private map: import('leaflet').Map | undefined;
 
   protected mapLabel(): string {
-    return `Mapa con la ubicación de ${this.location().officeName}: ${this.location().address}`;
+    return this.transloco.translate('contact.map.label', {
+      office: this.location().officeName,
+      address: this.location().address,
+    });
   }
 
   protected directionsUrl(): string {

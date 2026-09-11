@@ -9,6 +9,7 @@ import {
   input,
   output,
 } from '@angular/core';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { IjIcon } from '@/shared/ui/icon/icon';
 
 type ModalSize = 'sm' | 'md' | 'lg';
@@ -59,7 +60,7 @@ const SIZES: Record<ModalSize, string> = {
           </div>
           <button
             type="button"
-            aria-label="Cerrar"
+            [attr.aria-label]="i18n.t('common.close')"
             class="-mr-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] text-muted transition-colors hover:bg-surface hover:text-body"
             (click)="close.emit()"
           >
@@ -81,6 +82,8 @@ export class IjModal {
   readonly close = output<void>();
 
   private readonly document = inject(DOCUMENT);
+  /** Sólo el botón de cerrar lleva texto propio; el resto es contenido ajeno. */
+  protected readonly i18n = inject(AppTranslateService);
 
   constructor() {
     // Bloquea el scroll del fondo mientras el diálogo está montado.

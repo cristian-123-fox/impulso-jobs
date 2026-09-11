@@ -6,7 +6,6 @@ import {
   BRAND_PHONES,
 } from '@/shared/catalogs/brand.catalogs';
 import {
-  ContactHeroContent,
   ContactInfoCard,
   ContactMapLocation,
 } from '@/features/public/contact/models/contact.models';
@@ -18,26 +17,22 @@ import {
  * dirección, los teléfonos y los correos. Antes esta página situaba la oficina
  * en Bogotá con teléfonos +57, mientras el footer daba una dirección distinta y
  * el producto entero es de México.
+ *
+ * Lo único traducible aquí es el título de cada tarjeta (T26): el resto son
+ * datos de contacto, iguales en los dos idiomas.
  */
 @Injectable({ providedIn: 'root' })
 export class ContactFacade {
-  private readonly _hero = signal<ContactHeroContent>({
-    eyebrow: 'Contacto',
-    title: 'Hablemos de tu próxima contratación',
-    description:
-      'Escríbenos si necesitas ayuda publicando vacantes, gestionando candidatos o resolviendo dudas sobre la plataforma.',
-  });
-
   private readonly _infoCards = signal<readonly ContactInfoCard[]>([
     {
       icon: 'mail',
-      title: 'Correo',
+      titleKey: 'contact.cards.email',
       lines: [BRAND_EMAILS.general, BRAND_EMAILS.companies],
       hrefs: [`mailto:${BRAND_EMAILS.general}`, `mailto:${BRAND_EMAILS.companies}`],
     },
     {
       icon: 'phone',
-      title: 'Teléfono y WhatsApp',
+      titleKey: 'contact.cards.phone',
       lines: [BRAND_PHONES.office, BRAND_PHONES.mobile],
       hrefs: [
         `tel:${BRAND_PHONES.office.replace(/\s+/g, '')}`,
@@ -46,7 +41,7 @@ export class ContactFacade {
     },
     {
       icon: 'map-pin',
-      title: 'Oficina',
+      titleKey: 'contact.cards.office',
       lines: [BRAND_OFFICE.street, `${BRAND_OFFICE.locality}, ${BRAND_OFFICE.city}`],
       hrefs: [],
     },
@@ -59,7 +54,6 @@ export class ContactFacade {
     lng: BRAND_OFFICE.lng,
   });
 
-  readonly hero = this._hero.asReadonly();
   readonly infoCards = this._infoCards.asReadonly();
   readonly office = this._office.asReadonly();
 }

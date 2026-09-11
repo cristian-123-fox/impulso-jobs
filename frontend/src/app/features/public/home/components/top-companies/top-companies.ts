@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjButton, IjIcon } from '@/shared/ui';
 import { IjReveal } from '@/shared/directives/reveal';
 import { HomeCompany } from '@/features/public/home/models/home.models';
@@ -28,9 +29,9 @@ const MIN_WALL = 3;
 @Component({
   selector: 'app-top-companies',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjButton, RouterLink, IjReveal],
+  imports: [IjIcon, IjButton, RouterLink, IjReveal, TranslocoDirective],
   template: `
-    <section class="px-6 py-16 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 py-16 lg:px-[60px]">
       <div
         ijReveal
         class="mx-auto max-w-[1120px] overflow-hidden rounded-[28px] bg-ink-950 px-8 py-12 text-white sm:px-12 lg:px-16"
@@ -38,30 +39,28 @@ const MIN_WALL = 3;
         <div class="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <h2 class="text-3xl font-bold leading-tight text-white sm:text-[36px]">
-              ¿Estás contratando?
+              {{ t('home.employers.title') }}
             </h2>
             <p class="mt-4 max-w-[46ch] text-[15px] leading-relaxed text-footer-fg">
-              Publica tu vacante, recibe postulaciones ordenadas en un solo
-              panel y filtra con preguntas de descarte antes de la primera
-              llamada.
+              {{ t('home.employers.body') }}
             </p>
 
             <ul class="mt-7 flex flex-col gap-3">
-              @for (point of points; track point) {
+              @for (point of pointKeys; track point) {
                 <li class="flex items-start gap-3 text-[15px] text-footer-fg">
                   <span
                     class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-700 text-white"
                   >
                     <ij-icon name="check" [size]="12" [strokeWidth]="3" />
                   </span>
-                  {{ point }}
+                  {{ t('home.employers.' + point) }}
                 </li>
               }
             </ul>
 
             <div class="mt-8 flex flex-wrap gap-3">
               <a ij-button routerLink="/auth/registro/empresa" size="md">
-                Publicar una vacante
+                {{ t('home.employers.ctaPost') }}
               </a>
               <a
                 ij-button
@@ -69,7 +68,7 @@ const MIN_WALL = 3;
                 variant="white"
                 size="md"
               >
-                Ver planes
+                {{ t('home.employers.ctaPlans') }}
               </a>
             </div>
           </div>
@@ -77,7 +76,7 @@ const MIN_WALL = 3;
           @if (showWall()) {
             <div>
               <p class="text-[13px] font-semibold tracking-wide text-footer-muted">
-                Ya publican con nosotros
+                {{ t('home.employers.wallTitle') }}
               </p>
               <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
                 @for (company of companies(); track company.name) {
@@ -112,10 +111,11 @@ const MIN_WALL = 3;
 export class TopCompanies {
   readonly companies = input.required<readonly HomeCompany[]>();
 
-  protected readonly points: readonly string[] = [
-    'Preguntas de descarte para filtrar antes de entrevistar',
-    'Currículum del candidato guardado tal como estaba al postularse',
-    'Vacantes destacadas y distintivos por periodo, sin permanencia',
+  /** Sufijos de clave bajo `home.employers` (T26). */
+  protected readonly pointKeys: readonly string[] = [
+    'screening',
+    'snapshot',
+    'promotions',
   ];
 
   /** Logos que devolvieron 404: se recuerdan para no reintentar en cada render. */

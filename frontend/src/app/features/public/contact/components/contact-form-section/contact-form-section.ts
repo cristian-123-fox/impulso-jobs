@@ -10,6 +10,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { TranslocoDirective } from '@jsverse/transloco';
 import {
   ContactFormValue,
   ContactInfoCard,
@@ -24,20 +25,28 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
 @Component({
   selector: 'app-contact-form-section',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjIcon, IjInput, IjTextarea],
+  imports: [
+    ReactiveFormsModule,
+    IjButton,
+    IjIcon,
+    IjInput,
+    IjTextarea,
+    TranslocoDirective,
+  ],
   template: `
-    <section class="px-6 py-20 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 py-20 lg:px-[60px]">
       <div
         class="mx-auto grid max-w-[1180px] gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]"
       >
         <div>
-          <p class="mb-2 text-[15px] font-semibold text-brand-strong">Envíanos un mensaje</p>
+          <p class="mb-2 text-[15px] font-semibold text-brand-strong">
+            {{ t('contact.form.eyebrow') }}
+          </p>
           <h2 class="text-4xl font-bold leading-tight text-ink-900 sm:text-[42px]">
-            Cuéntanos cómo podemos ayudarte
+            {{ t('contact.form.title') }}
           </h2>
           <p class="mt-4 max-w-[680px] text-[15px] leading-7 text-muted">
-            Resolvemos dudas de candidatos y empresas. Al enviar se abre tu
-            gestor de correo con el mensaje ya redactado.
+            {{ t('contact.form.lead') }}
           </p>
 
           @if (statusMessage()) {
@@ -56,18 +65,18 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
             (ngSubmit)="onSubmit()"
           >
             <div class="grid gap-5 md:grid-cols-2">
-              <ij-input label="Nombre" placeholder="Tu nombre completo" [required]="true"
-                [error]="fieldInvalid('name') ? 'Ingresa un nombre válido.' : null" formControlName="name" />
-              <ij-input label="Correo" type="email" placeholder="tu@correo.com" [required]="true"
-                [error]="fieldInvalid('email') ? 'Ingresa un correo válido.' : null" formControlName="email" />
-              <ij-input label="Teléfono" type="tel" placeholder="+52 55 0000 0000" [required]="true"
-                [error]="fieldInvalid('phone') ? 'Comparte un teléfono de contacto.' : null" formControlName="phone" />
-              <ij-input label="Asunto" placeholder="¿En qué te ayudamos?" [required]="true"
-                [error]="fieldInvalid('subject') ? 'Escribe un asunto breve.' : null" formControlName="subject" />
+              <ij-input [label]="t('contact.form.name')" [placeholder]="t('contact.form.namePlaceholder')" [required]="true"
+                [error]="fieldInvalid('name') ? t('contact.form.nameError') : null" formControlName="name" />
+              <ij-input [label]="t('contact.form.email')" type="email" [placeholder]="t('contact.form.emailPlaceholder')" [required]="true"
+                [error]="fieldInvalid('email') ? t('contact.form.emailError') : null" formControlName="email" />
+              <ij-input [label]="t('contact.form.phone')" type="tel" [placeholder]="t('contact.form.phonePlaceholder')" [required]="true"
+                [error]="fieldInvalid('phone') ? t('contact.form.phoneError') : null" formControlName="phone" />
+              <ij-input [label]="t('contact.form.subject')" [placeholder]="t('contact.form.subjectPlaceholder')" [required]="true"
+                [error]="fieldInvalid('subject') ? t('contact.form.subjectError') : null" formControlName="subject" />
             </div>
 
-            <ij-textarea label="Mensaje" [rows]="5" placeholder="Cuéntanos más detalles sobre tu necesidad." [required]="true"
-              [error]="fieldInvalid('message') ? 'El mensaje debe tener al menos 20 caracteres.' : null" formControlName="message" />
+            <ij-textarea [label]="t('contact.form.message')" [rows]="5" [placeholder]="t('contact.form.messagePlaceholder')" [required]="true"
+              [error]="fieldInvalid('message') ? t('contact.form.messageError') : null" formControlName="message" />
 
             <button
               ij-button
@@ -76,7 +85,7 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
               size="lg"
               class="shadow-float"
             >
-              Enviar mensaje
+              {{ t('contact.form.submit') }}
             </button>
             <!--
               No hay endpoint de contacto (el módulo de notificaciones y el SMTP
@@ -85,7 +94,7 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
               correo con todo redactado, que sí llega a su destino.
             -->
             <p class="text-[13px] leading-relaxed text-muted">
-              También puedes escribirnos directo a
+              {{ t('contact.form.alsoWrite') }}
               <a
                 [href]="'mailto:' + generalEmail"
                 class="font-medium text-brand-strong hover:underline"
@@ -102,7 +111,7 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
           <div
             class="relative flex flex-col gap-6 rounded-[28px] bg-white p-6 shadow-float sm:p-8"
           >
-            @for (item of infoCards(); track item.title) {
+            @for (item of infoCards(); track item.titleKey) {
               <div class="flex gap-4 rounded-2xl border border-line/80 p-4 sm:gap-5 sm:p-5">
                 <div
                   class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-strong"
@@ -110,7 +119,9 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
                   <ij-icon [name]="item.icon" [size]="24" />
                 </div>
                 <div>
-                  <h3 class="text-lg font-semibold text-ink-900">{{ item.title }}</h3>
+                  <h3 class="text-lg font-semibold text-ink-900">
+                    {{ t(item.titleKey) }}
+                  </h3>
                   @for (line of item.lines; track line; let i = $index) {
                     @if (item.hrefs[i]; as href) {
                       <p class="mt-1 text-sm leading-6">
@@ -129,12 +140,14 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
             }
 
             <div class="rounded-2xl bg-surface p-5">
-              <p class="text-sm font-semibold text-ink-900">Horario de atención</p>
+              <p class="text-sm font-semibold text-ink-900">
+                {{ t('contact.schedule.title') }}
+              </p>
               <p class="mt-2 text-sm leading-6 text-muted">
-                Lunes a viernes de 8:00 a. m. a 6:00 p. m.
+                {{ t('contact.schedule.hours') }}
               </p>
               <p class="text-sm leading-6 text-muted">
-                Soporte prioritario para empresas con vacantes activas.
+                {{ t('contact.schedule.priority') }}
               </p>
             </div>
           </div>

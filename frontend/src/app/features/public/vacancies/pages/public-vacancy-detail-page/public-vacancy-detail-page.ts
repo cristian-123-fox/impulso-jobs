@@ -1,4 +1,4 @@
-import { DatePipe, isPlatformServer, Location } from '@angular/common';
+import { isPlatformServer, Location } from '@angular/common';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -17,6 +17,9 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
+import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { AuthService } from '@/core/auth/auth.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { Role } from '@/core/models/role.enum';
@@ -30,19 +33,9 @@ import { IconName, IjButton, IjIcon, IjModal } from '@/shared/ui';
 import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
 import {
   ApplicationAnswerPayload,
-  CONTRACT_TYPE_LABELS,
-  ContractType,
-  EDUCATION_LEVEL_LABELS,
-  EducationLevel,
-  EMPLOYMENT_TYPE_LABELS,
-  EmploymentType,
-  EXPERIENCE_LEVEL_LABELS,
-  ExperienceLevel,
   PublicVacancy,
   PublicVacancyQuestion,
-  VACANCY_REPORT_REASONS,
-  WORK_MODE_LABELS,
-  WorkMode,
+  VACANCY_REPORT_REASON_CODES,
 } from '@/features/public/vacancies/models/public-vacancies.models';
 
 const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
@@ -62,7 +55,8 @@ const SCHEMA_EMPLOYMENT: Record<string, string> = {
 
 interface DetailItem {
   readonly icon: IconName;
-  readonly label: string;
+  /** Clave del rótulo; el valor ya viene formateado y traducido. */
+  readonly labelKey: string;
   readonly value: string;
 }
 
@@ -98,33 +92,33 @@ const JOB_SKILLS = [
 @Component({
   selector: 'app-public-vacancy-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, IjButton, IjIcon, IjModal],
+  imports: [RouterLink, IjButton, IjIcon, IjModal, TranslocoDirective],
   styles: `
     .vacancy-banner {
       background: linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%);
     }
   `,
   template: `
-    <section class="px-6 py-10 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 py-10 lg:px-[60px]">
       <div class="mx-auto max-w-[1100px]">
         <a
           routerLink="/vacantes"
           class="mb-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand-strong"
         >
           <ij-icon name="chevron-left" [size]="16" />
-          Todas las vacantes
+          {{ t('vacancy.back') }}
         </a>
 
         @switch (state()) {
           @case ('loading') {
             <div class="rounded-2xl bg-white p-12 text-center text-muted shadow-card">
-              Cargando vacante…
+              {{ t('vacancy.loading') }}
             </div>
           }
           @case ('error') {
             <div class="rounded-2xl bg-white p-12 text-center shadow-card">
               <p class="text-[15px] font-semibold text-ink-900">
-                Esta vacante ya no está disponible.
+                {{ t('vacancy.goneTitle') }}
               </p>
               <a
                 ij-button
@@ -134,7 +128,7 @@ const JOB_SKILLS = [
                 size="md"
                 class="mt-5"
               >
-                Ver otras vacantes
+                {{ t('vacancy.goneCta') }}
               </a>
             </div>
           }
@@ -156,7 +150,7 @@ const JOB_SKILLS = [
                       <span
                         class="absolute top-4 left-4 z-10 rounded-md bg-accent-green px-3 py-1 text-[13px] font-bold text-white"
                       >
-                        New
+                        {{ t('vacancy.new') }}
                       </span>
                     }
                   </div>
@@ -189,13 +183,13 @@ const JOB_SKILLS = [
                               class="inline-flex items-center gap-1.5 rounded-md bg-accent-green-soft px-3 py-2 text-[13px] font-bold text-accent-green"
                             >
                               <ij-icon name="check" [size]="15" [strokeWidth]="3" />
-                              Ya te postulaste
+                              {{ t('vacancy.applied') }}
                             </span>
                             <a
                               routerLink="/candidato/postulaciones"
                               class="mt-1.5 block text-[12.5px] font-semibold text-brand-strong hover:underline"
                             >
-                              Ver mis postulaciones
+                              {{ t('vacancy.myApplications') }}
                             </a>
                           </div>
                         } @else {
@@ -208,7 +202,11 @@ const JOB_SKILLS = [
                             [disabled]="applyState() === 'submitting'"
                             (click)="onApplyClick(data.id)"
                           >
-                            {{ applyState() === 'submitting' ? 'Enviando…' : 'Aplicar ahora' }}
+                            {{
+                              applyState() === 'submitting'
+                                ? t('vacancy.sending')
+                                : t('vacancy.apply')
+                            }}
                           </button>
                         }
                       } @else {
@@ -220,7 +218,7 @@ const JOB_SKILLS = [
                           shape="pill"
                           size="lg"
                         >
-                          Aplicar ahora
+                          {{ t('vacancy.apply') }}
                         </a>
                       }
                       @if (auth.currentUser()?.role === candidateRole) {
@@ -232,7 +230,7 @@ const JOB_SKILLS = [
                           (click)="toggleSave(data.id)"
                         >
                           <ij-icon name="bookmark" [size]="15" />
-                          {{ saved() ? 'Guardada' : 'Guardar' }}
+                          {{ saved() ? t('vacancy.saved') : t('vacancy.save') }}
                         </button>
                       }
                     </div>
@@ -247,13 +245,15 @@ const JOB_SKILLS = [
                     <div class="flex items-center gap-4">
                       <span class="text-[15px] font-bold text-ink-900">
                         {{ salary(data) }}
-                        <span class="text-accent-green font-semibold">/ Month</span>
+                        <span class="text-accent-green font-semibold">
+                          {{ t('vacancy.perMonth') }}
+                        </span>
                       </span>
                     </div>
 
                     @if (data.applicationDeadline) {
                       <p class="text-[13.5px] text-muted">
-                        Application ends:
+                        {{ t('vacancy.deadline') }}
                         <span class="font-bold text-brand-strong">{{ dateOnlyLabel(data.applicationDeadline) }}</span>
                       </p>
                     }
@@ -265,13 +265,17 @@ const JOB_SKILLS = [
                     </p>
                   }
 
-                  <h2 class="mt-8 text-lg font-bold text-ink-900">Job Description:</h2>
+                  <h2 class="mt-8 text-lg font-bold text-ink-900">
+                    {{ t('vacancy.description') }}
+                  </h2>
                   <p class="mt-3 whitespace-pre-line text-[14.5px] leading-relaxed text-body">
                     {{ data.description }}
                   </p>
 
                   @if (data.requirements) {
-                    <h2 class="mt-8 text-lg font-bold text-ink-900">Requirements:</h2>
+                    <h2 class="mt-8 text-lg font-bold text-ink-900">
+                      {{ t('vacancy.requirements') }}
+                    </h2>
                     <ul class="mt-3 space-y-3">
                       @for (item of lines(data.requirements); track $index) {
                         <li class="flex items-start gap-3 text-[14.5px] leading-relaxed text-body">
@@ -282,7 +286,9 @@ const JOB_SKILLS = [
                     </ul>
                   }
 
-                  <h2 class="mt-8 text-lg font-bold text-ink-900">Responsibilities:</h2>
+                  <h2 class="mt-8 text-lg font-bold text-ink-900">
+                    {{ t('vacancy.responsibilities') }}
+                  </h2>
                   <ul class="mt-3 space-y-3">
                     @for (item of lines(data.description); track $index) {
                       <li class="flex items-start gap-3 text-[14.5px] leading-relaxed text-body">
@@ -294,7 +300,7 @@ const JOB_SKILLS = [
 
                   @if (shareLinks().length > 0) {
                     <h2 class="mt-7 border-t border-line pt-5 text-base font-bold text-ink-900">
-                      Compartir vacante
+                      {{ t('vacancy.share') }}
                     </h2>
                     <div class="mt-3 flex flex-wrap gap-2">
                       @for (link of shareLinks(); track link.label) {
@@ -314,7 +320,7 @@ const JOB_SKILLS = [
                   }
 
                   <h2 class="mt-7 border-t border-line pt-5 text-base font-bold text-ink-900">
-                    Ubicación
+                    {{ t('vacancy.location') }}
                   </h2>
                   <p class="mt-1.5 inline-flex items-center gap-1.5 text-[13.5px] text-muted">
                     <ij-icon name="map-pin" [size]="15" />
@@ -331,7 +337,7 @@ const JOB_SKILLS = [
                     class="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4"
                   >
                     <p class="text-[12.5px] text-muted">
-                      Publicada el {{ data.publishedAt | date: 'dd MMM yyyy' }}
+                      {{ t('vacancy.publishedOn', { date: shortDate(data.publishedAt) }) }}
                     </p>
                     @if (auth.currentUser()?.role === candidateRole) {
                       <button
@@ -340,7 +346,7 @@ const JOB_SKILLS = [
                         (click)="openReport()"
                       >
                         <ij-icon name="alert-triangle" [size]="14" />
-                        Denunciar esta vacante
+                        {{ t('vacancy.report') }}
                       </button>
                     }
                   </div>
@@ -348,9 +354,11 @@ const JOB_SKILLS = [
 
                 <aside class="space-y-5">
                   <div class="rounded-2xl bg-white p-6 shadow-card">
-                    <h2 class="text-base font-bold text-ink-900">Información del empleo</h2>
+                    <h2 class="text-base font-bold text-ink-900">
+                      {{ t('vacancy.infoTitle') }}
+                    </h2>
                     <dl class="mt-4 space-y-4">
-                      @for (item of details(data); track item.label) {
+                      @for (item of details(data); track item.labelKey) {
                         <div class="flex items-start gap-3">
                           <span
                             class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-strong"
@@ -359,7 +367,7 @@ const JOB_SKILLS = [
                           </span>
                           <div>
                             <dt class="text-[11.5px] font-bold uppercase tracking-wide text-muted">
-                              {{ item.label }}
+                              {{ t(item.labelKey) }}
                             </dt>
                             <dd class="mt-0.5 text-[13.5px] font-semibold text-body">
                               {{ item.value }}
@@ -372,7 +380,7 @@ const JOB_SKILLS = [
 
                   <div class="rounded-2xl bg-white p-6 shadow-card">
                     <h2 class="border-l-4 border-brand pl-3 text-lg font-bold text-ink-900">
-                      Job Skills
+                      {{ t('vacancy.skills') }}
                     </h2>
                     <div class="mt-4 flex flex-wrap gap-2">
                       @for (skill of jobSkills; track skill) {
@@ -398,7 +406,7 @@ const JOB_SKILLS = [
                       </span>
                       <div class="min-w-0">
                         <h2 class="truncate text-[15px] font-bold text-ink-900">
-                          {{ data.company?.businessName ?? 'Empresa confidencial' }}
+                          {{ data.company?.businessName ?? t('card.confidential') }}
                         </h2>
                         @if (data.company?.economicSector; as sector) {
                           <p class="truncate text-[12.5px] text-muted">{{ sector }}</p>
@@ -408,7 +416,7 @@ const JOB_SKILLS = [
 
                     @if (data.isConfidential) {
                       <p class="mt-4 rounded-xl bg-surface px-4 py-3 text-[12.5px] text-muted">
-                        La empresa se dará a conocer durante el proceso de selección.
+                        {{ t('vacancy.confidentialNote') }}
                       </p>
                     } @else if (data.company; as company) {
                       <dl class="mt-4 space-y-2.5 border-t border-line pt-4">
@@ -427,12 +435,12 @@ const JOB_SKILLS = [
 
               @if (applyOpen()) {
                 <ij-modal
-                  title="Postularme"
+                  [title]="t('vacancy.applyModal.title')"
                   [subtitle]="data.title"
                   (close)="applyOpen.set(false)"
                 >
                   <p class="mb-4 text-[13px] text-muted">
-                    La empresa pide responder estas preguntas para postularte.
+                    {{ t('vacancy.applyModal.lead') }}
                   </p>
 
                   <div class="space-y-5">
@@ -464,7 +472,7 @@ const JOB_SKILLS = [
                           <textarea
                             rows="3"
                             maxlength="1000"
-                            placeholder="Escribe tu respuesta"
+                            [placeholder]="t('vacancy.applyModal.answerPlaceholder')"
                             class="mt-2 w-full rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] text-ink-900 outline-none focus:border-brand"
                             [value]="draftOf(question.id)?.answerText ?? ''"
                             (input)="setAnswerText(question.id, $any($event.target).value)"
@@ -486,7 +494,7 @@ const JOB_SKILLS = [
                       class="rounded-xl border border-line bg-white px-4 py-2.5 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
                       (click)="applyOpen.set(false)"
                     >
-                      Cancelar
+                      {{ t('vacancy.applyModal.cancel') }}
                     </button>
                     <button
                       ij-button
@@ -497,7 +505,11 @@ const JOB_SKILLS = [
                       [disabled]="!answersComplete() || applyState() === 'submitting'"
                       (click)="submitApplication(data.id)"
                     >
-                      {{ applyState() === 'submitting' ? 'Enviando…' : 'Enviar postulación' }}
+                      {{
+                        applyState() === 'submitting'
+                          ? t('vacancy.sending')
+                          : t('vacancy.applyModal.submit')
+                      }}
                     </button>
                   </div>
                 </ij-modal>
@@ -505,36 +517,36 @@ const JOB_SKILLS = [
 
               @if (reportOpen()) {
                 <ij-modal
-                  title="Denunciar vacante"
+                  [title]="t('vacancy.reportModal.title')"
                   [subtitle]="data.title"
                   size="sm"
                   (close)="closeReport()"
                 >
                   @if (reportState() === 'done') {
                     <p class="rounded-xl bg-accent-green-soft px-4 py-3 text-[13.5px] font-semibold text-accent-green">
-                      Gracias por tu reporte. Nuestro equipo revisará esta vacante.
+                      {{ t('vacancy.reportModal.done') }}
                     </p>
                     <div class="mt-5 flex justify-end">
                       <button ij-button type="button" variant="primary" shape="rounded" size="md" (click)="closeReport()">
-                        Cerrar
+                        {{ t('vacancy.reportModal.close') }}
                       </button>
                     </div>
                   } @else {
                     <div class="space-y-1.5">
-                      @for (reason of reportReasons; track reason.code) {
+                      @for (reason of reportReasons; track reason) {
                         <label
                           class="flex cursor-pointer items-center gap-2.5 rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] text-body transition-colors hover:bg-surface"
-                          [class.border-brand]="reportReason() === reason.code"
-                          [class.bg-brand-50]="reportReason() === reason.code"
+                          [class.border-brand]="reportReason() === reason"
+                          [class.bg-brand-50]="reportReason() === reason"
                         >
                           <input
                             type="radio"
                             name="report-reason"
                             class="h-4 w-4 text-brand-strong"
-                            [checked]="reportReason() === reason.code"
-                            (change)="reportReason.set(reason.code)"
+                            [checked]="reportReason() === reason"
+                            (change)="reportReason.set(reason)"
                           />
-                          {{ reason.label }}
+                          {{ t('enums.reportReason.' + reason) }}
                         </label>
                       }
                     </div>
@@ -542,7 +554,7 @@ const JOB_SKILLS = [
                     <textarea
                       rows="3"
                       maxlength="500"
-                      placeholder="Cuéntanos más (opcional)"
+                      [placeholder]="t('vacancy.reportModal.commentPlaceholder')"
                       class="mt-3 w-full rounded-xl border border-line px-3.5 py-2.5 text-[13.5px] text-ink-900 outline-none focus:border-brand"
                       [value]="reportComment()"
                       (input)="reportComment.set($any($event.target).value)"
@@ -560,7 +572,7 @@ const JOB_SKILLS = [
                         class="rounded-xl border border-line bg-white px-4 py-2.5 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
                         (click)="closeReport()"
                       >
-                        Cancelar
+                        {{ t('vacancy.reportModal.cancel') }}
                       </button>
                       <button
                         ij-button
@@ -571,7 +583,11 @@ const JOB_SKILLS = [
                         [disabled]="!reportReason() || reportState() === 'submitting'"
                         (click)="submitReport(data.id)"
                       >
-                        {{ reportState() === 'submitting' ? 'Enviando…' : 'Enviar denuncia' }}
+                        {{
+                          reportState() === 'submitting'
+                            ? t('vacancy.sending')
+                            : t('vacancy.reportModal.submit')
+                        }}
                       </button>
                     </div>
                   }
@@ -592,6 +608,8 @@ export class PublicVacancyDetailPage {
   protected readonly auth = inject(AuthService);
 
   private readonly savedApi = inject(CandidateSavedVacanciesApi);
+  private readonly i18n = inject(AppTranslateService);
+  private readonly format = inject(LocaleFormatService);
   private readonly seo = inject(SeoService);
   private readonly location = inject(Location);
   private readonly transferState = inject(TransferState);
@@ -615,7 +633,7 @@ export class PublicVacancyDetailPage {
   private readonly answerDrafts = signal<Record<string, ApplicationAnswerPayload>>({});
 
   // Denuncia de la vacante.
-  protected readonly reportReasons = VACANCY_REPORT_REASONS;
+  protected readonly reportReasons = VACANCY_REPORT_REASON_CODES;
   protected readonly reportOpen = signal(false);
   protected readonly reportReason = signal('');
   protected readonly reportComment = signal('');
@@ -645,9 +663,9 @@ export class PublicVacancyDetailPage {
     if (!dateStr) return '';
     const diff = Date.now() - new Date(dateStr).getTime();
     const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-    if (days === 0) return 'Hoy';
-    if (days === 1) return '1 día';
-    return `${days} días`;
+    if (days === 0) return this.i18n.t('vacancy.postedToday');
+    if (days === 1) return this.i18n.t('vacancy.postedOneDay');
+    return this.i18n.t('vacancy.postedDays', { days });
   });
 
   private readonly mapEl = viewChild<ElementRef<HTMLElement>>('mapEl');
@@ -712,6 +730,16 @@ export class PublicVacancyDetailPage {
       }
     });
 
+    // El head se rehace al cambiar de idioma (T26): el título lleva datos de
+    // la vacante, así que no puede resolverse con `setLocalizedPage`. Al leer
+    // `applySeo` el idioma a través de `AppTranslateService`, el efecto queda
+    // enganchado a él. La primera aplicación la hacen las llamadas de arriba,
+    // que son las que corren en SSR.
+    effect(() => {
+      const vacancy = this.vacancy();
+      if (vacancy) this.applySeo(vacancy);
+    });
+
     // El div del mapa aparece cuando hay coordenadas; ahí se monta Leaflet.
     effect(() => {
       const el = this.mapEl()?.nativeElement;
@@ -740,12 +768,24 @@ export class PublicVacancyDetailPage {
     }
   }
 
-  /** Título, meta/OG, canonical y JSON-LD JobPosting (T16). */
+  /**
+   * Título, meta/OG, canonical y JSON-LD JobPosting (T16).
+   *
+   * No usa `setLocalizedPage` porque el título se compone con datos de la
+   * vacante; al cambiar de idioma se vuelve a llamar desde el efecto del
+   * constructor. **La descripción es la de la vacante y no se traduce**: la
+   * escribió la empresa.
+   */
   private applySeo(vacancy: PublicVacancy): void {
-    const companyName = vacancy.company?.businessName ?? 'Empresa confidencial';
+    const companyName =
+      vacancy.company?.businessName ?? this.i18n.t('card.confidential');
     const place = `${vacancy.municipality}, ${this.stateName(vacancy.state)}`;
     this.seo.setPage({
-      title: `${vacancy.title}, ${companyName} en ${place} | Impulso Jobs`,
+      title: this.i18n.t('seo.vacancy.title', {
+        title: vacancy.title,
+        company: companyName,
+        place,
+      }),
       description: vacancy.description,
       canonicalPath: vacancyPath(vacancy),
       image: vacancy.imageUrl ?? vacancy.company?.logoUrl ?? undefined,
@@ -769,7 +809,7 @@ export class PublicVacancyDetailPage {
       employmentType: SCHEMA_EMPLOYMENT[vacancy.employmentType] ?? 'OTHER',
       hiringOrganization: {
         '@type': 'Organization',
-        name: vacancy.company?.businessName ?? 'Empresa confidencial',
+        name: vacancy.company?.businessName ?? this.i18n.t('card.confidential'),
         ...(vacancy.company?.logoUrl && { logo: vacancy.company.logoUrl }),
       },
       ...(vacancy.imageUrl && { image: vacancy.imageUrl }),
@@ -886,12 +926,16 @@ export class PublicVacancyDetailPage {
             return;
           }
           this.applyState.set('idle');
+          // El error se traduce por `errorCode`, que es el contrato estable
+          // con el backend; el `message` del envelope viene en español (T26 §5).
           this.applyError.set(
-            code === 'APPLICATION_VACANCY_NOT_ACTIVE'
-              ? 'Esta vacante ya no admite postulaciones.'
-              : code === 'APPLICATION_ANSWERS_INVALID'
-                ? 'Revisa tus respuestas: todas las preguntas son obligatorias.'
-                : 'No pudimos enviar tu postulación. Intenta de nuevo.',
+            this.i18n.t(
+              code === 'APPLICATION_VACANCY_NOT_ACTIVE'
+                ? 'vacancy.errors.notActive'
+                : code === 'APPLICATION_ANSWERS_INVALID'
+                  ? 'vacancy.errors.answers'
+                  : 'vacancy.errors.apply',
+            ),
           );
         },
       });
@@ -946,7 +990,7 @@ export class PublicVacancyDetailPage {
             return;
           }
           this.reportState.set('idle');
-          this.reportError.set('No pudimos registrar la denuncia. Intenta de nuevo.');
+          this.reportError.set(this.i18n.t('vacancy.errors.report'));
         },
       });
   }
@@ -980,74 +1024,75 @@ export class PublicVacancyDetailPage {
     const items: DetailItem[] = [
       {
         icon: 'calendar',
-        label: 'Publicada',
+        labelKey: 'vacancy.details.published',
         value: this.publishedLabel(vacancy),
       },
       {
         icon: 'map-pin',
-        label: 'Ubicación',
+        labelKey: 'vacancy.details.location',
         value: `${vacancy.municipality}, ${this.stateName(vacancy.state)}`,
       },
       {
         icon: 'briefcase',
-        label: 'Contratación',
-        value:
-          EMPLOYMENT_TYPE_LABELS[vacancy.employmentType as EmploymentType] ??
-          vacancy.employmentType,
+        labelKey: 'vacancy.details.employment',
+        value: this.i18n.enumLabel('employmentType', vacancy.employmentType),
       },
       {
         icon: 'globe',
-        label: 'Modalidad',
-        value:
-          WORK_MODE_LABELS[vacancy.workMode as WorkMode] ?? vacancy.workMode,
+        labelKey: 'vacancy.details.workMode',
+        value: this.i18n.enumLabel('workMode', vacancy.workMode),
       },
       {
         icon: 'award',
-        label: 'Experiencia',
-        value:
-          EXPERIENCE_LEVEL_LABELS[
-            vacancy.experienceLevel as ExperienceLevel
-          ] ?? vacancy.experienceLevel,
+        labelKey: 'vacancy.details.experience',
+        value: this.i18n.enumLabel('experienceLevel', vacancy.experienceLevel),
       },
-      { icon: 'dollar', label: 'Salario mensual', value: this.salary(vacancy) },
+      {
+        icon: 'dollar',
+        labelKey: 'vacancy.details.salary',
+        value: this.salary(vacancy),
+      },
     ];
 
     // ---- Perfil de la posición (T15): sólo lo que la vacante trae. Checks
     // "truthy" a propósito: una API sin desplegar T15 manda undefined. ----
     if (vacancy.professionalAreaId) {
       const area = PROFESSIONAL_AREA_NAMES.get(vacancy.professionalAreaId);
-      if (area) items.push({ icon: 'grid', label: 'Área', value: area });
+      if (area) {
+        items.push({
+          icon: 'grid',
+          labelKey: 'vacancy.details.area',
+          value: area,
+        });
+      }
     }
     if (vacancy.contractType) {
       items.push({
         icon: 'file',
-        label: 'Tipo de contrato',
-        value:
-          CONTRACT_TYPE_LABELS[vacancy.contractType as ContractType] ??
-          vacancy.contractType,
+        labelKey: 'vacancy.details.contract',
+        value: this.i18n.enumLabel('contractType', vacancy.contractType),
       });
     }
     if (vacancy.minEducationLevel) {
       items.push({
         icon: 'resume',
-        label: 'Escolaridad mínima',
-        value:
-          EDUCATION_LEVEL_LABELS[
-            vacancy.minEducationLevel as EducationLevel
-          ] ?? vacancy.minEducationLevel,
+        labelKey: 'vacancy.details.education',
+        value: this.i18n.enumLabel('educationLevel', vacancy.minEducationLevel),
       });
     }
     if (vacancy.positionsCount > 1) {
       items.push({
         icon: 'users',
-        label: 'Plazas',
-        value: `${vacancy.positionsCount} posiciones`,
+        labelKey: 'vacancy.details.positions',
+        value: this.i18n.t('vacancy.positions', {
+          count: vacancy.positionsCount,
+        }),
       });
     }
     if (vacancy.applicationDeadline) {
       items.push({
         icon: 'clock',
-        label: 'Postúlate antes del',
+        labelKey: 'vacancy.details.deadline',
         value: this.dateOnlyLabel(vacancy.applicationDeadline),
       });
     }
@@ -1055,37 +1100,35 @@ export class PublicVacancyDetailPage {
     if (vacancy.viewsCount > 0) {
       items.push({
         icon: 'eye',
-        label: 'Visualizaciones',
-        value: vacancy.viewsCount.toLocaleString('es-MX'),
+        labelKey: 'vacancy.details.views',
+        value: this.format.number(vacancy.viewsCount),
       });
     }
     // Vigencia (T20): se comunica desde el día 1, sin relojes opacos.
     if (vacancy.expiresAt) {
       items.push({
         icon: 'history',
-        label: 'Vigente hasta',
-        value: new Intl.DateTimeFormat('es-MX', { dateStyle: 'long' }).format(
-          new Date(vacancy.expiresAt),
-        ),
+        labelKey: 'vacancy.details.validUntil',
+        value: this.format.longDate(vacancy.expiresAt),
       });
     }
 
     return items;
   }
 
-  /** `YYYY-MM-DD` → fecha larga es-MX, sin correr el día por zona horaria. */
+  /** `YYYY-MM-DD` → fecha larga, sin correr el día por zona horaria. */
   protected dateOnlyLabel(dateOnly: string): string {
-    return new Intl.DateTimeFormat('es-MX', {
-      dateStyle: 'long',
-      timeZone: 'UTC',
-    }).format(new Date(`${dateOnly}T00:00:00Z`));
+    return this.format.dateOnly(dateOnly);
+  }
+
+  /** Fecha corta para el pie de la vacante; vacía si nunca se publicó. */
+  protected shortDate(value: string | null): string {
+    return value ? this.format.shortDate(value) : '';
   }
 
   private publishedLabel(vacancy: PublicVacancy): string {
-    if (!vacancy.publishedAt) return 'Sin fecha';
-    return new Intl.DateTimeFormat('es-MX', { dateStyle: 'long' }).format(
-      new Date(vacancy.publishedAt),
-    );
+    if (!vacancy.publishedAt) return this.i18n.t('vacancy.noDate');
+    return this.format.longDate(vacancy.publishedAt);
   }
 
   /**
@@ -1155,7 +1198,9 @@ export class PublicVacancyDetailPage {
   private buildShareLinks(vacancy: PublicVacancy): readonly ShareLink[] {
     if (typeof window === 'undefined') return [];
     const url = encodeURIComponent(window.location.href);
-    const text = encodeURIComponent(`Vacante: ${vacancy.title}`);
+    const text = encodeURIComponent(
+      this.i18n.t('vacancy.shareText', { title: vacancy.title }),
+    );
     return [
       {
         label: 'WhatsApp',
@@ -1182,16 +1227,15 @@ export class PublicVacancyDetailPage {
 
   protected salary(vacancy: PublicVacancy): string {
     const { salaryMin, salaryMax } = vacancy;
-    if (salaryMin === null && salaryMax === null) return 'A convenir';
-    const format = (amount: number) =>
-      new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        maximumFractionDigits: 0,
-      }).format(amount);
-    if (salaryMin !== null && salaryMax !== null) {
-      return `${format(salaryMin)} a ${format(salaryMax)}`;
+    if (salaryMin === null && salaryMax === null) {
+      return this.i18n.t('vacancy.salaryTbd');
     }
-    return format((salaryMin ?? salaryMax)!);
+    if (salaryMin !== null && salaryMax !== null) {
+      return this.i18n.t('vacancy.salaryRange', {
+        min: this.format.currency(salaryMin),
+        max: this.format.currency(salaryMax),
+      });
+    }
+    return this.format.currency((salaryMin ?? salaryMax)!);
   }
 }

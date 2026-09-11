@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjIcon, TONE_SOFT } from '@/shared/ui';
 import { IjReveal } from '@/shared/directives/reveal';
 import { WorkStep } from '@/features/public/home/models/home.models';
@@ -15,13 +16,11 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
 @Component({
   selector: 'app-how-it-works',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, SectionHeading, IjReveal],
+  imports: [IjIcon, SectionHeading, IjReveal, TranslocoDirective],
   template: `
-    <section class="px-6 py-20 lg:px-[60px]">
-      <app-section-heading
-        lead="Tres pasos entre crear tu cuenta y estar en un proceso de selección."
-      >
-        Cómo funciona
+    <section *transloco="let t" class="px-6 py-20 lg:px-[60px]">
+      <app-section-heading [lead]="t('home.steps.lead')">
+        {{ t('home.steps.title') }}
       </app-section-heading>
 
       <ol class="relative mx-auto mt-14 grid max-w-[1000px] gap-10 sm:grid-cols-3 sm:gap-6">
@@ -45,10 +44,10 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
               {{ step.num }}
             </p>
             <h3 class="mt-1.5 text-lg font-semibold text-ink-900">
-              {{ step.title }}
+              {{ t(step.titleKey) }}
             </h3>
             <p class="mx-auto mt-2 max-w-[34ch] text-sm leading-relaxed text-muted">
-              {{ step.description }}
+              {{ t(step.descriptionKey) }}
             </p>
           </li>
         }

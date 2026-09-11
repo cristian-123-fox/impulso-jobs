@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjButton, IjIcon, TONE_SOFT } from '@/shared/ui';
 import { IjReveal } from '@/shared/directives/reveal';
 import { AboutAudience } from '@/features/public/about/models/about.models';
@@ -13,11 +14,11 @@ import { AboutAudience } from '@/features/public/about/models/about.models';
 @Component({
   selector: 'app-about-audiences',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjButton, RouterLink, IjReveal],
+  imports: [IjIcon, IjButton, RouterLink, IjReveal, TranslocoDirective],
   template: `
-    <section class="px-6 py-20 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 py-20 lg:px-[60px]">
       <div class="mx-auto grid max-w-[1080px] gap-6 lg:grid-cols-2">
-        @for (audience of audiences(); track audience.title; let i = $index) {
+        @for (audience of audiences(); track audience.titleKey; let i = $index) {
           <article
             ijReveal
             [revealDelay]="i * 110"
@@ -32,20 +33,22 @@ import { AboutAudience } from '@/features/public/about/models/about.models';
               <ij-icon [name]="audience.icon" [size]="24" [strokeWidth]="1.8" />
             </span>
 
-            <h2 class="text-2xl font-bold text-ink-900">{{ audience.title }}</h2>
+            <h2 class="text-2xl font-bold text-ink-900">
+              {{ t(audience.titleKey) }}
+            </h2>
             <p class="mt-2 text-[15px] leading-relaxed text-muted">
-              {{ audience.description }}
+              {{ t(audience.descriptionKey) }}
             </p>
 
             <ul class="mt-6 flex flex-1 flex-col gap-3">
-              @for (feature of audience.features; track feature) {
+              @for (feature of audience.featureKeys; track feature) {
                 <li class="flex items-start gap-3 text-[15px] leading-relaxed text-body">
                   <span
                     class="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-strong"
                   >
                     <ij-icon name="check" [size]="10" [strokeWidth]="3.5" />
                   </span>
-                  {{ feature }}
+                  {{ t(feature) }}
                 </li>
               }
             </ul>
@@ -56,7 +59,7 @@ import { AboutAudience } from '@/features/public/about/models/about.models';
               size="md"
               class="mt-8 self-start"
             >
-              {{ audience.ctaLabel }}
+              {{ t(audience.ctaLabelKey) }}
             </a>
           </article>
         }

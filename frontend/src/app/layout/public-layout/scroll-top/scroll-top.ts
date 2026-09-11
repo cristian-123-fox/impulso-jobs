@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { IjIcon } from '@/shared/ui';
 
 /** A partir de cuántos píxeles de scroll aparece el botón. */
@@ -39,7 +40,7 @@ const THRESHOLD_PX = 400;
 
     <button
       type="button"
-      aria-label="Volver arriba"
+      [attr.aria-label]="i18n.t('common.backToTop')"
       (click)="toTop()"
       [class.pointer-events-none]="!visible()"
       [class.opacity-0]="!visible()"
@@ -51,6 +52,8 @@ const THRESHOLD_PX = 400;
   `,
 })
 export class ScrollTop {
+  /** Sólo hay un rótulo (el `aria-label`), así que no compensa `*transloco`. */
+  protected readonly i18n = inject(AppTranslateService);
   protected readonly threshold = THRESHOLD_PX;
   protected readonly visible = signal(false);
 

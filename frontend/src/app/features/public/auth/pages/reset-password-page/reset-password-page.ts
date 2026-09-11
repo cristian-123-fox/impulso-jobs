@@ -15,14 +15,13 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import { ResetState } from '@/features/public/auth/models/auth.models';
-import {
-  PASSWORD_POLICY_HINT,
-  passwordPolicyValidator,
-} from '@/shared/validators/password.validator';
+import { passwordPolicyValidator } from '@/shared/validators/password.validator';
 import { passwordsMatchValidator } from '@/shared/validators/passwords-match.validator';
 import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 
@@ -35,9 +34,16 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
   selector: 'app-reset-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon, IjInput],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    IjButton,
+    IjIcon,
+    IjInput,
+    TranslocoDirective,
+  ],
   template: `
-    <div class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
+    <div *transloco="let t" class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
       @switch (state()) {
         @case ('validating') {
           <div class="flex flex-col items-center py-8 text-center">
@@ -45,7 +51,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
               class="h-8 w-8 animate-spin rounded-full border-[3px] border-brand/25 border-t-brand"
               aria-hidden="true"
             ></span>
-            <p class="mt-4 text-[14.5px] text-muted">Validando tu enlace…</p>
+            <p class="mt-4 text-[14.5px] text-muted">{{ t('auth.reset.validating') }}</p>
           </div>
         }
 
@@ -57,11 +63,10 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
               <ij-icon name="alert-triangle" [size]="26" />
             </span>
             <h1 class="text-[22px] font-bold tracking-tight text-ink-900">
-              Enlace inválido o expirado
+              {{ t('auth.reset.invalidTitle') }}
             </h1>
             <p class="mt-2 text-[14.5px] leading-relaxed text-muted">
-              Este enlace ya no es válido o ya fue utilizado. Solicita uno nuevo para
-              continuar.
+              {{ t('auth.reset.invalidBody') }}
             </p>
             <a
               ij-button
@@ -71,7 +76,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
               size="lg"
               class="mt-6 w-full shadow-search"
             >
-              Solicitar un nuevo enlace
+              {{ t('auth.reset.requestNew') }}
             </a>
           </div>
         }
@@ -84,11 +89,10 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
               <ij-icon name="check" [size]="28" [strokeWidth]="2.6" />
             </span>
             <h1 class="text-[22px] font-bold tracking-tight text-ink-900">
-              Contraseña actualizada
+              {{ t('auth.reset.successTitle') }}
             </h1>
             <p class="mt-2 text-[14.5px] leading-relaxed text-muted">
-              Tu contraseña se cambió correctamente. Por seguridad, cerramos tus otras
-              sesiones. Ya puedes iniciar sesión con la nueva.
+              {{ t('auth.reset.successBody') }}
             </p>
             <a
               ij-button
@@ -98,15 +102,17 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
               size="lg"
               class="mt-6 w-full shadow-search"
             >
-              Iniciar sesión
+              {{ t('auth.common.login') }}
             </a>
           </div>
         }
 
         @default {
-          <h1 class="text-[25px] font-bold tracking-tight text-ink-900">Nueva contraseña</h1>
+          <h1 class="text-[25px] font-bold tracking-tight text-ink-900">
+            {{ t('auth.reset.title') }}
+          </h1>
           <p class="mt-2 text-[15px] text-muted">
-            Crea una contraseña segura para tu cuenta.
+            {{ t('auth.reset.lead') }}
           </p>
 
           @if (errorMessage()) {
@@ -122,11 +128,11 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
           <form novalidate class="mt-6" [formGroup]="form" (ngSubmit)="onSubmit()">
             <!-- Nueva contraseña -->
             <ij-input
-              label="Nueva contraseña"
+              [label]="t('auth.reset.newPassword')"
               [type]="showPassword() ? 'text' : 'password'"
               autocomplete="new-password"
               placeholder="••••••••"
-              [hint]="policyHint"
+              [hint]="policyHint()"
               [error]="passwordInvalid() ? passwordError() : null"
               formControlName="newPassword"
             >
@@ -134,7 +140,11 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
                 ijSuffix
                 type="button"
                 class="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
-                [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                [attr.aria-label]="
+                  showPassword()
+                    ? t('auth.common.hidePassword')
+                    : t('auth.common.showPassword')
+                "
                 [attr.aria-pressed]="showPassword()"
                 (click)="showPassword.set(!showPassword())"
               >
@@ -145,7 +155,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
             <!-- Confirmar contraseña -->
             <div class="mt-5">
               <ij-input
-                label="Confirmar contraseña"
+                [label]="t('auth.common.confirmPassword')"
                 [type]="showPassword() ? 'text' : 'password'"
                 autocomplete="new-password"
                 placeholder="••••••••"
@@ -169,7 +179,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
                   aria-hidden="true"
                 ></span>
               }
-              {{ isSubmitting() ? 'Guardando…' : 'Cambiar contraseña' }}
+              {{ isSubmitting() ? t('auth.reset.saving') : t('auth.reset.submit') }}
             </button>
           </form>
 
@@ -178,7 +188,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
             class="mt-6 flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand-strong"
           >
             <ij-icon name="chevron-left" [size]="16" />
-            Volver a iniciar sesión
+            {{ t('auth.common.backToLogin') }}
           </a>
         }
       }
@@ -190,8 +200,12 @@ export class ResetPasswordPage {
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(AppTranslateService);
 
-  protected readonly policyHint = PASSWORD_POLICY_HINT;
+  /** La política es la misma del backend; el texto se traduce (T26). */
+  protected readonly policyHint = computed(() =>
+    this.i18n.t('validation.passwordPolicy'),
+  );
   protected readonly state = signal<ResetState>('validating');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly showPassword = signal(false);
@@ -239,8 +253,8 @@ export class ResetPasswordPage {
 
   protected passwordError(): string {
     return this.controls.newPassword.hasError('required')
-      ? 'La contraseña es obligatoria'
-      : this.policyHint;
+      ? this.i18n.t('auth.reset.passwordRequired')
+      : this.policyHint();
   }
 
   protected confirmInvalid(): boolean {
@@ -252,9 +266,9 @@ export class ResetPasswordPage {
 
   protected confirmError(): string {
     if (this.controls.confirmPassword.hasError('required')) {
-      return 'Confirma tu contraseña';
+      return this.i18n.t('auth.reset.confirmRequired');
     }
-    return 'Las contraseñas no coinciden';
+    return this.i18n.t('auth.reset.mismatch');
   }
 
   protected onSubmit(): void {
@@ -284,15 +298,15 @@ export class ResetPasswordPage {
         break;
       case AuthErrorCode.PASSWORD_MISMATCH:
         this.state.set('form');
-        this.errorMessage.set('Las contraseñas no coinciden.');
+        this.errorMessage.set(this.i18n.t('auth.common.passwordMismatch'));
         break;
       case AuthErrorCode.VALIDATION_ERROR:
         this.state.set('form');
-        this.errorMessage.set(this.policyHint);
+        this.errorMessage.set(this.policyHint());
         break;
       default:
         this.state.set('form');
-        this.errorMessage.set('No pudimos cambiar tu contraseña. Inténtalo más tarde.');
+        this.errorMessage.set(this.i18n.t('auth.reset.genericError'));
     }
   }
 

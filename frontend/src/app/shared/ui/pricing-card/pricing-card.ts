@@ -2,9 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
+import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { IjButton } from '@/shared/ui/button/button';
 import { IjIcon } from '@/shared/ui/icon/icon';
 import {
@@ -12,18 +16,13 @@ import {
   PricingPlan,
 } from '@/shared/models/pricing.models';
 
-const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
-  style: 'currency',
-  currency: 'MXN',
-  maximumFractionDigits: 0,
-});
-
 @Component({
   selector: 'ij-pricing-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjButton, RouterLink],
+  imports: [IjIcon, IjButton, RouterLink, TranslocoDirective],
   template: `
     <article
+      *transloco="let t"
       class="relative overflow-hidden rounded-[12px] bg-white pb-9 shadow-[0_24px_54px_-30px_rgba(0,0,0,.28)]"
     >
       <div class="relative overflow-hidden">
@@ -31,7 +30,7 @@ const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
           <span
             class="absolute right-4 top-4 z-10 rounded-md bg-accent-green-strong px-[14px] py-1.5 text-xs font-semibold text-white"
           >
-            Recomendado
+            {{ t('pricing.recommended') }}
           </span>
         }
 
@@ -90,11 +89,11 @@ const PRICE_FORMATTER = new Intl.NumberFormat('es-MX', {
 
           @if (plan().ctaLink; as ctaLink) {
             <a ij-button [routerLink]="ctaLink" variant="primary" shape="rounded" size="lg">
-              Comprar ahora
+              {{ t('pricing.buy') }}
             </a>
           } @else {
             <button ij-button type="button" variant="primary" shape="rounded" size="lg">
-              Comprar ahora
+              {{ t('pricing.buy') }}
             </button>
           }
         </div>
@@ -106,8 +105,12 @@ export class IjPricingCard {
   readonly plan = input.required<PricingPlan>();
   readonly billingCycle = input.required<BillingCycle>();
 
+  private readonly format = inject(LocaleFormatService);
+  private readonly i18n = inject(AppTranslateService);
+
+  /** El importe se formatea con el locale activo (T26 §6), no con `es-MX` fijo. */
   protected readonly priceLabel = computed(() =>
-    PRICE_FORMATTER.format(
+    this.format.currency(
       this.billingCycle() === 'monthly'
         ? this.plan().monthlyPrice
         : this.plan().annualPrice,
@@ -117,7 +120,9 @@ export class IjPricingCard {
   protected readonly periodLabel = computed(
     () =>
       this.plan().periodLabel ??
-      (this.billingCycle() === 'monthly' ? 'Mensual' : 'Anual'),
+      this.i18n.t(
+        this.billingCycle() === 'monthly' ? 'pricing.monthly' : 'pricing.annual',
+      ),
   );
 
   protected readonly decoClasses = computed(() => {

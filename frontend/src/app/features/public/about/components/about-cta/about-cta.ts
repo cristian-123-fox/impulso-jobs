@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjButton } from '@/shared/ui';
 import { IjReveal } from '@/shared/directives/reveal';
-import { AboutCtaContent } from '@/features/public/about/models/about.models';
 
 /**
  * Cierre con las dos puertas de entrada.
@@ -12,26 +12,29 @@ import { AboutCtaContent } from '@/features/public/about/models/about.models';
  * URL: un artefacto que se coló del prototipo y que en producción no carga.
  * El panel usa brand-700, no el naranja de marca, que con texto blanco se
  * queda en 2.90:1.
+ *
+ * Ya no recibe `content`: su único dato era el propio texto, que ahora vive en
+ * el diccionario (T26).
  */
 @Component({
   selector: 'app-about-cta',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjButton, RouterLink, IjReveal],
+  imports: [IjButton, RouterLink, IjReveal, TranslocoDirective],
   template: `
-    <section class="px-6 py-20 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 py-20 lg:px-[60px]">
       <div
         ijReveal
         class="mx-auto max-w-[1080px] rounded-2xl bg-brand-700 px-8 py-14 text-center text-white sm:px-14"
       >
         <h2 class="mx-auto max-w-[20ch] text-3xl font-bold leading-tight text-white sm:text-[36px]">
-          {{ content().title }}
+          {{ t('about.cta.title') }}
         </h2>
         <p class="mx-auto mt-4 max-w-[56ch] text-[15px] leading-relaxed text-white/90">
-          {{ content().description }}
+          {{ t('about.cta.description') }}
         </p>
         <div class="mt-8 flex flex-wrap justify-center gap-3">
           <a ij-button routerLink="/auth/registro" variant="white" size="md">
-            Crear cuenta gratis
+            {{ t('about.cta.candidate') }}
           </a>
           <a
             ij-button
@@ -39,13 +42,11 @@ import { AboutCtaContent } from '@/features/public/about/models/about.models';
             size="md"
             class="bg-transparent text-white ring-1 ring-inset ring-white/70 hover:bg-white/15"
           >
-            Publicar una vacante
+            {{ t('about.cta.company') }}
           </a>
         </div>
       </div>
     </section>
   `,
 })
-export class AboutCta {
-  readonly content = input.required<AboutCtaContent>();
-}
+export class AboutCta {}

@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { IjLogo } from '@/shared/ui';
 
 /**
@@ -35,7 +36,7 @@ import { IjLogo } from '@/shared/ui';
       ></div>
 
       <div class="relative flex w-full max-w-[440px] flex-col items-center">
-        <a routerLink="/" class="mb-7 inline-flex" aria-label="Impulso Jobs — inicio">
+        <a routerLink="/" class="mb-7 inline-flex" [attr.aria-label]="i18n.t('nav.brandHome')">
           <ij-logo />
         </a>
         <router-outlet />
@@ -43,4 +44,7 @@ import { IjLogo } from '@/shared/ui';
     </main>
   `,
 })
-export class AuthLayout {}
+export class AuthLayout {
+  /** Sólo el `aria-label` del logo lleva texto propio (T26). */
+  protected readonly i18n = inject(AppTranslateService);
+}

@@ -9,24 +9,41 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NgControl, ValidationErrors } from '@angular/forms';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 
 let uid = 0;
 
-/** Traduce el primer error de validación a un mensaje en español. */
-export function ijFirstError(errors: ValidationErrors | null): string | null {
+/**
+ * Primer error de validación como **clave + parámetros** (T26), no como texto:
+ * quien lo resuelve es el control, que sí puede traducir y repintarse al
+ * cambiar de idioma.
+ */
+export function ijFirstErrorKey(
+  errors: ValidationErrors | null,
+): { key: string; params?: Record<string, unknown> } | null {
   if (!errors) return null;
-  if (errors['required']) return 'Este campo es obligatorio.';
-  if (errors['email']) return 'Correo electrónico no válido.';
+  if (errors['required']) return { key: 'validation.required' };
+  if (errors['email']) return { key: 'validation.email' };
   if (errors['minlength']) {
-    return `Mínimo ${errors['minlength'].requiredLength} caracteres.`;
+    return {
+      key: 'validation.minLength',
+      params: { length: errors['minlength'].requiredLength },
+    };
   }
   if (errors['maxlength']) {
-    return `Máximo ${errors['maxlength'].requiredLength} caracteres.`;
+    return {
+      key: 'validation.maxLength',
+      params: { length: errors['maxlength'].requiredLength },
+    };
   }
-  if (errors['min']) return `El valor mínimo es ${errors['min'].min}.`;
-  if (errors['max']) return `El valor máximo es ${errors['max'].max}.`;
-  if (errors['pattern']) return 'El formato no es válido.';
-  return 'El valor no es válido.';
+  if (errors['min']) {
+    return { key: 'validation.min', params: { value: errors['min'].min } };
+  }
+  if (errors['max']) {
+    return { key: 'validation.max', params: { value: errors['max'].max } };
+  }
+  if (errors['pattern']) return { key: 'validation.pattern' };
+  return { key: 'validation.invalid' };
 }
 
 /**
@@ -40,6 +57,8 @@ export abstract class IjControlBase<T> implements ControlValueAccessor, OnInit {
   /** NgControl del host (formControlName/ngModel), si existe. */
   readonly ngControl = inject(NgControl, { optional: true, self: true });
   private readonly destroyRef = inject(DestroyRef);
+  /** `protected`: las plantillas de los controles hijos también traducen. */
+  protected readonly i18n = inject(AppTranslateService);
   private readonly statusVersion = signal(0);
 
   readonly label = input<string>('');
@@ -102,6 +121,7 @@ export abstract class IjControlBase<T> implements ControlValueAccessor, OnInit {
     const explicit = this.error();
     if (explicit) return explicit;
     if (!this.invalid()) return null;
-    return ijFirstError(this.ngControl?.control?.errors ?? null);
+    const error = ijFirstErrorKey(this.ngControl?.control?.errors ?? null);
+    return error ? this.i18n.t(error.key, error.params) : null;
   });
 }

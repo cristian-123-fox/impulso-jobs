@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjButton, IjLogo } from '@/shared/ui';
 import { SOCIAL_LINKS } from '@/shared/catalogs/social.catalogs';
 import {
@@ -10,12 +11,13 @@ import {
 } from '@/shared/catalogs/brand.catalogs';
 
 interface FooterLink {
-  readonly label: string;
+  /** Clave de traducción; el texto se resuelve en la plantilla. */
+  readonly labelKey: string;
   readonly path: string;
 }
 
 interface FooterColumn {
-  readonly title: string;
+  readonly titleKey: string;
   readonly links: readonly FooterLink[];
 }
 
@@ -23,16 +25,16 @@ interface FooterColumn {
 @Component({
   selector: 'app-footer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjLogo, IjButton, RouterLink],
+  imports: [IjLogo, IjButton, RouterLink, TranslocoDirective],
   template: `
-    <footer class="bg-ink-950 px-6 pb-10 text-footer-fg lg:px-[60px]">
+    <footer *transloco="let t" class="bg-ink-950 px-6 pb-10 text-footer-fg lg:px-[60px]">
       <!-- Newsletter -->
       <div class="mx-auto max-w-[1120px] -translate-y-10">
         <div
           class="flex flex-wrap items-center justify-between gap-8 rounded-xl bg-ink-card px-6 py-8 sm:px-11"
         >
           <p class="max-w-[420px] text-xl font-semibold leading-snug text-white">
-            Recibe las vacantes nuevas de tu área en tu correo.
+            {{ t('footer.newsletter.title') }}
           </p>
           <form
             class="min-w-[280px] max-w-[520px] flex-1"
@@ -41,16 +43,18 @@ interface FooterColumn {
           >
             <div class="flex gap-3">
               <label class="flex-1">
-                <span class="sr-only">Correo electrónico</span>
+                <span class="sr-only">{{ t('footer.newsletter.emailLabel') }}</span>
                 <input
                   type="email"
                   name="email"
                   autocomplete="email"
-                  placeholder="tu&#64;correo.com"
+                  [placeholder]="t('footer.newsletter.placeholder')"
                   class="w-full rounded-lg border-0 px-4 py-3.5 text-sm text-body placeholder:text-muted focus:ring-2 focus:ring-brand-700"
                 />
               </label>
-              <button ij-button type="submit" shape="rounded">Suscribirme</button>
+              <button ij-button type="submit" shape="rounded">
+                {{ t('footer.newsletter.submit') }}
+              </button>
             </div>
             <!--
               El alta aún no tiene endpoint (no hay módulo de notificaciones ni
@@ -63,10 +67,9 @@ interface FooterColumn {
               aria-live="polite"
             >
               @if (submitted()) {
-                Todavía no podemos guardar tu correo: el aviso de vacantes se
-                activa cuando abramos el envío por correo.
+                {{ t('footer.newsletter.pending') }}
               } @else {
-                Un correo por semana. Puedes darte de baja cuando quieras.
+                {{ t('footer.newsletter.hint') }}
               }
             </p>
           </form>
@@ -80,35 +83,34 @@ interface FooterColumn {
         <div>
           <ij-logo variant="light" size="sm" />
           <p class="mb-4 mt-5 max-w-[280px] text-sm leading-relaxed text-footer-muted">
-            Conectamos talento y empresas para impulsar tu próxima oportunidad
-            profesional.
+            {{ t('footer.tagline') }}
           </p>
           <address class="text-[13px] not-italic leading-[1.9] text-footer-muted">
-            <span class="font-medium text-white">Dirección:</span>
+            <span class="font-medium text-white">{{ t('footer.addressLabel') }}</span>
             {{ office.street }}, {{ office.locality }},<br />
             {{ office.city }}<br />
-            <span class="font-medium text-white">Correo:</span>
+            <span class="font-medium text-white">{{ t('footer.emailLabel') }}</span>
             <a
               [href]="'mailto:' + emails.general"
               class="transition-colors hover:text-white"
               >{{ emails.general }}</a
             ><br />
-            <span class="font-medium text-white">Tel:</span>
+            <span class="font-medium text-white">{{ t('footer.phoneLabel') }}</span>
             <a [href]="telHref(phones.office)" class="transition-colors hover:text-white">{{
               phones.office
             }}</a>
           </address>
         </div>
 
-        @for (col of columns; track col.title) {
+        @for (col of columns; track col.titleKey) {
           <div>
-            <h2 class="mb-5 text-base font-semibold text-white">{{ col.title }}</h2>
+            <h2 class="mb-5 text-base font-semibold text-white">{{ t(col.titleKey) }}</h2>
             <div class="flex flex-col gap-2.5">
               @for (link of col.links; track link.path) {
                 <a
                   [routerLink]="link.path"
                   class="text-sm text-footer-muted transition-colors hover:text-white"
-                  >{{ link.label }}</a
+                  >{{ t(link.labelKey) }}</a
                 >
               }
             </div>
@@ -121,7 +123,7 @@ interface FooterColumn {
         class="mx-auto mt-10 flex max-w-[1120px] flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6"
       >
         <p class="text-[13px] text-footer-muted">
-          © {{ year }} Impulso Jobs. Todos los derechos reservados.
+          {{ t('footer.rights', { year }) }}
         </p>
         <div class="flex gap-2.5">
           @for (social of socials; track social.label) {
@@ -161,30 +163,30 @@ export class Footer {
    */
   protected readonly columns: readonly FooterColumn[] = [
     {
-      title: 'Candidatos',
+      titleKey: 'footer.columns.candidates',
       links: [
-        { label: 'Buscar empleos', path: '/vacantes' },
-        { label: 'Crear cuenta', path: '/auth/registro' },
-        { label: 'Mi perfil', path: '/candidato/perfil' },
-        { label: 'Mis postulaciones', path: '/candidato/postulaciones' },
-        { label: 'Vacantes guardadas', path: '/candidato/guardadas' },
+        { labelKey: 'footer.links.searchJobs', path: '/vacantes' },
+        { labelKey: 'footer.links.createAccount', path: '/auth/registro' },
+        { labelKey: 'footer.links.myProfile', path: '/candidato/perfil' },
+        { labelKey: 'footer.links.myApplications', path: '/candidato/postulaciones' },
+        { labelKey: 'footer.links.savedJobs', path: '/candidato/guardadas' },
       ],
     },
     {
-      title: 'Empresas',
+      titleKey: 'footer.columns.companies',
       links: [
-        { label: 'Publicar empleo', path: '/auth/registro/empresa' },
-        { label: 'Planes y precios', path: '/planes' },
-        { label: 'Mis vacantes', path: '/empresa/vacantes' },
-        { label: 'Buscar talento', path: '/empresa/candidatos' },
+        { labelKey: 'footer.links.postJob', path: '/auth/registro/empresa' },
+        { labelKey: 'footer.links.pricing', path: '/planes' },
+        { labelKey: 'footer.links.myVacancies', path: '/empresa/vacantes' },
+        { labelKey: 'footer.links.searchTalent', path: '/empresa/candidatos' },
       ],
     },
     {
-      title: 'Impulso Jobs',
+      titleKey: 'footer.columns.brand',
       links: [
-        { label: 'Nosotros', path: '/nosotros' },
-        { label: 'Preguntas frecuentes', path: '/faq' },
-        { label: 'Contacto', path: '/contacto' },
+        { labelKey: 'footer.links.about', path: '/nosotros' },
+        { labelKey: 'footer.links.faq', path: '/faq' },
+        { labelKey: 'footer.links.contact', path: '/contacto' },
       ],
     },
   ];

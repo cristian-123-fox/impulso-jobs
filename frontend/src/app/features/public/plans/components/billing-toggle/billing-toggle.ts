@@ -4,6 +4,7 @@ import {
   input,
   output,
 } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import {
   BillingCycle,
   BillingOption,
@@ -12,11 +13,13 @@ import {
 @Component({
   selector: 'app-billing-toggle',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [TranslocoDirective],
   template: `
     <div
+      *transloco="let t"
       class="inline-flex flex-wrap items-center gap-2 rounded-full bg-brand-50 p-1.5"
       role="tablist"
-      aria-label="Cambiar ciclo de facturación"
+      [attr.aria-label]="t('plans.toggleLabel')"
     >
       @for (option of options(); track option.id) {
         <button

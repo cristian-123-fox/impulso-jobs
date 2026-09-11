@@ -2,20 +2,18 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
+import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { vacancyPath } from '@/shared/utils/seo';
 import { IjIcon } from '@/shared/ui';
-import {
-  EMPLOYMENT_TYPE_LABELS,
-  EmploymentType,
-  PublicVacancy,
-  WORK_MODE_LABELS,
-  WorkMode,
-} from '@/features/public/vacancies/models/public-vacancies.models';
+import { PublicVacancy } from '@/features/public/vacancies/models/public-vacancies.models';
 
 const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
 const NEW_BADGE_DAYS = 7;
@@ -24,10 +22,11 @@ const NEW_BADGE_DAYS = 7;
 @Component({
   selector: 'app-vacancy-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IjIcon],
+  imports: [RouterLink, IjIcon, TranslocoDirective],
   host: { class: 'block' },
   template: `
     <a
+      *transloco="let t"
       [routerLink]="detailPath()"
       class="flex gap-4 rounded-2xl bg-white p-5 shadow-card transition-shadow hover:shadow-float sm:gap-5"
       [class.ring-1]="vacancy().isFeatured"
@@ -61,17 +60,17 @@ const NEW_BADGE_DAYS = 7;
           <div class="mt-1 flex flex-wrap items-center gap-1.5">
             @if (vacancy().isFeatured) {
               <span class="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-strong">
-                Destacada
+                {{ t('card.featured') }}
               </span>
             }
             @if (vacancy().isUrgent) {
               <span class="rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-700">
-                Urgente
+                {{ t('card.urgent') }}
               </span>
             }
             @if (vacancy().isVerified) {
               <span class="rounded-md bg-accent-blue-soft px-2 py-0.5 text-[11px] font-bold text-accent-blue-strong">
-                Verificada
+                {{ t('card.verified') }}
               </span>
             }
           </div>
@@ -94,7 +93,7 @@ const NEW_BADGE_DAYS = 7;
       <div class="hidden flex-shrink-0 flex-col items-end justify-between gap-2 text-right sm:flex">
         @if (isNew()) {
           <span class="rounded-md bg-accent-green-strong px-2.5 py-1 text-[11.5px] font-bold text-white">
-            Nueva
+            {{ t('card.new') }}
           </span>
         } @else {
           <span class="rounded-md bg-brand-50 px-2.5 py-1 text-[11.5px] font-bold text-brand-strong">
@@ -105,17 +104,22 @@ const NEW_BADGE_DAYS = 7;
         <div>
           <span class="text-[14px] font-extrabold text-ink-900">{{ salary() }}</span>
           @if (hasSalary()) {
-            <span class="text-[12px] font-semibold text-muted"> / Mensual</span>
+            <span class="text-[12px] font-semibold text-muted">
+              {{ t('card.perMonth') }}</span
+            >
           }
         </div>
 
-        <span class="text-[13px] font-bold text-brand-strong">Ver vacante</span>
+        <span class="text-[13px] font-bold text-brand-strong">{{ t('card.view') }}</span>
       </div>
     </a>
   `,
 })
 export class VacancyCard {
   readonly vacancy = input.required<PublicVacancy>();
+
+  private readonly i18n = inject(AppTranslateService);
+  private readonly format = inject(LocaleFormatService);
 
   /**
    * Un `logoUrl` que devuelve 404 dejaba un recuadro vacío en la tarjeta (le
@@ -139,7 +143,10 @@ export class VacancyCard {
   }
 
   protected companyName(): string {
-    return this.vacancy().company?.businessName ?? 'Empresa confidencial';
+    return (
+      this.vacancy().company?.businessName ??
+      this.i18n.t('card.confidential')
+    );
   }
 
   protected initials(): string {
@@ -155,23 +162,23 @@ export class VacancyCard {
   }
 
   protected employmentLabel(): string {
-    const type = this.vacancy().employmentType as EmploymentType;
-    return EMPLOYMENT_TYPE_LABELS[type] ?? type;
+    return this.i18n.enumLabel('employmentType', this.vacancy().employmentType);
   }
 
   protected workModeLabel(): string {
-    const mode = this.vacancy().workMode as WorkMode;
-    return WORK_MODE_LABELS[mode] ?? mode;
+    return this.i18n.enumLabel('workMode', this.vacancy().workMode);
   }
 
   protected postedAgo(): string {
     const days = this.daysSincePosted();
     if (days === null) return '';
-    if (days <= 0) return 'hoy';
-    if (days === 1) return 'ayer';
-    if (days < 30) return `hace ${days} días`;
+    if (days <= 0) return this.i18n.t('card.postedToday');
+    if (days === 1) return this.i18n.t('card.postedYesterday');
+    if (days < 30) return this.i18n.t('card.postedDays', { days });
     const months = Math.floor(days / 30);
-    return months === 1 ? 'hace 1 mes' : `hace ${months} meses`;
+    return months === 1
+      ? this.i18n.t('card.postedMonth')
+      : this.i18n.t('card.postedMonths', { months });
   }
 
   protected isNew(): boolean {
@@ -186,17 +193,16 @@ export class VacancyCard {
 
   protected salary(): string {
     const { salaryMin, salaryMax } = this.vacancy();
-    if (salaryMin === null && salaryMax === null) return 'Salario a convenir';
-    const format = (amount: number) =>
-      new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        maximumFractionDigits: 0,
-      }).format(amount);
-    if (salaryMin !== null && salaryMax !== null) {
-      return `${format(salaryMin)} a ${format(salaryMax)}`;
+    if (salaryMin === null && salaryMax === null) {
+      return this.i18n.t('card.salaryTbd');
     }
-    return format((salaryMin ?? salaryMax)!);
+    if (salaryMin !== null && salaryMax !== null) {
+      return this.i18n.t('card.salaryRange', {
+        min: this.format.currency(salaryMin),
+        max: this.format.currency(salaryMax),
+      });
+    }
+    return this.format.currency((salaryMin ?? salaryMax)!);
   }
 
   private daysSincePosted(): number | null {

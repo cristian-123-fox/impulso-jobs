@@ -5,6 +5,7 @@ import {
   output,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjButton, IjIcon } from '@/shared/ui';
 import { IjReveal } from '@/shared/directives/reveal';
 import { VacancyCard } from '@/features/public/vacancies/components/vacancy-card/vacancy-card';
@@ -33,16 +34,20 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
     SectionHeading,
     VacancyCard,
     IjReveal,
+    TranslocoDirective,
   ],
   template: `
-    <section class="relative overflow-hidden px-6 py-16 lg:px-[60px]">
+    <section
+      *transloco="let t"
+      class="relative overflow-hidden px-6 py-16 lg:px-[60px]"
+    >
       <div
         class="pointer-events-none absolute -right-36 top-28 hidden h-[420px] w-[420px] rounded-full border-[60px] border-brand/[0.05] lg:block"
         aria-hidden="true"
       ></div>
 
       <div class="relative z-[1]">
-        <app-section-heading>Vacantes publicadas esta semana</app-section-heading>
+        <app-section-heading>{{ t('home.featured.title') }}</app-section-heading>
 
         <div class="mx-auto mt-12 max-w-[860px]">
           @switch (state()) {
@@ -60,7 +65,7 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
                   </div>
                 }
               </div>
-              <p class="sr-only" role="status">Cargando vacantes.</p>
+              <p class="sr-only" role="status">{{ t('home.featured.loading') }}</p>
             }
 
             @case ('error') {
@@ -74,18 +79,17 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
                   <ij-icon name="alert-triangle" [size]="24" />
                 </span>
                 <h3 class="text-lg font-semibold text-ink-900">
-                  No pudimos cargar las vacantes
+                  {{ t('home.featured.errorTitle') }}
                 </h3>
                 <p class="mx-auto mt-2 max-w-[42ch] text-sm leading-relaxed text-muted">
-                  Puede ser una caída momentánea de la conexión. Inténtalo otra
-                  vez o entra directo al listado completo.
+                  {{ t('home.featured.errorBody') }}
                 </p>
                 <div class="mt-6 flex flex-wrap justify-center gap-3">
                   <button ij-button type="button" size="sm" (click)="retry.emit()">
-                    Reintentar
+                    {{ t('home.featured.retry') }}
                   </button>
                   <a ij-button routerLink="/vacantes" variant="outline" size="sm">
-                    Ir al listado
+                    {{ t('home.featured.goToList') }}
                   </a>
                 </div>
               </div>
@@ -105,7 +109,7 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
 
                 <div class="mt-9 text-center">
                   <a ij-button routerLink="/vacantes" size="lg">
-                    Ver todas las vacantes
+                    {{ t('home.featured.viewAll') }}
                   </a>
                 </div>
               } @else {
@@ -118,11 +122,10 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
                     <ij-icon name="briefcase" [size]="24" />
                   </span>
                   <h3 class="text-lg font-semibold text-ink-900">
-                    Todavía no hay vacantes publicadas
+                    {{ t('home.featured.emptyTitle') }}
                   </h3>
                   <p class="mx-auto mt-2 max-w-[46ch] text-sm leading-relaxed text-muted">
-                    Aquí aparecerán las ofertas en cuanto las empresas empiecen a
-                    publicar. Si contratas, puedes ser la primera.
+                    {{ t('home.featured.emptyBody') }}
                   </p>
                   <a
                     ij-button
@@ -130,7 +133,7 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
                     size="sm"
                     class="mt-6"
                   >
-                    Publicar una vacante
+                    {{ t('home.featured.emptyCta') }}
                   </a>
                 </div>
               }

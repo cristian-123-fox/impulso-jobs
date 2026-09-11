@@ -1,11 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { PublicPlansApi } from '@/features/public/plans/data/public-plans.api';
 import {
   ApiPlan,
   ApiPlanFeature,
   BillingCycle,
   BillingOption,
-  PlansHeroContent,
   PricingPlan,
 } from '@/features/public/plans/models/plans.models';
 
@@ -17,40 +17,33 @@ const CYCLE_BY_PERIOD: Record<string, BillingCycle> = {
   ANNUAL: 'annual',
 };
 
-const CYCLE_LABELS: Record<BillingCycle, string> = {
-  monthly: 'Por publicación',
-  annual: 'Suscripción anual',
-};
-
-const PERIOD_LABELS: Record<BillingCycle, string> = {
-  monthly: 'Por publicación',
-  annual: 'Anual',
-};
-
 /**
  * Facade del feature de planes. Los planes vienen de `GET /plans` (los que el
  * admin creó y activó en `/admin/planes`); aquí solo se proyectan a las cards.
+ *
+ * **Lo que la API devuelve no se traduce** (T26): el nombre del plan, su
+ * descripción y el nombre de cada beneficio los escribe el back-office en un
+ * solo idioma. Lo que sí se traduce es lo que arma el frontend alrededor: la
+ * etiqueta del ciclo, el sufijo del precio y el "ilimitado" de un beneficio
+ * numérico.
  */
 @Injectable({ providedIn: 'root' })
 export class PlansFacade {
   private readonly api = inject(PublicPlansApi);
-
-  private readonly _hero = signal<PlansHeroContent>({
-    title: 'Planes y precios',
-    breadcrumbLabel: 'Planes',
-    description:
-      'Escoge el plan que mejor se ajusta al ritmo de contratación de tu empresa y activa tus vacantes en minutos.',
-  });
+  private readonly i18n = inject(AppTranslateService);
 
   private readonly apiPlans = signal<ApiPlan[]>([]);
   private readonly loadingState = signal(false);
   private readonly loadedState = signal(false);
-  private readonly errorState = signal<string | null>(null);
+  private readonly errorState = signal(false);
 
-  readonly hero = this._hero.asReadonly();
   readonly loading = this.loadingState.asReadonly();
   readonly loaded = this.loadedState.asReadonly();
-  readonly error = this.errorState.asReadonly();
+  /**
+   * Sólo un indicador: el texto del error se resuelve en la vista. Guardarlo ya
+   * traducido dejaría el aviso en el idioma que hubiera al fallar la llamada.
+   */
+  readonly hasError = this.errorState.asReadonly();
 
   /** Solo se ofrecen los ciclos que tienen al menos un plan publicado. */
   readonly billingOptions = computed<readonly BillingOption[]>(() => {
@@ -61,7 +54,10 @@ export class PlansFacade {
     );
     return (['monthly', 'annual'] as const)
       .filter((cycle) => cycles.has(cycle))
-      .map((cycle) => ({ id: cycle, label: CYCLE_LABELS[cycle] }));
+      .map((cycle) => ({
+        id: cycle,
+        label: this.i18n.t(`plans.cycles.${cycle}`),
+      }));
   });
 
   readonly isEmpty = computed(
@@ -71,7 +67,7 @@ export class PlansFacade {
   load(): void {
     if (this.loadingState() || this.loadedState()) return;
     this.loadingState.set(true);
-    this.errorState.set(null);
+    this.errorState.set(false);
     this.api.list().subscribe({
       next: (plans) => {
         this.apiPlans.set(plans);
@@ -79,14 +75,17 @@ export class PlansFacade {
         this.loadingState.set(false);
       },
       error: () => {
-        this.errorState.set(
-          'No pudimos cargar los planes en este momento. Intenta de nuevo más tarde.',
-        );
+        this.errorState.set(true);
         this.loadingState.set(false);
       },
     });
   }
 
+  /**
+   * Las tarjetas de un ciclo. Traduce por dentro (`AppTranslateService`), así
+   * que el `computed` que llame a este método queda enganchado al idioma y se
+   * rearma al cambiarlo (T26).
+   */
   plansFor(cycle: BillingCycle): readonly PricingPlan[] {
     return this.apiPlans()
       .filter((plan) => CYCLE_BY_PERIOD[plan.billingPeriod] === cycle)
@@ -107,7 +106,7 @@ export class PlansFacade {
       annualPrice: plan.price.total,
       recommended: plan.isPopular,
       accent: plan.isPopular ? 'amber' : ACCENTS[index % ACCENTS.length],
-      periodLabel: PERIOD_LABELS[cycle],
+      periodLabel: this.i18n.t(`plans.periods.${cycle}`),
       ctaLink: '/auth/registro/empresa',
       features: plan.features.map((feature) => this.toFeature(feature)),
     };
@@ -118,8 +117,11 @@ export class PlansFacade {
     if (feature.valueType === 'NUMERIC' && feature.isIncluded && feature.value) {
       label =
         feature.value === '-1'
-          ? `${feature.name}: ilimitado`
-          : `${feature.name}: ${feature.value}`;
+          ? this.i18n.t('plans.features.unlimited', { name: feature.name })
+          : this.i18n.t('plans.features.value', {
+              name: feature.name,
+              value: feature.value,
+            });
     }
     return { label, included: feature.isIncluded };
   }

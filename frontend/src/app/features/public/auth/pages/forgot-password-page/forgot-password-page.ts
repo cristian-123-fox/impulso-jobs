@@ -13,6 +13,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import { ForgotStatus } from '@/features/public/auth/models/auth.models';
 import { IjButton, IjIcon, IjInput } from '@/shared/ui';
@@ -26,9 +27,16 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
   selector: 'app-forgot-password-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block w-full' },
-  imports: [ReactiveFormsModule, RouterLink, IjButton, IjIcon, IjInput],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    IjButton,
+    IjIcon,
+    IjInput,
+    TranslocoDirective,
+  ],
   template: `
-    <div class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
+    <div *transloco="let t" class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
       @if (status() === 'sent') {
         <div class="text-center">
           <span
@@ -36,19 +44,20 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
           >
             <ij-icon name="mail" [size]="26" />
           </span>
-          <h1 class="text-[22px] font-bold tracking-tight text-ink-900">Revisa tu correo</h1>
+          <h1 class="text-[22px] font-bold tracking-tight text-ink-900">
+            {{ t('auth.forgot.sentTitle') }}
+          </h1>
           <p class="mt-2 text-[14.5px] leading-relaxed text-muted">
-            Si <b class="text-ink-900">{{ sentEmail() }}</b> está registrado, te enviamos un
-            enlace para restablecer tu contraseña. Expira en 30 minutos.
+            {{ t('auth.forgot.sentBody', { email: sentEmail() }) }}
           </p>
           <p class="mt-4 text-[13px] text-muted">
-            ¿No lo ves? Revisa tu carpeta de spam o
+            {{ t('auth.forgot.notSeeing') }}
             <button
               type="button"
               class="font-semibold text-brand-strong transition-colors hover:text-brand-600"
               (click)="reset()"
             >
-              intenta con otro correo
+              {{ t('auth.forgot.tryAnother') }}
             </button>.
           </p>
           <a
@@ -56,21 +65,23 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
             class="mt-6 inline-flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-brand-strong transition-colors hover:text-brand-600"
           >
             <ij-icon name="chevron-left" [size]="16" />
-            Volver a iniciar sesión
+            {{ t('auth.common.backToLogin') }}
           </a>
         </div>
       } @else {
-        <h1 class="text-[25px] font-bold tracking-tight text-ink-900">Recuperar contraseña</h1>
+        <h1 class="text-[25px] font-bold tracking-tight text-ink-900">
+          {{ t('auth.forgot.title') }}
+        </h1>
         <p class="mt-2 text-[15px] text-muted">
-          Ingresa tu correo y te enviaremos un enlace para restablecerla.
+          {{ t('auth.forgot.lead') }}
         </p>
 
         <form novalidate class="mt-6" [formGroup]="form" (ngSubmit)="onSubmit()">
           <ij-input
-            label="Correo electrónico"
+            [label]="t('auth.common.email')"
             type="email"
             autocomplete="email"
-            placeholder="tucorreo@ejemplo.com"
+            [placeholder]="t('auth.common.emailPlaceholder')"
             formControlName="email"
           />
 
@@ -89,7 +100,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
                 aria-hidden="true"
               ></span>
             }
-            {{ isLoading() ? 'Enviando…' : 'Enviar enlace' }}
+            {{ isLoading() ? t('auth.common.sending') : t('auth.forgot.submit') }}
           </button>
         </form>
 
@@ -98,7 +109,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
           class="mt-6 flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-muted transition-colors hover:text-brand-strong"
         >
           <ij-icon name="chevron-left" [size]="16" />
-          Volver a iniciar sesión
+          {{ t('auth.common.backToLogin') }}
         </a>
       }
     </div>

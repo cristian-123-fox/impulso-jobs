@@ -1,4 +1,7 @@
-<section class="relative overflow-hidden bg-surface px-6 pb-20 pt-10 lg:px-[60px] lg:pb-24">
+<section
+  *transloco="let t"
+  class="relative overflow-hidden bg-surface px-6 pb-20 pt-10 lg:px-[60px] lg:pb-24"
+>
   <!--
     Decoración: dos halos de marca muy tenues. Se retiró el texto gigante
     "JOBS" del fondo: una palabra decorativa de 150px es ruido, no diseño.
@@ -17,15 +20,19 @@
   >
     <!-- Copy + buscador -->
     <div>
+      <!--
+        El titular se parte en tres claves porque la palabra resaltada va
+        dentro de un span: en inglés cae en otra posición de la frase.
+      -->
       <h1
         class="mb-5 text-4xl font-bold leading-[1.1] text-ink-900 sm:text-5xl lg:text-[56px]"
       >
-        Encuentra el <span class="text-brand-strong">empleo</span> que se ajusta
-        a tu vida
+        {{ t('home.hero.titleStart')
+        }}<span class="text-brand-strong">{{ t('home.hero.titleHighlight') }}</span
+        >{{ t('home.hero.titleEnd') }}
       </h1>
       <p class="mb-8 max-w-[46ch] text-base leading-relaxed text-muted">
-        Vacantes en todo México, con filtros por área, estado y modalidad.
-        Postularte es gratis.
+        {{ t('home.hero.subtitle') }}
       </p>
 
       <!--
@@ -43,11 +50,13 @@
         <label
           class="rounded-lg px-4 py-2 transition-colors focus-within:bg-surface sm:col-span-2 2xl:col-span-1 2xl:border-r 2xl:border-line"
         >
-          <span class="mb-0.5 block text-[11px] font-semibold text-muted">Empleo</span>
+          <span class="mb-0.5 block text-[11px] font-semibold text-muted">
+            {{ t('home.hero.jobLabel') }}
+          </span>
           <input
             type="text"
             formControlName="query"
-            placeholder="Cargo o palabra clave"
+            [placeholder]="t('home.hero.jobPlaceholder')"
             class="w-full border-0 bg-transparent p-0 text-sm text-body placeholder:text-muted focus:ring-0"
           />
         </label>
@@ -55,12 +64,14 @@
         <label
           class="rounded-lg px-4 py-2 transition-colors focus-within:bg-surface 2xl:border-r 2xl:border-line"
         >
-          <span class="mb-0.5 block text-[11px] font-semibold text-muted">Área</span>
+          <span class="mb-0.5 block text-[11px] font-semibold text-muted">
+            {{ t('home.hero.areaLabel') }}
+          </span>
           <select
             formControlName="area"
             class="w-full truncate border-0 bg-transparent p-0 pr-7 text-sm text-body focus:ring-0"
           >
-            <option value="">Todas las áreas</option>
+            <option value="">{{ t('home.hero.areaAll') }}</option>
             @for (area of areas; track area.id) {
               <option [value]="area.id">{{ area.name }}</option>
             }
@@ -68,12 +79,14 @@
         </label>
 
         <label class="rounded-lg px-4 py-2 transition-colors focus-within:bg-surface">
-          <span class="mb-0.5 block text-[11px] font-semibold text-muted">Estado</span>
+          <span class="mb-0.5 block text-[11px] font-semibold text-muted">
+            {{ t('home.hero.stateLabel') }}
+          </span>
           <select
             formControlName="state"
             class="w-full truncate border-0 bg-transparent p-0 pr-7 text-sm text-body focus:ring-0"
           >
-            <option value="">Todo México</option>
+            <option value="">{{ t('home.hero.stateAll') }}</option>
             @for (state of states; track state.code) {
               <option [value]="state.code">{{ state.name }}</option>
             }
@@ -88,17 +101,20 @@
           class="mt-2 w-full sm:col-span-2 2xl:col-span-1 2xl:mt-0 2xl:w-auto"
         >
           <ij-icon name="search" [size]="16" />
-          Buscar empleo
+          {{ t('home.hero.submit') }}
         </button>
       </form>
 
       <!--
         Búsquedas frecuentes como botones reales: rellenan el buscador y lanzan
         la búsqueda. Antes era texto plano unido con " , " y terminado en "...".
+        Los términos no se traducen: se consultan contra vacantes en español.
       -->
       @if (popularSearches().length) {
         <div class="mt-5 flex flex-wrap items-center gap-2">
-          <span class="text-[13px] font-semibold text-body">Búsquedas frecuentes:</span>
+          <span class="text-[13px] font-semibold text-body">
+            {{ t('home.hero.popular') }}
+          </span>
           @for (term of popularSearches(); track term) {
             <button
               type="button"
@@ -144,7 +160,7 @@
       </div>
 
       <div class="relative mt-5 flex flex-wrap gap-3">
-        @for (stat of stats(); track stat.label) {
+        @for (stat of stats(); track stat.labelKey) {
           <div
             class="flex flex-1 items-center gap-3 rounded-xl bg-white px-4 py-3.5 shadow-float"
           >
@@ -160,7 +176,7 @@
               <span class="block text-xl font-bold leading-tight text-ink-900">
                 {{ stat.value }}
               </span>
-              <span class="block text-xs text-muted">{{ stat.label }}</span>
+              <span class="block text-xs text-muted">{{ t(stat.labelKey) }}</span>
             </span>
           </div>
         }

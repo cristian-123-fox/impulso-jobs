@@ -1,0 +1,772 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About us",
+    "jobs": "Jobs",
+    "plans": "Pricing",
+    "contact": "Contact",
+    "login": "Sign in",
+    "postJob": "Post a job",
+    "myAccount": "Go to my account",
+    "logout": "Sign out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "brandHome": "Impulso Jobs, go to home",
+    "primary": "Main",
+    "banner": "Impulso Jobs"
+  },
+  "language": {
+    "label": "Language",
+    "change": "Change language"
+  },
+  "footer": {
+    "newsletter": {
+      "title": "Get new jobs in your field straight to your inbox.",
+      "emailLabel": "Email address",
+      "placeholder": "you@email.com",
+      "submit": "Subscribe",
+      "pending": "We can't save your email yet: job alerts start once we turn on email delivery.",
+      "hint": "One email a week. Unsubscribe whenever you like."
+    },
+    "tagline": "We connect talent and companies to drive your next career opportunity.",
+    "addressLabel": "Address:",
+    "emailLabel": "Email:",
+    "phoneLabel": "Phone:",
+    "rights": "© {{year}} Impulso Jobs. All rights reserved.",
+    "columns": {
+      "candidates": "Candidates",
+      "companies": "Companies",
+      "brand": "Impulso Jobs"
+    },
+    "links": {
+      "searchJobs": "Browse jobs",
+      "createAccount": "Create account",
+      "myProfile": "My profile",
+      "myApplications": "My applications",
+      "savedJobs": "Saved jobs",
+      "postJob": "Post a job",
+      "pricing": "Plans and pricing",
+      "myVacancies": "My job posts",
+      "searchTalent": "Search talent",
+      "about": "About us",
+      "faq": "FAQ",
+      "contact": "Contact"
+    }
+  },
+  "home": {
+    "hero": {
+      "titleStart": "Find the ",
+      "titleHighlight": "job",
+      "titleEnd": " that fits your life",
+      "subtitle": "Openings across Mexico, with filters by field, state and work mode. Applying is free.",
+      "jobLabel": "Job",
+      "jobPlaceholder": "Role or keyword",
+      "areaLabel": "Field",
+      "areaAll": "All fields",
+      "stateLabel": "State",
+      "stateAll": "All of Mexico",
+      "submit": "Search jobs",
+      "popular": "Popular searches:"
+    },
+    "stats": {
+      "openOne": "Open position",
+      "openMany": "Open positions",
+      "thousands": "{{value}}k",
+      "free": "Free",
+      "forCandidates": "For candidates"
+    },
+    "categories": {
+      "eyebrow": "Jobs by field",
+      "title": "Pick the field you want to work in",
+      "lead": "Browse the busiest fields and filter the openings that match your experience in one click.",
+      "viewVacancies": "View openings",
+      "allAreas": "All 23 fields",
+      "allAreasHint": "See the full catalog"
+    },
+    "featured": {
+      "title": "Openings posted this week",
+      "loading": "Loading openings.",
+      "errorTitle": "We could not load the openings",
+      "errorBody": "It may be a brief connection drop. Try again or go straight to the full list.",
+      "retry": "Try again",
+      "goToList": "Go to the list",
+      "viewAll": "View all openings",
+      "emptyTitle": "No openings posted yet",
+      "emptyBody": "Openings will show up here as soon as companies start posting. If you are hiring, you can be the first.",
+      "emptyCta": "Post an opening"
+    },
+    "steps": {
+      "title": "How it works",
+      "lead": "Three steps between creating your account and being in a hiring process.",
+      "account": {
+        "title": "Create your account",
+        "description": "Sign up with your email in a couple of minutes. No card required."
+      },
+      "resume": {
+        "title": "Build your resume",
+        "description": "Fill in your profile once and reuse it in every application."
+      },
+      "apply": {
+        "title": "Apply and follow up",
+        "description": "Apply in one click and check what stage each process is in."
+      }
+    },
+    "resume": {
+      "title": "Do not just search: let companies find you",
+      "body": "Build your resume once on Impulso Jobs and apply to any opening in a single click. Free for candidates.",
+      "cta": "Build my resume",
+      "once": {
+        "title": "One resume, every application",
+        "description": "You fill it in once and it is attached automatically every time you apply."
+      },
+      "snapshot": {
+        "title": "The company sees what you sent",
+        "description": "A copy of your profile is kept exactly as it was that day, even if you edit it later."
+      },
+      "privacy": {
+        "title": "You decide who sees you",
+        "description": "You can keep your profile hidden and still apply."
+      }
+    },
+    "employers": {
+      "title": "Are you hiring?",
+      "body": "Post your opening, receive applications organized in a single dashboard and screen candidates with knockout questions before the first call.",
+      "screening": "Knockout questions to screen candidates before interviewing",
+      "snapshot": "The candidate resume saved exactly as it was when they applied",
+      "promotions": "Featured openings and badges by period, with no lock-in",
+      "ctaPost": "Post an opening",
+      "ctaPlans": "See plans",
+      "wallTitle": "Already posting with us"
+    },
+    "testimonials": {
+      "title": "What people who found a job here say",
+      "accountant": {
+        "role": "Accounting analyst, Guadalajara",
+        "quote": "I applied on a Tuesday and by Thursday I had an interview. Seeing what stage each process was in took away the most uncomfortable part of job hunting."
+      },
+      "technician": {
+        "role": "Maintenance technician, Monterrey",
+        "quote": "I filtered by state and work mode and stopped wasting time on openings in another city. I found something twenty minutes from home."
+      }
+    },
+    "faqTeaser": {
+      "title": "Frequently asked questions",
+      "lead": "Common questions about openings, applications and using your account."
+    }
+  },
+  "faq": {
+    "hero": {
+      "eyebrow": "FAQ",
+      "title": "Frequently asked questions",
+      "description": "Answers to common questions about openings, applications, payments and using your Impulso Jobs account."
+    },
+    "breadcrumb": "Frequently asked questions",
+    "emptyTitle": "No questions in this category",
+    "emptyBody": "We will add more answers on this topic soon.",
+    "tabs": {
+      "general": {
+        "label": "General",
+        "description": "The basics of using the platform."
+      },
+      "empleos": {
+        "label": "Jobs",
+        "description": "Questions about posting, visibility and applications."
+      },
+      "pagos": {
+        "label": "Payments",
+        "description": "Plans, invoicing and promotional coupons."
+      },
+      "cuenta": {
+        "label": "Account",
+        "description": "Access, security and profile settings."
+      }
+    },
+    "items": {
+      "general-como-funciona": {
+        "question": "How does Impulso Jobs work for candidates and companies?",
+        "answer": "Candidates create their profile, build their resume and apply from a single dashboard. Companies post openings, review candidates and follow every hiring process from theirs."
+      },
+      "general-ciudades": {
+        "question": "Can I use the platform from any city?",
+        "answer": "Yes. Impulso Jobs covers all 32 states of Mexico and supports on-site, hybrid and remote openings. You can filter by state, municipality, work mode and professional field."
+      },
+      "general-soporte": {
+        "question": "Where do I get help with a specific question?",
+        "answer": "Write to us from the contact page or straight to our email. This section will grow as we release new features."
+      },
+      "empleos-publicacion": {
+        "question": "Where is my opening shown once it is published?",
+        "answer": "The opening appears in the public list, in searches by professional field and by state, and on each field page. If your plan includes promotion, it is also marked as featured."
+      },
+      "empleos-tiempo": {
+        "question": "How long does it take for a job posting to go live?",
+        "answer": "In most cases the posting is available right after you complete the form. If it needs extra validation because of its content or the company details, the team reviews it as soon as possible."
+      },
+      "empleos-postulaciones": {
+        "question": "When will I start receiving applications?",
+        "answer": "As soon as the opening is visible. The volume depends on the profile you are looking for, how clear the description is, the salary and the work mode."
+      },
+      "pagos-cupon": {
+        "question": "How do I redeem a coupon or promo code?",
+        "answer": "While purchasing or activating the plan you will find a field to enter the code. If the coupon is valid and still active, the discount is applied automatically before you confirm the payment."
+      },
+      "pagos-facturacion": {
+        "question": "Do I get an invoice or receipt for my payment?",
+        "answer": "Yes. Every purchase generates a receipt and, where applicable, the invoice with the company tax details: RFC, tax regime and CFDI use. It is worth keeping them up to date in the profile."
+      },
+      "pagos-cancelacion": {
+        "question": "What is the cancellation and plan change policy?",
+        "answer": "Write to support to change plans or sort out a billing matter. Each case is reviewed based on the state of the service, the benefits already used and the terms in force."
+      },
+      "cuenta-password": {
+        "question": "How do I reset my password?",
+        "answer": "From the sign-in page you can use the password recovery option. You will receive a temporary link by email to create a new password securely."
+      },
+      "cuenta-seguridad": {
+        "question": "Is my personal and company information protected?",
+        "answer": "Yes. We apply security measures to protect access, sensitive data and activity inside the platform. On top of that, each user can only manage the information their role allows."
+      },
+      "cuenta-perfil": {
+        "question": "Can I update my profile or company details after signing up?",
+        "answer": "Yes. Both candidates and companies can edit their information, contact details and preferences from their dashboard. Keeping the profile up to date improves the quality of applications and visibility."
+      }
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "A job board built for Mexico",
+      "lead": "Impulso Jobs connects people looking for work with the companies that are hiring, using filters that match how people search for jobs here: by field, by state and by work mode.",
+      "breadcrumb": "About us"
+    },
+    "candidates": {
+      "title": "If you are job hunting",
+      "description": "Everything on the candidate side is free, applications included.",
+      "f1": "Filter by field, state, work mode, experience and minimum salary",
+      "f2": "One resume for all your applications",
+      "f3": "Check what stage each process is in",
+      "f4": "Save openings to decide later",
+      "f5": "Decide whether companies can see your profile",
+      "cta": "Create a free account"
+    },
+    "companies": {
+      "title": "If you are hiring",
+      "description": "Post, screen and organize your processes from your own dashboard.",
+      "f1": "Knockout questions to screen candidates before interviewing",
+      "f2": "The resume is frozen exactly as it was when they applied",
+      "f3": "Featured openings and badges by period",
+      "f4": "Several users per company, with role-based permissions",
+      "f5": "Invoicing with tax details and CFDI use",
+      "cta": "Post an opening"
+    },
+    "steps": {
+      "title": "From creating an account to being in a process",
+      "account": {
+        "title": "Create your account",
+        "description": "Sign up with your email. No card or payment details required."
+      },
+      "resume": {
+        "title": "Build your resume",
+        "description": "Experience, education and languages. Filled in once and reused."
+      },
+      "search": {
+        "title": "Find the opening",
+        "description": "Filter by field, state and work mode, or sort by date or salary."
+      },
+      "apply": {
+        "title": "Apply and follow up",
+        "description": "Apply in one click and track how each process is going from your dashboard."
+      }
+    },
+    "facts": {
+      "areas": {
+        "label": "Professional fields",
+        "detail": "From manufacturing and logistics to healthcare, engineering or sales."
+      },
+      "states": {
+        "label": "States of Mexico",
+        "detail": "Nationwide coverage, with filters by state and municipality."
+      },
+      "free": {
+        "label": "Cost for the candidate",
+        "detail": "Creating an account, building your resume and applying cost nothing."
+      }
+    },
+    "cta": {
+      "title": "Start wherever you stand",
+      "description": "If you are looking for work, creating your account takes a couple of minutes. If you are hiring, you can post your first opening today.",
+      "candidate": "Create a free account",
+      "company": "Post an opening"
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Let's talk about your next hire",
+      "description": "Write to us if you need help posting openings, managing candidates or sorting out a question about the platform.",
+      "breadcrumb": "Contact"
+    },
+    "form": {
+      "eyebrow": "Send us a message",
+      "title": "Tell us how we can help",
+      "lead": "We answer questions from candidates and companies. On submit, your email client opens with the message already written.",
+      "name": "Name",
+      "namePlaceholder": "Your full name",
+      "nameError": "Enter a valid name.",
+      "email": "Email",
+      "emailPlaceholder": "you@email.com",
+      "emailError": "Enter a valid email address.",
+      "phone": "Phone",
+      "phonePlaceholder": "+52 55 0000 0000",
+      "phoneError": "Share a contact phone number.",
+      "subject": "Subject",
+      "subjectPlaceholder": "What can we help you with?",
+      "subjectError": "Write a short subject.",
+      "message": "Message",
+      "messagePlaceholder": "Tell us more about what you need.",
+      "messageError": "The message must be at least 20 characters long.",
+      "submit": "Send message",
+      "alsoWrite": "You can also write to us directly at"
+    },
+    "cards": {
+      "email": "Email",
+      "phone": "Phone and WhatsApp",
+      "office": "Office"
+    },
+    "schedule": {
+      "title": "Support hours",
+      "hours": "Monday to Friday, 8:00 a.m. to 6:00 p.m.",
+      "priority": "Priority support for companies with active openings."
+    },
+    "mailto": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone"
+    },
+    "status": "Done, {{name}}: we opened your email client with the message ready. If it did not open, write to us at {{email}}.",
+    "map": {
+      "label": "Map showing the location of {{office}}: {{address}}",
+      "directions": "Get directions"
+    }
+  },
+  "plans": {
+    "hero": {
+      "title": "Plans and pricing",
+      "description": "Pick the plan that best fits your company's hiring pace and get your openings live in minutes.",
+      "breadcrumb": "Plans"
+    },
+    "eyebrow": "Choose your plan",
+    "title": "Give your openings a boost",
+    "taxNote": "Prices in MXN, VAT included.",
+    "toggleLabel": "Change billing cycle",
+    "error": "We could not load the plans right now. Please try again later.",
+    "empty": {
+      "title": "We will publish our plans soon",
+      "body": "We are still fine-tuning the prices. Write to us and we will let you know as soon as they are available."
+    },
+    "cycles": {
+      "monthly": "Per posting",
+      "annual": "Annual subscription"
+    },
+    "periods": {
+      "monthly": "Per posting",
+      "annual": "Annual"
+    },
+    "features": {
+      "unlimited": "{{name}}: unlimited",
+      "value": "{{name}}: {{value}}"
+    }
+  },
+  "pricing": {
+    "recommended": "Recommended",
+    "buy": "Buy now",
+    "monthly": "Monthly",
+    "annual": "Annual"
+  },
+  "enums": {
+    "employmentType": {
+      "FULL_TIME": "Full time",
+      "PART_TIME": "Part time",
+      "CONTRACT": "Contract",
+      "TEMPORARY": "Temporary",
+      "INTERNSHIP": "Internship"
+    },
+    "workMode": {
+      "ONSITE": "On-site",
+      "HYBRID": "Hybrid",
+      "REMOTE": "Remote"
+    },
+    "experienceLevel": {
+      "ENTRY": "No experience",
+      "JUNIOR": "Junior",
+      "MID": "Mid-level",
+      "SENIOR": "Senior",
+      "LEAD": "Lead / Manager"
+    },
+    "contractType": {
+      "INDEFINITE": "Permanent",
+      "FIXED_TERM": "Fixed term",
+      "SEASONAL": "Seasonal",
+      "OTHER": "Project-based or other"
+    },
+    "educationLevel": {
+      "NONE": "No formal education",
+      "PRIMARY": "Primary school",
+      "SECONDARY": "Middle school",
+      "HIGH_SCHOOL": "High school",
+      "TECHNICAL": "Technical degree",
+      "BACHELOR": "Bachelor's degree",
+      "SPECIALTY": "Specialization",
+      "MASTER": "Master's degree",
+      "DOCTORATE": "Doctorate"
+    },
+    "reportReason": {
+      "OFFENSIVE_DISCRIMINATORY": "It is offensive and/or discriminatory",
+      "ADVERTISEMENT": "It is an ad, not a job offer",
+      "ASKS_FOR_MONEY": "They are asking me for money",
+      "NO_RESPONSE": "They do not reply to applicants",
+      "LOW_PAY": "The pay or conditions are poor",
+      "DUPLICATE": "Duplicate posting",
+      "OTHER": "Another reason"
+    }
+  },
+  "jobs": {
+    "heading": "Find your next job",
+    "landingHeading": "{{area}} jobs in {{state}}",
+    "countOne": "{{count}} active opening on Impulso Jobs.",
+    "countMany": "{{count}} active openings on Impulso Jobs.",
+    "searchLabel": "Search openings",
+    "searchPlaceholder": "Role, technology, keyword…",
+    "submit": "Search",
+    "clear": "Clear",
+    "anyState": "All of Mexico",
+    "anyWorkMode": "Work mode",
+    "anyEmployment": "Any contract type",
+    "anyExperience": "Any experience",
+    "anyArea": "All fields",
+    "anySalary": "Any salary",
+    "salaryFrom": "From {{amount}}",
+    "anyDate": "Any date",
+    "dates": {
+      "today": "Today",
+      "d3": "Last 3 days",
+      "d7": "Last week",
+      "d15": "Last 15 days",
+      "d30": "Last month"
+    },
+    "sort": {
+      "relevance": "Most relevant",
+      "date": "Most recent",
+      "salary": "Best paid"
+    },
+    "loading": "Searching openings…",
+    "error": "We could not load the openings.",
+    "emptyTitle": "We found no openings matching those filters.",
+    "emptyBody": "Try fewer filters or check back later."
+  },
+  "card": {
+    "featured": "Featured",
+    "urgent": "Urgent",
+    "verified": "Verified",
+    "new": "New",
+    "confidential": "Confidential company",
+    "view": "View opening",
+    "perMonth": "/ month",
+    "salaryTbd": "Salary negotiable",
+    "postedToday": "today",
+    "postedYesterday": "yesterday",
+    "postedDays": "{{days}} days ago",
+    "postedMonth": "1 month ago",
+    "postedMonths": "{{months}} months ago",
+    "salaryRange": "{{min}} to {{max}}"
+  },
+  "vacancy": {
+    "back": "All openings",
+    "loading": "Loading opening…",
+    "goneTitle": "This opening is no longer available.",
+    "goneCta": "See other openings",
+    "new": "New",
+    "postedToday": "Today",
+    "postedOneDay": "1 day",
+    "postedDays": "{{days}} days",
+    "applied": "You already applied",
+    "myApplications": "See my applications",
+    "apply": "Apply now",
+    "sending": "Sending…",
+    "save": "Save",
+    "saved": "Saved",
+    "perMonth": "/ month",
+    "deadline": "Apply before:",
+    "description": "Job description",
+    "requirements": "Requirements",
+    "responsibilities": "Responsibilities",
+    "share": "Share this opening",
+    "location": "Location",
+    "publishedOn": "Posted on {{date}}",
+    "report": "Report this opening",
+    "infoTitle": "Job details",
+    "skills": "Job skills",
+    "confidentialNote": "The company will be revealed during the hiring process.",
+    "salaryTbd": "Negotiable",
+    "noDate": "No date",
+    "positions": "{{count}} positions",
+    "details": {
+      "published": "Posted",
+      "location": "Location",
+      "employment": "Contract",
+      "workMode": "Work mode",
+      "experience": "Experience",
+      "salary": "Monthly salary",
+      "area": "Field",
+      "contract": "Contract type",
+      "education": "Minimum education",
+      "positions": "Openings",
+      "deadline": "Apply before",
+      "views": "Views",
+      "validUntil": "Available until"
+    },
+    "applyModal": {
+      "title": "Apply",
+      "lead": "The company asks you to answer these questions to apply.",
+      "answerPlaceholder": "Write your answer",
+      "cancel": "Cancel",
+      "submit": "Send application"
+    },
+    "reportModal": {
+      "title": "Report opening",
+      "done": "Thanks for your report. Our team will review this opening.",
+      "close": "Close",
+      "commentPlaceholder": "Tell us more (optional)",
+      "cancel": "Cancel",
+      "submit": "Send report"
+    },
+    "errors": {
+      "notActive": "This opening is no longer accepting applications.",
+      "answers": "Check your answers: every question is required.",
+      "apply": "We could not send your application. Please try again.",
+      "report": "We could not register the report. Please try again."
+    },
+    "shareText": "Opening: {{title}}",
+    "salaryRange": "{{min}} to {{max}}"
+  },
+  "seo": {
+    "home": {
+      "title": "Impulso Jobs | Job board in Mexico",
+      "description": "Find a job in Mexico by field, state and work mode. Applying is free and you can follow every process from your account."
+    },
+    "about": {
+      "title": "About us | Impulso Jobs",
+      "description": "What Impulso Jobs is: a job board for Mexico, with filters by field, state and work mode. Free for candidates."
+    },
+    "faq": {
+      "title": "FAQ | Impulso Jobs",
+      "description": "Questions about openings, applications, plans and your Impulso Jobs account, answered."
+    },
+    "contact": {
+      "title": "Contact | Impulso Jobs",
+      "description": "Write to us by email or phone if you need help with openings, applications or your Impulso Jobs account."
+    },
+    "plans": {
+      "title": "Plans and pricing | Impulso Jobs",
+      "description": "Plans for posting openings on Impulso Jobs. Prices in Mexican pesos, VAT included and no lock-in."
+    },
+    "vacancies": {
+      "title": "Job openings in Mexico | Impulso Jobs",
+      "description": "Find your next job: search openings by field, state, salary and work mode, and apply for free on Impulso Jobs."
+    },
+    "landing": {
+      "title": "{{heading}} | Impulso Jobs",
+      "description": "{{area}} openings in {{state}}. Apply for free on Impulso Jobs, the job board for Mexico."
+    },
+    "vacancy": {
+      "title": "{{title}}, {{company}} in {{place}} | Impulso Jobs"
+    }
+  },
+  "common": {
+    "breadcrumbNav": "Breadcrumb",
+    "home": "Home",
+    "backToTop": "Back to top",
+    "close": "Close"
+  },
+  "pagination": {
+    "summaryOne": "{{total}} record · page {{page}} of {{pages}}",
+    "summaryMany": "{{total}} records · page {{page}} of {{pages}}",
+    "prev": "Previous page",
+    "next": "Next page"
+  },
+  "ui": {
+    "search": "Search…",
+    "noResults": "No results"
+  },
+  "validation": {
+    "required": "This field is required.",
+    "email": "Invalid email address.",
+    "minLength": "At least {{length}} characters.",
+    "maxLength": "At most {{length}} characters.",
+    "min": "The minimum value is {{value}}.",
+    "max": "The maximum value is {{value}}.",
+    "pattern": "The format is not valid.",
+    "invalid": "The value is not valid.",
+    "passwordPolicy": "At least 8 characters, with an uppercase letter, a lowercase letter, a number and a special character."
+  },
+  "auth": {
+    "common": {
+      "email": "Email address",
+      "emailPlaceholder": "you@email.com",
+      "emailError": "Enter a valid email address.",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "show": "Show",
+      "hide": "Hide",
+      "passwordMismatch": "The passwords do not match.",
+      "backToLogin": "Back to sign in",
+      "login": "Sign in",
+      "sending": "Sending…"
+    },
+    "login": {
+      "title": "Sign in",
+      "subtitleCandidate": "Sign in to your candidate account",
+      "subtitleCompany": "Sign in to your company account",
+      "candidate": "Candidate",
+      "company": "Company",
+      "genericError": "We could not sign you in. Please try again.",
+      "resendSent": "We sent the verification link to your email again.",
+      "resend": "Resend verification email",
+      "resending": "Resending…",
+      "resendError": "It could not be resent. Please try again.",
+      "success": "Signed in. Redirecting…",
+      "remember": "Stay signed in",
+      "forgot": "Forgot your password?",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "submitted": "Signed in",
+      "socialDivider": "Or sign in with",
+      "socialWith": "Sign in with {{provider}}",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create one"
+    },
+    "errors": {
+      "invalidCredentials": "Wrong email or password.",
+      "blocked": "Your account is temporarily locked. Wait a few minutes and try again.",
+      "inactive": "Your account is not active. Please contact support.",
+      "notVerified": "You need to verify your email before signing in.",
+      "generic": "We could not sign you in. Please try again later."
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "lead": "Enter your email and we will send you a link to reset it.",
+      "submit": "Send link",
+      "sentTitle": "Check your email",
+      "sentBody": "If {{email}} is registered, we sent you a link to reset your password. It expires in 30 minutes.",
+      "notSeeing": "Can't see it? Check your spam folder or",
+      "tryAnother": "try another email"
+    },
+    "reset": {
+      "validating": "Validating your link…",
+      "invalidTitle": "Invalid or expired link",
+      "invalidBody": "This link is no longer valid or has already been used. Request a new one to continue.",
+      "requestNew": "Request a new link",
+      "successTitle": "Password updated",
+      "successBody": "Your password was changed. For security, we closed your other sessions. You can now sign in with the new one.",
+      "title": "New password",
+      "lead": "Create a secure password for your account.",
+      "newPassword": "New password",
+      "passwordRequired": "The password is required",
+      "confirmRequired": "Confirm your password",
+      "mismatch": "The passwords do not match",
+      "saving": "Saving…",
+      "submit": "Change password",
+      "genericError": "We could not change your password. Please try again later."
+    },
+    "verify": {
+      "verifying": "Verifying your email…",
+      "successTitle": "Email verified",
+      "alreadyTitle": "Your email was already verified",
+      "successBody": "Your account is ready. You can sign in now.",
+      "invalidTitle": "Invalid or expired link",
+      "invalidBody": "This verification link no longer works. Enter your email and we will send you a new one.",
+      "resent": "If the email needs verification, we sent a new link.",
+      "resend": "Send a new link"
+    },
+    "register": {
+      "steps": {
+        "account": "Account",
+        "personal": "Personal details",
+        "location": "Location",
+        "tax": "Tax details"
+      },
+      "prev": "Back",
+      "next": "Continue",
+      "submit": "Create account",
+      "creating": "Creating…",
+      "goLogin": "Go to sign in",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Sign in",
+      "emailTaken": "An account with this email already exists.",
+      "genericError": "We could not create the account. Check the details and try again.",
+      "candidate": {
+        "title": "Create your account",
+        "lead": "Apply to the best openings.",
+        "successTitle": "Account created!",
+        "successBody": "We sent a verification link to {{email}}. Verify it so you can sign in.",
+        "firstName": "First name(s)",
+        "firstNamePlaceholder": "Ana",
+        "firstNameError": "The first name is required.",
+        "lastName": "Last name(s)",
+        "lastNamePlaceholder": "García",
+        "lastNameError": "The last name is required.",
+        "documentType": "ID type",
+        "documentTypeError": "Select the ID type.",
+        "documentNumber": "ID number",
+        "documentNumberPlaceholder": "Number",
+        "documentNumberError": "The ID number is required.",
+        "curp": "CURP (optional)",
+        "curpPlaceholder": "18 characters",
+        "curpError": "The CURP must have 18 valid characters.",
+        "birthDate": "Date of birth",
+        "birthDateError": "Enter a valid date (not in the future).",
+        "professionalTitle": "Professional title (optional)",
+        "professionalTitlePlaceholder": "Full-stack developer",
+        "state": "State",
+        "stateError": "Select the state.",
+        "municipality": "Municipality",
+        "municipalityPlaceholder": "Zapopan",
+        "municipalityError": "The municipality is required.",
+        "isCompany": "Representing a company?",
+        "isCompanyLink": "Sign up as a company",
+        "documentTaken": "A record with this ID number already exists.",
+        "birthDateInvalid": "The date of birth is not valid."
+      },
+      "company": {
+        "title": "Create your company account",
+        "lead": "Post openings and find talent.",
+        "successTitle": "Company registered!",
+        "successBody": "We sent a verification link to {{email}}. Verify it so you can sign in.",
+        "emailPlaceholder": "company@email.com",
+        "legalName": "Legal name",
+        "legalNamePlaceholder": "Impulso Talent S.A. de C.V.",
+        "legalNameError": "The legal name is required.",
+        "businessName": "Trade name",
+        "businessNamePlaceholder": "Impulso Talent",
+        "businessNameError": "The trade name is required.",
+        "rfc": "RFC (tax ID)",
+        "rfcError": "Invalid RFC (12 to 13 characters).",
+        "postalCode": "Postal code",
+        "postalCodeError": "A 5-digit postal code.",
+        "taxRegime": "Tax regime (SAT)",
+        "taxRegimeError": "Select the tax regime.",
+        "state": "State",
+        "stateError": "Select the state.",
+        "municipality": "Municipality",
+        "municipalityPlaceholder": "Guadalajara",
+        "municipalityError": "The municipality is required.",
+        "economicSector": "Industry (optional)",
+        "economicSectorPlaceholder": "Technology",
+        "website": "Website (optional)",
+        "isCandidate": "Are you a candidate?",
+        "isCandidateLink": "Sign up as a candidate",
+        "rfcTaken": "A company with this RFC is already registered."
+      }
+    }
+  }
+}

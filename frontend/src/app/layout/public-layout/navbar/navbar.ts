@@ -13,12 +13,15 @@ import { isPlatformBrowser } from '@angular/common';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs/operators';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { AuthService } from '@/core/auth/auth.service';
 import { Role } from '@/core/models/role.enum';
+import { LanguageSwitcher } from '@/shared/i18n/language-switcher';
 import { IjButton, IjIcon, IjLogo } from '@/shared/ui';
 
 interface NavItem {
-  readonly label: string;
+  /** Clave de traducción, no el texto: el idioma se resuelve en la plantilla. */
+  readonly labelKey: string;
   readonly path: string;
 }
 
@@ -51,7 +54,15 @@ interface AccountSummary {
 @Component({
   selector: 'app-navbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, IjLogo, IjIcon, IjButton],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    IjLogo,
+    IjIcon,
+    IjButton,
+    TranslocoDirective,
+    LanguageSwitcher,
+  ],
   // El host sustituye al `<header>` que envolvía el contenido: sin él, el
   // portal se quedaba sin landmark `banner`.
   host: {
@@ -61,18 +72,19 @@ interface AccountSummary {
     '(document:keydown.escape)': 'closeUserMenu()',
   },
   template: `
+   <ng-container *transloco="let t">
     <!-- h-[72px] de contenido + separadores: dentro del tope de 80px. -->
     <div
       class="mx-auto flex max-w-container items-center justify-between gap-6 px-6 py-4 lg:px-[60px]"
     >
-      <a routerLink="/inicio" aria-label="Impulso Jobs, ir al inicio">
+      <a routerLink="/inicio" [attr.aria-label]="t('nav.brandHome')">
         <ij-logo />
       </a>
 
       <!-- Navegación (desktop) -->
       <nav
         class="hidden items-center gap-7 text-[15px] font-medium text-body xl:gap-8 lg:flex"
-        aria-label="Principal"
+        [attr.aria-label]="t('nav.primary')"
       >
         @for (item of items; track item.path) {
           <a
@@ -80,7 +92,7 @@ interface AccountSummary {
             routerLinkActive="text-brand-strong"
             class="whitespace-nowrap transition-colors hover:text-brand-strong"
           >
-            {{ item.label }}
+            {{ t(item.labelKey) }}
           </a>
         }
       </nav>
@@ -134,7 +146,7 @@ interface AccountSummary {
                   (click)="closeUserMenu()"
                 >
                   <ij-icon name="user" [size]="16" />
-                  Ir a mi cuenta
+                  {{ t('nav.myAccount') }}
                 </a>
                 <button
                   role="menuitem"
@@ -143,7 +155,7 @@ interface AccountSummary {
                   (click)="onLogout()"
                 >
                   <ij-icon name="logout" [size]="16" />
-                  Cerrar sesión
+                  {{ t('nav.logout') }}
                 </button>
               </div>
             }
@@ -153,13 +165,14 @@ interface AccountSummary {
               class="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-medium text-body transition-colors hover:text-brand-strong"
             >
               <ij-icon name="login" [size]="15" />
-              Ingresar
+              {{ t('nav.login') }}
             </a>
           }
         </div>
+        <app-language-switcher />
         <a ij-button [routerLink]="postJobPath()" size="sm">
           <ij-icon name="plus" [size]="14" />
-          Publicar empleo
+          {{ t('nav.postJob') }}
         </a>
       </div>
 
@@ -169,7 +182,7 @@ interface AccountSummary {
         class="-mr-2 rounded-lg p-2 text-ink-900 transition-colors hover:bg-surface lg:hidden"
         [attr.aria-expanded]="menuOpen()"
         aria-controls="nav-movil"
-        [attr.aria-label]="menuOpen() ? 'Cerrar menú' : 'Abrir menú'"
+        [attr.aria-label]="menuOpen() ? t('nav.closeMenu') : t('nav.openMenu')"
         (click)="toggle()"
       >
         <ij-icon [name]="menuOpen() ? 'close' : 'menu'" [size]="24" />
@@ -181,7 +194,7 @@ interface AccountSummary {
       <nav
         id="nav-movil"
         class="flex flex-col gap-1 border-t border-line bg-white px-6 py-4 lg:hidden"
-        aria-label="Principal"
+        [attr.aria-label]="t('nav.primary')"
       >
         @if (account(); as account) {
           <div class="mb-3 flex items-center gap-3 border-b border-line pb-4">
@@ -209,7 +222,7 @@ interface AccountSummary {
             class="rounded-lg py-2.5 text-[15px] font-medium text-body"
             (click)="close()"
           >
-            {{ item.label }}
+            {{ t(item.labelKey) }}
           </a>
         }
         <div class="mt-3 flex flex-wrap items-center gap-3 border-t border-line pt-4">
@@ -220,7 +233,7 @@ interface AccountSummary {
               (click)="close()"
             >
               <ij-icon name="user" [size]="15" />
-              Ir a mi cuenta
+              {{ t('nav.myAccount') }}
             </a>
             <button
               type="button"
@@ -228,7 +241,7 @@ interface AccountSummary {
               (click)="onLogout()"
             >
               <ij-icon name="logout" [size]="15" />
-              Cerrar sesión
+              {{ t('nav.logout') }}
             </button>
           } @else {
             <a
@@ -237,16 +250,18 @@ interface AccountSummary {
               (click)="close()"
             >
               <ij-icon name="login" [size]="15" />
-              Ingresar
+              {{ t('nav.login') }}
             </a>
           }
           <a ij-button [routerLink]="postJobPath()" size="sm" (click)="close()">
             <ij-icon name="plus" [size]="14" />
-            Publicar empleo
+            {{ t('nav.postJob') }}
           </a>
+          <app-language-switcher />
         </div>
       </nav>
     }
+   </ng-container>
   `,
 })
 export class Navbar {
@@ -254,11 +269,11 @@ export class Navbar {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly items: readonly NavItem[] = [
-    { label: 'Inicio', path: '/inicio' },
-    { label: 'Nosotros', path: '/nosotros' },
-    { label: 'Empleos', path: '/vacantes' },
-    { label: 'Planes', path: '/planes' },
-    { label: 'Contacto', path: '/contacto' },
+    { labelKey: 'nav.home', path: '/inicio' },
+    { labelKey: 'nav.about', path: '/nosotros' },
+    { labelKey: 'nav.jobs', path: '/vacantes' },
+    { labelKey: 'nav.plans', path: '/planes' },
+    { labelKey: 'nav.contact', path: '/contacto' },
   ];
 
   protected readonly menuOpen = signal(false);

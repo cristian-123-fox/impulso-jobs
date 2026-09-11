@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { HomeFacade } from '@/features/public/home/data/home.facade';
 import { JobSearchCriteria } from '@/features/public/home/models/home.models';
 import { HeroSearch } from '@/features/public/home/components/hero-search/hero-search';
@@ -30,8 +31,8 @@ import { SeoService } from '@/core/services/seo.service';
  * Antes las vacantes aparecían en séptimo lugar, después del FAQ, en un portal
  * cuyo producto son precisamente las vacantes.
  *
- * `/inicio` se prerenderiza, así que la llamada a la API va en
- * `afterNextRender`: en el servidor no hay red ni sesión.
+ * `/inicio` se renderiza en servidor por petición (T26), así que la llamada a
+ * la API sigue yendo en `afterNextRender`: allí no hay red ni sesión.
  */
 @Component({
   selector: 'app-home-page',
@@ -45,6 +46,7 @@ import { SeoService } from '@/core/services/seo.service';
     TopCompanies,
     Testimonials,
     FaqAccordion,
+    TranslocoDirective,
   ],
   template: `
     <app-hero-search
@@ -71,13 +73,13 @@ import { SeoService } from '@/core/services/seo.service';
 
     <app-testimonials [testimonials]="facade.testimonials()" />
 
-    <section id="faq" class="px-6 pt-16 lg:px-[60px]">
+    <section *transloco="let t" id="faq" class="px-6 pt-16 lg:px-[60px]">
       <div class="mx-auto max-w-[900px] text-center">
         <h2 class="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
-          Preguntas frecuentes
+          {{ t('home.faqTeaser.title') }}
         </h2>
         <p class="mx-auto mt-4 max-w-[62ch] text-[15px] leading-relaxed text-muted">
-          Dudas comunes sobre vacantes, postulaciones y el uso de tu cuenta.
+          {{ t('home.faqTeaser.lead') }}
         </p>
       </div>
     </section>
@@ -107,10 +109,9 @@ export class HomePage {
   );
 
   constructor() {
-    this.seo.setPage({
-      title: 'Impulso Jobs | Bolsa de trabajo en México',
-      description:
-        'Encuentra empleo en México por área, estado y modalidad. Postularte es gratis y puedes dar seguimiento a cada proceso desde tu cuenta.',
+    this.seo.setLocalizedPage({
+      titleKey: 'seo.home.title',
+      descriptionKey: 'seo.home.description',
       canonicalPath: '/inicio',
     });
 

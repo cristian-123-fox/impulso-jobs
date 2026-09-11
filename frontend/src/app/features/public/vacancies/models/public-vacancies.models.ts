@@ -100,16 +100,17 @@ export interface ApplicationAnswerPayload {
   answerText?: string;
 }
 
-/** Catálogo cerrado de motivos de denuncia (espeja el backend). */
-export const VACANCY_REPORT_REASONS: readonly {
-  code: string;
-  label: string;
-}[] = [
-  { code: 'OFFENSIVE_DISCRIMINATORY', label: 'Es ofensiva y/o discriminatoria' },
-  { code: 'ADVERTISEMENT', label: 'Es un anuncio, no una oferta de empleo' },
-  { code: 'ASKS_FOR_MONEY', label: 'Me solicitan dinero' },
-  { code: 'NO_RESPONSE', label: 'No responden a los postulados' },
-  { code: 'LOW_PAY', label: 'Pagan muy poco o en malas condiciones' },
-  { code: 'DUPLICATE', label: 'Oferta duplicada' },
-  { code: 'OTHER', label: 'Otro motivo' },
+/**
+ * Catálogo cerrado de motivos de denuncia (espeja el backend). Sólo los
+ * códigos: el texto de cada uno vive en el diccionario, bajo
+ * `enums.reportReason.<código>` (T26).
+ */
+export const VACANCY_REPORT_REASON_CODES: readonly string[] = [
+  'OFFENSIVE_DISCRIMINATORY',
+  'ADVERTISEMENT',
+  'ASKS_FOR_MONEY',
+  'NO_RESPONSE',
+  'LOW_PAY',
+  'DUPLICATE',
+  'OTHER',
 ];

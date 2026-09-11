@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjReveal } from '@/shared/directives/reveal';
 import { Testimonial } from '@/features/public/home/models/home.models';
 
@@ -13,14 +14,14 @@ import { Testimonial } from '@/features/public/home/models/home.models';
 @Component({
   selector: 'app-testimonials',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjReveal],
+  imports: [IjReveal, TranslocoDirective],
   template: `
-    <section class="px-6 py-16 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 py-16 lg:px-[60px]">
       <div class="mx-auto max-w-[1000px]">
         <h2
           class="mb-11 max-w-[20ch] text-3xl font-bold leading-tight text-ink-900 sm:text-[36px]"
         >
-          Lo que dice quien ya encontró trabajo aquí
+          {{ t('home.testimonials.title') }}
         </h2>
 
         <div class="grid gap-7 md:grid-cols-2">
@@ -50,14 +51,14 @@ import { Testimonial } from '@/features/public/home/models/home.models';
                 <blockquote
                   class="text-[15px] leading-relaxed text-body before:mr-0.5 before:content-['“'] after:content-['”']"
                 >
-                  {{ testimonial.quote }}
+                  {{ t(testimonial.quoteKey) }}
                 </blockquote>
                 <figcaption class="mt-4">
                   <span class="block text-[15px] font-semibold text-ink-900">
                     {{ testimonial.name }}
                   </span>
                   <span class="block text-[13px] text-muted">
-                    {{ testimonial.role }}
+                    {{ t(testimonial.roleKey) }}
                   </span>
                 </figcaption>
               </div>

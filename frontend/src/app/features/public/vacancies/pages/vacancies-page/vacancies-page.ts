@@ -3,6 +3,7 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   inject,
   makeStateKey,
@@ -13,6 +14,9 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
+import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { SeoService } from '@/core/services/seo.service';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { PROFESSIONAL_AREAS, professionalAreaBySlug } from '@/shared/catalogs/professional-areas.catalogs';
@@ -22,13 +26,13 @@ import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-
 import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
 import { VacancyCard } from '@/features/public/vacancies/components/vacancy-card/vacancy-card';
 import {
-  EMPLOYMENT_TYPE_LABELS,
-  EXPERIENCE_LEVEL_LABELS,
+  EmploymentType,
+  ExperienceLevel,
   PublicVacanciesFilters,
   PublicVacanciesPage,
   PublicVacancy,
   PublicVacancySort,
-  WORK_MODE_LABELS,
+  WorkMode,
 } from '@/features/public/vacancies/models/public-vacancies.models';
 
 const PAGE_SIZE = 10;
@@ -38,169 +42,177 @@ const LIST_STATE_KEY = makeStateKey<PublicVacanciesPage>(
   'public-vacancies-list',
 );
 
-function options(labels: Record<string, string>, empty: string): IjOption[] {
-  return [
-    { value: '', label: empty },
-    ...Object.keys(labels).map((value) => ({ value, label: labels[value] })),
-  ];
-}
+/** Escalones del filtro de salario mínimo, en MXN mensuales. */
+const SALARY_STEPS = [5000, 10000, 15000, 20000, 30000, 50000];
 
 /** Portal de empleo: buscador de vacantes activas. No requiere sesión. */
 @Component({
   selector: 'app-vacancies-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, AdminPagination, VacancyCard, IjIcon, IjSelect],
+  imports: [
+    FormsModule,
+    AdminPagination,
+    VacancyCard,
+    IjIcon,
+    IjSelect,
+    TranslocoDirective,
+  ],
   template: `
-    <section class="bg-surface px-6 py-12 lg:px-[60px]">
-      <div class="mx-auto max-w-[1200px]">
-        <h1 class="text-[32px] font-extrabold leading-tight text-ink-900">
-          {{ heading() }}
-        </h1>
-        <p class="mt-2 text-[15px] text-muted">
-          {{ total() }} {{ total() === 1 ? 'vacante activa' : 'vacantes activas' }}
-          en Impulso Jobs.
-        </p>
-      </div>
-    </section>
+    <ng-container *transloco="let t">
+      <section class="bg-surface px-6 py-12 lg:px-[60px]">
+        <div class="mx-auto max-w-[1200px]">
+          <h1 class="text-[32px] font-extrabold leading-tight text-ink-900">
+            {{ heading() }}
+          </h1>
+          <p class="mt-2 text-[15px] text-muted">
+            {{
+              total() === 1
+                ? t('jobs.countOne', { count: total() })
+                : t('jobs.countMany', { count: total() })
+            }}
+          </p>
+        </div>
+      </section>
 
-    <section class="px-6 py-10 lg:px-[60px]">
-      <div class="mx-auto max-w-[1200px]">
-        <form
-          class="mb-6 grid gap-3 rounded-2xl bg-white p-4 shadow-card lg:grid-cols-[1fr_190px_190px_auto]"
-          (ngSubmit)="search()"
-        >
-          <label class="relative block">
-            <span class="sr-only">Buscar vacante</span>
-            <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
-              <ij-icon name="search" [size]="17" />
-            </span>
-            <input
-              type="search"
-              name="q"
-              placeholder="Puesto, tecnología, palabra clave…"
-              class="h-[46px] w-full rounded-xl border border-line bg-white pl-10 pr-3 text-[13.5px] text-ink-900 placeholder:text-muted focus:border-brand focus:outline-none focus:ring-0"
-              [ngModel]="query()"
-              (ngModelChange)="query.set($event)"
+      <section class="px-6 py-10 lg:px-[60px]">
+        <div class="mx-auto max-w-[1200px]">
+          <form
+            class="mb-6 grid gap-3 rounded-2xl bg-white p-4 shadow-card lg:grid-cols-[1fr_190px_190px_auto]"
+            (ngSubmit)="search()"
+          >
+            <label class="relative block">
+              <span class="sr-only">{{ t('jobs.searchLabel') }}</span>
+              <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
+                <ij-icon name="search" [size]="17" />
+              </span>
+              <input
+                type="search"
+                name="q"
+                [placeholder]="t('jobs.searchPlaceholder')"
+                class="h-[46px] w-full rounded-xl border border-line bg-white pl-10 pr-3 text-[13.5px] text-ink-900 placeholder:text-muted focus:border-brand focus:outline-none focus:ring-0"
+                [ngModel]="query()"
+                (ngModelChange)="query.set($event)"
+              />
+            </label>
+            <ij-select
+              name="state"
+              [placeholder]="t('jobs.anyState')"
+              [options]="stateOptions()"
+              [ngModel]="stateCode()"
+              (ngModelChange)="stateCode.set($event)"
             />
-          </label>
-          <ij-select
-            name="state"
-            placeholder="Todo México"
-            [options]="stateOptions"
-            [ngModel]="stateCode()"
-            (ngModelChange)="stateCode.set($event)"
-          />
-          <ij-select
-            name="workMode"
-            placeholder="Modalidad"
-            [options]="workModeOptions"
-            [searchable]="false"
-            [ngModel]="workMode()"
-            (ngModelChange)="workMode.set($event)"
-          />
-          <div class="flex items-center gap-2">
-            <button
-              type="submit"
-              class="h-[46px] rounded-xl bg-brand-700 px-6 text-[13.5px] font-bold text-white transition-colors hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
-            >
-              Buscar
-            </button>
-            <button
-              type="button"
-              class="h-[46px] rounded-xl border border-line bg-white px-4 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
-              (click)="clear()"
-            >
-              Limpiar
-            </button>
-          </div>
+            <ij-select
+              name="workMode"
+              [placeholder]="t('jobs.anyWorkMode')"
+              [options]="workModeOptions()"
+              [searchable]="false"
+              [ngModel]="workMode()"
+              (ngModelChange)="workMode.set($event)"
+            />
+            <div class="flex items-center gap-2">
+              <button
+                type="submit"
+                class="h-[46px] rounded-xl bg-brand-700 px-6 text-[13.5px] font-bold text-white transition-colors hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
+              >
+                {{ t('jobs.submit') }}
+              </button>
+              <button
+                type="button"
+                class="h-[46px] rounded-xl border border-line bg-white px-4 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+                (click)="clear()"
+              >
+                {{ t('jobs.clear') }}
+              </button>
+            </div>
 
-          <div class="grid gap-3 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-4">
-            <ij-select
-              name="employmentType"
-              placeholder="Tipo de contratación"
-              [options]="employmentOptions"
-              [searchable]="false"
-              [ngModel]="employmentType()"
-              (ngModelChange)="employmentType.set($event)"
-            />
-            <ij-select
-              name="experienceLevel"
-              placeholder="Experiencia"
-              [options]="experienceOptions"
-              [searchable]="false"
-              [ngModel]="experienceLevel()"
-              (ngModelChange)="experienceLevel.set($event)"
-            />
-            <ij-select
-              name="areaId"
-              placeholder="Área profesional"
-              [options]="areaOptions"
-              [ngModel]="areaId()"
-              (ngModelChange)="areaId.set($event)"
-            />
-            <ij-select
-              name="salaryMin"
-              placeholder="Salario mínimo"
-              [options]="salaryOptions"
-              [searchable]="false"
-              [ngModel]="salaryMin()"
-              (ngModelChange)="salaryMin.set($event)"
-            />
-            <ij-select
-              name="publishedWithinDays"
-              placeholder="Fecha de publicación"
-              [options]="dateOptions"
-              [searchable]="false"
-              [ngModel]="publishedWithinDays()"
-              (ngModelChange)="publishedWithinDays.set($event)"
-            />
-            <ij-select
-              name="sort"
-              label=""
-              [options]="sortOptions"
-              [searchable]="false"
-              [ngModel]="sort()"
-              (ngModelChange)="changeSort($event)"
-            />
-          </div>
-        </form>
+            <div class="grid gap-3 sm:grid-cols-2 lg:col-span-4 lg:grid-cols-4">
+              <ij-select
+                name="employmentType"
+                [placeholder]="t('jobs.anyEmployment')"
+                [options]="employmentOptions()"
+                [searchable]="false"
+                [ngModel]="employmentType()"
+                (ngModelChange)="employmentType.set($event)"
+              />
+              <ij-select
+                name="experienceLevel"
+                [placeholder]="t('jobs.anyExperience')"
+                [options]="experienceOptions()"
+                [searchable]="false"
+                [ngModel]="experienceLevel()"
+                (ngModelChange)="experienceLevel.set($event)"
+              />
+              <ij-select
+                name="areaId"
+                [placeholder]="t('jobs.anyArea')"
+                [options]="areaOptions()"
+                [ngModel]="areaId()"
+                (ngModelChange)="areaId.set($event)"
+              />
+              <ij-select
+                name="salaryMin"
+                [placeholder]="t('jobs.anySalary')"
+                [options]="salaryOptions()"
+                [searchable]="false"
+                [ngModel]="salaryMin()"
+                (ngModelChange)="salaryMin.set($event)"
+              />
+              <ij-select
+                name="publishedWithinDays"
+                [placeholder]="t('jobs.anyDate')"
+                [options]="dateOptions()"
+                [searchable]="false"
+                [ngModel]="publishedWithinDays()"
+                (ngModelChange)="publishedWithinDays.set($event)"
+              />
+              <ij-select
+                name="sort"
+                label=""
+                [options]="sortOptions()"
+                [searchable]="false"
+                [ngModel]="sort()"
+                (ngModelChange)="changeSort($event)"
+              />
+            </div>
+          </form>
 
-        @switch (state()) {
-          @case ('loading') {
-            <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-              Buscando vacantes…
-            </div>
+          @switch (state()) {
+            @case ('loading') {
+              <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
+                {{ t('jobs.loading') }}
+              </div>
+            }
+            @case ('error') {
+              <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
+                {{ t('jobs.error') }}
+              </div>
+            }
+            @default {
+              <div class="flex flex-col gap-4">
+                @for (vacancy of vacancies(); track vacancy.id) {
+                  <app-vacancy-card [vacancy]="vacancy" />
+                } @empty {
+                  <div class="rounded-2xl bg-white p-12 text-center shadow-card">
+                    <p class="text-[15px] font-semibold text-ink-900">
+                      {{ t('jobs.emptyTitle') }}
+                    </p>
+                    <p class="mt-1.5 text-[13.5px] text-muted">
+                      {{ t('jobs.emptyBody') }}
+                    </p>
+                  </div>
+                }
+              </div>
+              <app-admin-pagination
+                [page]="page()"
+                [pages]="pages()"
+                [total]="total()"
+                (pageChange)="load($event)"
+              />
+            }
           }
-          @case ('error') {
-            <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-              No se pudieron cargar las vacantes.
-            </div>
-          }
-          @default {
-            <div class="flex flex-col gap-4">
-              @for (vacancy of vacancies(); track vacancy.id) {
-                <app-vacancy-card [vacancy]="vacancy" />
-              } @empty {
-                <div class="rounded-2xl bg-white p-12 text-center shadow-card">
-                  <p class="text-[15px] font-semibold text-ink-900">
-                    No encontramos vacantes con esos criterios.
-                  </p>
-                  <p class="mt-1.5 text-[13.5px] text-muted">
-                    Prueba con menos filtros o revisa más adelante.
-                  </p>
-                </div>
-              }
-            </div>
-            <app-admin-pagination
-              [page]="page()"
-              [pages]="pages()"
-              [total]="total()"
-              (pageChange)="load($event)"
-            />
-          }
-        }
-      </div>
-    </section>
+        </div>
+      </section>
+    </ng-container>
   `,
 })
 export class VacanciesPage {
@@ -211,13 +223,30 @@ export class VacanciesPage {
   private readonly seo = inject(SeoService);
   private readonly transferState = inject(TransferState);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly i18n = inject(AppTranslateService);
+  private readonly format = inject(LocaleFormatService);
 
   protected readonly vacancies = signal<PublicVacancy[]>([]);
   protected readonly state = signal<'loading' | 'loaded' | 'error'>('loading');
   protected readonly total = signal(0);
   protected readonly page = signal(1);
   protected readonly pages = signal(1);
-  protected readonly heading = signal('Encuentra tu próximo empleo');
+
+  /**
+   * Encabezado: el genérico o el de la landing (T16). Se guarda el área y el
+   * estado, no el texto ya compuesto, porque la frase cambia de forma al
+   * traducirse ("Trabajo de X en Y" / "X jobs in Y").
+   */
+  private readonly landingPlace = signal<{ area: string; state: string } | null>(
+    null,
+  );
+
+  protected readonly heading = computed(() => {
+    const place = this.landingPlace();
+    return place
+      ? this.i18n.t('jobs.landingHeading', place)
+      : this.i18n.t('jobs.heading');
+  });
 
   protected readonly query = signal('');
   protected readonly stateCode = signal('');
@@ -229,50 +258,83 @@ export class VacanciesPage {
   protected readonly publishedWithinDays = signal('');
   protected readonly sort = signal<PublicVacancySort>('relevance');
 
-  protected readonly stateOptions: IjOption[] = [
-    { value: '', label: 'Todo México' },
+  /**
+   * Las opciones son `computed` porque su texto se traduce (T26): con arrays
+   * fijos, cambiar de idioma dejaba los desplegables en el idioma anterior
+   * hasta recargar. Los nombres de estados y áreas salen del catálogo y no se
+   * traducen.
+   */
+  protected readonly stateOptions = computed<IjOption[]>(() => [
+    { value: '', label: this.i18n.t('jobs.anyState') },
     ...MX_STATES.map((s) => ({ value: s.code, label: s.name })),
-  ];
-  protected readonly workModeOptions = options(WORK_MODE_LABELS, 'Modalidad');
-  protected readonly employmentOptions = options(
-    EMPLOYMENT_TYPE_LABELS,
-    'Cualquier contratación',
+  ]);
+
+  protected readonly workModeOptions = computed<IjOption[]>(() =>
+    this.enumOptions('workMode', Object.values(WorkMode), 'jobs.anyWorkMode'),
   );
-  protected readonly experienceOptions = options(
-    EXPERIENCE_LEVEL_LABELS,
-    'Cualquier experiencia',
+
+  protected readonly employmentOptions = computed<IjOption[]>(() =>
+    this.enumOptions(
+      'employmentType',
+      Object.values(EmploymentType),
+      'jobs.anyEmployment',
+    ),
   );
-  protected readonly areaOptions: IjOption[] = [
-    { value: '', label: 'Todas las áreas' },
+
+  protected readonly experienceOptions = computed<IjOption[]>(() =>
+    this.enumOptions(
+      'experienceLevel',
+      Object.values(ExperienceLevel),
+      'jobs.anyExperience',
+    ),
+  );
+
+  protected readonly areaOptions = computed<IjOption[]>(() => [
+    { value: '', label: this.i18n.t('jobs.anyArea') },
     ...PROFESSIONAL_AREAS.map((a) => ({
       value: String(a.id),
       label: a.name,
     })),
-  ];
-  protected readonly salaryOptions: IjOption[] = [
-    { value: '', label: 'Cualquier salario' },
-    ...[5000, 10000, 15000, 20000, 30000, 50000].map((amount) => ({
+  ]);
+
+  protected readonly salaryOptions = computed<IjOption[]>(() => [
+    { value: '', label: this.i18n.t('jobs.anySalary') },
+    ...SALARY_STEPS.map((amount) => ({
       value: String(amount),
-      label: `Desde ${amount.toLocaleString('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        maximumFractionDigits: 0,
-      })}`,
+      label: this.i18n.t('jobs.salaryFrom', {
+        amount: this.format.currency(amount),
+      }),
     })),
-  ];
-  protected readonly dateOptions: IjOption[] = [
-    { value: '', label: 'Cualquier fecha' },
-    { value: '1', label: 'Hoy' },
-    { value: '3', label: 'Últimos 3 días' },
-    { value: '7', label: 'Última semana' },
-    { value: '15', label: 'Últimos 15 días' },
-    { value: '30', label: 'Último mes' },
-  ];
-  protected readonly sortOptions: IjOption[] = [
-    { value: 'relevance', label: 'Más relevantes' },
-    { value: 'date', label: 'Más recientes' },
-    { value: 'salary', label: 'Mejor pagadas' },
-  ];
+  ]);
+
+  protected readonly dateOptions = computed<IjOption[]>(() => [
+    { value: '', label: this.i18n.t('jobs.anyDate') },
+    { value: '1', label: this.i18n.t('jobs.dates.today') },
+    { value: '3', label: this.i18n.t('jobs.dates.d3') },
+    { value: '7', label: this.i18n.t('jobs.dates.d7') },
+    { value: '15', label: this.i18n.t('jobs.dates.d15') },
+    { value: '30', label: this.i18n.t('jobs.dates.d30') },
+  ]);
+
+  protected readonly sortOptions = computed<IjOption[]>(() => [
+    { value: 'relevance', label: this.i18n.t('jobs.sort.relevance') },
+    { value: 'date', label: this.i18n.t('jobs.sort.date') },
+    { value: 'salary', label: this.i18n.t('jobs.sort.salary') },
+  ]);
+
+  private enumOptions(
+    group: string,
+    values: readonly string[],
+    emptyKey: string,
+  ): IjOption[] {
+    return [
+      { value: '', label: this.i18n.t(emptyKey) },
+      ...values.map((value) => ({
+        value,
+        label: this.i18n.enumLabel(group, value),
+      })),
+    ];
+  }
 
   constructor() {
     // Modo landing (T16): `/trabajo/<area>-en-<estado>` preconfigura filtros.
@@ -335,23 +397,27 @@ export class VacanciesPage {
 
     this.areaId.set(String(area.id));
     this.stateCode.set(state.code);
-    this.heading.set(`Trabajo de ${area.name} en ${state.name}`);
+    this.landingPlace.set({ area: area.name, state: state.name });
     return true;
   }
 
   private applySeo(landing: string | null): void {
-    if (landing) {
+    const place = this.landingPlace();
+    if (landing && place) {
+      // La landing tiene datos propios (área y estado), así que se traduce
+      // aquí en vez de con `setLocalizedPage`, que sólo toma claves sueltas.
       this.seo.setPage({
-        title: `${this.heading()} | Impulso Jobs`,
-        description: `Vacantes de ${this.heading().toLowerCase()}. Postúlate gratis en Impulso Jobs, el portal de empleo para México.`,
+        title: this.i18n.t('seo.landing.title', {
+          heading: this.heading(),
+        }),
+        description: this.i18n.t('seo.landing.description', place),
         canonicalPath: `/trabajo/${landing}`,
       });
       return;
     }
-    this.seo.setPage({
-      title: 'Vacantes de empleo en México | Impulso Jobs',
-      description:
-        'Encuentra tu próximo empleo: busca vacantes por área, estado, salario y modalidad, y postúlate gratis en Impulso Jobs.',
+    this.seo.setLocalizedPage({
+      titleKey: 'seo.vacancies.title',
+      descriptionKey: 'seo.vacancies.description',
       canonicalPath: '/vacantes',
     });
   }

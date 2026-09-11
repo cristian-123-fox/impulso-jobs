@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IconName, IjButton, IjIcon } from '@/shared/ui';
 import { IjReveal } from '@/shared/directives/reveal';
 
@@ -7,9 +8,9 @@ import { IjReveal } from '@/shared/directives/reveal';
 @Component({
   selector: 'app-resume-cta',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjButton, RouterLink, IjReveal],
+  imports: [IjIcon, IjButton, RouterLink, IjReveal, TranslocoDirective],
   template: `
-    <section class="px-6 py-16 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 py-16 lg:px-[60px]">
       <div
         ijReveal
         class="mx-auto grid max-w-[1120px] items-center gap-0 lg:grid-cols-[0.95fr_1.05fr]"
@@ -21,7 +22,7 @@ import { IjReveal } from '@/shared/directives/reveal';
         -->
         <div class="hidden pb-16 pr-10 lg:block">
           <ul class="flex flex-col gap-5">
-            @for (benefit of benefits; track benefit.title) {
+            @for (benefit of benefits; track benefit.key) {
               <li class="flex gap-4">
                 <span
                   class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-strong"
@@ -30,10 +31,10 @@ import { IjReveal } from '@/shared/directives/reveal';
                 </span>
                 <span>
                   <span class="block text-[15px] font-semibold text-ink-900">
-                    {{ benefit.title }}
+                    {{ t('home.resume.' + benefit.key + '.title') }}
                   </span>
                   <span class="mt-0.5 block text-sm leading-relaxed text-muted">
-                    {{ benefit.description }}
+                    {{ t('home.resume.' + benefit.key + '.description') }}
                   </span>
                 </span>
               </li>
@@ -49,11 +50,10 @@ import { IjReveal } from '@/shared/directives/reveal';
           class="relative rounded-xl bg-brand-700 px-8 py-12 text-white lg:-top-8 lg:px-12"
         >
           <h2 class="mb-5 text-2xl font-bold leading-snug text-white sm:text-[34px]">
-            No solo busques: deja que las empresas te encuentren
+            {{ t('home.resume.title') }}
           </h2>
           <p class="mb-8 max-w-[460px] text-sm leading-relaxed text-white/90">
-            Arma tu currículum una vez en Impulso Jobs y postúlate con un clic a
-            cualquier vacante. Sin costo para candidatos.
+            {{ t('home.resume.body') }}
           </p>
           <a
             ij-button
@@ -62,7 +62,7 @@ import { IjReveal } from '@/shared/directives/reveal';
             size="md"
             class="font-semibold"
           >
-            Crear mi currículum
+            {{ t('home.resume.cta') }}
             <ij-icon name="arrow-up" [size]="15" />
           </a>
         </div>
@@ -71,28 +71,13 @@ import { IjReveal } from '@/shared/directives/reveal';
   `,
 })
 export class ResumeCta {
+  /** Cada beneficio es un icono y una rama del diccionario (T26). */
   protected readonly benefits: readonly {
     icon: IconName;
-    title: string;
-    description: string;
+    key: string;
   }[] = [
-    {
-      icon: 'resume',
-      title: 'Un currículum, todas las postulaciones',
-      description:
-        'Lo llenas una vez y se adjunta solo cada vez que te postulas.',
-    },
-    {
-      icon: 'history',
-      title: 'La empresa ve lo que enviaste',
-      description:
-        'Se guarda una copia de tu perfil tal como estaba ese día, aunque después lo edites.',
-    },
-    {
-      icon: 'eye-off',
-      title: 'Tú decides quién te ve',
-      description:
-        'Puedes mantener tu perfil oculto y postularte igual.',
-    },
+    { icon: 'resume', key: 'once' },
+    { icon: 'history', key: 'snapshot' },
+    { icon: 'eye-off', key: 'privacy' },
   ];
 }

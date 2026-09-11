@@ -4,7 +4,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
-- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21, T22, T23, T24, T25 y T27 hechas**; queda T26 (i18n).
+- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21–T27 hechas**; de T26 queda diferida sólo la fase 4 (áreas privadas) y el idioma de los correos.
 
 ---
 
@@ -261,18 +261,18 @@ Reviews/rating de empresa · IA (crear oferta, sugerir skills, matching — cód
 
 # Parte C · Backlog solicitado (septiembre 2026)
 
-Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T21, T22, T23, T24, T25 y T27 están cerradas; sólo queda T26. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
+Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T21–T27 están cerradas (de T26 quedan diferidas las áreas privadas y el idioma de los correos). Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
 
 ## Resumen para el gestor de tareas
 
 | # | Título | Tipo | Prioridad | Estimación | Depende de |
 |---|---|---|---|---|---|
 | T21 ✅ | Módulo de notificaciones (plataforma + correo) | Feature / infra | Alta | L (5–8 d) | SMTP real |
-| T22 ✅ | Aviso de plan por vencer + cancelación automática | Feature | Alta | M (3–4 d) | T21 · 🔷 N8 |
+| T22 ✅ | Aviso de plan por vencer + cancelación automática | Feature | Alta | M (3–4 d) | T21 · N8 ✅ |
 | T23 ✅ | Imágenes subidas con URL `localhost` en la demo | **Bug** | **Bloqueante demo** | XS (2–4 h) | — |
-| T24 ✅ | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
-| T25 ✅ | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | 🔷 N9 |
-| T26 | Traducciones del sitio (i18n) | Feature / transversal | Media | L (5–8 d+) | 🔷 N6 |
+| T24 ✅ | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · N7 ✅ |
+| T25 ✅ | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | N9 ✅ |
+| T26 ✅ | Traducciones del sitio (i18n) | Feature / transversal | Media | L (5–8 d+) | N6 ✅ |
 | T27 ✅ | Nombre y foto del usuario logueado en el portal | Mejora UX | Media | S (1 d) | — |
 
 Estimaciones a ojo, para ordenar el tablero — no son compromisos.
@@ -421,7 +421,9 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 - **Frontend:** control de subida con preview en `vacancy-form` (el alta/edición vive en `ij-modal`); usar la imagen como cabecera en `public-vacancy-detail-page`. **La card de la lista sigue con el logo** salvo decisión contraria.
 - **SEO:** si hay imagen, usarla en OG y en el campo `image` del JSON-LD `JobPosting` (`seo.service.ts`).
 
-**Preguntas para negocio 🔷 (N7):** ¿la imagen es para todos los planes o es un beneficio monetizado, como Destacada? ¿Recorte fijo (p. ej. 1200×630, que serviría también de OG) o libre?
+**Decisión de negocio (N7) — resuelta el 2026-09-11: la imagen es para *todas* las vacantes**, no un beneficio monetizado como Destacada. **No hay nada que cambiar en el código**: T24 se implementó sin condicionar la imagen al plan (`vacancy-image.use-case.ts` sólo comprueba *ownership*, no consulta `EntitlementService`), así que ya se comporta como pide la decisión. Si algún día se monetiza, el punto de enganche es ese use-case.
+
+**Lo que la decisión no cubre — recorte:** sigue siendo **libre** (subida sin recorte ni proporción forzada). Funciona, pero como la imagen alimenta OG y el `image` del JSON-LD, una foto muy vertical se ve mal en la vista previa al compartir. Queda como mejora opcional: recortar a 1200×630 en el cliente al subir.
 
 **Criterios de aceptación:** subir / reemplazar / quitar desde el alta y la edición; la imagen aparece en el detalle público y en la vista previa al compartir; una vacante sin imagen se ve exactamente como hoy; el archivo anterior se borra del disco al reemplazar.
 
@@ -449,30 +451,38 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ---
 
-### T26 · Traducciones del sitio (i18n) ⬜
+### T26 · Traducciones del sitio (i18n) ✅
 
-**Qué se pide:** traducciones del sitio web.
+**Hecho (2026-09-11).** Portal público en **español e inglés** (N6), con Transloco y diccionarios JSON en runtime. Se cubrieron las fases 1, 2, 3 y 6 del alcance propuesto, más `/auth`, que no estaba en la lista y sí es público.
 
-**Estado hoy:** **no hay ninguna infraestructura de i18n.** No están `@angular/localize`, ngx-translate ni Transloco; lo único que aparece es el target `extract-i18n` que trae el scaffold del CLI (`angular.json:96`). **Todos los textos están escritos a mano en español dentro de los templates**, y también hay español en el backend (mensajes de error, `message` del envelope, plantillas de correo). Los catálogos —estados MX, áreas profesionales, regímenes SAT— son intrínsecamente mexicanos y no se traducen.
+1. **Infraestructura** — `core/i18n/`: `i18n.config.ts` (idiomas, cookie, locales, `hreflang`), `provideI18n()` enganchado en `app.config.ts`, `LanguageService`, `AppTranslateService`, `LocaleFormatService` y un loader propio. El loader carga los diccionarios con `import()` en vez del loader HTTP de Transloco: ese necesita una URL absoluta en servidor y añade una petición antes del primer pintado; así el bundler parte un chunk por idioma, el servidor lo lee del disco y el navegador baja sólo el activo.
+2. **La elección se guarda en cookie (`ij_lang`), no en `localStorage`.** `localStorage` no viaja en la petición, así que el servidor no podría saber el idioma y **siempre** pintaría español: el criterio de aceptación ("el HTML de SSR ya sale en el idioma correcto, sin parpadeo") es incumplible con él. La cookie la leen los dos lados —servidor de la cabecera `Cookie`, navegador de `document.cookie`—, de modo que el primer render del cliente coincide con el servido.
+3. **URL por idioma para el SEO: `?lang=en`.** Sin URL propia por variante no hay `hreflang` honesto —la misma dirección devolvería dos contenidos— así que el parámetro existe *para* el SEO: manda sobre la cookie, y al entrar por él el idioma se guarda y deja de hacer falta. `seo.service.ts` emite `hreflang` es-MX/en-US + `x-default`, `og:locale` y un canonical **por variante** (el canonical de la inglesa es ella misma; apuntar a la española la descartaría del índice). `setLocalizedPage()` rehace el head al cambiar de idioma.
+4. **Render por petición.** Las páginas del portal y `/auth/**` pasaron de prerender a `RenderMode.Server`: un HTML estático se congela en un idioma en tiempo de build. Quedan prerenderizadas 2 rutas. **`/mantenimiento` sigue prerenderizada a propósito** —es lo que se sirve cuando el resto no funciona— y por eso **su texto sigue sólo en español**.
+5. **Alcance traducido:** navbar, footer, home (hero, áreas, vacantes destacadas, pasos, CV, empresas, testimonios, FAQ), `/vacantes` + tarjeta + detalle (incluidos los modales de postulación y denuncia), landings `/trabajo/...`, planes, contacto, nosotros, faq, y `/auth` (login, registro candidato y empresa, recuperar y restablecer contraseña, verificación). Más el UI kit que asoma en el portal: `ij-page-header`, `ij-modal`, `ij-select`/`ij-multiselect`, la paginación y los mensajes de validación de `ij-control-base`. **546 claves, simétricas en los dos idiomas.**
+6. **Errores traducidos por `errorCode`** (fase 5), no traduciendo el backend: el `message` del envelope sigue en español y nadie lo pinta. Login, registro, restablecer contraseña, postulación y denuncia conmutan sobre el código.
+7. **Formatos (fase 6):** `LocaleFormatService` formatea importes MXN y fechas con el locale activo, y como lee la señal de idioma, un `computed` que lo use se recalcula al cambiar de idioma. Sustituye a los `Intl.*('es-MX')` escritos a mano en cinco sitios. `LOCALE_ID` se registra igual para los pipes de Angular, pero **se resuelve una sola vez**: por eso el portal usa el servicio y no los pipes.
+8. **Reactividad:** en plantilla se usa `*transloco="let t"`; fuera de ella (`computed`, opciones de `<select>`, títulos de pestaña) **`AppTranslateService`**, que lee la señal de idioma antes de traducir — `TranslocoService.translate()` a secas devuelve un string suelto y nada avisa de que hay que recalcularlo.
 
-**Decisión previa 🔷 (N6) — qué idiomas y para qué:** ¿inglés para empresas internacionales? ¿el objetivo real es sólo neutralizar regionalismos? El esfuerzo cambia radicalmente según la respuesta; **hasta tenerla, esta tarea no es estimable con precisión.**
+**Lo que deliberadamente no se traduce:** los **catálogos** (estados, áreas profesionales, regímenes SAT, tipos de documento) y **lo que escribe un usuario o el back-office** (título y descripción de la vacante, nombre del plan y de sus beneficios, razón social). Tampoco las **búsquedas frecuentes** de la home: son términos de consulta contra vacantes escritas en español, y "Warehouse" no devolvería ninguna.
 
-**Decisión técnica 🔷 — `@angular/localize` vs. Transloco:**
+**Verificado:** build en verde; `ng test` 10/10 con dos specs nuevas (`translations.spec.ts` compara los dos diccionarios —mismas claves, sin textos vacíos, mismos parámetros— y `language.service.spec.ts` cubre cookie, idioma desconocido y cambio); y contra el servidor SSR real: `/inicio`, `/nosotros`, `/planes`, `/contacto`, `/faq`, `/vacantes`, `/trabajo/...` y `/auth/**` responden 200 con `<html lang>`, `<title>`, canonical y `hreflang` correctos en los dos idiomas, tanto por `?lang=en` como por cookie.
+
+**Pendiente (fase 4, diferible como decía la ficha):** las áreas privadas `/candidato`, `/empresa` y `/admin` siguen en español. Mientras tanto los mapas `*_LABELS` de `features/company/vacancies/models` conviven con la rama `enums.*` del diccionario: **el español está en los dos sitios**; al traducir esas áreas, los mapas desaparecen y todo pasa por `AppTranslateService.enumLabel()`. Igual `PASSWORD_POLICY_HINT` frente a `validation.passwordPolicy`.
+
+**Pendiente (fase 5, backend):** las **plantillas de correo** (T21) se envían en español. Traducirlas pide guardar el idioma preferido en el usuario (migración + `GET/PUT` de configuración); ninguna otra parte del backend necesita idioma.
+
+**Qué se pedía:** traducciones del sitio web.
+
+**Estado antes de la tarea:** **no había ninguna infraestructura de i18n.** No estaban `@angular/localize`, ngx-translate ni Transloco; lo único era el target `extract-i18n` del scaffold del CLI. Todos los textos estaban escritos a mano en español dentro de los templates — y algunos en inglés, restos de la plantilla original ("Job Description:", "Application ends:", "/ Month" en el detalle de vacante), que esta tarea también corrigió.
+
+**Decisión de negocio (N6) — resuelta el 2026-09-11: español e inglés.** Español es el idioma por defecto y el de respaldo (una clave sin traducir cae ahí); los locales son `es-MX` y `en-US`.
+
+**Decisión técnica — `@angular/localize` vs. Transloco: se eligió Transloco.**
 - **`@angular/localize`** (i18n oficial): traducción en tiempo de build → **un bundle por idioma**, mejor rendimiento y SEO (URLs `/es/`, `/en/`), pero **no permite cambiar de idioma sin recargar** y multiplica el despliegue SSR (una app Node por idioma, o un router delante).
-- **Transloco / ngx-translate:** JSON en runtime, cambio de idioma instantáneo, un solo bundle. Más simple de desplegar en cPanel; el SEO multi-idioma (`hreflang`, canonical por idioma) hay que armarlo a mano.
-- **Recomendación: Transloco**, por el despliegue en cPanel y porque el portal ya corre como una sola app Node SSR.
-
-**Alcance propuesto (en fases, para no bloquear el resto):**
-1. Instalar la librería y **extraer los textos del portal público** a `es.json` (navbar, footer, home, vacantes, detalle, planes, contacto, faq). Sin traducir todavía: es el grueso del trabajo y es puro refactor.
-2. Selector de idioma + persistencia (localStorage y `lang` en `<html>`), `hreflang` y canonical por idioma en `seo.service.ts`.
-3. Traducir a los idiomas que decida negocio.
-4. Áreas privadas (`/candidato`, `/empresa`, `/admin`) — **diferibles**: son usuarios recurrentes de un solo mercado.
-5. **Backend:** los `message` del envelope van en español, pero el frontend **ya conmuta sobre `errorCode`** (el contrato estable) → **los errores se traducen en el cliente por `errorCode`, no traduciendo el backend**. Lo que sí necesita idioma son las plantillas de correo (T21) → guardar el idioma preferido en el usuario.
-6. Formatos: fechas y **moneda MXN** por locale (`registerLocaleData`).
+- **Transloco:** JSON en runtime, cambio de idioma instantáneo, un solo bundle. Más simple de desplegar en cPanel; el SEO multi-idioma (`hreflang`, canonical por idioma) hay que armarlo a mano — y se armó (punto 3).
 
 **Criterios de aceptación:** cambiar de idioma traduce el portal público sin recargar y la elección persiste; el HTML servido por SSR ya sale en el idioma correcto (**sin parpadeo al hidratar**); `hreflang` correcto; un texto sin traducir cae al español sin romper la vista.
-
-**Riesgo:** es la tarea **más transversal** del backlog — toca todos los templates. Hacerla antes de que el portal se estabilice implica re-tocarla entera. Sugerencia: arrancar la fase 1 sólo cuando el diseño del portal público esté cerrado.
 
 ---
 
@@ -508,8 +518,8 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ## Decisiones que necesita el negocio (Parte C) 🔷
 
-- **N6 · Idiomas del sitio (T26).** ¿Cuáles y para qué público? Sin esto la tarea no es estimable.
-- **N7 · Imagen de vacante (T24).** ¿Para todos los planes o beneficio monetizado? ¿Recorte fijo o libre?
+- ~~**N6 · Idiomas del sitio (T26).**~~ ✅ resuelta el 2026-09-11: **español e inglés**, con español por defecto y de respaldo (`es-MX` / `en-US`).
+- ~~**N7 · Imagen de vacante (T24).**~~ ✅ resuelta el 2026-09-11: **para todas las vacantes**, no es un beneficio de plan — que es justo como quedó implementada T24, así que no hay cambio pendiente. El **recorte sigue libre**: la decisión no lo cubrió y nadie lo forzó (ver la ficha).
 - ~~**N8 · Qué apaga exactamente la expiración del plan (T22).**~~ ✅ resuelta al implementar T22: sólo el estado, porque no queda nada más que apagar (ver la ficha). Si algún día existe `postingQuota` (N5), el punto de extensión es `ExpireSubscriptionsUseCase`.
 - ~~**N9 · Skills: catálogo normalizado o texto libre (T25).**~~ Resuelto: catálogo normalizado.
 
@@ -520,4 +530,4 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 3. ~~**T21**~~ ✅ hecha — queda configurar `SMTP_*` en el servidor; sin ellas el adaptador de consola sólo escribe el correo en el log.
 4. ~~**T22**~~ ✅ hecha — despliegue: `migration:run:prod` (tabla `subscription_notices`) y enganchar `billing:expire` a un cron diario.
 5. ~~**T24**~~ ✅ hecha y ~~**T25**~~ ✅ hecha — skills normalizadas en backend, pendiente el frontend de chips.
-6. **T26** — la última: es transversal y conviene hacerla con el diseño ya estable.
+6. ~~**T26**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos. Ojo con una cosa en el servidor: el portal y `/auth` ya **no** se prerenderizan, así que la app Node SSR pasa a atender esas rutas en cada petición.

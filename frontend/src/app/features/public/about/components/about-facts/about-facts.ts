@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjReveal } from '@/shared/directives/reveal';
 import { AboutFact } from '@/features/public/about/models/about.models';
 
@@ -9,19 +10,21 @@ import { AboutFact } from '@/features/public/about/models/about.models';
 @Component({
   selector: 'app-about-facts',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjReveal],
+  imports: [IjReveal, TranslocoDirective],
   template: `
-    <section class="bg-surface px-6 py-16 lg:px-[60px]">
+    <section *transloco="let t" class="bg-surface px-6 py-16 lg:px-[60px]">
       <dl class="mx-auto grid max-w-[1000px] gap-10 sm:grid-cols-3">
-        @for (fact of facts(); track fact.label; let i = $index) {
+        @for (fact of facts(); track fact.labelKey; let i = $index) {
           <div ijReveal [revealDelay]="i * 90">
-            <dt class="text-[13px] font-semibold text-muted">{{ fact.label }}</dt>
+            <dt class="text-[13px] font-semibold text-muted">
+              {{ t(fact.labelKey) }}
+            </dt>
             <dd>
               <span class="mt-1 block text-[44px] font-bold leading-none text-brand-strong">
                 {{ fact.value }}
               </span>
               <span class="mt-3 block max-w-[34ch] text-sm leading-relaxed text-muted">
-                {{ fact.detail }}
+                {{ t(fact.detailKey) }}
               </span>
             </dd>
           </div>

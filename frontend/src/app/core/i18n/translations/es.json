@@ -1,0 +1,772 @@
+{
+  "nav": {
+    "home": "Inicio",
+    "about": "Nosotros",
+    "jobs": "Empleos",
+    "plans": "Planes",
+    "contact": "Contacto",
+    "login": "Ingresar",
+    "postJob": "Publicar empleo",
+    "myAccount": "Ir a mi cuenta",
+    "logout": "Cerrar sesión",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "brandHome": "Impulso Jobs, ir al inicio",
+    "primary": "Principal",
+    "banner": "Impulso Jobs"
+  },
+  "language": {
+    "label": "Idioma",
+    "change": "Cambiar idioma"
+  },
+  "footer": {
+    "newsletter": {
+      "title": "Recibe las vacantes nuevas de tu área en tu correo.",
+      "emailLabel": "Correo electrónico",
+      "placeholder": "tu@correo.com",
+      "submit": "Suscribirme",
+      "pending": "Todavía no podemos guardar tu correo: el aviso de vacantes se activa cuando abramos el envío por correo.",
+      "hint": "Un correo por semana. Puedes darte de baja cuando quieras."
+    },
+    "tagline": "Conectamos talento y empresas para impulsar tu próxima oportunidad profesional.",
+    "addressLabel": "Dirección:",
+    "emailLabel": "Correo:",
+    "phoneLabel": "Tel:",
+    "rights": "© {{year}} Impulso Jobs. Todos los derechos reservados.",
+    "columns": {
+      "candidates": "Candidatos",
+      "companies": "Empresas",
+      "brand": "Impulso Jobs"
+    },
+    "links": {
+      "searchJobs": "Buscar empleos",
+      "createAccount": "Crear cuenta",
+      "myProfile": "Mi perfil",
+      "myApplications": "Mis postulaciones",
+      "savedJobs": "Vacantes guardadas",
+      "postJob": "Publicar empleo",
+      "pricing": "Planes y precios",
+      "myVacancies": "Mis vacantes",
+      "searchTalent": "Buscar talento",
+      "about": "Nosotros",
+      "faq": "Preguntas frecuentes",
+      "contact": "Contacto"
+    }
+  },
+  "home": {
+    "hero": {
+      "titleStart": "Encuentra el ",
+      "titleHighlight": "empleo",
+      "titleEnd": " que se ajusta a tu vida",
+      "subtitle": "Vacantes en todo México, con filtros por área, estado y modalidad. Postularte es gratis.",
+      "jobLabel": "Empleo",
+      "jobPlaceholder": "Cargo o palabra clave",
+      "areaLabel": "Área",
+      "areaAll": "Todas las áreas",
+      "stateLabel": "Estado",
+      "stateAll": "Todo México",
+      "submit": "Buscar empleo",
+      "popular": "Búsquedas frecuentes:"
+    },
+    "stats": {
+      "openOne": "Vacante abierta",
+      "openMany": "Vacantes abiertas",
+      "thousands": "{{value}} mil",
+      "free": "Gratis",
+      "forCandidates": "Para candidatos"
+    },
+    "categories": {
+      "eyebrow": "Empleos por área",
+      "title": "Elige el área en la que quieres trabajar",
+      "lead": "Explora las áreas con más movimiento y filtra en un clic las vacantes que encajan con tu experiencia.",
+      "viewVacancies": "Ver vacantes",
+      "allAreas": "Las 23 áreas",
+      "allAreasHint": "Ver el catálogo completo"
+    },
+    "featured": {
+      "title": "Vacantes publicadas esta semana",
+      "loading": "Cargando vacantes.",
+      "errorTitle": "No pudimos cargar las vacantes",
+      "errorBody": "Puede ser una caída momentánea de la conexión. Inténtalo otra vez o entra directo al listado completo.",
+      "retry": "Reintentar",
+      "goToList": "Ir al listado",
+      "viewAll": "Ver todas las vacantes",
+      "emptyTitle": "Todavía no hay vacantes publicadas",
+      "emptyBody": "Aquí aparecerán las ofertas en cuanto las empresas empiecen a publicar. Si contratas, puedes ser la primera.",
+      "emptyCta": "Publicar una vacante"
+    },
+    "steps": {
+      "title": "Cómo funciona",
+      "lead": "Tres pasos entre crear tu cuenta y estar en un proceso de selección.",
+      "account": {
+        "title": "Crea tu cuenta",
+        "description": "Regístrate con tu correo en un par de minutos. No pedimos tarjeta."
+      },
+      "resume": {
+        "title": "Arma tu currículum",
+        "description": "Completa tu perfil una vez y reutilízalo en todas tus postulaciones."
+      },
+      "apply": {
+        "title": "Postúlate y da seguimiento",
+        "description": "Aplica con un clic y consulta en qué etapa va cada proceso."
+      }
+    },
+    "resume": {
+      "title": "No solo busques: deja que las empresas te encuentren",
+      "body": "Arma tu currículum una vez en Impulso Jobs y postúlate con un clic a cualquier vacante. Sin costo para candidatos.",
+      "cta": "Crear mi currículum",
+      "once": {
+        "title": "Un currículum, todas las postulaciones",
+        "description": "Lo llenas una vez y se adjunta solo cada vez que te postulas."
+      },
+      "snapshot": {
+        "title": "La empresa ve lo que enviaste",
+        "description": "Se guarda una copia de tu perfil tal como estaba ese día, aunque después lo edites."
+      },
+      "privacy": {
+        "title": "Tú decides quién te ve",
+        "description": "Puedes mantener tu perfil oculto y postularte igual."
+      }
+    },
+    "employers": {
+      "title": "¿Estás contratando?",
+      "body": "Publica tu vacante, recibe postulaciones ordenadas en un solo panel y filtra con preguntas de descarte antes de la primera llamada.",
+      "screening": "Preguntas de descarte para filtrar antes de entrevistar",
+      "snapshot": "Currículum del candidato guardado tal como estaba al postularse",
+      "promotions": "Vacantes destacadas y distintivos por periodo, sin permanencia",
+      "ctaPost": "Publicar una vacante",
+      "ctaPlans": "Ver planes",
+      "wallTitle": "Ya publican con nosotros"
+    },
+    "testimonials": {
+      "title": "Lo que dice quien ya encontró trabajo aquí",
+      "accountant": {
+        "role": "Analista contable, Guadalajara",
+        "quote": "Me postulé un martes y el jueves ya tenía entrevista. Ver en qué etapa iba cada proceso me quitó la parte más incómoda de buscar trabajo."
+      },
+      "technician": {
+        "role": "Técnico de mantenimiento, Monterrey",
+        "quote": "Filtré por estado y modalidad y dejé de perder tiempo en vacantes de otra ciudad. Encontré algo a veinte minutos de mi casa."
+      }
+    },
+    "faqTeaser": {
+      "title": "Preguntas frecuentes",
+      "lead": "Dudas comunes sobre vacantes, postulaciones y el uso de tu cuenta."
+    }
+  },
+  "faq": {
+    "hero": {
+      "eyebrow": "FAQ",
+      "title": "Preguntas frecuentes",
+      "description": "Resuelve dudas comunes sobre vacantes, postulaciones, pagos y el uso de tu cuenta dentro de Impulso Jobs."
+    },
+    "breadcrumb": "Preguntas frecuentes",
+    "emptyTitle": "No hay preguntas en esta categoría",
+    "emptyBody": "Muy pronto agregaremos más respuestas para este tema.",
+    "tabs": {
+      "general": {
+        "label": "General",
+        "description": "Información básica sobre el uso de la plataforma."
+      },
+      "empleos": {
+        "label": "Empleos",
+        "description": "Preguntas sobre publicación, visibilidad y postulaciones."
+      },
+      "pagos": {
+        "label": "Pagos",
+        "description": "Planes, facturación y cupones promocionales."
+      },
+      "cuenta": {
+        "label": "Cuenta",
+        "description": "Acceso, seguridad y configuración del perfil."
+      }
+    },
+    "items": {
+      "general-como-funciona": {
+        "question": "¿Cómo funciona Impulso Jobs para candidatos y empresas?",
+        "answer": "Los candidatos crean su perfil, arman su currículum y se postulan desde un solo panel. Las empresas publican vacantes, revisan a los candidatos y siguen cada proceso de selección desde el suyo."
+      },
+      "general-ciudades": {
+        "question": "¿Puedo usar la plataforma desde cualquier ciudad?",
+        "answer": "Sí. Impulso Jobs cubre los 32 estados de la república y admite vacantes presenciales, híbridas y remotas. Puedes filtrar por estado, municipio, modalidad y área profesional."
+      },
+      "general-soporte": {
+        "question": "¿Dónde encuentro ayuda si tengo una duda puntual?",
+        "answer": "Escríbenos desde la página de contacto o directo a nuestro correo. Esta sección se irá ampliando conforme publiquemos nuevas funciones."
+      },
+      "empleos-publicacion": {
+        "question": "¿Dónde se muestra mi vacante una vez publicada?",
+        "answer": "La vacante aparece en el listado público, en las búsquedas por área profesional y por estado, y en las páginas de cada área. Si tu plan incluye promoción, además se marca como destacada."
+      },
+      "empleos-tiempo": {
+        "question": "¿Cuánto tarda en publicarse una oferta laboral?",
+        "answer": "En la mayoría de los casos la publicación queda disponible inmediatamente después de completar el formulario. Si requiere validación adicional por contenido o datos de empresa, el equipo la revisa en el menor tiempo posible."
+      },
+      "empleos-postulaciones": {
+        "question": "¿Cuándo empezaré a recibir postulaciones?",
+        "answer": "En cuanto la vacante queda visible. El volumen depende del perfil que buscas, de qué tan clara sea la descripción, del salario y de la modalidad."
+      },
+      "pagos-cupon": {
+        "question": "¿Cómo canjeo un cupón o código promocional?",
+        "answer": "Durante el proceso de compra o activación del plan encontrarás un campo para ingresar el código. Si el cupón es válido y está vigente, el descuento se aplica automáticamente antes de confirmar el pago."
+      },
+      "pagos-facturacion": {
+        "question": "¿Recibo factura o comprobante por mi pago?",
+        "answer": "Sí. Cada compra genera un comprobante y, cuando aplique, la factura con los datos fiscales de la empresa: RFC, régimen fiscal y uso de CFDI. Conviene mantenerlos al día en el perfil."
+      },
+      "pagos-cancelacion": {
+        "question": "¿Cuál es la política de cancelación o cambios de plan?",
+        "answer": "Escribe a soporte para cambiar de plan o resolver un tema de facturación. Cada caso se revisa según el estado del servicio, los beneficios ya consumidos y las condiciones vigentes."
+      },
+      "cuenta-password": {
+        "question": "¿Cómo restablezco mi contraseña?",
+        "answer": "Desde el acceso a tu cuenta puedes usar la opción de recuperación de contraseña. Recibirás un enlace temporal en tu correo para crear una nueva clave de forma segura."
+      },
+      "cuenta-seguridad": {
+        "question": "¿Mi información personal y empresarial está protegida?",
+        "answer": "Sí. Aplicamos medidas de seguridad para proteger accesos, datos sensibles y actividad dentro de la plataforma. Además, cada usuario solo puede gestionar la información permitida según su rol."
+      },
+      "cuenta-perfil": {
+        "question": "¿Puedo actualizar mi perfil o datos de empresa después del registro?",
+        "answer": "Sí. Tanto candidatos como empresas pueden editar su información, datos de contacto y preferencias desde su panel. Mantener el perfil al día mejora la calidad de las postulaciones y la visibilidad."
+      }
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "Una bolsa de trabajo hecha para México",
+      "lead": "Impulso Jobs conecta a quien busca empleo con las empresas que contratan, con filtros que entienden cómo se busca trabajo aquí: por área, por estado y por modalidad.",
+      "breadcrumb": "Nosotros"
+    },
+    "candidates": {
+      "title": "Si buscas empleo",
+      "description": "Todo el lado del candidato es gratuito, incluidas las postulaciones.",
+      "f1": "Filtra por área, estado, modalidad, experiencia y salario mínimo",
+      "f2": "Un solo currículum para todas tus postulaciones",
+      "f3": "Consulta en qué etapa va cada proceso",
+      "f4": "Guarda vacantes para decidir después",
+      "f5": "Decide si tu perfil es visible para las empresas",
+      "cta": "Crear cuenta gratis"
+    },
+    "companies": {
+      "title": "Si contratas",
+      "description": "Publica, filtra y ordena tus procesos desde un panel propio.",
+      "f1": "Preguntas de descarte para filtrar antes de entrevistar",
+      "f2": "El currículum queda congelado tal como estaba al postularse",
+      "f3": "Vacantes destacadas y distintivos por periodo",
+      "f4": "Varios usuarios por empresa, con permisos por rol",
+      "f5": "Facturación con datos fiscales y uso de CFDI",
+      "cta": "Publicar una vacante"
+    },
+    "steps": {
+      "title": "De crear la cuenta a estar en un proceso",
+      "account": {
+        "title": "Crea tu cuenta",
+        "description": "Regístrate con tu correo. No pedimos tarjeta ni datos de pago."
+      },
+      "resume": {
+        "title": "Arma tu currículum",
+        "description": "Experiencia, estudios e idiomas. Se completa una vez y se reutiliza."
+      },
+      "search": {
+        "title": "Encuentra la vacante",
+        "description": "Filtra por área, estado y modalidad, u ordena por fecha o salario."
+      },
+      "apply": {
+        "title": "Postúlate y da seguimiento",
+        "description": "Aplica con un clic y consulta el avance de cada proceso en tu panel."
+      }
+    },
+    "facts": {
+      "areas": {
+        "label": "Áreas profesionales",
+        "detail": "Desde producción y logística hasta salud, ingeniería o ventas."
+      },
+      "states": {
+        "label": "Estados de la república",
+        "detail": "Cobertura nacional, con filtro por estado y municipio."
+      },
+      "free": {
+        "label": "Costo para el candidato",
+        "detail": "Crear cuenta, armar tu currículum y postularte no cuesta nada."
+      }
+    },
+    "cta": {
+      "title": "Empieza por donde te toque",
+      "description": "Si buscas trabajo, crear tu cuenta toma un par de minutos. Si contratas, puedes publicar tu primera vacante hoy mismo.",
+      "candidate": "Crear cuenta gratis",
+      "company": "Publicar una vacante"
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Hablemos de tu próxima contratación",
+      "description": "Escríbenos si necesitas ayuda publicando vacantes, gestionando candidatos o resolviendo dudas sobre la plataforma.",
+      "breadcrumb": "Contacto"
+    },
+    "form": {
+      "eyebrow": "Envíanos un mensaje",
+      "title": "Cuéntanos cómo podemos ayudarte",
+      "lead": "Resolvemos dudas de candidatos y empresas. Al enviar se abre tu gestor de correo con el mensaje ya redactado.",
+      "name": "Nombre",
+      "namePlaceholder": "Tu nombre completo",
+      "nameError": "Ingresa un nombre válido.",
+      "email": "Correo",
+      "emailPlaceholder": "tu@correo.com",
+      "emailError": "Ingresa un correo válido.",
+      "phone": "Teléfono",
+      "phonePlaceholder": "+52 55 0000 0000",
+      "phoneError": "Comparte un teléfono de contacto.",
+      "subject": "Asunto",
+      "subjectPlaceholder": "¿En qué te ayudamos?",
+      "subjectError": "Escribe un asunto breve.",
+      "message": "Mensaje",
+      "messagePlaceholder": "Cuéntanos más detalles sobre tu necesidad.",
+      "messageError": "El mensaje debe tener al menos 20 caracteres.",
+      "submit": "Enviar mensaje",
+      "alsoWrite": "También puedes escribirnos directo a"
+    },
+    "cards": {
+      "email": "Correo",
+      "phone": "Teléfono y WhatsApp",
+      "office": "Oficina"
+    },
+    "schedule": {
+      "title": "Horario de atención",
+      "hours": "Lunes a viernes de 8:00 a. m. a 6:00 p. m.",
+      "priority": "Soporte prioritario para empresas con vacantes activas."
+    },
+    "mailto": {
+      "name": "Nombre",
+      "email": "Correo",
+      "phone": "Teléfono"
+    },
+    "status": "Listo, {{name}}: abrimos tu gestor de correo con el mensaje redactado. Si no se abrió, escríbenos a {{email}}.",
+    "map": {
+      "label": "Mapa con la ubicación de {{office}}: {{address}}",
+      "directions": "Cómo llegar"
+    }
+  },
+  "plans": {
+    "hero": {
+      "title": "Planes y precios",
+      "description": "Escoge el plan que mejor se ajusta al ritmo de contratación de tu empresa y activa tus vacantes en minutos.",
+      "breadcrumb": "Planes"
+    },
+    "eyebrow": "Elige tu plan",
+    "title": "Impulsa tus vacantes",
+    "taxNote": "Precios en MXN. IVA incluido.",
+    "toggleLabel": "Cambiar ciclo de facturación",
+    "error": "No pudimos cargar los planes en este momento. Intenta de nuevo más tarde.",
+    "empty": {
+      "title": "Muy pronto publicaremos nuestros planes",
+      "body": "Estamos afinando los precios. Escríbenos y te avisamos en cuanto estén disponibles."
+    },
+    "cycles": {
+      "monthly": "Por publicación",
+      "annual": "Suscripción anual"
+    },
+    "periods": {
+      "monthly": "Por publicación",
+      "annual": "Anual"
+    },
+    "features": {
+      "unlimited": "{{name}}: ilimitado",
+      "value": "{{name}}: {{value}}"
+    }
+  },
+  "pricing": {
+    "recommended": "Recomendado",
+    "buy": "Comprar ahora",
+    "monthly": "Mensual",
+    "annual": "Anual"
+  },
+  "enums": {
+    "employmentType": {
+      "FULL_TIME": "Tiempo completo",
+      "PART_TIME": "Medio tiempo",
+      "CONTRACT": "Por contrato",
+      "TEMPORARY": "Temporal",
+      "INTERNSHIP": "Prácticas"
+    },
+    "workMode": {
+      "ONSITE": "Presencial",
+      "HYBRID": "Híbrido",
+      "REMOTE": "Remoto"
+    },
+    "experienceLevel": {
+      "ENTRY": "Sin experiencia",
+      "JUNIOR": "Junior",
+      "MID": "Intermedio",
+      "SENIOR": "Senior",
+      "LEAD": "Líder / Manager"
+    },
+    "contractType": {
+      "INDEFINITE": "Tiempo indeterminado",
+      "FIXED_TERM": "Tiempo determinado",
+      "SEASONAL": "Por temporada",
+      "OTHER": "Por obra u otro"
+    },
+    "educationLevel": {
+      "NONE": "Sin estudios",
+      "PRIMARY": "Primaria",
+      "SECONDARY": "Secundaria",
+      "HIGH_SCHOOL": "Bachillerato / Preparatoria",
+      "TECHNICAL": "Carrera técnica / TSU",
+      "BACHELOR": "Licenciatura",
+      "SPECIALTY": "Especialidad",
+      "MASTER": "Maestría",
+      "DOCTORATE": "Doctorado"
+    },
+    "reportReason": {
+      "OFFENSIVE_DISCRIMINATORY": "Es ofensiva y/o discriminatoria",
+      "ADVERTISEMENT": "Es un anuncio, no una oferta de empleo",
+      "ASKS_FOR_MONEY": "Me solicitan dinero",
+      "NO_RESPONSE": "No responden a los postulados",
+      "LOW_PAY": "Pagan muy poco o en malas condiciones",
+      "DUPLICATE": "Oferta duplicada",
+      "OTHER": "Otro motivo"
+    }
+  },
+  "jobs": {
+    "heading": "Encuentra tu próximo empleo",
+    "landingHeading": "Trabajo de {{area}} en {{state}}",
+    "countOne": "{{count}} vacante activa en Impulso Jobs.",
+    "countMany": "{{count}} vacantes activas en Impulso Jobs.",
+    "searchLabel": "Buscar vacante",
+    "searchPlaceholder": "Puesto, tecnología, palabra clave…",
+    "submit": "Buscar",
+    "clear": "Limpiar",
+    "anyState": "Todo México",
+    "anyWorkMode": "Modalidad",
+    "anyEmployment": "Cualquier contratación",
+    "anyExperience": "Cualquier experiencia",
+    "anyArea": "Todas las áreas",
+    "anySalary": "Cualquier salario",
+    "salaryFrom": "Desde {{amount}}",
+    "anyDate": "Cualquier fecha",
+    "dates": {
+      "today": "Hoy",
+      "d3": "Últimos 3 días",
+      "d7": "Última semana",
+      "d15": "Últimos 15 días",
+      "d30": "Último mes"
+    },
+    "sort": {
+      "relevance": "Más relevantes",
+      "date": "Más recientes",
+      "salary": "Mejor pagadas"
+    },
+    "loading": "Buscando vacantes…",
+    "error": "No se pudieron cargar las vacantes.",
+    "emptyTitle": "No encontramos vacantes con esos criterios.",
+    "emptyBody": "Prueba con menos filtros o revisa más adelante."
+  },
+  "card": {
+    "featured": "Destacada",
+    "urgent": "Urgente",
+    "verified": "Verificada",
+    "new": "Nueva",
+    "confidential": "Empresa confidencial",
+    "view": "Ver vacante",
+    "perMonth": "/ Mensual",
+    "salaryTbd": "Salario a convenir",
+    "postedToday": "hoy",
+    "postedYesterday": "ayer",
+    "postedDays": "hace {{days}} días",
+    "postedMonth": "hace 1 mes",
+    "postedMonths": "hace {{months}} meses",
+    "salaryRange": "{{min}} a {{max}}"
+  },
+  "vacancy": {
+    "back": "Todas las vacantes",
+    "loading": "Cargando vacante…",
+    "goneTitle": "Esta vacante ya no está disponible.",
+    "goneCta": "Ver otras vacantes",
+    "new": "Nueva",
+    "postedToday": "Hoy",
+    "postedOneDay": "1 día",
+    "postedDays": "{{days}} días",
+    "applied": "Ya te postulaste",
+    "myApplications": "Ver mis postulaciones",
+    "apply": "Aplicar ahora",
+    "sending": "Enviando…",
+    "save": "Guardar",
+    "saved": "Guardada",
+    "perMonth": "/ mes",
+    "deadline": "Postúlate antes del:",
+    "description": "Descripción del empleo",
+    "requirements": "Requisitos",
+    "responsibilities": "Responsabilidades",
+    "share": "Compartir vacante",
+    "location": "Ubicación",
+    "publishedOn": "Publicada el {{date}}",
+    "report": "Denunciar esta vacante",
+    "infoTitle": "Información del empleo",
+    "skills": "Habilidades del puesto",
+    "confidentialNote": "La empresa se dará a conocer durante el proceso de selección.",
+    "salaryTbd": "A convenir",
+    "noDate": "Sin fecha",
+    "positions": "{{count}} posiciones",
+    "details": {
+      "published": "Publicada",
+      "location": "Ubicación",
+      "employment": "Contratación",
+      "workMode": "Modalidad",
+      "experience": "Experiencia",
+      "salary": "Salario mensual",
+      "area": "Área",
+      "contract": "Tipo de contrato",
+      "education": "Escolaridad mínima",
+      "positions": "Plazas",
+      "deadline": "Postúlate antes del",
+      "views": "Visualizaciones",
+      "validUntil": "Vigente hasta"
+    },
+    "applyModal": {
+      "title": "Postularme",
+      "lead": "La empresa pide responder estas preguntas para postularte.",
+      "answerPlaceholder": "Escribe tu respuesta",
+      "cancel": "Cancelar",
+      "submit": "Enviar postulación"
+    },
+    "reportModal": {
+      "title": "Denunciar vacante",
+      "done": "Gracias por tu reporte. Nuestro equipo revisará esta vacante.",
+      "close": "Cerrar",
+      "commentPlaceholder": "Cuéntanos más (opcional)",
+      "cancel": "Cancelar",
+      "submit": "Enviar denuncia"
+    },
+    "errors": {
+      "notActive": "Esta vacante ya no admite postulaciones.",
+      "answers": "Revisa tus respuestas: todas las preguntas son obligatorias.",
+      "apply": "No pudimos enviar tu postulación. Intenta de nuevo.",
+      "report": "No pudimos registrar la denuncia. Intenta de nuevo."
+    },
+    "shareText": "Vacante: {{title}}",
+    "salaryRange": "{{min}} a {{max}}"
+  },
+  "seo": {
+    "home": {
+      "title": "Impulso Jobs | Bolsa de trabajo en México",
+      "description": "Encuentra empleo en México por área, estado y modalidad. Postularte es gratis y puedes dar seguimiento a cada proceso desde tu cuenta."
+    },
+    "about": {
+      "title": "Nosotros | Impulso Jobs",
+      "description": "Qué es Impulso Jobs: una bolsa de trabajo para México, con filtros por área, estado y modalidad. Gratis para candidatos."
+    },
+    "faq": {
+      "title": "Preguntas frecuentes | Impulso Jobs",
+      "description": "Dudas sobre vacantes, postulaciones, planes y tu cuenta en Impulso Jobs, respondidas."
+    },
+    "contact": {
+      "title": "Contacto | Impulso Jobs",
+      "description": "Escríbenos por correo o teléfono si necesitas ayuda con vacantes, postulaciones o tu cuenta en Impulso Jobs."
+    },
+    "plans": {
+      "title": "Planes y precios | Impulso Jobs",
+      "description": "Planes para publicar vacantes en Impulso Jobs. Precios en pesos mexicanos, con IVA incluido y sin permanencia."
+    },
+    "vacancies": {
+      "title": "Vacantes de empleo en México | Impulso Jobs",
+      "description": "Encuentra tu próximo empleo: busca vacantes por área, estado, salario y modalidad, y postúlate gratis en Impulso Jobs."
+    },
+    "landing": {
+      "title": "{{heading}} | Impulso Jobs",
+      "description": "Vacantes de {{area}} en {{state}}. Postúlate gratis en Impulso Jobs, el portal de empleo para México."
+    },
+    "vacancy": {
+      "title": "{{title}}, {{company}} en {{place}} | Impulso Jobs"
+    }
+  },
+  "common": {
+    "breadcrumbNav": "Ruta de navegación",
+    "home": "Inicio",
+    "backToTop": "Volver arriba",
+    "close": "Cerrar"
+  },
+  "pagination": {
+    "summaryOne": "{{total}} registro · página {{page}} de {{pages}}",
+    "summaryMany": "{{total}} registros · página {{page}} de {{pages}}",
+    "prev": "Página anterior",
+    "next": "Página siguiente"
+  },
+  "ui": {
+    "search": "Buscar…",
+    "noResults": "Sin resultados"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio.",
+    "email": "Correo electrónico no válido.",
+    "minLength": "Mínimo {{length}} caracteres.",
+    "maxLength": "Máximo {{length}} caracteres.",
+    "min": "El valor mínimo es {{value}}.",
+    "max": "El valor máximo es {{value}}.",
+    "pattern": "El formato no es válido.",
+    "invalid": "El valor no es válido.",
+    "passwordPolicy": "Mínimo 8 caracteres, con mayúscula, minúscula, número y un carácter especial."
+  },
+  "auth": {
+    "common": {
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tucorreo@ejemplo.com",
+      "emailError": "Ingresa un correo válido.",
+      "password": "Contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "showPassword": "Mostrar contraseña",
+      "hidePassword": "Ocultar contraseña",
+      "show": "Mostrar",
+      "hide": "Ocultar",
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "backToLogin": "Volver a iniciar sesión",
+      "login": "Iniciar sesión",
+      "sending": "Enviando…"
+    },
+    "login": {
+      "title": "Inicia sesión",
+      "subtitleCandidate": "Ingresa a tu cuenta de candidato",
+      "subtitleCompany": "Ingresa a tu cuenta de empresa",
+      "candidate": "Candidato",
+      "company": "Empresa",
+      "genericError": "No pudimos iniciar sesión. Inténtalo de nuevo.",
+      "resendSent": "Te reenviamos el enlace de verificación a tu correo.",
+      "resend": "Reenviar correo de verificación",
+      "resending": "Reenviando…",
+      "resendError": "No se pudo reenviar. Intenta de nuevo.",
+      "success": "Sesión iniciada. Redirigiendo…",
+      "remember": "Recordar sesión",
+      "forgot": "¿Olvidaste tu contraseña?",
+      "submit": "Ingresar",
+      "submitting": "Ingresando…",
+      "submitted": "Sesión iniciada",
+      "socialDivider": "O ingresa con",
+      "socialWith": "Ingresar con {{provider}}",
+      "noAccount": "¿No tienes cuenta?",
+      "createAccount": "Crea una cuenta"
+    },
+    "errors": {
+      "invalidCredentials": "Correo o contraseña incorrectos.",
+      "blocked": "Tu cuenta está bloqueada temporalmente. Espera unos minutos e intenta de nuevo.",
+      "inactive": "Tu cuenta no está activa. Contacta a soporte.",
+      "notVerified": "Debes verificar tu correo antes de iniciar sesión.",
+      "generic": "No pudimos iniciar sesión. Inténtalo más tarde."
+    },
+    "forgot": {
+      "title": "Recuperar contraseña",
+      "lead": "Ingresa tu correo y te enviaremos un enlace para restablecerla.",
+      "submit": "Enviar enlace",
+      "sentTitle": "Revisa tu correo",
+      "sentBody": "Si {{email}} está registrado, te enviamos un enlace para restablecer tu contraseña. Expira en 30 minutos.",
+      "notSeeing": "¿No lo ves? Revisa tu carpeta de spam o",
+      "tryAnother": "intenta con otro correo"
+    },
+    "reset": {
+      "validating": "Validando tu enlace…",
+      "invalidTitle": "Enlace inválido o expirado",
+      "invalidBody": "Este enlace ya no es válido o ya fue utilizado. Solicita uno nuevo para continuar.",
+      "requestNew": "Solicitar un nuevo enlace",
+      "successTitle": "Contraseña actualizada",
+      "successBody": "Tu contraseña se cambió correctamente. Por seguridad, cerramos tus otras sesiones. Ya puedes iniciar sesión con la nueva.",
+      "title": "Nueva contraseña",
+      "lead": "Crea una contraseña segura para tu cuenta.",
+      "newPassword": "Nueva contraseña",
+      "passwordRequired": "La contraseña es obligatoria",
+      "confirmRequired": "Confirma tu contraseña",
+      "mismatch": "Las contraseñas no coinciden",
+      "saving": "Guardando…",
+      "submit": "Cambiar contraseña",
+      "genericError": "No pudimos cambiar tu contraseña. Inténtalo más tarde."
+    },
+    "verify": {
+      "verifying": "Verificando tu correo…",
+      "successTitle": "Correo verificado",
+      "alreadyTitle": "Tu correo ya estaba verificado",
+      "successBody": "Tu cuenta está lista. Ya puedes iniciar sesión.",
+      "invalidTitle": "Enlace inválido o expirado",
+      "invalidBody": "Este enlace de verificación ya no sirve. Ingresa tu correo y te enviaremos uno nuevo.",
+      "resent": "Si el correo requiere verificación, te enviamos un nuevo enlace.",
+      "resend": "Enviar nuevo enlace"
+    },
+    "register": {
+      "steps": {
+        "account": "Cuenta",
+        "personal": "Datos personales",
+        "location": "Ubicación",
+        "tax": "Datos fiscales"
+      },
+      "prev": "Anterior",
+      "next": "Continuar",
+      "submit": "Crear cuenta",
+      "creating": "Creando…",
+      "goLogin": "Ir a iniciar sesión",
+      "haveAccount": "¿Ya tienes cuenta?",
+      "loginLink": "Inicia sesión",
+      "emailTaken": "Ya existe una cuenta con este correo.",
+      "genericError": "No pudimos crear la cuenta. Revisa los datos e inténtalo de nuevo.",
+      "candidate": {
+        "title": "Crea tu cuenta",
+        "lead": "Postúlate a las mejores vacantes.",
+        "successTitle": "¡Cuenta creada!",
+        "successBody": "Enviamos un enlace de verificación a {{email}}. Verifícalo para poder iniciar sesión.",
+        "firstName": "Nombre(s)",
+        "firstNamePlaceholder": "Ana",
+        "firstNameError": "El nombre es obligatorio.",
+        "lastName": "Apellidos",
+        "lastNamePlaceholder": "García",
+        "lastNameError": "El apellido es obligatorio.",
+        "documentType": "Tipo de documento",
+        "documentTypeError": "Selecciona el tipo.",
+        "documentNumber": "Número de documento",
+        "documentNumberPlaceholder": "Número",
+        "documentNumberError": "El documento es obligatorio.",
+        "curp": "CURP (opcional)",
+        "curpPlaceholder": "18 caracteres",
+        "curpError": "La CURP debe tener 18 caracteres válidos.",
+        "birthDate": "Fecha de nacimiento",
+        "birthDateError": "Ingresa una fecha válida (no futura).",
+        "professionalTitle": "Título profesional (opcional)",
+        "professionalTitlePlaceholder": "Desarrolladora Full-Stack",
+        "state": "Estado",
+        "stateError": "Selecciona el estado.",
+        "municipality": "Municipio",
+        "municipalityPlaceholder": "Zapopan",
+        "municipalityError": "El municipio es obligatorio.",
+        "isCompany": "¿Representas a una empresa?",
+        "isCompanyLink": "Regístrate como empresa",
+        "documentTaken": "Ya existe un registro con este documento.",
+        "birthDateInvalid": "La fecha de nacimiento no es válida."
+      },
+      "company": {
+        "title": "Crea tu cuenta de empresa",
+        "lead": "Publica vacantes y encuentra talento.",
+        "successTitle": "¡Empresa registrada!",
+        "successBody": "Enviamos un enlace de verificación a {{email}}. Verifícalo para poder iniciar sesión.",
+        "emailPlaceholder": "empresa@correo.com",
+        "legalName": "Razón social",
+        "legalNamePlaceholder": "Impulso Talent S.A. de C.V.",
+        "legalNameError": "La razón social es obligatoria.",
+        "businessName": "Nombre comercial",
+        "businessNamePlaceholder": "Impulso Talent",
+        "businessNameError": "El nombre comercial es obligatorio.",
+        "rfc": "RFC",
+        "rfcError": "RFC inválido (12 a 13 caracteres).",
+        "postalCode": "Código postal",
+        "postalCodeError": "C.P. de 5 dígitos.",
+        "taxRegime": "Régimen fiscal (SAT)",
+        "taxRegimeError": "Selecciona el régimen fiscal.",
+        "state": "Estado",
+        "stateError": "Selecciona el estado.",
+        "municipality": "Municipio",
+        "municipalityPlaceholder": "Guadalajara",
+        "municipalityError": "El municipio es obligatorio.",
+        "economicSector": "Sector económico (opcional)",
+        "economicSectorPlaceholder": "Tecnología",
+        "website": "Sitio web (opcional)",
+        "isCandidate": "¿Eres candidato?",
+        "isCandidateLink": "Regístrate como candidato",
+        "rfcTaken": "Ya existe una empresa registrada con este RFC."
+      }
+    }
+  }
+}

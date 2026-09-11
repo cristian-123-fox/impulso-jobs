@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 
 /**
  * Cabecera de página interior del portal: ruta de navegación, título y entrada.
@@ -13,9 +14,10 @@ import { RouterLink } from '@angular/router';
 @Component({
   selector: 'ij-page-header',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, TranslocoDirective],
   template: `
     <section
+      *transloco="let t"
       class="relative overflow-hidden bg-surface px-6 py-16 lg:px-[60px] lg:py-20"
     >
       <div
@@ -24,9 +26,12 @@ import { RouterLink } from '@angular/router';
       ></div>
 
       <div class="relative z-10 mx-auto max-w-container">
-        <nav aria-label="Ruta de navegación" class="mb-5 flex items-center gap-2 text-sm text-muted">
+        <nav
+          [attr.aria-label]="t('common.breadcrumbNav')"
+          class="mb-5 flex items-center gap-2 text-sm text-muted"
+        >
           <a routerLink="/inicio" class="transition-colors hover:text-brand-strong">
-            Inicio
+            {{ t('common.home') }}
           </a>
           <span aria-hidden="true">/</span>
           <span class="font-medium text-brand-strong" aria-current="page">

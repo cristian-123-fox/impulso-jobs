@@ -4,6 +4,7 @@ import {
   input,
   output,
 } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import {
   FaqCategoryId,
   FaqItem,
@@ -33,7 +34,7 @@ const CHEVRON_BASE =
 @Component({
   selector: 'app-faq-accordion',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon],
+  imports: [IjIcon, TranslocoDirective],
   templateUrl: './faq-accordion.html',
 })
 export class FaqAccordion {

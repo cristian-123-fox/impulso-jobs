@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjIcon, TONE_SOFT } from '@/shared/ui';
 import { IjReveal } from '@/shared/directives/reveal';
 import { AboutStep } from '@/features/public/about/models/about.models';
@@ -13,12 +14,12 @@ import { AboutStep } from '@/features/public/about/models/about.models';
 @Component({
   selector: 'app-about-steps',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjReveal],
+  imports: [IjIcon, IjReveal, TranslocoDirective],
   template: `
-    <section class="px-6 pb-4 pt-20 lg:px-[60px]">
+    <section *transloco="let t" class="px-6 pb-4 pt-20 lg:px-[60px]">
       <div class="mx-auto max-w-[1080px]">
         <h2 class="max-w-[20ch] text-3xl font-bold leading-tight text-ink-900 sm:text-[36px]">
-          De crear la cuenta a estar en un proceso
+          {{ t('about.steps.title') }}
         </h2>
 
         <ol class="mt-12 grid gap-x-10 gap-y-9 sm:grid-cols-2">
@@ -37,10 +38,10 @@ import { AboutStep } from '@/features/public/about/models/about.models';
                   {{ step.num }}
                 </span>
                 <span class="mt-1 block text-lg font-semibold text-ink-900">
-                  {{ step.title }}
+                  {{ t(step.titleKey) }}
                 </span>
                 <span class="mt-1.5 block max-w-[40ch] text-sm leading-relaxed text-muted">
-                  {{ step.description }}
+                  {{ t(step.descriptionKey) }}
                 </span>
               </span>
             </li>

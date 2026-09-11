@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -14,16 +15,15 @@ import {
   Validators,
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import { RegisterStatus } from '@/features/public/auth/models/auth.models';
 import { AuthStepper } from '@/features/public/auth/components/auth-stepper/auth-stepper';
 import { DOCUMENT_TYPES, MX_STATES } from '@/shared/catalogs/mx.catalogs';
-import {
-  PASSWORD_POLICY_HINT,
-  passwordPolicyValidator,
-} from '@/shared/validators/password.validator';
+import { passwordPolicyValidator } from '@/shared/validators/password.validator';
 import { passwordsMatchValidator } from '@/shared/validators/passwords-match.validator';
 import {
   curpValidator,
@@ -58,9 +58,10 @@ const STEP_CONTROLS: string[][] = [
     IjInput,
     IjSelect,
     IjDatepicker,
+    TranslocoDirective,
   ],
   template: `
-    <div class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
+    <div *transloco="let t" class="w-full rounded-[20px] bg-white p-8 shadow-float sm:p-9">
       @if (status() === 'success') {
         <div class="text-center">
           <span
@@ -68,11 +69,15 @@ const STEP_CONTROLS: string[][] = [
           >
             <ij-icon name="mail" [size]="26" />
           </span>
-          <h1 class="text-[22px] font-bold tracking-tight text-ink-900">¡Cuenta creada!</h1>
+          <h1 class="text-[22px] font-bold tracking-tight text-ink-900">
+            {{ t('auth.register.candidate.successTitle') }}
+          </h1>
           <p class="mt-2 text-[14.5px] leading-relaxed text-muted">
-            Enviamos un enlace de verificación a
-            <b class="text-ink-900">{{ form.controls.email.value }}</b>. Verifícalo para poder
-            iniciar sesión.
+            {{
+              t('auth.register.candidate.successBody', {
+                email: form.controls.email.value,
+              })
+            }}
           </p>
           <a
             ij-button
@@ -82,14 +87,18 @@ const STEP_CONTROLS: string[][] = [
             size="lg"
             class="mt-6 w-full shadow-search"
           >
-            Ir a iniciar sesión
+            {{ t('auth.register.goLogin') }}
           </a>
         </div>
       } @else {
-        <h1 class="text-[24px] font-bold tracking-tight text-ink-900">Crea tu cuenta</h1>
-        <p class="mt-1.5 mb-6 text-[14.5px] text-muted">Postúlate a las mejores vacantes.</p>
+        <h1 class="text-[24px] font-bold tracking-tight text-ink-900">
+          {{ t('auth.register.candidate.title') }}
+        </h1>
+        <p class="mt-1.5 mb-6 text-[14.5px] text-muted">
+          {{ t('auth.register.candidate.lead') }}
+        </p>
 
-        <app-auth-stepper [steps]="stepLabels" [current]="step()" />
+        <app-auth-stepper [steps]="stepLabels()" [current]="step()" />
 
         @if (errorMessage()) {
           <div
@@ -106,20 +115,20 @@ const STEP_CONTROLS: string[][] = [
           @if (step() === 0) {
             <div class="space-y-4">
               <ij-input
-                label="Correo electrónico"
+                [label]="t('auth.common.email')"
                 type="email"
                 autocomplete="email"
-                placeholder="tucorreo@ejemplo.com"
-                [error]="invalid('email') ? 'Ingresa un correo válido.' : null"
+                [placeholder]="t('auth.common.emailPlaceholder')"
+                [error]="invalid('email') ? t('auth.common.emailError') : null"
                 formControlName="email"
               />
               <ij-input
-                label="Contraseña"
+                [label]="t('auth.common.password')"
                 [type]="showPassword() ? 'text' : 'password'"
                 autocomplete="new-password"
                 placeholder="••••••••"
-                [hint]="passwordHint"
-                [error]="invalid('password') ? passwordHint : null"
+                [hint]="passwordHint()"
+                [error]="invalid('password') ? passwordHint() : null"
                 formControlName="password"
               >
                 <button
@@ -127,17 +136,19 @@ const STEP_CONTROLS: string[][] = [
                   type="button"
                   class="flex h-9 w-9 items-center justify-center rounded-lg text-muted transition-colors hover:bg-surface hover:text-body"
                   (click)="showPassword.set(!showPassword())"
-                  [attr.aria-label]="showPassword() ? 'Ocultar' : 'Mostrar'"
+                  [attr.aria-label]="
+                    showPassword() ? t('auth.common.hide') : t('auth.common.show')
+                  "
                 >
                   <ij-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="20" [strokeWidth]="1.9" />
                 </button>
               </ij-input>
               <ij-input
-                label="Confirmar contraseña"
+                [label]="t('auth.common.confirmPassword')"
                 [type]="showPassword() ? 'text' : 'password'"
                 autocomplete="new-password"
                 placeholder="••••••••"
-                [error]="confirmMismatch() ? 'Las contraseñas no coinciden.' : null"
+                [error]="confirmMismatch() ? t('auth.common.passwordMismatch') : null"
                 formControlName="confirmPassword"
               />
             </div>
@@ -147,33 +158,33 @@ const STEP_CONTROLS: string[][] = [
           @if (step() === 1) {
             <div class="space-y-4">
               <div class="grid grid-cols-2 gap-3">
-                <ij-input label="Nombre(s)" placeholder="Ana" [required]="true"
-                  [error]="invalid('firstName') ? 'El nombre es obligatorio.' : null" formControlName="firstName" />
-                <ij-input label="Apellidos" placeholder="García" [required]="true"
-                  [error]="invalid('lastName') ? 'El apellido es obligatorio.' : null" formControlName="lastName" />
+                <ij-input [label]="t('auth.register.candidate.firstName')" [placeholder]="t('auth.register.candidate.firstNamePlaceholder')" [required]="true"
+                  [error]="invalid('firstName') ? t('auth.register.candidate.firstNameError') : null" formControlName="firstName" />
+                <ij-input [label]="t('auth.register.candidate.lastName')" [placeholder]="t('auth.register.candidate.lastNamePlaceholder')" [required]="true"
+                  [error]="invalid('lastName') ? t('auth.register.candidate.lastNameError') : null" formControlName="lastName" />
               </div>
               <div class="grid grid-cols-2 gap-3">
-                <ij-select label="Tipo de documento" [required]="true" [options]="documentTypeOptions"
-                  [error]="invalid('documentType') ? 'Selecciona el tipo.' : null" formControlName="documentType" />
-                <ij-input label="Número de documento" placeholder="Número" [required]="true"
-                  [error]="invalid('documentNumber') ? 'El documento es obligatorio.' : null" formControlName="documentNumber" />
+                <ij-select [label]="t('auth.register.candidate.documentType')" [required]="true" [options]="documentTypeOptions"
+                  [error]="invalid('documentType') ? t('auth.register.candidate.documentTypeError') : null" formControlName="documentType" />
+                <ij-input [label]="t('auth.register.candidate.documentNumber')" [placeholder]="t('auth.register.candidate.documentNumberPlaceholder')" [required]="true"
+                  [error]="invalid('documentNumber') ? t('auth.register.candidate.documentNumberError') : null" formControlName="documentNumber" />
               </div>
-              <ij-input label="CURP (opcional)" placeholder="18 caracteres" [maxLength]="18"
-                [error]="invalid('curp') ? 'La CURP debe tener 18 caracteres válidos.' : null" formControlName="curp" />
-              <ij-datepicker label="Fecha de nacimiento" [required]="true" [max]="today"
-                [error]="invalid('birthDate') ? 'Ingresa una fecha válida (no futura).' : null" formControlName="birthDate" />
+              <ij-input [label]="t('auth.register.candidate.curp')" [placeholder]="t('auth.register.candidate.curpPlaceholder')" [maxLength]="18"
+                [error]="invalid('curp') ? t('auth.register.candidate.curpError') : null" formControlName="curp" />
+              <ij-datepicker [label]="t('auth.register.candidate.birthDate')" [required]="true" [max]="today"
+                [error]="invalid('birthDate') ? t('auth.register.candidate.birthDateError') : null" formControlName="birthDate" />
             </div>
           }
 
           <!-- Paso 3: Perfil y ubicación -->
           @if (step() === 2) {
             <div class="space-y-4">
-              <ij-input label="Título profesional (opcional)" placeholder="Desarrolladora Full-Stack" formControlName="professionalTitle" />
+              <ij-input [label]="t('auth.register.candidate.professionalTitle')" [placeholder]="t('auth.register.candidate.professionalTitlePlaceholder')" formControlName="professionalTitle" />
               <div class="grid grid-cols-2 gap-3">
-                <ij-select label="Estado" [required]="true" [options]="stateOptions"
-                  [error]="invalid('state') ? 'Selecciona el estado.' : null" formControlName="state" />
-                <ij-input label="Municipio" placeholder="Zapopan" [required]="true"
-                  [error]="invalid('municipality') ? 'El municipio es obligatorio.' : null" formControlName="municipality" />
+                <ij-select [label]="t('auth.register.candidate.state')" [required]="true" [options]="stateOptions"
+                  [error]="invalid('state') ? t('auth.register.candidate.stateError') : null" formControlName="state" />
+                <ij-input [label]="t('auth.register.candidate.municipality')" [placeholder]="t('auth.register.candidate.municipalityPlaceholder')" [required]="true"
+                  [error]="invalid('municipality') ? t('auth.register.candidate.municipalityError') : null" formControlName="municipality" />
               </div>
             </div>
           }
@@ -182,11 +193,11 @@ const STEP_CONTROLS: string[][] = [
           <div class="mt-7 flex items-center gap-3">
             @if (step() > 0) {
               <button ij-button type="button" variant="soft" shape="rounded" size="lg"
-                class="flex-1" (click)="prev()">Anterior</button>
+                class="flex-1" (click)="prev()">{{ t('auth.register.prev') }}</button>
             }
             @if (step() < 2) {
               <button ij-button type="button" variant="primary" shape="rounded" size="lg"
-                class="flex-1 shadow-search" (click)="next()">Continuar</button>
+                class="flex-1 shadow-search" (click)="next()">{{ t('auth.register.next') }}</button>
             } @else {
               <button ij-button type="submit" variant="primary" shape="rounded" size="lg"
                 class="flex-1 shadow-search disabled:cursor-wait disabled:opacity-80"
@@ -194,19 +205,23 @@ const STEP_CONTROLS: string[][] = [
                 @if (status() === 'loading') {
                   <span class="h-[17px] w-[17px] animate-spin rounded-full border-[2.4px] border-white/40 border-t-white"></span>
                 }
-                {{ status() === 'loading' ? 'Creando…' : 'Crear cuenta' }}
+                {{
+                  status() === 'loading'
+                    ? t('auth.register.creating')
+                    : t('auth.register.submit')
+                }}
               </button>
             }
           </div>
         </form>
 
         <p class="mt-6 text-center text-[13.5px] text-muted">
-          ¿Representas a una empresa?
-          <a routerLink="/auth/registro/empresa" class="font-semibold text-brand-strong hover:text-brand-600">Regístrate como empresa</a>
+          {{ t('auth.register.candidate.isCompany') }}
+          <a routerLink="/auth/registro/empresa" class="font-semibold text-brand-strong hover:text-brand-600">{{ t('auth.register.candidate.isCompanyLink') }}</a>
         </p>
         <p class="mt-1.5 text-center text-[13.5px] text-muted">
-          ¿Ya tienes cuenta?
-          <a routerLink="/auth/login" class="font-semibold text-brand-strong hover:text-brand-600">Inicia sesión</a>
+          {{ t('auth.register.haveAccount') }}
+          <a routerLink="/auth/login" class="font-semibold text-brand-strong hover:text-brand-600">{{ t('auth.register.loginLink') }}</a>
         </p>
       }
     </div>
@@ -216,8 +231,13 @@ export class RegisterCandidatePage {
   private readonly api = inject(AuthApi);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(AppTranslateService);
 
-  protected readonly stepLabels = ['Cuenta', 'Datos personales', 'Ubicación'];
+  protected readonly stepLabels = computed(() => [
+    this.i18n.t('auth.register.steps.account'),
+    this.i18n.t('auth.register.steps.personal'),
+    this.i18n.t('auth.register.steps.location'),
+  ]);
   protected readonly documentTypeOptions: IjOption[] = DOCUMENT_TYPES.map((d) => ({
     value: d.value,
     label: d.label,
@@ -227,7 +247,9 @@ export class RegisterCandidatePage {
     label: s.name,
   }));
   protected readonly today = new Date().toISOString().slice(0, 10);
-  protected readonly passwordHint = PASSWORD_POLICY_HINT;
+  protected readonly passwordHint = computed(() =>
+    this.i18n.t('validation.passwordPolicy'),
+  );
 
   protected readonly step = signal(0);
   protected readonly status = signal<RegisterStatus>('idle');
@@ -340,20 +362,24 @@ export class RegisterCandidatePage {
       case AuthErrorCode.EMAIL_ALREADY_EXISTS:
         this.step.set(0);
         this.form.controls.email.setErrors({ taken: true });
-        this.errorMessage.set('Ya existe una cuenta con este correo.');
+        this.errorMessage.set(this.i18n.t('auth.register.emailTaken'));
         break;
       case AuthErrorCode.CANDIDATE_DOCUMENT_ALREADY_EXISTS:
         this.step.set(1);
         this.form.controls.documentNumber.setErrors({ taken: true });
-        this.errorMessage.set('Ya existe un registro con este documento.');
+        this.errorMessage.set(
+          this.i18n.t('auth.register.candidate.documentTaken'),
+        );
         break;
       case AuthErrorCode.INVALID_BIRTH_DATE:
         this.step.set(1);
         this.form.controls.birthDate.setErrors({ invalid: true });
-        this.errorMessage.set('La fecha de nacimiento no es válida.');
+        this.errorMessage.set(
+          this.i18n.t('auth.register.candidate.birthDateInvalid'),
+        );
         break;
       default:
-        this.errorMessage.set('No pudimos crear la cuenta. Revisa los datos e inténtalo de nuevo.');
+        this.errorMessage.set(this.i18n.t('auth.register.genericError'));
     }
   }
 

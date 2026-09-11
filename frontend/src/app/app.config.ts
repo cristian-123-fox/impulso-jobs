@@ -6,6 +6,7 @@ import { routes } from '@/app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { authTokenInterceptor } from '@/core/interceptors/auth-token.interceptor';
 import { refreshInterceptor } from '@/core/interceptors/refresh.interceptor';
+import { provideI18n } from '@/core/i18n/i18n.providers';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -17,5 +18,6 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
       withInterceptors([authTokenInterceptor, refreshInterceptor]),
     ),
+    provideI18n(),
   ]
 };

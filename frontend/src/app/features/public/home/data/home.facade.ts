@@ -1,4 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
+import { LANGUAGE_LOCALES, Language } from '@/core/i18n/i18n.config';
+import { LanguageService } from '@/core/i18n/language.service';
 import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
 import { PublicVacancy } from '@/features/public/vacancies/models/public-vacancies.models';
 import {
@@ -24,10 +27,16 @@ const FEATURED_LIMIT = 6;
  * Lo que sigue siendo estático es sólo contenido de marca (los tres pasos, las
  * áreas destacadas y los testimonios), no métricas: una cifra inventada en una
  * página de marketing es una promesa que el producto no cumple.
+ *
+ * Ese contenido de marca viaja como **clave de traducción** (T26) y lo resuelve
+ * la plantilla, que es donde Transloco puede repintarlo al cambiar de idioma.
+ * Aquí sólo se traduce lo que hay que componer con un número.
  */
 @Injectable({ providedIn: 'root' })
 export class HomeFacade {
   private readonly api = inject(PublicVacanciesApi);
+  private readonly transloco = inject(TranslocoService);
+  private readonly language = inject(LanguageService);
 
   private readonly _featured = signal<readonly PublicVacancy[]>([]);
   private readonly _featuredState = signal<LoadState>('loading');
@@ -56,19 +65,24 @@ export class HomeFacade {
   /**
    * Tarjetas del hero. La primera es real (el total que reporta la API); la
    * segunda es una propiedad del producto, no una métrica, así que no caduca.
+   *
+   * Depende de la señal de idioma para recalcularse al cambiarlo: el valor de
+   * la primera tarjeta se compone aquí —lleva número y abreviatura— y no en la
+   * plantilla, que es quien repinta el resto.
    */
   readonly heroStats = computed<readonly HeroStat[]>(() => {
     const total = this._totalVacancies();
+    const lang = this.language.current();
     return [
       {
-        value: total === null ? '...' : formatCount(total),
-        label: total === 1 ? 'Vacante abierta' : 'Vacantes abiertas',
+        value: total === null ? '...' : this.formatCount(total, lang),
+        labelKey: total === 1 ? 'home.stats.openOne' : 'home.stats.openMany',
         icon: 'briefcase',
         tone: 'brand',
       },
       {
-        value: 'Gratis',
-        label: 'Para candidatos',
+        value: this.transloco.translate('home.stats.free'),
+        labelKey: 'home.stats.forCandidates',
         icon: 'check',
         tone: 'green',
       },
@@ -92,25 +106,22 @@ export class HomeFacade {
   private readonly _steps = signal<readonly WorkStep[]>([
     {
       num: '01',
-      title: 'Crea tu cuenta',
-      description:
-        'Regístrate con tu correo en un par de minutos. No pedimos tarjeta.',
+      titleKey: 'home.steps.account.title',
+      descriptionKey: 'home.steps.account.description',
       icon: 'user',
       tone: 'brand',
     },
     {
       num: '02',
-      title: 'Arma tu currículum',
-      description:
-        'Completa tu perfil una vez y reutilízalo en todas tus postulaciones.',
+      titleKey: 'home.steps.resume.title',
+      descriptionKey: 'home.steps.resume.description',
       icon: 'resume',
       tone: 'pink',
     },
     {
       num: '03',
-      title: 'Postúlate y da seguimiento',
-      description:
-        'Aplica con un clic y consulta en qué etapa va cada proceso.',
+      titleKey: 'home.steps.apply.title',
+      descriptionKey: 'home.steps.apply.description',
       icon: 'send',
       tone: 'green',
     },
@@ -120,6 +131,9 @@ export class HomeFacade {
    * Áreas destacadas. Los ids son los del catálogo real (T15), así que cada
    * tarjeta enlaza a un filtro que la API resuelve; antes eran cuatro nombres
    * sueltos ("Servicio al cliente", "Marketing"…) que no correspondían a nada.
+   *
+   * Los nombres **no se traducen**: son el catálogo de áreas profesionales, que
+   * la API devuelve en español y es el mismo que se ve en los filtros (T26).
    */
   private readonly _areas = signal<readonly HomeArea[]>([
     { areaId: 23, name: 'Ventas', icon: 'chart', tone: 'brand' },
@@ -141,18 +155,21 @@ export class HomeFacade {
   private readonly _testimonials = signal<readonly Testimonial[]>([
     {
       name: 'Ximena Alcántara',
-      role: 'Analista contable, Guadalajara',
-      quote:
-        'Me postulé un martes y el jueves ya tenía entrevista. Ver en qué etapa iba cada proceso me quitó la parte más incómoda de buscar trabajo.',
+      roleKey: 'home.testimonials.accountant.role',
+      quoteKey: 'home.testimonials.accountant.quote',
     },
     {
       name: 'Rodrigo Balderas',
-      role: 'Técnico de mantenimiento, Monterrey',
-      quote:
-        'Filtré por estado y modalidad y dejé de perder tiempo en vacantes de otra ciudad. Encontré algo a veinte minutos de mi casa.',
+      roleKey: 'home.testimonials.technician.role',
+      quoteKey: 'home.testimonials.technician.quote',
     },
   ]);
 
+  /**
+   * Búsquedas frecuentes. **No se traducen** (T26): son términos de consulta,
+   * no rótulos. Van tal cual a `GET /vacancies`, donde las vacantes están
+   * escritas en español — "Warehouse" no devolvería ninguna.
+   */
   private readonly _popularSearches = signal<readonly string[]>([
     'Ventas',
     'Almacén',
@@ -165,11 +182,18 @@ export class HomeFacade {
   readonly areas = this._areas.asReadonly();
   readonly testimonials = this._testimonials.asReadonly();
   readonly popularSearches = this._popularSearches.asReadonly();
-}
 
-/** 1240 → "1,240"; 12400 → "12.4 mil". Sin inflar ni redondear al alza. */
-function formatCount(total: number): string {
-  if (total < 1000) return String(total);
-  if (total < 10000) return total.toLocaleString('es-MX');
-  return `${(total / 1000).toFixed(total < 100000 ? 1 : 0)} mil`;
+  /**
+   * 1240 → "1,240"; 12400 → "12.4 mil" / "12.4k". Sin inflar ni redondear al
+   * alza. Tanto el separador de millares como la abreviatura dependen del
+   * idioma, así que el primero sale del locale y la segunda del diccionario.
+   */
+  private formatCount(total: number, lang: Language): string {
+    if (total < 1000) return String(total);
+    const locale = LANGUAGE_LOCALES[lang];
+    if (total < 10000) return total.toLocaleString(locale);
+    return this.transloco.translate('home.stats.thousands', {
+      value: (total / 1000).toFixed(total < 100000 ? 1 : 0),
+    });
+  }
 }

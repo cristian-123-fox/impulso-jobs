@@ -2,10 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   PLATFORM_ID,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { ContactFacade } from '@/features/public/contact/data/contact.facade';
 import { ContactFormValue } from '@/features/public/contact/models/contact.models';
 import { ContactFormSection } from '@/features/public/contact/components/contact-form-section/contact-form-section';
@@ -26,13 +29,15 @@ import { SeoService } from '@/core/services/seo.service';
 @Component({
   selector: 'app-contact-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjPageHeader, ContactFormSection, ContactMap],
+  imports: [IjPageHeader, ContactFormSection, ContactMap, TranslocoDirective],
   template: `
-    <ij-page-header
-      [title]="facade.hero().title"
-      [lead]="facade.hero().description"
-      breadcrumb="Contacto"
-    />
+    <ng-container *transloco="let t">
+      <ij-page-header
+        [title]="t('contact.hero.title')"
+        [lead]="t('contact.hero.description')"
+        [breadcrumb]="t('contact.hero.breadcrumb')"
+      />
+    </ng-container>
     <app-contact-form-section
       [infoCards]="facade.infoCards()"
       [statusMessage]="statusMessage()"
@@ -43,24 +48,39 @@ import { SeoService } from '@/core/services/seo.service';
 })
 export class ContactPage {
   protected readonly facade = inject(ContactFacade);
-  protected readonly statusMessage = signal<string | null>(null);
+
+  /**
+   * Nombre de quien acaba de enviar, no el aviso ya redactado: guardarlo hecho
+   * dejaría el mensaje en el idioma que hubiera al pulsar Enviar (T26).
+   */
+  private readonly sentBy = signal<string | null>(null);
+
+  protected readonly statusMessage = computed(() => {
+    const name = this.sentBy();
+    return name
+      ? this.i18n.t('contact.status', { name, email: BRAND_EMAILS.general })
+      : null;
+  });
 
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly i18n = inject(AppTranslateService);
 
   constructor() {
-    inject(SeoService).setPage({
-      title: 'Contacto | Impulso Jobs',
-      description:
-        'Escríbenos por correo o teléfono si necesitas ayuda con vacantes, postulaciones o tu cuenta en Impulso Jobs.',
+    inject(SeoService).setLocalizedPage({
+      titleKey: 'seo.contact.title',
+      descriptionKey: 'seo.contact.description',
       canonicalPath: '/contacto',
     });
   }
 
   protected onFormSubmitted(value: ContactFormValue): void {
+    // El borrador se redacta en el idioma del portal: quien lo va a ver en su
+    // gestor de correo antes de enviarlo es el propio usuario.
+    const t = (key: string) => this.i18n.t(`contact.mailto.${key}`);
     const body = [
-      `Nombre: ${value.name}`,
-      `Correo: ${value.email}`,
-      `Teléfono: ${value.phone}`,
+      `${t('name')}: ${value.name}`,
+      `${t('email')}: ${value.email}`,
+      `${t('phone')}: ${value.phone}`,
       '',
       value.message,
     ].join('\n');
@@ -74,8 +94,6 @@ export class ContactPage {
       window.location.href = mailto;
     }
 
-    this.statusMessage.set(
-      `Listo, ${value.name}: abrimos tu gestor de correo con el mensaje redactado. Si no se abrió, escríbenos a ${BRAND_EMAILS.general}.`,
-    );
+    this.sentBy.set(value.name);
   }
 }

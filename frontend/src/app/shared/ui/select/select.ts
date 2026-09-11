@@ -73,13 +73,13 @@ import { IjIcon } from '@/shared/ui/icon/icon';
         @if (searchable()) {
           <input
             [class]="searchClass"
-            [placeholder]="'Buscar…'"
+            [placeholder]="i18n.t('ui.search')"
             [value]="search()"
             (input)="onSearch($event)"
           />
         }
         @if (!filtered().length) {
-          <div class="p-3 text-[13px] text-muted">Sin resultados</div>
+          <div class="p-3 text-[13px] text-muted">{{ i18n.t('ui.noResults') }}</div>
         }
         @for (opt of filtered(); track opt.value; let i = $index) {
           <div

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjIcon, TONE_SOFT } from '@/shared/ui';
 import { IjReveal } from '@/shared/directives/reveal';
 import { HomeArea } from '@/features/public/home/models/home.models';
@@ -15,16 +16,16 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
 @Component({
   selector: 'app-job-categories',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, RouterLink, SectionHeading, IjReveal],
+  imports: [IjIcon, RouterLink, SectionHeading, IjReveal, TranslocoDirective],
   template: `
-    <section class="bg-surface px-6 py-[72px] lg:px-[60px]">
+    <section *transloco="let t" class="bg-surface px-6 py-[72px] lg:px-[60px]">
       <div class="mx-auto max-w-[1180px]">
         <app-section-heading
           align="left"
-          eyebrow="Empleos por área"
-          lead="Explora las áreas con más movimiento y filtra en un clic las vacantes que encajan con tu experiencia."
+          [eyebrow]="t('home.categories.eyebrow')"
+          [lead]="t('home.categories.lead')"
         >
-          Elige el área en la que quieres trabajar
+          {{ t('home.categories.title') }}
         </app-section-heading>
 
         <div class="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -45,13 +46,14 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
                 <ij-icon [name]="area.icon" [size]="24" [strokeWidth]="1.8" />
               </span>
               <span class="min-w-0">
+                <!-- El nombre del área es catálogo (T15): no se traduce. -->
                 <span class="block text-[15px] font-semibold text-ink-900">
                   {{ area.name }}
                 </span>
                 <span
                   class="mt-0.5 block text-[13px] text-muted transition-colors group-hover:text-brand-strong"
                 >
-                  Ver vacantes
+                  {{ t('home.categories.viewVacancies') }}
                 </span>
               </span>
             </a>
@@ -70,9 +72,11 @@ import { SectionHeading } from '@/features/public/home/components/section-headin
               <ij-icon name="search" [size]="24" [strokeWidth]="1.8" />
             </span>
             <span>
-              <span class="block text-[15px] font-semibold">Las 23 áreas</span>
+              <span class="block text-[15px] font-semibold">
+                {{ t('home.categories.allAreas') }}
+              </span>
               <span class="mt-0.5 block text-[13px] text-white/70">
-                Ver el catálogo completo
+                {{ t('home.categories.allAreasHint') }}
               </span>
             </span>
           </a>

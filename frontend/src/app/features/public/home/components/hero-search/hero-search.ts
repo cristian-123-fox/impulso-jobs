@@ -5,6 +5,7 @@ import {
   output,
 } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { IjButton, IjIcon, TONE_SOFT } from '@/shared/ui';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { PROFESSIONAL_AREAS } from '@/shared/catalogs/professional-areas.catalogs';
@@ -31,7 +32,13 @@ const PREVIEW_COUNT = 2;
 @Component({
   selector: 'app-hero-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjIcon, IjButton, VacancyCard],
+  imports: [
+    ReactiveFormsModule,
+    IjIcon,
+    IjButton,
+    VacancyCard,
+    TranslocoDirective,
+  ],
   templateUrl: './hero-search.html',
 })
 export class HeroSearch {

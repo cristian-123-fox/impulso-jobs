@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
@@ -23,6 +24,7 @@ export class LoginFacade {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(AppTranslateService);
 
   readonly status = signal<LoginStatus>('idle');
   readonly errorMessage = signal<string | null>(null);
@@ -69,26 +71,29 @@ export class LoginFacade {
       });
   }
 
+  /**
+   * El aviso se elige por **`errorCode`**, no por el `message` del envelope:
+   * ese viene siempre en español desde el backend, y es justo el motivo por el
+   * que T26 traduce los errores en el cliente.
+   */
   private handleError(error: unknown): void {
     this.status.set('error');
     switch (this.errorCodeOf(error)) {
       case AuthErrorCode.INVALID_CREDENTIALS:
-        this.errorMessage.set('Correo o contraseña incorrectos.');
+        this.errorMessage.set(this.i18n.t('auth.errors.invalidCredentials'));
         break;
       case AuthErrorCode.ACCOUNT_BLOCKED:
-        this.errorMessage.set(
-          'Tu cuenta está bloqueada temporalmente. Espera unos minutos e intenta de nuevo.',
-        );
+        this.errorMessage.set(this.i18n.t('auth.errors.blocked'));
         break;
       case AuthErrorCode.ACCOUNT_INACTIVE:
-        this.errorMessage.set('Tu cuenta no está activa. Contacta a soporte.');
+        this.errorMessage.set(this.i18n.t('auth.errors.inactive'));
         break;
       case AuthErrorCode.EMAIL_NOT_VERIFIED:
-        this.errorMessage.set('Debes verificar tu correo antes de iniciar sesión.');
+        this.errorMessage.set(this.i18n.t('auth.errors.notVerified'));
         this.showResend.set(true);
         break;
       default:
-        this.errorMessage.set('No pudimos iniciar sesión. Inténtalo más tarde.');
+        this.errorMessage.set(this.i18n.t('auth.errors.generic'));
     }
   }
 
