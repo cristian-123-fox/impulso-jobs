@@ -17,6 +17,7 @@ import {
   CompanyVacanciesUseCase,
   VacancyData,
 } from '@/modules/vacancies/use-cases/company-vacancies.use-case';
+import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
 
 function errorCodeOf(e: unknown): string | undefined {
   return e instanceof AppException
@@ -43,6 +44,7 @@ describe('CompanyVacanciesUseCase', () => {
   let vacancies: jest.Mocked<IVacancyRepository>;
   let ownership: jest.Mocked<VacancyOwnershipService>;
   let audit: jest.Mocked<AuditService>;
+  let skillsUseCase: jest.Mocked<VacancySkillsUseCase>;
   let useCase: CompanyVacanciesUseCase;
 
   beforeEach(() => {
@@ -60,8 +62,17 @@ describe('CompanyVacanciesUseCase', () => {
       requireOwnVacancy: jest.fn(),
     } as unknown as jest.Mocked<VacancyOwnershipService>;
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
+    skillsUseCase = {
+      listForCompany: jest.fn().mockResolvedValue([]),
+      replace: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<VacancySkillsUseCase>;
 
-    useCase = new CompanyVacanciesUseCase(vacancies, ownership, audit);
+    useCase = new CompanyVacanciesUseCase(
+      vacancies,
+      ownership,
+      audit,
+      skillsUseCase,
+    );
   });
 
   it('publica la vacante activa, con fecha de publicación y refresco', async () => {

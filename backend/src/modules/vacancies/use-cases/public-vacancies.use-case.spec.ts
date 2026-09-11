@@ -12,6 +12,7 @@ import {
 import { IVacancyRepository } from '@/modules/vacancies/repositories/vacancy.repository.interface';
 import { IVacancyViewEventRepository } from '@/modules/vacancies/repositories/vacancy-view-event.repository.interface';
 import { PublicVacanciesUseCase } from '@/modules/vacancies/use-cases/public-vacancies.use-case';
+import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
 
 function errorCodeOf(e: unknown): string | undefined {
   return e instanceof AppException
@@ -57,6 +58,7 @@ describe('PublicVacanciesUseCase', () => {
   let vacancies: jest.Mocked<IVacancyRepository>;
   let companies: jest.Mocked<ICompanyRepository>;
   let viewEvents: jest.Mocked<IVacancyViewEventRepository>;
+  let skillsUseCase: jest.Mocked<VacancySkillsUseCase>;
   let useCase: PublicVacanciesUseCase;
 
   beforeEach(() => {
@@ -70,8 +72,16 @@ describe('PublicVacanciesUseCase', () => {
     viewEvents = {
       record: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<IVacancyViewEventRepository>;
+    skillsUseCase = {
+      listPublic: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<VacancySkillsUseCase>;
 
-    useCase = new PublicVacanciesUseCase(vacancies, companies, viewEvents);
+    useCase = new PublicVacanciesUseCase(
+      vacancies,
+      companies,
+      viewEvents,
+      skillsUseCase,
+    );
   });
 
   it('muestra la empresa en una vacante normal', async () => {

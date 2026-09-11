@@ -84,6 +84,23 @@ export class VacanciesApi {
       .pipe(map((r) => r.content));
   }
 
+  uploadImage(id: string, file: File): Observable<{ imageUrl: string | null }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http
+      .post<ApiSuccessResponse<{ imageUrl: string | null }>>(
+        `${this.base}/${id}/image`,
+        formData,
+      )
+      .pipe(map((r) => r.content));
+  }
+
+  deleteImage(id: string): Observable<{ imageUrl: null }> {
+    return this.http
+      .delete<ApiSuccessResponse<{ imageUrl: null }>>(`${this.base}/${id}/image`)
+      .pipe(map((r) => r.content));
+  }
+
   private patch(path: string, body: unknown = {}): Observable<Vacancy> {
     return this.http
       .patch<ApiSuccessResponse<Vacancy>>(`${this.base}/${path}`, body)

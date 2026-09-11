@@ -5,8 +5,10 @@ import { ResponseMessage } from '@/common/decorators/response-message.decorator'
 import { PublicVacancyQuestionDto } from '@/modules/vacancies/dto/vacancy-question.dto';
 import { PublicVacancyResponseDto } from '@/modules/vacancies/dto/vacancy-response.dto';
 import { ListPublicVacanciesQueryDto } from '@/modules/vacancies/dto/vacancy.dto';
+import { Skill } from '@/modules/vacancies/entities/skill.entity';
 import { PublicVacanciesUseCase } from '@/modules/vacancies/use-cases/public-vacancies.use-case';
 import { VacancyQuestionsUseCase } from '@/modules/vacancies/use-cases/vacancy-questions.use-case';
+import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
 
 /**
  * Portal de empleo. Deliberadamente **sin guards**: buscar vacantes no exige
@@ -19,6 +21,7 @@ export class PublicVacanciesController {
   constructor(
     private readonly vacancies: PublicVacanciesUseCase,
     private readonly questions: VacancyQuestionsUseCase,
+    private readonly skills: VacancySkillsUseCase,
   ) {}
 
   @Get()
@@ -36,6 +39,7 @@ export class PublicVacanciesController {
       areaId: query.areaId,
       salaryMin: query.salaryMin,
       publishedWithinDays: query.publishedWithinDays,
+      skillId: query.skillId,
       sort: query.sort,
       page: query.page ?? 1,
       limit: query.limit ?? 10,
@@ -53,5 +57,15 @@ export class PublicVacanciesController {
   @ResponseMessage('Preguntas obtenidas.')
   listQuestions(@Param('id') id: string): Promise<PublicVacancyQuestionDto[]> {
     return this.questions.listPublic(id);
+  }
+
+  /** Skills disponibles para autocompletado (público). */
+  @Get('skills/search')
+  @ResponseMessage('Skills encontradas.')
+  searchSkills(
+    @Query('q') query: string,
+    @Query('limit') limit?: number,
+  ): Promise<Skill[]> {
+    return this.skills.searchSkills(query ?? '', limit ?? 10);
   }
 }

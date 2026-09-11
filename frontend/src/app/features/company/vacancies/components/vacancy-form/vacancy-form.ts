@@ -2,11 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   inject,
   input,
   OnInit,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -21,6 +23,7 @@ import { piiWarning } from '@/shared/utils/pii';
 import {
   IjButton,
   IjDatepicker,
+  IjIcon,
   IjInput,
   IjOption,
   IjSelect,
@@ -59,6 +62,7 @@ function options<T extends string>(labels: Record<T, string>): IjOption[] {
     ReactiveFormsModule,
     IjButton,
     IjDatepicker,
+    IjIcon,
     IjInput,
     IjSelect,
     IjTextarea,
@@ -230,6 +234,45 @@ function options<T extends string>(labels: Record<T, string>): IjOption[] {
         </label>
       }
 
+      <div class="mt-5 border-t border-line pt-5">
+        <p class="mb-2 text-[13.5px] font-bold text-ink-900">Imagen de referencia</p>
+        <p class="mb-3 text-[12.5px] text-muted">
+          Opcional. JPG, PNG o WebP, máximo 5 MB. Se mostrará como cabecera en el detalle de la vacante.
+        </p>
+        <div class="flex items-start gap-4">
+          @if (imagePreview()) {
+            <div class="relative h-32 w-48 flex-shrink-0 overflow-hidden rounded-xl border border-line">
+              <img [src]="imagePreview()" alt="Vista previa" class="h-full w-full object-cover" />
+              <button
+                type="button"
+                class="absolute top-1.5 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-ink-950/60 text-white transition-colors hover:bg-ink-950/80"
+                (click)="removeImage()"
+              >
+                <ij-icon name="x" [size]="14" />
+              </button>
+            </div>
+          } @else {
+            <label
+              class="flex h-32 w-48 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-line text-center transition-colors hover:border-brand hover:bg-brand-50/30"
+            >
+              <ij-icon name="image" [size]="24" class="text-muted" />
+              <span class="text-[12px] font-semibold text-muted">Subir imagen</span>
+              <span class="text-[11px] text-muted">JPG, PNG, WebP</span>
+              <input
+                #fileInput
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                class="hidden"
+                (change)="onImageSelected($event)"
+              />
+            </label>
+          }
+        </div>
+        @if (imageError()) {
+          <p class="mt-2 text-[12.5px] font-medium text-red-600">{{ imageError() }}</p>
+        }
+      </div>
+
       <div class="mt-6 flex justify-end gap-3 border-t border-line pt-4">
         <button
           type="button"
@@ -259,8 +302,13 @@ export class VacancyForm implements OnInit {
   readonly error = input<string | null>(null);
   readonly save = output<SaveVacancyPayload>();
   readonly cancel = output<void>();
+  /** Emite el archivo de imagen seleccionado para que el padre lo suba. */
+  readonly imageSelected = output<File | null>();
+  /** Emite cuando se quita la imagen existente (edición). */
+  readonly imageRemoved = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
+  protected readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
   protected readonly employmentTypes = options(EMPLOYMENT_TYPE_LABELS);
   protected readonly workModes = options(WORK_MODE_LABELS);
@@ -310,6 +358,9 @@ export class VacancyForm implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   protected readonly piiNotice = signal<string | null>(null);
+  protected readonly imagePreview = signal<string | null>(null);
+  protected readonly imageError = signal<string | null>(null);
+  private selectedImageFile: File | null = null;
 
   constructor() {
     // Aviso (no bloqueo) si la descripción trae teléfono/correo/enlace.
@@ -348,6 +399,10 @@ export class VacancyForm implements OnInit {
       salaryHidden: vacancy.salaryHidden,
       isConfidential: vacancy.isConfidential,
     });
+
+    if (vacancy.imageUrl) {
+      this.imagePreview.set(vacancy.imageUrl);
+    }
   }
 
   protected saveLabel(): string {
@@ -363,6 +418,43 @@ export class VacancyForm implements OnInit {
   protected invalid(name: string): boolean {
     const control = this.form.get(name) as AbstractControl;
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  protected onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.imageError.set(null);
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      this.imageError.set('La imagen no puede superar los 5 MB.');
+      input.value = '';
+      return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      this.imageError.set('El archivo no es una imagen válida (JPG, PNG o WebP).');
+      input.value = '';
+      return;
+    }
+
+    this.selectedImageFile = file;
+    const reader = new FileReader();
+    reader.onload = () => this.imagePreview.set(reader.result as string);
+    reader.readAsDataURL(file);
+    this.imageSelected.emit(file);
+  }
+
+  protected removeImage(): void {
+    const hadExistingImage = !!this.vacancy()?.imageUrl && !this.selectedImageFile;
+    this.selectedImageFile = null;
+    this.imagePreview.set(null);
+    this.imageError.set(null);
+    this.imageSelected.emit(null);
+    if (hadExistingImage) {
+      this.imageRemoved.emit();
+    }
+    this.fileInput()?.nativeElement?.setAttribute('value', '');
   }
 
   protected onSubmit(): void {

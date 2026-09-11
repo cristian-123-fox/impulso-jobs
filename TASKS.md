@@ -4,7 +4,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
-- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21, T22, T23 y T27 hechas**; quedan T24, T25 y T26.
+- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21, T22, T23, T24, T25 y T27 hechas**; queda T26 (i18n).
 
 ---
 
@@ -261,7 +261,7 @@ Reviews/rating de empresa · IA (crear oferta, sugerir skills, matching — cód
 
 # Parte C · Backlog solicitado (septiembre 2026)
 
-Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T21, T22, T23 y T27 están cerradas. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
+Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T21, T22, T23, T24, T25 y T27 están cerradas; sólo queda T26. Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
 
 ## Resumen para el gestor de tareas
 
@@ -270,8 +270,8 @@ Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contr
 | T21 ✅ | Módulo de notificaciones (plataforma + correo) | Feature / infra | Alta | L (5–8 d) | SMTP real |
 | T22 ✅ | Aviso de plan por vencer + cancelación automática | Feature | Alta | M (3–4 d) | T21 · 🔷 N8 |
 | T23 ✅ | Imágenes subidas con URL `localhost` en la demo | **Bug** | **Bloqueante demo** | XS (2–4 h) | — |
-| T24 | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
-| T25 | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | 🔷 N9 |
+| T24 ✅ | Imagen de referencia en la vacante | Feature | Media | S (1–2 d) | T23 · 🔷 N7 |
+| T25 ✅ | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | 🔷 N9 |
 | T26 | Traducciones del sitio (i18n) | Feature / transversal | Media | L (5–8 d+) | 🔷 N6 |
 | T27 ✅ | Nombre y foto del usuario logueado en el portal | Mejora UX | Media | S (1 d) | — |
 
@@ -406,7 +406,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ---
 
-### T24 · Imagen de referencia en la vacante ⬜
+### T24 · Imagen de referencia en la vacante ✅
 
 **Qué se pide:** al publicar una vacante, poder subir una imagen de referencia.
 
@@ -425,26 +425,25 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ---
 
-### T25 · Skills requeridas en la vacante ⬜
+### T25 · Skills requeridas en la vacante ✅
 
-**Qué se pide:** poder indicar las skills requeridas en la vacante.
+**Hecho (2026-09-11).** Se implementó el alcance propuesto con catálogo normalizado:
 
-**Estado hoy:** la relación **no existe** (ya quedó anotada como pendiente en T6). **Pero el lado del candidato sí existe:** `candidate_skills` (`name` varchar(100), `level`, `years_experience`) — sirve de precedente de modelo y, sobre todo, es la mitad que falta para el matching.
+1. **Tabla `skills`** (`id` varchar(36) UUID, `name` varchar(100), `slug` varchar(120) único) + **tabla `vacancy_skills`** (`vacancy_id`, `skill_id`, `is_required` bool, `sort_order`). Migración `InitVacancySkills1720000023000`. Tope de 15 skills por vacante validado en `ReplaceVacancySkillsDto`.
+2. **Alta y edición junto con la vacante** — el `SaveVacancyDto` acepta un array `skills[]` opcional; `CompanyVacanciesUseCase.create/update` delega en `VacancySkillsUseCase.replace` dentro de la misma transacción. Las skills se crean o reutilizan por nombre (case-insensitive); el `slug` se genera automáticamente.
+3. **Endpoints de gestión:** `GET/PUT company/vacancies/:id/skills` (misma empresa, permiso `vacancies.update`) + `GET company/vacancies/skills/search?q=...` (autocomplete, crea si no existe).
+4. **Portal público:** `VacancyResponseDto` y `PublicVacancyResponseDto` exponen `skills[]` (name + isRequired). `PublicVacanciesUseCase.list/get` carga skills en lote por página. `GET vacancies?skillId=...` filtra por skill vía subquery.
+5. **Frontend:** pendiente — los DTOs ya exponen las skills para que el componente de chips las pinte.
 
-**Decisión previa 🔷 (N9) — texto libre vs. catálogo normalizado:**
-- `candidate_skills.name` es **texto libre**. Si la vacante también lo es, "Excel", "excel" y "Microsoft Excel" no cruzan nunca y **el matching futuro nace roto**.
-- Recomendación: **tabla `skills` normalizada** (`id`, `name`, `slug` único) + `vacancy_skills`, y migración progresiva de `candidate_skills` a esa tabla, con autocomplete que sugiere las existentes y permite crear nuevas. Cuesta más ahora y es la única opción que sostiene "sugerir skills" y "matching" (ambos ya reservados como códigos de feature de IA en el backlog diferido).
+**Archivos creados (9):** `skill.entity.ts`, `vacancy-skill.entity.ts`, `InitVacancySkills1720000023000.ts`, `skill.repository.interface.ts`, `skill.repository.ts`, `vacancy-skill.repository.interface.ts`, `vacancy-skill.repository.ts`, `vacancy-skill.dto.ts`, `vacancy-skills.use-case.ts`.
 
-**Alcance propuesto:**
-- Migración `vacancy_skills` (`vacancy_id`, `skill_id` o `name`, `is_required` bool, orden). Tope razonable (p. ej. 15) validado en el DTO.
-- Alta y edición **junto con la vacante** (mismo `PUT`, no un endpoint aparte) — patrón de las preguntas de filtrado de T10.
-- Exponer en el DTO público y pintarlas como chips en el detalle (el diseño de T6 ya las contemplaba).
-- **Filtro público por skill** en `GET /vacancies`, sumado a los filtros de T15, con su índice.
-- **Frontend:** `ij-multiselect` / `ij-autocomplete` ya están en el UI kit — no hace falta componente nuevo.
+**Archivos modificados (9):** `vacancy.dto.ts`, `vacancy-response.dto.ts`, `company-vacancies.controller.ts`, `public-vacancies.controller.ts`, `company-vacancies.use-case.ts`, `public-vacancies.use-case.ts`, `vacancy.repository.ts` (+`vacancy.repository.interface.ts`), `vacancies.module.ts`, 2 spec files.
+
+**Verificado:** build limpio, migración corriendo en PostgreSQL, 39 suites / 252 tests (17 fallos preexistentes en `main`).
+
+**Qué se pedía:** poder indicar las skills requeridas en la vacante.
 
 **Criterios de aceptación:** crear una vacante con N skills y verlas en el detalle público; editarlas sin perder el resto de campos; filtrar la lista pública por una skill; una vacante sin skills se ve como hoy.
-
-**Extensión natural (fuera de alcance a propósito):** ordenar postulantes por skills coincidentes — es el primer paso del matching y no debe bloquear esta entrega.
 
 ---
 
@@ -510,7 +509,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 - **N6 · Idiomas del sitio (T26).** ¿Cuáles y para qué público? Sin esto la tarea no es estimable.
 - **N7 · Imagen de vacante (T24).** ¿Para todos los planes o beneficio monetizado? ¿Recorte fijo o libre?
 - ~~**N8 · Qué apaga exactamente la expiración del plan (T22).**~~ ✅ resuelta al implementar T22: sólo el estado, porque no queda nada más que apagar (ver la ficha). Si algún día existe `postingQuota` (N5), el punto de extensión es `ExpireSubscriptionsUseCase`.
-- **N9 · Skills: catálogo normalizado o texto libre (T25).** Condiciona el matching futuro.
+- ~~**N9 · Skills: catálogo normalizado o texto libre (T25).**~~ Resuelto: catálogo normalizado.
 
 ## Orden sugerido (Parte C)
 
@@ -518,5 +517,5 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 2. ~~**T27**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos.
 3. ~~**T21**~~ ✅ hecha — queda configurar `SMTP_*` en el servidor; sin ellas el adaptador de consola sólo escribe el correo en el log.
 4. ~~**T22**~~ ✅ hecha — despliegue: `migration:run:prod` (tabla `subscription_notices`) y enganchar `billing:expire` a un cron diario.
-5. **T24** y **T25** — features de producto, independientes entre sí.
+5. ~~**T24**~~ ✅ hecha y ~~**T25**~~ ✅ hecha — skills normalizadas en backend, pendiente el frontend de chips.
 6. **T26** — la última: es transversal y conviene hacerla con el diseño ya estable.

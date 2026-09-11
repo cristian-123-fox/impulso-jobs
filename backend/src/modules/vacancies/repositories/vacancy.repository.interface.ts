@@ -35,6 +35,8 @@ export interface PublicVacancySearch {
   salaryMin?: number;
   /** Publicadas en los últimos N días. */
   publishedWithinDays?: number;
+  /** Filtrar por skill (T25). */
+  skillId?: string;
   /** Orden del listado; por defecto la prioridad monetizada (relevance). */
   sort?: PublicVacancySort;
   page: number;

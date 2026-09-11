@@ -146,6 +146,15 @@ export class VacancyRepository
     if (criteria.salaryMin !== undefined) {
       base.salaryMin = this.paysAtLeast(criteria.salaryMin);
     }
+    if (criteria.skillId) {
+      base.id = In(
+        Raw(
+          () =>
+            `(SELECT vs.vacancy_id FROM vacancy_skills vs WHERE vs.skill_id = :skillId)`,
+          { skillId: criteria.skillId },
+        ) as any,
+      );
+    }
 
     const search = criteria.search?.trim();
     if (!search) return base;

@@ -182,6 +182,8 @@ import {
           [submitting]="saving()"
           [error]="formError()"
           (save)="onSave($event)"
+          (imageSelected)="pendingImage.set($event)"
+          (imageRemoved)="onImageRemoved()"
           (cancel)="closeForm()"
         />
       </ij-modal>
@@ -220,6 +222,8 @@ export class VacanciesListPage {
   protected readonly questionsData = signal<VacancyQuestion[]>([]);
   protected readonly questionsSaving = signal(false);
   protected readonly questionsError = signal<string | null>(null);
+  protected readonly pendingImage = signal<File | null>(null);
+  protected readonly imageRemoved = signal(false);
 
   protected readonly statusOptions: readonly IjOption[] = [
     { value: '', label: 'Todos los estados' },
@@ -277,6 +281,13 @@ export class VacanciesListPage {
     this.formOpen.set(false);
     this.editing.set(null);
     this.formError.set(null);
+    this.pendingImage.set(null);
+    this.imageRemoved.set(false);
+  }
+
+  protected onImageRemoved(): void {
+    this.imageRemoved.set(true);
+    this.pendingImage.set(null);
   }
 
   protected onAction(event: VacancyActionEvent): void {
@@ -322,6 +333,7 @@ export class VacanciesListPage {
 
   protected onSave(payload: SaveVacancyPayload): void {
     const editing = this.editing();
+    const shouldRemoveImage = this.imageRemoved();
     this.saving.set(true);
     this.formError.set(null);
 
@@ -330,10 +342,30 @@ export class VacanciesListPage {
       : this.facade.create(payload);
 
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: () => {
-        this.saving.set(false);
-        this.closeForm();
-        this.facade.load(editing ? this.facade.page() : 1);
+      next: (saved) => {
+        const image = this.pendingImage();
+        this.pendingImage.set(null);
+        this.imageRemoved.set(false);
+
+        if (image && saved.id) {
+          this.vacanciesApi
+            .uploadImage(saved.id, image)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: () => this.finishSave(editing),
+              error: () => this.finishSave(editing),
+            });
+        } else if (shouldRemoveImage && editing) {
+          this.vacanciesApi
+            .deleteImage(saved.id)
+            .pipe(takeUntilDestroyed(this.destroyRef))
+            .subscribe({
+              next: () => this.finishSave(editing),
+              error: () => this.finishSave(editing),
+            });
+        } else {
+          this.finishSave(editing);
+        }
       },
       error: (error: unknown) => {
         this.saving.set(false);
@@ -342,6 +374,12 @@ export class VacanciesListPage {
         );
       },
     });
+  }
+
+  private finishSave(editing: Vacancy | null): void {
+    this.saving.set(false);
+    this.closeForm();
+    this.facade.load(editing ? this.facade.page() : 1);
   }
 
   protected closeQuestions(): void {

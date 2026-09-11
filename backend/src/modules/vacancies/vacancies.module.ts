@@ -1,5 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LocalPublicFileStorageAdapter } from '@/common/storage/local-public-file-storage.adapter';
+import { PUBLIC_FILE_STORAGE } from '@/common/storage/public-file-storage.port';
 import { ApplicationsModule } from '@/modules/applications/applications.module';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
@@ -16,6 +18,8 @@ import { VacancyQuestion } from '@/modules/vacancies/entities/vacancy-question.e
 import { VacancyQuestionOption } from '@/modules/vacancies/entities/vacancy-question-option.entity';
 import { VacancyReport } from '@/modules/vacancies/entities/vacancy-report.entity';
 import { VacancyViewEvent } from '@/modules/vacancies/entities/vacancy-view-event.entity';
+import { Skill } from '@/modules/vacancies/entities/skill.entity';
+import { VacancySkill } from '@/modules/vacancies/entities/vacancy-skill.entity';
 import { VACANCY_QUESTION_REPOSITORY } from '@/modules/vacancies/repositories/vacancy-question.repository.interface';
 import { VacancyQuestionRepository } from '@/modules/vacancies/repositories/vacancy-question.repository';
 import { VACANCY_REPORT_REPOSITORY } from '@/modules/vacancies/repositories/vacancy-report.repository.interface';
@@ -24,12 +28,18 @@ import { VACANCY_REPOSITORY } from '@/modules/vacancies/repositories/vacancy.rep
 import { VacancyRepository } from '@/modules/vacancies/repositories/vacancy.repository';
 import { VACANCY_VIEW_EVENT_REPOSITORY } from '@/modules/vacancies/repositories/vacancy-view-event.repository.interface';
 import { VacancyViewEventRepository } from '@/modules/vacancies/repositories/vacancy-view-event.repository';
+import { SKILL_REPOSITORY } from '@/modules/vacancies/repositories/skill.repository.interface';
+import { SkillRepository } from '@/modules/vacancies/repositories/skill.repository';
+import { VACANCY_SKILL_REPOSITORY } from '@/modules/vacancies/repositories/vacancy-skill.repository.interface';
+import { VacancySkillRepository } from '@/modules/vacancies/repositories/vacancy-skill.repository';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
 import { CompanyVacanciesUseCase } from '@/modules/vacancies/use-cases/company-vacancies.use-case';
 import { ConsolidateVacancyViewsUseCase } from '@/modules/vacancies/use-cases/consolidate-vacancy-views.use-case';
 import { ExpireVacanciesUseCase } from '@/modules/vacancies/use-cases/expire-vacancies.use-case';
 import { PublicVacanciesUseCase } from '@/modules/vacancies/use-cases/public-vacancies.use-case';
 import { VacancyQuestionsUseCase } from '@/modules/vacancies/use-cases/vacancy-questions.use-case';
+import { VacancySkillsUseCase } from '@/modules/vacancies/use-cases/vacancy-skills.use-case';
+import { VacancyImageUseCase } from '@/modules/vacancies/use-cases/vacancy-image.use-case';
 import { VacancyReportsUseCase } from '@/modules/vacancies/use-cases/vacancy-reports.use-case';
 import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-status.use-case';
 
@@ -42,6 +52,8 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
       VacancyQuestionOption,
       VacancyReport,
       VacancyViewEvent,
+      Skill,
+      VacancySkill,
     ]),
     AuditModule,
     AuthModule,
@@ -70,11 +82,16 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
       provide: VACANCY_VIEW_EVENT_REPOSITORY,
       useClass: VacancyViewEventRepository,
     },
+    { provide: SKILL_REPOSITORY, useClass: SkillRepository },
+    { provide: VACANCY_SKILL_REPOSITORY, useClass: VacancySkillRepository },
+    { provide: PUBLIC_FILE_STORAGE, useClass: LocalPublicFileStorageAdapter },
     VacancyOwnershipService,
     CompanyVacanciesUseCase,
     VacancyStatusUseCase,
     PublicVacanciesUseCase,
     VacancyQuestionsUseCase,
+    VacancySkillsUseCase,
+    VacancyImageUseCase,
     VacancyReportsUseCase,
     // Jobs sin endpoint, invocados por los scripts de cron:
     // `vacancies:expire` (T20) y `views:consolidate` (T18).
@@ -87,6 +104,8 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
   exports: [
     VACANCY_REPOSITORY,
     VACANCY_QUESTION_REPOSITORY,
+    SKILL_REPOSITORY,
+    VACANCY_SKILL_REPOSITORY,
     VacancyOwnershipService,
   ],
 })

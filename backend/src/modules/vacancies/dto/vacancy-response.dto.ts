@@ -2,6 +2,10 @@ import { toDateOnly } from '@/common/utils/date-only.util';
 import { Company } from '@/modules/companies/entities/company.entity';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import { VacancyStatus } from '@/modules/vacancies/enums/vacancy.enums';
+import {
+  CompanyVacancySkillDto,
+  PublicVacancySkillDto,
+} from '@/modules/vacancies/dto/vacancy-skill.dto';
 
 /** Vacante tal como la ve su empresa: incluye contadores y distintivos. */
 export interface VacancyResponseDto {
@@ -47,6 +51,10 @@ export interface VacancyResponseDto {
   canEditTitleOnReactivate: boolean;
   /** Vistas consolidadas (T18); se actualizan una vez al día. */
   viewsCount: number;
+  /** Imagen de referencia de la vacante (T24). */
+  imageUrl: string | null;
+  /** Skills requeridas/deseadas para la vacante (T25). */
+  skills: CompanyVacancySkillDto[];
 }
 
 /**
@@ -83,6 +91,10 @@ export interface PublicVacancyResponseDto {
   isConfidential: boolean;
   /** Vistas consolidadas (T18); se actualizan una vez al día. */
   viewsCount: number;
+  /** Imagen de referencia de la vacante (T24). */
+  imageUrl: string | null;
+  /** Skills requeridas/deseadas para la vacante (T25). */
+  skills: PublicVacancySkillDto[];
   company: PublicVacancyCompanyDto | null;
 }
 
@@ -103,7 +115,10 @@ function toAmount(value?: string | null): number | null {
   return Number.isFinite(amount) ? amount : null;
 }
 
-export function toVacancyResponse(vacancy: Vacancy): VacancyResponseDto {
+export function toVacancyResponse(
+  vacancy: Vacancy,
+  skills: CompanyVacancySkillDto[] = [],
+): VacancyResponseDto {
   return {
     id: vacancy.id,
     companyId: vacancy.companyId,
@@ -141,12 +156,15 @@ export function toVacancyResponse(vacancy: Vacancy): VacancyResponseDto {
     pausesLeft: Math.max(0, vacancy.maxPauses - vacancy.pauseCount),
     canEditTitleOnReactivate: vacancy.canEditTitleOnReactivate,
     viewsCount: vacancy.viewsCount ?? 0,
+    imageUrl: vacancy.imageUrl ?? null,
+    skills,
   };
 }
 
 export function toPublicVacancyResponse(
   vacancy: Vacancy,
   company: Company | null,
+  skills: PublicVacancySkillDto[] = [],
 ): PublicVacancyResponseDto {
   const hideSalary = vacancy.salaryHidden;
   return {
@@ -175,6 +193,8 @@ export function toPublicVacancyResponse(
     isUrgent: vacancy.isUrgent,
     isConfidential: vacancy.isConfidential,
     viewsCount: vacancy.viewsCount ?? 0,
+    imageUrl: vacancy.imageUrl ?? null,
+    skills,
     company:
       vacancy.isConfidential || !company
         ? null
