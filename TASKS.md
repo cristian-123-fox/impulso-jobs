@@ -4,7 +4,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
-- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21–T27 hechas**; de T26 queda diferida sólo la fase 4 (áreas privadas) y el idioma de los correos.
+- **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21–T27 hechas**; lo que T26 dejó fuera a propósito (áreas privadas y correos) está levantado como **T28**, pendiente de la decisión N10.
 
 ---
 
@@ -261,7 +261,7 @@ Reviews/rating de empresa · IA (crear oferta, sugerir skills, matching — cód
 
 # Parte C · Backlog solicitado (septiembre 2026)
 
-Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T21–T27 están cerradas (de T26 quedan diferidas las áreas privadas y el idioma de los correos). Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
+Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contra el código**. T21–T27 están cerradas; **T28 no venía en la lista del equipo**: recoge lo que T26 dejó fuera a propósito (áreas privadas y correos). Cada ficha es autocontenida a propósito: el bloque completo de un `### T##` es lo que se pega tal cual en la tarjeta del gestor de tareas.
 
 ## Resumen para el gestor de tareas
 
@@ -274,6 +274,7 @@ Levantado el **2026-09-10** a partir de la lista del equipo y **verificado contr
 | T25 ✅ | Skills requeridas en la vacante | Feature | Media | M (2–3 d) | N9 ✅ |
 | T26 ✅ | Traducciones del sitio (i18n) | Feature / transversal | Media | L (5–8 d+) | N6 ✅ |
 | T27 ✅ | Nombre y foto del usuario logueado en el portal | Mejora UX | Media | S (1 d) | — |
+| T28 | Traducir áreas privadas y correos (cierre de i18n) | Feature / transversal | Baja | M (3–5 d) | T26 ✅ · 🔷 N10 |
 
 Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
@@ -468,9 +469,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 **Verificado:** build en verde; `ng test` 10/10 con dos specs nuevas (`translations.spec.ts` compara los dos diccionarios —mismas claves, sin textos vacíos, mismos parámetros— y `language.service.spec.ts` cubre cookie, idioma desconocido y cambio); y contra el servidor SSR real: `/inicio`, `/nosotros`, `/planes`, `/contacto`, `/faq`, `/vacantes`, `/trabajo/...` y `/auth/**` responden 200 con `<html lang>`, `<title>`, canonical y `hreflang` correctos en los dos idiomas, tanto por `?lang=en` como por cookie.
 
-**Pendiente (fase 4, diferible como decía la ficha):** las áreas privadas `/candidato`, `/empresa` y `/admin` siguen en español. Mientras tanto los mapas `*_LABELS` de `features/company/vacancies/models` conviven con la rama `enums.*` del diccionario: **el español está en los dos sitios**; al traducir esas áreas, los mapas desaparecen y todo pasa por `AppTranslateService.enumLabel()`. Igual `PASSWORD_POLICY_HINT` frente a `validation.passwordPolicy`.
-
-**Pendiente (fase 5, backend):** las **plantillas de correo** (T21) se envían en español. Traducirlas pide guardar el idioma preferido en el usuario (migración + `GET/PUT` de configuración); ninguna otra parte del backend necesita idioma.
+**Lo que queda fuera (fases 4 y 5) está levantado como [T28](#t28--traducir-áreas-privadas-y-correos-cierre-de-i18n-):** las áreas privadas siguen en español y los correos se envían en español.
 
 **Qué se pedía:** traducciones del sitio web.
 
@@ -483,6 +482,30 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 - **Transloco:** JSON en runtime, cambio de idioma instantáneo, un solo bundle. Más simple de desplegar en cPanel; el SEO multi-idioma (`hreflang`, canonical por idioma) hay que armarlo a mano — y se armó (punto 3).
 
 **Criterios de aceptación:** cambiar de idioma traduce el portal público sin recargar y la elección persiste; el HTML servido por SSR ya sale en el idioma correcto (**sin parpadeo al hidratar**); `hreflang` correcto; un texto sin traducir cae al español sin romper la vista.
+
+---
+
+### T28 · Traducir áreas privadas y correos (cierre de i18n) ⬜
+
+**Qué se pide:** terminar de traducir lo que T26 dejó fuera **a propósito**: las áreas privadas del producto y los correos que salen de la plataforma. No es trabajo nuevo de infraestructura — `core/i18n/` ya está montado y probado; esto es extracción de textos (frontend) y una preferencia por usuario (backend).
+
+**Estado hoy (2026-09-11, al cerrar T26):** el portal público y `/auth` están en español e inglés, con 546 claves en `frontend/src/app/core/i18n/translations/{es,en}.json`. **`/candidato`, `/empresa` y `/admin` siguen escritos a mano en español**, igual que las plantillas de correo del backend (T21).
+
+**Decisión previa 🔷 (N10) — ¿hace falta?** T26 se justificaba con el público: el portal es la cara que ven candidatos e **empresas internacionales**. Las áreas privadas son usuarios recurrentes de un solo mercado, y por eso la propia ficha de T26 las marcó como diferibles. **Antes de arrancar conviene confirmar que hay demanda real** — una empresa extranjera que publique vacantes sí gestionaría su panel en inglés; el back-office de administración casi seguro que no. Si la respuesta es "sólo `/empresa`", el alcance se reduce a la mitad.
+
+**Alcance propuesto:**
+1. **`/empresa`** (vacantes, postulaciones, candidatos, promociones, usuarios, perfil). Es el área con caso de uso real para el inglés y la que más comparte con el portal.
+2. **`/candidato`** (perfil, cv, postulaciones, guardadas, configuración).
+3. **`/admin`** — el más prescindible: lo usa el equipo, en español. Puede quedarse fuera sin que nadie lo note.
+4. **Retirar los mapas de etiquetas duplicados.** Hoy el español de los enums está **en dos sitios**: los mapas `*_LABELS` de `features/company/vacancies/models/vacancies.models.ts` (que usa el área privada) y la rama `enums.*` del diccionario (que usa el portal). Al traducir las áreas privadas, los mapas desaparecen y todo pasa por `AppTranslateService.enumLabel()`. Mismo caso: `PASSWORD_POLICY_HINT` frente a `validation.passwordPolicy`. **Mientras exista la duplicación, un cambio de etiqueta hay que hacerlo en los dos lados.**
+5. **Correos (T21) en el idioma del destinatario.** Hoy salen en español desde `common/mailer/`. Pide: columna de idioma preferido en `users` (migración), exponerla en la configuración de la cuenta, y que el use-case que compone el correo elija plantilla. **Es la única parte del backend que necesita idioma** — los `message` del envelope siguen en español y nadie los pinta: el frontend conmuta sobre `errorCode`, que es el contrato estable.
+6. **`/mantenimiento`** sigue prerenderizada y en español. Traducirla obligaría a servirla por petición, que es justo lo que no queremos de una página que existe para cuando el resto falla. **Recomendación: dejarla como está.**
+
+**Cómo se traduce aquí** (ya está decidido en T26, no hay que volver a elegir): en plantilla, `*transloco="let t"`; en código, **`AppTranslateService`** —nunca `TranslocoService.translate()` a secas, que devuelve un string suelto y no se recalcula al cambiar de idioma—; fechas e importes, con `LocaleFormatService`. Cada clave nueva va **en los dos ficheros**: `translations.spec.ts` falla si uno se queda atrás.
+
+**Criterios de aceptación:** con el idioma en inglés, las áreas del alcance no muestran ningún texto en español salvo datos (nombres de vacante, de empresa, catálogos); cambiar de idioma dentro del área privada repinta sin recargar; un usuario con idioma inglés recibe los correos en inglés; y los mapas `*_LABELS` han desaparecido del código.
+
+**Riesgo:** es transversal otra vez, pero acotado — el portal, que era el grueso, ya está hecho. El riesgo real es empezarlo **sin la decisión N10** y traducir un back-office que nadie va a usar en inglés.
 
 ---
 
@@ -522,6 +545,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 - ~~**N7 · Imagen de vacante (T24).**~~ ✅ resuelta el 2026-09-11: **para todas las vacantes**, no es un beneficio de plan — que es justo como quedó implementada T24, así que no hay cambio pendiente. El **recorte sigue libre**: la decisión no lo cubrió y nadie lo forzó (ver la ficha).
 - ~~**N8 · Qué apaga exactamente la expiración del plan (T22).**~~ ✅ resuelta al implementar T22: sólo el estado, porque no queda nada más que apagar (ver la ficha). Si algún día existe `postingQuota` (N5), el punto de extensión es `ExpireSubscriptionsUseCase`.
 - ~~**N9 · Skills: catálogo normalizado o texto libre (T25).**~~ Resuelto: catálogo normalizado.
+- **N10 · ¿Qué áreas privadas se traducen (T28)?** ¿Sólo `/empresa`, también `/candidato`, o los tres incluyendo `/admin`? ¿Hay empresas o candidatos que de verdad usarían el panel en inglés? De la respuesta depende que la tarea sea de 2 días o de 5 — y si la respuesta es "ninguna", T28 se cierra sin escribir una línea.
 
 ## Orden sugerido (Parte C)
 
@@ -531,3 +555,4 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 4. ~~**T22**~~ ✅ hecha — despliegue: `migration:run:prod` (tabla `subscription_notices`) y enganchar `billing:expire` a un cron diario.
 5. ~~**T24**~~ ✅ hecha y ~~**T25**~~ ✅ hecha — skills normalizadas en backend, pendiente el frontend de chips.
 6. ~~**T26**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos. Ojo con una cosa en el servidor: el portal y `/auth` ya **no** se prerenderizan, así que la app Node SSR pasa a atender esas rutas en cada petición.
+7. **T28** — la última, y **sólo si N10 dice que sí**: cierra la i18n (áreas privadas + correos). Nada la bloquea técnicamente; la infraestructura quedó hecha en T26.
