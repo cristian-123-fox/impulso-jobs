@@ -1,10 +1,12 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ApplicationsModule } from '@/modules/applications/applications.module';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
 import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
 import { UsersModule } from '@/modules/iam/users/users.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { AdminVacancyReportsController } from '@/modules/vacancies/controllers/admin-vacancy-reports.controller';
 import { CompanyVacanciesController } from '@/modules/vacancies/controllers/company-vacancies.controller';
 import { PublicVacanciesController } from '@/modules/vacancies/controllers/public-vacancies.controller';
@@ -46,6 +48,10 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
     PermissionsModule,
     UsersModule,
     CompaniesModule,
+    // T21: ApplicationsModule provee NOTIFY_VACANCY_CLOSED_PORT.
+    // forwardRef rompe el ciclo VacanciesModule <-> ApplicationsModule.
+    forwardRef(() => ApplicationsModule),
+    NotificationsModule,
   ],
   controllers: [
     CompanyVacanciesController,

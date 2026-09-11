@@ -11,7 +11,7 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role as RoleEnum } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { hashPassword } from '@/common/utils/password.util';
-import { MAILER_PORT } from '@/modules/iam/auth/services/mailer.port';
+import { MAILER_PORT } from '@/common/mailer';
 import { User } from '@/modules/iam/users/entities/user.entity';
 
 describe('Email verification (e2e)', () => {
@@ -19,11 +19,12 @@ describe('Email verification (e2e)', () => {
   let userRepo: Repository<User>;
 
   let capturedLink = '';
-  const sendEmailVerification = jest.fn((email: { link: string }) => {
-    capturedLink = email.link;
+  const send = jest.fn((options: { html: string }) => {
+    const match = options.html.match(/href="([^"]*verificar-email[^"]*)"/);
+    if (match) capturedLink = match[1].replace(/&amp;/g, '&');
     return Promise.resolve();
   });
-  const mailer = { sendEmailVerification, sendPasswordReset: jest.fn() };
+  const mailer = { send };
 
   const password = 'Secreta#123';
   const stamp = Date.now();
@@ -95,7 +96,7 @@ describe('Email verification (e2e)', () => {
       .send({ email })
       .expect(200);
     expect(res.body.success).toBe(true);
-    expect(sendEmailVerification).toHaveBeenCalled();
+    expect(send).toHaveBeenCalled();
     verifyToken = new URL(capturedLink).searchParams.get('token') ?? '';
     expect(verifyToken.length).toBeGreaterThan(20);
   });
@@ -135,13 +136,13 @@ describe('Email verification (e2e)', () => {
   });
 
   it('aplica el límite de 3 reenvíos por 24h', async () => {
-    const before = sendEmailVerification.mock.calls.length;
+    const before = send.mock.calls.length;
     for (let i = 0; i < 4; i++) {
       await req()
         .post('/api/v1/auth/email-verification/resend')
         .send({ email: rlEmail })
         .expect(200);
     }
-    expect(sendEmailVerification.mock.calls.length - before).toBe(3);
+    expect(send.mock.calls.length - before).toBe(3);
   });
 });

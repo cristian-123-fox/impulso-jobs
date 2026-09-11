@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  MAILER_PORT,
+  type MailerPort,
+  emailVerificationTemplate,
+} from '@/common/mailer';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
@@ -7,10 +12,6 @@ import {
   USER_REPOSITORY,
 } from '@/modules/iam/users/repositories/user.repository.interface';
 import { TokenService } from '@/modules/iam/auth/services/token.service';
-import {
-  type MailerPort,
-  MAILER_PORT,
-} from '@/modules/iam/auth/services/mailer.port';
 
 export interface RequestEmailVerificationCommand {
   email: string;
@@ -98,10 +99,14 @@ export class RequestEmailVerificationUseCase {
 
     const verification = await this.tokenService.signEmailVerification(user.id);
     const link = `${this.webUrl}/auth/verificar-email?token=${verification.token}`;
-    await this.mailer.sendEmailVerification({
-      to: user.email,
+    const template = emailVerificationTemplate(
       link,
-      expiresInMinutes: VERIFICATION_EXPIRES_MINUTES,
+      VERIFICATION_EXPIRES_MINUTES,
+    );
+    await this.mailer.send({
+      to: user.email,
+      subject: template.subject,
+      html: template.html,
     });
 
     await this.audit.record({

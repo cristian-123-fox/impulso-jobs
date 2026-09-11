@@ -18,11 +18,16 @@ import {
   CANDIDATE_PROFILE_SETTINGS_REPOSITORY,
 } from '@/modules/candidates/repositories/candidate-profile-settings.repository.interface';
 import type { CandidateActor } from '@/modules/candidates/use-cases/candidate-profile.use-case';
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  NotificationPreference,
+} from '@/modules/notifications/enums/notification-preference.enum';
 
 export interface UpdateCandidateSettingsCommand extends CandidateActor {
   profileVisibility: ProfileVisibility;
   informationVisibility: InformationVisibility;
   isImmediatelyAvailable: boolean;
+  notificationPreferences?: NotificationPreference[];
 }
 
 @Injectable()
@@ -65,6 +70,10 @@ export class CandidateSettingsUseCase {
     settings.informationVisibility = command.informationVisibility;
     settings.isImmediatelyAvailable = command.isImmediatelyAvailable;
 
+    if (command.notificationPreferences) {
+      settings.notificationPreferences = command.notificationPreferences;
+    }
+
     const saved = await this.settings.save(settings);
     await this.audit.record({
       action: 'candidate.settings.update',
@@ -77,6 +86,7 @@ export class CandidateSettingsUseCase {
         profileVisibility: saved.profileVisibility,
         informationVisibility: saved.informationVisibility,
         isImmediatelyAvailable: saved.isImmediatelyAvailable,
+        notificationPreferences: saved.notificationPreferences,
       },
     });
 
@@ -103,6 +113,7 @@ export class CandidateSettingsUseCase {
       profileVisibility: ProfileVisibility.PUBLIC,
       informationVisibility: InformationVisibility.FULL,
       isImmediatelyAvailable: false,
+      notificationPreferences: DEFAULT_NOTIFICATION_PREFERENCES,
     });
   }
 

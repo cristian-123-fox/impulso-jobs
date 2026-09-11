@@ -12,6 +12,12 @@ import { toDateOnly, todayAsDateOnly } from '@/common/utils/date-only.util';
 import { runInTransaction } from '@/common/utils/transaction.util';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
+  type ICompanyUserRepository,
+  COMPANY_USER_REPOSITORY,
+} from '@/modules/companies/repositories/company-user.repository.interface';
+import { NotificationType } from '@/modules/notifications/enums/notification-type.enum';
+import { NotificationService } from '@/modules/notifications/services/notification.service';
+import {
   ApplicationStatusHistoryResponseDto,
   CandidateApplicationResponseDto,
   toApplicationStatusHistoryResponse,
@@ -134,8 +140,11 @@ export class CandidateApplicationsUseCase {
     private readonly questions: IVacancyQuestionRepository,
     @Inject(APPLICATION_ANSWER_REPOSITORY)
     private readonly answers: IApplicationAnswerRepository,
+    @Inject(COMPANY_USER_REPOSITORY)
+    private readonly companyUsers: ICompanyUserRepository,
     private readonly ownership: ApplicationOwnershipService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationService,
   ) {}
 
   /**
@@ -263,6 +272,17 @@ export class CandidateApplicationsUseCase {
         statusCode: saved.statusCode,
       },
     });
+
+    // T21: notificar a los miembros de la empresa sobre la nueva postulación.
+    this.notifyCompanyMembers(
+      vacancy.companyId,
+      vacancy.title,
+      `${profile.firstName} ${profile.lastName}`,
+    ).catch((err) =>
+      this.logger.warn(
+        `No se pudo notificar nueva postulación a la empresa ${vacancy.companyId}: ${err instanceof Error ? err.message : String(err)}`,
+      ),
+    );
 
     const status = await this.statuses.findByCode(saved.statusCode);
     const company = await this.companies.findById(vacancy.companyId);
@@ -521,6 +541,29 @@ export class CandidateApplicationsUseCase {
       await this.snapshotStorage.delete(storageKey);
     } catch {
       this.logger.warn(`Snapshot huérfano sin borrar: ${storageKey}`);
+    }
+  }
+
+  /**
+   * T21: notifica a todos los miembros de la empresa que un candidato se
+   * postuló. Best-effort — si falla no impide la creación de la postulación.
+   */
+  private async notifyCompanyMembers(
+    companyId: string,
+    vacancyTitle: string,
+    candidateName: string,
+  ): Promise<void> {
+    const members = await this.companyUsers.findByCompanyId(companyId);
+    const link = '/empresa/postulaciones';
+
+    for (const member of members) {
+      await this.notifications.notify({
+        userId: member.userId,
+        type: NotificationType.NEW_APPLICATION_RECEIVED,
+        title: 'Nueva postulación recibida',
+        body: `${candidateName} se postuló a la vacante "${vacancyTitle}".`,
+        link,
+      });
     }
   }
 }

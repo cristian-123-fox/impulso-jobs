@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CandidateApplicationsController } from '@/modules/applications/controllers/candidate-applications.controller';
 import { CompanyApplicationsController } from '@/modules/applications/controllers/company-applications.controller';
@@ -20,12 +20,15 @@ import { LocalApplicationResumeSnapshotStorageService } from '@/modules/applicat
 import { ApplicationStatusUseCase } from '@/modules/applications/use-cases/application-status.use-case';
 import { CandidateApplicationsUseCase } from '@/modules/applications/use-cases/candidate-applications.use-case';
 import { CompanyApplicationsUseCase } from '@/modules/applications/use-cases/company-applications.use-case';
+import { NotifyVacancyClosedUseCase } from '@/modules/applications/use-cases/notify-vacancy-closed.use-case';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
 import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
 import { UsersModule } from '@/modules/iam/users/users.module';
+import { NotificationsModule } from '@/modules/notifications/notifications.module';
+import { NOTIFY_VACANCY_CLOSED_PORT } from '@/modules/vacancies/ports/notify-vacancy-closed.port';
 import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
 
 /** M11: postulaciones del aspirante y su gestión por parte de la empresa. */
@@ -41,9 +44,12 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     AuthModule,
     PermissionsModule,
     UsersModule,
-    CandidatesModule,
+    // forwardRef rompe el ciclo CandidatesModule <-> VacanciesModule <-> ApplicationsModule.
+    forwardRef(() => CandidatesModule),
     CompaniesModule,
-    VacanciesModule,
+    forwardRef(() => VacanciesModule),
+    // T21: notificaciones al cambiar estado de postulación.
+    NotificationsModule,
   ],
   controllers: [CandidateApplicationsController, CompanyApplicationsController],
   providers: [
@@ -73,13 +79,19 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     CandidateApplicationsUseCase,
     CompanyApplicationsUseCase,
     ApplicationStatusUseCase,
+    NotifyVacancyClosedUseCase,
+    // T21: provee la implementación real del puerto declarado en VacanciesModule.
+    {
+      provide: NOTIFY_VACANCY_CLOSED_PORT,
+      useExisting: NotifyVacancyClosedUseCase,
+    },
   ],
-  // M13 (export ARCO) lee postulaciones e historial; M16 (aviso a no
-  // seleccionados) leerá las postulaciones al cerrar una vacante.
   exports: [
     CANDIDATE_APPLICATION_REPOSITORY,
     APPLICATION_STATUS_REPOSITORY,
     APPLICATION_STATUS_HISTORY_REPOSITORY,
+    NotifyVacancyClosedUseCase,
+    NOTIFY_VACANCY_CLOSED_PORT,
   ],
 })
 export class ApplicationsModule {}

@@ -38,4 +38,11 @@ export const routes: Routes = [
         (m) => m.CandidateSettingsPage,
       ),
   },
+  {
+    path: 'notificaciones',
+    loadComponent: () =>
+      import('@/features/candidate/pages/notifications/notifications-page').then(
+        (m) => m.NotificationsPage,
+      ),
+  },
 ];

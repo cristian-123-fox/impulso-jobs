@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { MailerModule } from '@/common/mailer/mailer.module';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { UsersModule } from '@/modules/iam/users/users.module';
 import { AuthController } from '@/modules/iam/auth/controllers/auth.controller';
@@ -8,8 +9,6 @@ import { PasswordResetController } from '@/modules/iam/auth/controllers/password
 import { EmailVerificationController } from '@/modules/iam/auth/controllers/email-verification.controller';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
 import { TokenService } from '@/modules/iam/auth/services/token.service';
-import { MAILER_PORT } from '@/modules/iam/auth/services/mailer.port';
-import { ConsoleMailerAdapter } from '@/modules/iam/auth/services/console-mailer.adapter';
 import { JwtStrategy } from '@/modules/iam/auth/strategies/jwt.strategy';
 import { JwtAuthGuard } from '@/modules/iam/auth/guards/jwt-auth.guard';
 import { LoginUseCase } from '@/modules/iam/auth/use-cases/login.use-case';
@@ -22,7 +21,13 @@ import { RequestEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/re
 import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/confirm-email-verification.use-case';
 
 @Module({
-  imports: [PassportModule, JwtModule.register({}), UsersModule, AuditModule],
+  imports: [
+    PassportModule,
+    JwtModule.register({}),
+    UsersModule,
+    AuditModule,
+    MailerModule,
+  ],
   controllers: [
     AuthController,
     PasswordResetController,
@@ -31,7 +36,6 @@ import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/co
   providers: [
     PasswordHasherService,
     TokenService,
-    { provide: MAILER_PORT, useClass: ConsoleMailerAdapter },
     JwtStrategy,
     JwtAuthGuard,
     LoginUseCase,
@@ -47,6 +51,7 @@ import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/co
     JwtAuthGuard,
     PasswordHasherService,
     RequestEmailVerificationUseCase,
+    MailerModule,
   ],
 })
 export class AuthModule {}
