@@ -4,7 +4,7 @@ import { AuditService } from '@/modules/audit/audit.service';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import { IUserRepository } from '@/modules/iam/users/repositories/user.repository.interface';
 import { TokenService } from '@/modules/iam/auth/services/token.service';
-import { MailerPort } from '@/modules/iam/auth/services/mailer.port';
+import { MailerPort } from '@/common/mailer';
 import {
   MAX_RESET_REQUESTS,
   RequestPasswordResetUseCase,
@@ -51,7 +51,7 @@ describe('RequestPasswordResetUseCase', () => {
         expiresAt: new Date(),
       }),
     } as unknown as jest.Mocked<TokenService>;
-    mailer = { sendPasswordReset: jest.fn().mockResolvedValue(undefined) };
+    mailer = { send: jest.fn().mockResolvedValue(undefined) };
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
     const config = {
       get: jest.fn().mockReturnValue('http://localhost:4200'),
@@ -73,10 +73,11 @@ describe('RequestPasswordResetUseCase', () => {
     await useCase.execute(command);
 
     expect(user.passwordResetAttempts).toBe(1);
-    expect(mailer.sendPasswordReset).toHaveBeenCalledWith(
+    expect(mailer.send).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'persona@test.io',
-        link: expect.stringContaining(
+        subject: expect.stringContaining('Restablece'),
+        html: expect.stringContaining(
           '/auth/restablecer-password?token=reset.jwt',
         ),
       }),
@@ -89,13 +90,13 @@ describe('RequestPasswordResetUseCase', () => {
   it('no envía nada (respuesta genérica) si el usuario no existe o está inactivo', async () => {
     users.findByEmail.mockResolvedValue(null);
     await useCase.execute(command);
-    expect(mailer.sendPasswordReset).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
 
     users.findByEmail.mockResolvedValue(
       buildUser({ status: UserStatus.INACTIVE }),
     );
     await useCase.execute(command);
-    expect(mailer.sendPasswordReset).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
   });
 
   it('respeta el límite de 3 solicitudes por ventana de 24h', async () => {
@@ -107,7 +108,7 @@ describe('RequestPasswordResetUseCase', () => {
 
     await useCase.execute(command);
 
-    expect(mailer.sendPasswordReset).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'password_reset.request.rate_limited',
@@ -125,6 +126,6 @@ describe('RequestPasswordResetUseCase', () => {
     await useCase.execute(command);
 
     expect(user.passwordResetAttempts).toBe(1);
-    expect(mailer.sendPasswordReset).toHaveBeenCalledTimes(1);
+    expect(mailer.send).toHaveBeenCalledTimes(1);
   });
 });

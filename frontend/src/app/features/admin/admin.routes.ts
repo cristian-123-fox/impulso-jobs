@@ -29,4 +29,11 @@ export const routes: Routes = [
     loadChildren: () =>
       import('@/features/admin/reports/reports.routes').then((m) => m.routes),
   },
+  {
+    path: 'notificaciones',
+    loadChildren: () =>
+      import('@/features/admin/notifications/notifications.routes').then(
+        (m) => m.routes,
+      ),
+  },
 ];

@@ -14,6 +14,10 @@ import {
 } from '@/modules/vacancies/repositories/vacancy.repository.interface';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
 import { VacancyActor } from '@/modules/vacancies/use-cases/company-vacancies.use-case';
+import {
+  type INotifyVacancyClosedPort,
+  NOTIFY_VACANCY_CLOSED_PORT,
+} from '@/modules/vacancies/ports/notify-vacancy-closed.port';
 
 /**
  * Transiciones de estado de una vacante y el refresco del listado.
@@ -23,6 +27,9 @@ import { VacancyActor } from '@/modules/vacancies/use-cases/company-vacancies.us
  * - Pausar consume una pausa del plan (`pause_count` contra `max_pauses`).
  * - Al reactivar sólo se puede cambiar el título si el plan lo permite.
  * - Refrescar re-sube la vacante en el portal sin gastar pausas.
+ *
+ * T21: al cerrar una vacante, se notifica a todos los postulantes no
+ * seleccionados ni rechazados (reemplaza stub M16).
  */
 @Injectable()
 export class VacancyStatusUseCase {
@@ -32,6 +39,8 @@ export class VacancyStatusUseCase {
     @Inject(VACANCY_REPOSITORY) private readonly vacancies: IVacancyRepository,
     private readonly ownership: VacancyOwnershipService,
     private readonly audit: AuditService,
+    @Inject(NOTIFY_VACANCY_CLOSED_PORT)
+    private readonly notifyVacancyClosed: INotifyVacancyClosedPort,
   ) {}
 
   /** Cambio explícito de estado; delega en pausar/reactivar/cerrar. */
@@ -107,7 +116,6 @@ export class VacancyStatusUseCase {
     }
 
     vacancy.status = VacancyStatus.ACTIVE;
-    // Reactivar devuelve visibilidad: cuenta como refresco en el portal.
     vacancy.refreshedAt = new Date();
 
     return this.saveAndAudit(vacancy, 'vacancies.reactivate', actor, {
@@ -129,11 +137,16 @@ export class VacancyStatusUseCase {
       closedAt: vacancy.closedAt.toISOString(),
     });
 
-    // M16 enviará aquí el aviso automático a los no seleccionados. Queda el
-    // rastro en el log hasta que ese módulo exista.
-    this.logger.log(
-      `Vacante ${vacancy.id} cerrada: pendiente el aviso a no seleccionados (M16).`,
-    );
+    // T21: notificar a los postulantes no seleccionados/rechazados (reemplaza stub M16).
+    this.notifyVacancyClosed
+      .execute(vacancy.id, vacancy.title)
+      .catch((error) => {
+        this.logger.error(
+          `Error notificando a postulantes al cerrar vacante ${vacancy.id}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      });
 
     return result;
   }

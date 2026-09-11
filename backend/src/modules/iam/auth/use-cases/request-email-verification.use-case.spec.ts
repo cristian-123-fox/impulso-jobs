@@ -4,7 +4,7 @@ import { AuditService } from '@/modules/audit/audit.service';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import { IUserRepository } from '@/modules/iam/users/repositories/user.repository.interface';
 import { TokenService } from '@/modules/iam/auth/services/token.service';
-import { MailerPort } from '@/modules/iam/auth/services/mailer.port';
+import { MailerPort } from '@/common/mailer';
 import {
   MAX_VERIFICATION_REQUESTS,
   RequestEmailVerificationUseCase,
@@ -52,8 +52,7 @@ describe('RequestEmailVerificationUseCase', () => {
       }),
     } as unknown as jest.Mocked<TokenService>;
     mailer = {
-      sendPasswordReset: jest.fn(),
-      sendEmailVerification: jest.fn().mockResolvedValue(undefined),
+      send: jest.fn().mockResolvedValue(undefined),
     };
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
     const config = {
@@ -76,10 +75,11 @@ describe('RequestEmailVerificationUseCase', () => {
     await useCase.execute(command);
 
     expect(user.emailVerificationAttempts).toBe(1);
-    expect(mailer.sendEmailVerification).toHaveBeenCalledWith(
+    expect(mailer.send).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'persona@test.io',
-        link: expect.stringContaining('/auth/verificar-email?token=verify.jwt'),
+        subject: expect.stringContaining('Verifica'),
+        html: expect.stringContaining('/auth/verificar-email?token=verify.jwt'),
       }),
     );
     expect(audit.record).toHaveBeenCalledWith(
@@ -90,13 +90,13 @@ describe('RequestEmailVerificationUseCase', () => {
   it('no envía nada (genérico) si el usuario no existe o está inactivo', async () => {
     users.findByEmail.mockResolvedValue(null);
     await useCase.execute(command);
-    expect(mailer.sendEmailVerification).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
 
     users.findByEmail.mockResolvedValue(
       buildUser({ status: UserStatus.INACTIVE }),
     );
     await useCase.execute(command);
-    expect(mailer.sendEmailVerification).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
   });
 
   it('no reenvía si el correo ya está verificado', async () => {
@@ -106,7 +106,7 @@ describe('RequestEmailVerificationUseCase', () => {
 
     await useCase.execute(command);
 
-    expect(mailer.sendEmailVerification).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'email_verification.resend.already_verified',
@@ -123,7 +123,7 @@ describe('RequestEmailVerificationUseCase', () => {
 
     await useCase.execute(command);
 
-    expect(mailer.sendEmailVerification).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'email_verification.resend.rate_limited',
@@ -141,6 +141,6 @@ describe('RequestEmailVerificationUseCase', () => {
     await useCase.execute(command);
 
     expect(user.emailVerificationAttempts).toBe(1);
-    expect(mailer.sendEmailVerification).toHaveBeenCalledTimes(1);
+    expect(mailer.send).toHaveBeenCalledTimes(1);
   });
 });

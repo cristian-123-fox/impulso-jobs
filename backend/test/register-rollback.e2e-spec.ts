@@ -7,7 +7,7 @@ import { In, Repository } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
-import { MAILER_PORT } from '@/modules/iam/auth/services/mailer.port';
+import { MAILER_PORT } from '@/common/mailer';
 import { CANDIDATE_PROFILE_REPOSITORY } from '@/modules/candidates/repositories/candidate-profile.repository.interface';
 import { User } from '@/modules/iam/users/entities/user.entity';
 
@@ -19,7 +19,7 @@ describe('Register rollback (e2e)', () => {
   let app: INestApplication;
   let userRepo: Repository<User>;
 
-  const sendEmailVerification = jest.fn().mockResolvedValue(undefined);
+  const send = jest.fn().mockResolvedValue(undefined);
   const stamp = Date.now();
   const email = `m5-rollback-${stamp}@test.io`;
 
@@ -34,7 +34,7 @@ describe('Register rollback (e2e)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(MAILER_PORT)
-      .useValue({ sendEmailVerification, sendPasswordReset: jest.fn() })
+      .useValue({ send })
       .overrideProvider(CANDIDATE_PROFILE_REPOSITORY)
       .useValue(failingProfileRepo)
       .compile();
@@ -85,6 +85,6 @@ describe('Register rollback (e2e)', () => {
     const user = await userRepo.findOne({ where: { email } });
     expect(user).toBeNull();
     // La verificación (post-commit) no se disparó.
-    expect(sendEmailVerification).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
   });
 });

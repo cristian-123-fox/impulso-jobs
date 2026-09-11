@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PaginatedResponse,
   toPaginated,
@@ -27,6 +27,13 @@ import {
   type IVacancyRepository,
   VACANCY_REPOSITORY,
 } from '@/modules/vacancies/repositories/vacancy.repository.interface';
+import { NotificationService } from '@/modules/notifications/services/notification.service';
+import { NotificationType } from '@/modules/notifications/enums/notification-type.enum';
+import {
+  type IUserRepository,
+  USER_REPOSITORY,
+} from '@/modules/iam/users/repositories/user.repository.interface';
+import { Role as PlatformRole } from '@/common/types/role.enum';
 
 export interface VacancyReportActor {
   userId: string;
@@ -38,9 +45,14 @@ export interface VacancyReportActor {
 /**
  * Denuncias de vacantes. El candidato reporta; el back-office revisa la cola.
  * "Piden dinero" y "no responden" son además señal de calidad del empleador.
+ *
+ * T21: notifica a admins cuando hay una denuncia nueva y al denunciante
+ * cuando se resuelve.
  */
 @Injectable()
 export class VacancyReportsUseCase {
+  private readonly logger = new Logger(VacancyReportsUseCase.name);
+
   constructor(
     @Inject(VACANCY_REPORT_REPOSITORY)
     private readonly reports: IVacancyReportRepository,
@@ -49,6 +61,9 @@ export class VacancyReportsUseCase {
     @Inject(COMPANY_REPOSITORY)
     private readonly companies: ICompanyRepository,
     private readonly audit: AuditService,
+    private readonly notificationService: NotificationService,
+    @Inject(USER_REPOSITORY)
+    private readonly users: IUserRepository,
   ) {}
 
   async report(
@@ -102,6 +117,15 @@ export class VacancyReportsUseCase {
       ip: actor.ip,
       userAgent: actor.userAgent,
       metadata: { vacancyId, reasonCode: dto.reasonCode },
+    });
+
+    // T21: notificar a admins de la denuncia nueva (best-effort).
+    this.notifyAdminsOfNewReport(vacancy.title).catch((error) => {
+      this.logger.error(
+        `Error notificando a admins de denuncia: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     });
 
     return toVacancyReportResponse(saved, vacancy.title, null);
@@ -164,9 +188,82 @@ export class VacancyReportsUseCase {
         ip: actor.ip,
         userAgent: actor.userAgent,
       });
+
+      // T21: notificar al denunciante que su denuncia fue resuelta (best-effort).
+      this.notifyReporterOfResolution(report.reporterUserId).catch((error) => {
+        this.logger.error(
+          `Error notificando al denunciante ${report.reporterUserId}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      });
     }
 
     const vacancy = await this.vacancies.findById(report.vacancyId);
     return toVacancyReportResponse(report, vacancy?.title ?? null, null);
+  }
+
+  /**
+   * T21: notifica a todos los usuarios con rol ADMIN de la denuncia nueva.
+   */
+  private async notifyAdminsOfNewReport(vacancyTitle: string): Promise<void> {
+    const [adminUsers] = await this.users.findAndCount({
+      role: PlatformRole.ADMIN,
+      page: 1,
+      limit: 100,
+    });
+
+    for (const admin of adminUsers) {
+      const title = 'Nueva denuncia de vacante';
+      const body = `Se ha recibido una nueva denuncia sobre la vacante "${vacancyTitle}".`;
+      const link = '/admin/denuncias';
+
+      await this.notificationService.notify({
+        userId: admin.id,
+        type: NotificationType.VACANCY_REPORT_NEW,
+        title,
+        body,
+        link,
+        sendEmail: true,
+      });
+
+      await this.notificationService.sendNotificationEmail(
+        admin.email,
+        title,
+        body,
+        link,
+      );
+    }
+  }
+
+  /**
+   * T21: notifica al denunciante que su denuncia fue resuelta.
+   */
+  private async notifyReporterOfResolution(
+    reporterUserId: string,
+  ): Promise<void> {
+    const user = await this.users.findById(reporterUserId);
+    if (!user) return;
+
+    const title = 'Denuncia resuelta';
+    const body =
+      'Tu denuncia ha sido revisada y resuelta por el equipo de administración.';
+    const link = '/candidato/postulaciones';
+
+    await this.notificationService.notify({
+      userId: user.id,
+      type: NotificationType.VACANCY_REPORT_RESOLVED,
+      title,
+      body,
+      link,
+      sendEmail: true,
+    });
+
+    await this.notificationService.sendNotificationEmail(
+      user.email,
+      title,
+      body,
+      link,
+    );
   }
 }

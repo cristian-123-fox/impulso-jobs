@@ -37,6 +37,7 @@ const COMPONENT_NAMES: Record<string, string> = {
   promotions: 'Promociones',
   subscriptions: 'Suscripciones',
   account: 'Cuenta',
+  notifications: 'Notificaciones',
 };
 
 const ACTION_NAMES: Record<string, string> = {
@@ -106,6 +107,7 @@ const PERMISSION_CODES: readonly string[] = [
   'subscriptions.read',
   'account.delete',
   'account.data_export',
+  'notifications.read',
 ];
 
 const ROLE_META: Record<string, { name: string; description: string }> = {
@@ -160,6 +162,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'subscriptions.read',
     'account.delete',
     'account.data_export',
+    'notifications.read',
   ],
   EMPLOYER: [
     'catalogs.read',
@@ -184,6 +187,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'subscriptions.read',
     'account.delete',
     'account.data_export',
+    'notifications.read',
   ],
   CANDIDATE: [
     'catalogs.read',
@@ -203,6 +207,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'plans.read',
     'account.delete',
     'account.data_export',
+    'notifications.read',
   ],
 };
 

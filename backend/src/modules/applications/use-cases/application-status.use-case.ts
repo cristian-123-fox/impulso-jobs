@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
@@ -24,6 +24,17 @@ import {
   CompanyApplicationsUseCase,
 } from '@/modules/applications/use-cases/company-applications.use-case';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
+import { NotificationService } from '@/modules/notifications/services/notification.service';
+import { NotificationType } from '@/modules/notifications/enums/notification-type.enum';
+import { ApplicationStatusCode } from '@/modules/applications/enums/application-status.enum';
+import {
+  type ICandidateProfileRepository,
+  CANDIDATE_PROFILE_REPOSITORY,
+} from '@/modules/candidates/repositories/candidate-profile.repository.interface';
+import {
+  type IUserRepository,
+  USER_REPOSITORY,
+} from '@/modules/iam/users/repositories/user.repository.interface';
 
 /**
  * Cambio de estado de una postulación (HU-015).
@@ -32,9 +43,14 @@ import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ow
  * no puede quedar un estado sin rastro de quién lo cambió. Cambiar al estado
  * que ya tiene es un no-op idempotente — no ensucia el historial —, igual que
  * pausar una vacante ya pausada en M10.
+ *
+ * T21: al cambiar el estado, se crea una notificación para el candidato
+ * y se envía un correo best-effort.
  */
 @Injectable()
 export class ApplicationStatusUseCase {
+  private readonly logger = new Logger(ApplicationStatusUseCase.name);
+
   constructor(
     private readonly dataSource: DataSource,
     @Inject(CANDIDATE_APPLICATION_REPOSITORY)
@@ -47,6 +63,11 @@ export class ApplicationStatusUseCase {
     private readonly ownership: ApplicationOwnershipService,
     private readonly companyApplications: CompanyApplicationsUseCase,
     private readonly audit: AuditService,
+    private readonly notificationService: NotificationService,
+    @Inject(CANDIDATE_PROFILE_REPOSITORY)
+    private readonly profiles: ICandidateProfileRepository,
+    @Inject(USER_REPOSITORY)
+    private readonly users: IUserRepository,
   ) {}
 
   async changeStatus(
@@ -104,6 +125,67 @@ export class ApplicationStatusUseCase {
       },
     });
 
+    // T21: notificar al candidato del cambio de estado (best-effort).
+    this.notifyCandidateStatusChange(
+      application.candidateProfileId,
+      application.vacancyId,
+      target.code,
+    ).catch((error) => {
+      this.logger.error(
+        `Error creando notificación de cambio de estado: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    });
+
     return this.companyApplications.get(id, actor);
+  }
+
+  /**
+   * Crea la notificación y envía el correo al candidato.
+   * Best-effort: si falla, la operación de negocio no se ve afectada.
+   */
+  private async notifyCandidateStatusChange(
+    candidateProfileId: string,
+    vacancyId: string,
+    newStatusCode: string,
+  ): Promise<void> {
+    const profiles = await this.profiles.findByIds([candidateProfileId]);
+    const profile = profiles[0];
+    if (!profile) return;
+
+    const user = await this.users.findById(profile.userId);
+    if (!user) return;
+
+    const friendlyStatus: Record<string, string> = {
+      [ApplicationStatusCode.IN_REVIEW]: 'En revisión',
+      [ApplicationStatusCode.IN_PROGRESS]: 'En proceso',
+      [ApplicationStatusCode.INTERVIEW]: 'En entrevista',
+      [ApplicationStatusCode.TECHNICAL_TEST]: 'En prueba técnica',
+      [ApplicationStatusCode.SELECTED]: 'Seleccionado',
+      [ApplicationStatusCode.REJECTED]: 'No seleccionado',
+      [ApplicationStatusCode.FINISHED]: 'Finalizado',
+    };
+
+    const statusLabel = friendlyStatus[newStatusCode] ?? newStatusCode;
+    const title = 'Actualización de tu postulación';
+    const body = `Tu postulación ahora está en estado: ${statusLabel}.`;
+    const link = `/candidato/postulaciones`;
+
+    await this.notificationService.notify({
+      userId: user.id,
+      type: NotificationType.APPLICATION_STATUS_CHANGED,
+      title,
+      body,
+      link,
+      sendEmail: true,
+    });
+
+    await this.notificationService.sendNotificationEmail(
+      user.email,
+      title,
+      body,
+      link,
+    );
   }
 }

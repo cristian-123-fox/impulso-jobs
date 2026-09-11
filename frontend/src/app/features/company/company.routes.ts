@@ -38,4 +38,11 @@ export const routes: Routes = [
     loadChildren: () =>
       import('@/features/company/profile/profile.routes').then((m) => m.routes),
   },
+  {
+    path: 'notificaciones',
+    loadChildren: () =>
+      import('@/features/company/notifications/notifications.routes').then(
+        (m) => m.routes,
+      ),
+  },
 ];

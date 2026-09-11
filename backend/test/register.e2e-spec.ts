@@ -9,7 +9,7 @@ import { AllExceptionsFilter } from '@/common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from '@/common/interceptors/response.interceptor';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role as PlatformRole } from '@/common/types/role.enum';
-import { MAILER_PORT } from '@/modules/iam/auth/services/mailer.port';
+import { MAILER_PORT } from '@/common/mailer';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import { UserRole } from '@/modules/iam/users/entities/user-role.entity';
 import { Company } from '@/modules/companies/entities/company.entity';
@@ -25,8 +25,8 @@ describe('Register (e2e)', () => {
   let companyUserRepo: Repository<CompanyUser>;
   let profileRepo: Repository<CandidateProfile>;
 
-  const sendEmailVerification = jest.fn().mockResolvedValue(undefined);
-  const mailer = { sendEmailVerification, sendPasswordReset: jest.fn() };
+  const send = jest.fn().mockResolvedValue(undefined);
+  const mailer = { send };
 
   const stamp = Date.now();
   const suffix6 = String(stamp % 1000000).padStart(6, '0');
@@ -128,7 +128,7 @@ describe('Register (e2e)', () => {
       email: companyEmail,
       verificationRequired: true,
     });
-    expect(sendEmailVerification).toHaveBeenCalled();
+    expect(send).toHaveBeenCalled();
 
     const user = await userRepo.findOneByOrFail({ email: companyEmail });
     expect(user.role).toBe(PlatformRole.EMPLOYER);
@@ -146,14 +146,14 @@ describe('Register (e2e)', () => {
   });
 
   it('registra un CANDIDATO y dispara verificación', async () => {
-    const before = sendEmailVerification.mock.calls.length;
+    const before = send.mock.calls.length;
     const res = await req()
       .post('/api/v1/auth/register')
       .send(candidateBody)
       .expect(201);
 
     expect(res.body.content.accountType).toBe('candidate');
-    expect(sendEmailVerification.mock.calls.length).toBe(before + 1);
+    expect(send.mock.calls.length).toBe(before + 1);
 
     const user = await userRepo.findOneByOrFail({ email: candidateEmail });
     expect(user.role).toBe(PlatformRole.CANDIDATE);

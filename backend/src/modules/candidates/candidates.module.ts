@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LocalPublicFileStorageAdapter } from '@/common/storage/local-public-file-storage.adapter';
 import { PUBLIC_FILE_STORAGE } from '@/common/storage/public-file-storage.port';
@@ -69,7 +69,8 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     PermissionsModule,
     UsersModule,
     // T17: las guardadas listan la vista pública de la vacante y su empresa.
-    VacanciesModule,
+    // forwardRef rompe el ciclo CandidatesModule <-> VacanciesModule <-> ApplicationsModule.
+    forwardRef(() => VacanciesModule),
     CompaniesModule,
   ],
   controllers: [

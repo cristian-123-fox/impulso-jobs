@@ -11,7 +11,7 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role as RoleEnum } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { hashPassword } from '@/common/utils/password.util';
-import { MAILER_PORT } from '@/modules/iam/auth/services/mailer.port';
+import { MAILER_PORT } from '@/common/mailer';
 import { User } from '@/modules/iam/users/entities/user.entity';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -21,8 +21,9 @@ describe('Password reset (e2e)', () => {
   let userRepo: Repository<User>;
 
   let capturedLink = '';
-  const sendPasswordReset = jest.fn((email: { link: string }) => {
-    capturedLink = email.link;
+  const send = jest.fn((options: { html: string }) => {
+    const match = options.html.match(/href="([^"]*restablecer-password[^"]*)"/);
+    if (match) capturedLink = match[1].replace(/&amp;/g, '&');
     return Promise.resolve();
   });
 
@@ -41,7 +42,7 @@ describe('Password reset (e2e)', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(MAILER_PORT)
-      .useValue({ sendPasswordReset })
+      .useValue({ send })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -91,7 +92,7 @@ describe('Password reset (e2e)', () => {
       .send({ email })
       .expect(200);
     expect(res.body.success).toBe(true);
-    expect(sendPasswordReset).toHaveBeenCalled();
+    expect(send).toHaveBeenCalled();
     resetToken = new URL(capturedLink).searchParams.get('token') ?? '';
     expect(resetToken.length).toBeGreaterThan(20);
   });
@@ -156,13 +157,13 @@ describe('Password reset (e2e)', () => {
   });
 
   it('aplica el límite de 3 solicitudes por 24h', async () => {
-    const before = sendPasswordReset.mock.calls.length;
+    const before = send.mock.calls.length;
     for (let i = 0; i < 4; i++) {
       await req()
         .post('/api/v1/auth/password-reset/request')
         .send({ email })
         .expect(200);
     }
-    expect(sendPasswordReset.mock.calls.length - before).toBe(3);
+    expect(send.mock.calls.length - before).toBe(3);
   });
 });

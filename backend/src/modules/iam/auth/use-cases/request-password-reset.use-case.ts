@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  MAILER_PORT,
+  type MailerPort,
+  passwordResetTemplate,
+} from '@/common/mailer';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
@@ -7,10 +12,6 @@ import {
   USER_REPOSITORY,
 } from '@/modules/iam/users/repositories/user.repository.interface';
 import { TokenService } from '@/modules/iam/auth/services/token.service';
-import {
-  type MailerPort,
-  MAILER_PORT,
-} from '@/modules/iam/auth/services/mailer.port';
 
 export interface RequestPasswordResetCommand {
   email: string;
@@ -23,7 +24,7 @@ const RESET_WINDOW_MS = 24 * 60 * 60 * 1000;
 const RESET_EXPIRES_MINUTES = 30;
 
 /**
- * Genera y "envía" un magic link de recuperación. Respuesta siempre genérica:
+ * Genera y envía un magic link de recuperación. Respuesta siempre genérica:
  * sólo actúa si el usuario existe, está activo y no excedió el límite (3/24h).
  */
 @Injectable()
@@ -85,10 +86,11 @@ export class RequestPasswordResetUseCase {
 
     const reset = await this.tokenService.signReset(user.id);
     const link = `${this.webUrl}/auth/restablecer-password?token=${reset.token}`;
-    await this.mailer.sendPasswordReset({
+    const template = passwordResetTemplate(link, RESET_EXPIRES_MINUTES);
+    await this.mailer.send({
       to: user.email,
-      link,
-      expiresInMinutes: RESET_EXPIRES_MINUTES,
+      subject: template.subject,
+      html: template.html,
     });
 
     await this.audit.record({

@@ -12,6 +12,7 @@ import {
   RouterOutlet,
 } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
+import { NotificationBell } from '@/shared/notifications/notification-bell';
 import { IconName, IjIcon, IjLogo } from '@/shared/ui';
 
 interface CompanyNavItem {
@@ -24,7 +25,7 @@ interface CompanyNavItem {
 @Component({
   selector: 'app-company-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, IjLogo, IjIcon],
+  imports: [RouterLink, RouterLinkActive, RouterOutlet, IjLogo, IjIcon, NotificationBell],
   template: `
     <div class="flex min-h-screen bg-surface text-ink-900">
       <aside
@@ -60,6 +61,7 @@ interface CompanyNavItem {
             <ij-logo size="sm" />
           </a>
           <div class="ml-auto flex items-center gap-3">
+            <ij-notification-bell viewAllRoute="/empresa/notificaciones" />
             <div class="hidden text-right sm:block">
               <div class="text-[13px] font-bold text-ink-900">
                 {{ auth.currentUser()?.email }}
