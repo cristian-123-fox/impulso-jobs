@@ -68,11 +68,13 @@ backend/src/
 │  └─ utils/                 ✅ # password (bcryptjs + política), mx-identifiers, search, transaction
 │
 ├─ database/                 ✅
-│  ├─ migrations/               # migraciones TypeORM versionadas (10 a la fecha)
+│  ├─ migrations/               # migraciones TypeORM versionadas
+│  │  └─ helpers/               # upsert idempotente para migraciones de DATOS
 │  ├─ database.module.ts        # DataSource / TypeOrmModule (Postgres o MySQL vía DB_TYPE)
 │  ├─ typeorm.config.ts         # config del DataSource (CLI y app)
 │  ├─ run-migrations.ts         # runner (`migration:run` / `migration:revert`)
-│  └─ seed-{rbac,admin,candidate,company}.ts
+│  ├─ seed.ts                   # orquestador: `pnpm seed` corre todas en orden
+│  └─ seed-{rbac,admin,candidate,company,...}.ts  # cada una exporta su función
 │
 ├─ modules/
 │  ├─ iam/                      # GRUPO Identity & Access Management
@@ -178,7 +180,9 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 - **Transacciones** (registro, cambios de estado con historial) con `runInTransaction`/QueryRunner y rollback ante error.
 - **Contraseña:** mínimo 8, 1 mayúscula, 1 minúscula, 1 número, 1 especial (`common/utils/password-policy.ts`). **bcryptjs**. Nunca texto plano.
 - **Migraciones:** toda entidad/cambio de esquema requiere migración en `database/migrations/`. Sin `synchronize`. IDs = UUID v4 generados en la app y guardados como `varchar(36)` (portable Postgres/MySQL, ver `common/entities/base.entity.ts`).
-- **Seed de RBAC:** el `PermissionsGuard` lee los permisos **de la base de datos**. Todo permiso nuevo se agrega a `database/seed-rbac.ts` (`PERMISSION_CODES` + `MATRIX`) y **exige volver a correr `pnpm seed:rbac`**, o el endpoint responde 403.
+- **Datos nuevos → migración, no seeder.** Añadir filas a un catálogo (un estado, un beneficio, **un permiso**) se hace con una migración de datos usando `database/migrations/helpers/seed-data.helper.ts` (`upsertSeedRows` / `deleteSeedRows`), que es idempotente y portable Postgres/MySQL. Motivo: la migración corre sola en el despliegue y queda registrada; un seeder depende de que alguien lo ejecute, y cuando no se ejecuta la app falla en silencio. **Dentro de una migración, nunca entidades ni repositorios** — una migración es inmutable y una entidad futura la rompería.
+- **Seeds existentes:** `pnpm seed` corre las seis de un tirón (`database/seed.ts`), en orden y con una sola conexión; `pnpm seed:demo` añade las cuentas de prueba, bloqueadas con `NODE_ENV=production`. Todas son idempotentes y actualizadoras. Los scripts individuales siguen disponibles.
+- **Seed de RBAC:** el `PermissionsGuard` lee los permisos **de la base de datos**. Todo permiso nuevo se agrega a `database/seed-rbac.ts` (`PERMISSION_CODES` + `MATRIX`) **y se siembra también por migración** para que llegue solo a producción. Tras sembrar contra un servidor en marcha hay que **reiniciar el proceso**: `PermissionsService` cachea el mapa rol→permisos en memoria y si no, el endpoint sigue respondiendo 403.
 - **Borrado lógico y ARCO:** la baja de una cuenta es `deleted_at` en `users` + el perfil de aspirante (M13). TypeORM excluye las filas borradas de toda consulta, así que el login y el token dejan de funcionar solos; además se fija `tokens_valid_from`, se revocan los refresh y el access presentado va a la blacklist. **Nunca se borra físicamente en caliente**: la purga tras el periodo de retención es un script manual (`pnpm purge:accounts`, simulación por defecto). Postulaciones, vacantes y auditoría se conservan como registro histórico de la contraparte.
 
 ---
@@ -314,7 +318,7 @@ Las rutas de cara al usuario van **en español**; los identificadores del códig
 ## 8. Definition of Done
 
 - Lint, typecheck y tests en verde en la app afectada. Swagger actualizado si cambió la API.
-- **Backend:** estructura respetada; TypeORM solo en `repositories/`; controller fino; lógica en use-cases; `@RequirePermissions` + validación de ownership en el use-case; auditoría y transacciones donde aplican; **migración** que corre en base limpia; si hay permisos nuevos, `seed-rbac.ts` actualizado y re-ejecutado.
+- **Backend:** estructura respetada; TypeORM solo en `repositories/`; controller fino; lógica en use-cases; `@RequirePermissions` + validación de ownership en el use-case; auditoría y transacciones donde aplican; **migración** que corre en base limpia; **los datos nuevos de catálogo van en una migración de datos**, no añadidos a un seeder; si hay permisos nuevos, `seed-rbac.ts` actualizado *y* sembrados por migración.
 - **Frontend:** sin `any`; componentes OnPush; ningún presentacional inyecta servicios de datos; piezas reutilizadas del UI Kit (sin CSS duplicado); estados loading/empty/error; theming con tokens de Tailwind (sin hex hardcodeado); no rompe el build SSR.
 
 ## 9. Haz / No hagas

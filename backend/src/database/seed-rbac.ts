@@ -1,5 +1,5 @@
-import 'reflect-metadata';
-import { AppDataSource } from './typeorm.config';
+import type { DataSource } from 'typeorm';
+import { runSeedScript } from './seed-script';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
 import { Component } from '@/modules/iam/permissions/entities/component.entity';
 import { Action } from '@/modules/iam/permissions/entities/action.entity';
@@ -10,8 +10,21 @@ import { User } from '@/modules/iam/users/entities/user.entity';
 
 /**
  * Seed RBAC (M2) según la matriz de permisos (Sección 2 del documento de roles).
- * Idempotente: sólo inserta lo que falta. Además retro-llena `user_roles` a
- * partir de `users.role`. Ejecutar: `pnpm seed:rbac`.
+ *
+ * Idempotente y **actualizador**: inserta lo que falta y refresca las etiquetas
+ * (nombre de componente/acción, descripción del permiso, nombre del rol) de lo
+ * que ya existe. Además retro-llena `user_roles` a partir de `users.role`.
+ *
+ * Lo que **no** hace: retirar permisos. Quitar un código de `MATRIX` no borra la
+ * fila de `role_permissions` — hacerlo en ciego arrasaría también los permisos
+ * que un administrador haya concedido a mano desde `/admin/roles`. Para revocar,
+ * quítalo desde el back-office o con una migración de datos.
+ *
+ * Ejecutar: `pnpm seed:rbac` (o `pnpm seed`, que lo corre junto a los demás).
+ *
+ * ⚠️ La app cachea el mapa rol→permisos en memoria (`PermissionsService`), así
+ * que tras sembrar en un servidor **hay que reiniciar el proceso** o los
+ * permisos nuevos siguen dando 403.
  */
 
 const COMPONENT_NAMES: Record<string, string> = {
@@ -216,66 +229,81 @@ function splitCode(code: string): { component: string; action: string } {
   return { component: code.slice(0, idx), action: code.slice(idx + 1) };
 }
 
-async function main(): Promise<void> {
-  await AppDataSource.initialize();
-  const componentRepo = AppDataSource.getRepository(Component);
-  const actionRepo = AppDataSource.getRepository(Action);
-  const permissionRepo = AppDataSource.getRepository(Permission);
-  const roleRepo = AppDataSource.getRepository(Role);
-  const rolePermissionRepo = AppDataSource.getRepository(RolePermission);
-  const userRepo = AppDataSource.getRepository(User);
-  const userRoleRepo = AppDataSource.getRepository(UserRole);
+export async function seedRbac(dataSource: DataSource): Promise<string> {
+  const componentRepo = dataSource.getRepository(Component);
+  const actionRepo = dataSource.getRepository(Action);
+  const permissionRepo = dataSource.getRepository(Permission);
+  const roleRepo = dataSource.getRepository(Role);
+  const rolePermissionRepo = dataSource.getRepository(RolePermission);
+  const userRepo = dataSource.getRepository(User);
+  const userRoleRepo = dataSource.getRepository(UserRole);
 
-  try {
-    const componentIds = new Map<string, string>();
-    const actionIds = new Map<string, string>();
+  const componentIds = new Map<string, string>();
+  const actionIds = new Map<string, string>();
 
-    // Components + actions (derivados de los códigos).
-    for (const code of PERMISSION_CODES) {
-      const { component, action } = splitCode(code);
-      if (!componentIds.has(component)) {
-        let row = await componentRepo.findOne({ where: { code: component } });
-        row ??= await componentRepo.save(
-          componentRepo.create({
-            code: component,
-            name: COMPONENT_NAMES[component] ?? component,
-          }),
+  // Components + actions (derivados de los códigos). Se refresca la etiqueta:
+  // renombrar un componente en la fuente debe verse en la matriz de /admin/roles.
+  for (const code of PERMISSION_CODES) {
+    const { component, action } = splitCode(code);
+    if (!componentIds.has(component)) {
+      const name = COMPONENT_NAMES[component] ?? component;
+      let row = await componentRepo.findOne({ where: { code: component } });
+      if (!row) {
+        row = await componentRepo.save(
+          componentRepo.create({ code: component, name }),
         );
-        componentIds.set(component, row.id);
+      } else if (row.name !== name) {
+        row.name = name;
+        row = await componentRepo.save(row);
       }
-      if (!actionIds.has(action)) {
-        let row = await actionRepo.findOne({ where: { code: action } });
-        row ??= await actionRepo.save(
-          actionRepo.create({
-            code: action,
-            name: ACTION_NAMES[action] ?? action,
-          }),
-        );
-        actionIds.set(action, row.id);
-      }
+      componentIds.set(component, row.id);
     }
+    if (!actionIds.has(action)) {
+      const name = ACTION_NAMES[action] ?? action;
+      let row = await actionRepo.findOne({ where: { code: action } });
+      if (!row) {
+        row = await actionRepo.save(actionRepo.create({ code: action, name }));
+      } else if (row.name !== name) {
+        row.name = name;
+        row = await actionRepo.save(row);
+      }
+      actionIds.set(action, row.id);
+    }
+  }
 
-    // Permissions.
-    const permissionIds = new Map<string, string>();
-    for (const code of PERMISSION_CODES) {
-      const { component, action } = splitCode(code);
-      let row = await permissionRepo.findOne({ where: { code } });
-      row ??= await permissionRepo.save(
-        permissionRepo.create({
-          code,
-          componentId: componentIds.get(component)!,
-          actionId: actionIds.get(action)!,
-          description: `${ACTION_NAMES[action] ?? action} · ${COMPONENT_NAMES[component] ?? component}`,
-        }),
+  // Permissions.
+  const permissionIds = new Map<string, string>();
+  for (const code of PERMISSION_CODES) {
+    const { component, action } = splitCode(code);
+    const componentId = componentIds.get(component)!;
+    const actionId = actionIds.get(action)!;
+    const description = `${ACTION_NAMES[action] ?? action} · ${COMPONENT_NAMES[component] ?? component}`;
+
+    let row = await permissionRepo.findOne({ where: { code } });
+    if (!row) {
+      row = await permissionRepo.save(
+        permissionRepo.create({ code, componentId, actionId, description }),
       );
-      permissionIds.set(code, row.id);
+    } else if (
+      row.componentId !== componentId ||
+      row.actionId !== actionId ||
+      row.description !== description
+    ) {
+      row.componentId = componentId;
+      row.actionId = actionId;
+      row.description = description;
+      row = await permissionRepo.save(row);
     }
+    permissionIds.set(code, row.id);
+  }
 
-    // Roles base.
-    const roleIds = new Map<string, string>();
-    for (const [code, meta] of Object.entries(ROLE_META)) {
-      let row = await roleRepo.findOne({ where: { code } });
-      row ??= await roleRepo.save(
+  // Roles base. `isSystem` se reafirma: un rol base no debe quedar borrable
+  // porque alguien lo desmarcara desde el back-office.
+  const roleIds = new Map<string, string>();
+  for (const [code, meta] of Object.entries(ROLE_META)) {
+    let row = await roleRepo.findOne({ where: { code } });
+    if (!row) {
+      row = await roleRepo.save(
         roleRepo.create({
           code,
           name: meta.name,
@@ -283,54 +311,60 @@ async function main(): Promise<void> {
           isSystem: true,
         }),
       );
-      roleIds.set(code, row.id);
+    } else if (
+      row.name !== meta.name ||
+      row.description !== meta.description ||
+      !row.isSystem
+    ) {
+      row.name = meta.name;
+      row.description = meta.description;
+      row.isSystem = true;
+      row = await roleRepo.save(row);
     }
+    roleIds.set(code, row.id);
+  }
 
-    // role_permissions según la matriz.
-    let assigned = 0;
-    for (const [roleCode, codes] of Object.entries(MATRIX)) {
-      const roleId = roleIds.get(roleCode)!;
-      for (const code of codes) {
-        const permissionId = permissionIds.get(code)!;
-        const exists = await rolePermissionRepo.findOne({
-          where: { roleId, permissionId },
-        });
-        if (!exists) {
-          await rolePermissionRepo.save(
-            rolePermissionRepo.create({ roleId, permissionId }),
-          );
-          assigned++;
-        }
-      }
-    }
-
-    // Backfill user_roles desde users.role.
-    let backfilled = 0;
-    const users = await userRepo.find();
-    for (const user of users) {
-      const roleId = roleIds.get(user.role);
-      if (!roleId) continue;
-      const exists = await userRoleRepo.findOne({
-        where: { userId: user.id, roleId },
+  // role_permissions según la matriz.
+  let assigned = 0;
+  for (const [roleCode, codes] of Object.entries(MATRIX)) {
+    const roleId = roleIds.get(roleCode)!;
+    for (const code of codes) {
+      const permissionId = permissionIds.get(code)!;
+      const exists = await rolePermissionRepo.findOne({
+        where: { roleId, permissionId },
       });
       if (!exists) {
-        await userRoleRepo.save(
-          userRoleRepo.create({ userId: user.id, roleId }),
+        await rolePermissionRepo.save(
+          rolePermissionRepo.create({ roleId, permissionId }),
         );
-        backfilled++;
+        assigned++;
       }
     }
-
-    console.log(
-      `Seed RBAC OK · componentes:${componentIds.size} acciones:${actionIds.size} ` +
-        `permisos:${permissionIds.size} roles:${roleIds.size} role_permissions+${assigned} user_roles+${backfilled}`,
-    );
-  } finally {
-    await AppDataSource.destroy();
   }
+
+  // Backfill user_roles desde users.role.
+  let backfilled = 0;
+  const users = await userRepo.find();
+  for (const user of users) {
+    const roleId = roleIds.get(user.role);
+    if (!roleId) continue;
+    const exists = await userRoleRepo.findOne({
+      where: { userId: user.id, roleId },
+    });
+    if (!exists) {
+      await userRoleRepo.save(userRoleRepo.create({ userId: user.id, roleId }));
+      backfilled++;
+    }
+  }
+
+  return (
+    `RBAC · componentes:${componentIds.size} acciones:${actionIds.size} ` +
+    `permisos:${permissionIds.size} roles:${roleIds.size} ` +
+    `role_permissions+${assigned} user_roles+${backfilled}`
+  );
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
+if (require.main === module) {
+  void runSeedScript(seedRbac);
+}

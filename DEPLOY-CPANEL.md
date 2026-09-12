@@ -138,10 +138,13 @@ npm install -g pnpm        # una sola vez (si falla por permisos, usa npm en su 
 pnpm install               # instala dependencias (bcryptjs puro, sin nativos)
 pnpm run build             # compila a dist/
 
-pnpm run migration:run:prod   # crea las tablas
-pnpm run seed:rbac:prod       # roles y permisos (RBAC)
-SEED_ADMIN_EMAIL=tu@correo.com SEED_ADMIN_PASSWORD='TuPass#123' pnpm run seed:admin:prod
+pnpm run migration:run:prod   # crea las tablas y siembra los catálogos que van por migración
+
+# Un solo comando: RBAC + catálogos + administrador. Idempotente.
+SEED_ADMIN_EMAIL=tu@correo.com SEED_ADMIN_PASSWORD='TuPass#123' pnpm run seed:prod
 ```
+
+> `seed:prod` **no** crea las cuentas de prueba (candidato/empresa): con `NODE_ENV=production` las bloquea a propósito. Si las necesitas en un entorno de pruebas, `pnpm run seed:demo:prod`.
 
 > **Alternativa sin pnpm:** puedes usar `npm` directamente — `npm install` → `npm run build` → `npm run migration:run:prod`, etc. Los scripts son `node dist/...` y funcionan igual.
 
@@ -227,8 +230,10 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
   1. Implementar un adaptador **SMTP** (nodemailer con la cuenta de correo de cPanel) — se puede agregar cuando quieras.
   2. Mientras tanto, usar los **seeders** para cuentas ya verificadas (`seed:admin:prod`, `seed:candidate:prod`, `seed:company:prod`).
 - 🧪 **El entorno virtual se activa por sesión:** cada Terminal nueva de la API requiere `source ~/nodevenv/api/.../bin/activate`.
-- 🔁 **Redeploy del backend:** activar venv → `git pull` (o subir cambios) → `pnpm install` → `pnpm run build` → `pnpm run migration:run:prod` → `pnpm run seed:rbac:prod` → **Restart** en la Node.js App.
-  > `seed:rbac:prod` es idempotente y hay que ejecutarlo **siempre**: si la versión nueva añadió permisos (p. ej. `users.create`, `companies.create`), sin él los endpoints responden `403 PERMISSION_DENIED` aunque el código esté desplegado.
+- 🔁 **Redeploy del backend:** activar venv → `git pull` (o subir cambios) → `pnpm install` → `pnpm run build` → `pnpm run migration:run:prod` → `pnpm run seed:prod` → **Restart** en la Node.js App.
+  > `seed:prod` es idempotente y hay que ejecutarlo **siempre**: si la versión nueva añadió permisos (p. ej. `users.create`, `companies.create`), sin él los endpoints responden `403 PERMISSION_DENIED` aunque el código esté desplegado.
+  >
+  > ⚠️ **El Restart no es opcional y va después del seed.** La app cachea el mapa rol→permisos en memoria (`PermissionsService`) y el seed escribe en la BD por fuera del proceso: sin reiniciar, los permisos nuevos siguen dando `403` aunque la BD ya esté bien. Es el fallo que más tiempo hace perder aquí.
 - 🔁 **Redeploy del frontend:** recompilar (`pnpm run build`) y resubir `dist/frontend/` (SSR, opción A: **Restart** de su Node.js App) o `dist/frontend/browser/` (estático, opción B).
 - 🔐 **bcryptjs:** se cambió `bcrypt` (nativo) por `bcryptjs` (JS puro) → sin compilación en el servidor. Los hashes existentes siguen siendo válidos.
 - 🚫 **Nunca subas** `node_modules`, el `dist` del backend, ni el `.env` con secretos.
@@ -240,9 +245,11 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 | `pnpm run build` | Compila NestJS a `dist/` |
 | `pnpm run start:prod` | Arranca `node dist/main` (Passenger lo hace por ti) |
 | `pnpm run migration:run:prod` | Ejecuta migraciones (JS compilado, sin ts-node) |
-| `pnpm run seed:rbac:prod` | Siembra roles/permisos |
-| `pnpm run seed:admin:prod` | Crea/actualiza el admin |
-| `pnpm run seed:candidate:prod` / `seed:company:prod` | Cuentas de prueba verificadas |
+| `pnpm run seed:prod` | **Todas las semillas de un tirón**: roles/permisos, catálogos y admin. Idempotente |
+| `pnpm run seed:demo:prod` | Lo anterior + cuentas de prueba. Con `NODE_ENV=production` exige `-- --force` |
+| `pnpm run seed:rbac:prod` | Sólo roles/permisos (sigue existiendo; `seed:prod` ya lo incluye) |
+| `pnpm run seed:admin:prod` | Sólo el admin |
+| `pnpm run seed:candidate:prod` / `seed:company:prod` | Sólo las cuentas de prueba verificadas |
 | `pnpm run billing:expire:prod` | Caduca promociones vencidas y revierte los distintivos |
 | `pnpm run vacancies:expire:prod` | Cierra vacantes cuya vigencia (`VACANCY_LIFETIME_DAYS`, 60 por defecto) venció |
 | `pnpm run views:consolidate:prod` | Suma los eventos de vista al contador `views_count` de cada vacante |

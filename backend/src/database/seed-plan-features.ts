@@ -1,5 +1,5 @@
-import 'reflect-metadata';
-import { AppDataSource } from './typeorm.config';
+import type { DataSource } from 'typeorm';
+import { runSeedScript } from './seed-script';
 import { PlanFeature } from '@/modules/billing/entities/plan-feature.entity';
 import {
   FeatureValueType,
@@ -15,7 +15,7 @@ import {
  * `/admin/plans`, porque los precios en MXN y el alcance de la Anual son
  * decisiones de negocio todavía abiertas (§7 del mismo documento).
  *
- * Ejecutar: `pnpm seed:plan-features`. Idempotente.
+ * Ejecutar: `pnpm seed` (todas) o `pnpm seed:plan-features` (sólo esta). Idempotente.
  */
 
 interface FeatureSeed {
@@ -120,41 +120,36 @@ const FEATURES: readonly FeatureSeed[] = [
   },
 ];
 
-async function main(): Promise<void> {
-  await AppDataSource.initialize();
-  const repo = AppDataSource.getRepository(PlanFeature);
+export async function seedPlanFeatures(
+  dataSource: DataSource,
+): Promise<string> {
+  const repo = dataSource.getRepository(PlanFeature);
 
-  try {
-    let created = 0;
-    let updated = 0;
+  let created = 0;
+  let updated = 0;
 
-    for (const seed of FEATURES) {
-      const existing = await repo.findOne({ where: { code: seed.code } });
-      if (!existing) {
-        await repo.save(repo.create(seed));
-        created += 1;
-        continue;
-      }
-      existing.name = seed.name;
-      existing.description = seed.description;
-      existing.valueType = seed.valueType;
-      existing.sortOrder = seed.sortOrder;
-      await repo.save(existing);
-      updated += 1;
+  for (const seed of FEATURES) {
+    const existing = await repo.findOne({ where: { code: seed.code } });
+    if (!existing) {
+      await repo.save(repo.create(seed));
+      created += 1;
+      continue;
     }
-
-    console.log(
-      `Catálogo de beneficios listo: ${created} creados, ${updated} actualizados.`,
-    );
-    console.log(
-      'Los planes (Media/Alta/Anual) NO se siembran: créalos desde POST /admin/plans con sus precios reales.',
-    );
-  } finally {
-    await AppDataSource.destroy();
+    existing.name = seed.name;
+    existing.description = seed.description;
+    existing.valueType = seed.valueType;
+    existing.sortOrder = seed.sortOrder;
+    await repo.save(existing);
+    updated += 1;
   }
+
+  console.log(
+    'Los planes (Media/Alta/Anual) NO se siembran: créalos desde /admin/planes con sus precios reales.',
+  );
+  return `Beneficios de plan · ${created} creados, ${updated} actualizados.`;
 }
 
-void main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
+if (require.main === module) {
+  void runSeedScript(seedPlanFeatures);
+}

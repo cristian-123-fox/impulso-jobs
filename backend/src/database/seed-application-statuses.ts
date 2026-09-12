@@ -1,5 +1,5 @@
-import 'reflect-metadata';
-import { AppDataSource } from './typeorm.config';
+import type { DataSource } from 'typeorm';
+import { runSeedScript } from './seed-script';
 import { ApplicationStatus } from '@/modules/applications/entities/application-status.entity';
 import { ApplicationStatusCode } from '@/modules/applications/enums/application-status.enum';
 
@@ -8,7 +8,7 @@ import { ApplicationStatusCode } from '@/modules/applications/enums/application-
  * falta y actualiza nombre/orden de lo existente, sin tocar los estados que un
  * administrador haya añadido por su cuenta.
  *
- * Ejecutar: `pnpm seed:applications`.
+ * Ejecutar: `pnpm seed` (todas) o `pnpm seed:applications` (sólo esta).
  */
 
 interface StatusSeed {
@@ -71,39 +71,34 @@ const STATUSES: readonly StatusSeed[] = [
   },
 ];
 
-async function main(): Promise<void> {
-  await AppDataSource.initialize();
-  const repo = AppDataSource.getRepository(ApplicationStatus);
+export async function seedApplicationStatuses(
+  dataSource: DataSource,
+): Promise<string> {
+  const repo = dataSource.getRepository(ApplicationStatus);
 
-  try {
-    let created = 0;
-    let updated = 0;
+  let created = 0;
+  let updated = 0;
 
-    for (const seed of STATUSES) {
-      const existing = await repo.findOne({ where: { code: seed.code } });
-      if (!existing) {
-        await repo.save(repo.create(seed));
-        created += 1;
-        continue;
-      }
-
-      existing.name = seed.name;
-      existing.description = seed.description;
-      existing.sortOrder = seed.sortOrder;
-      existing.isFinal = seed.isFinal;
-      await repo.save(existing);
-      updated += 1;
+  for (const seed of STATUSES) {
+    const existing = await repo.findOne({ where: { code: seed.code } });
+    if (!existing) {
+      await repo.save(repo.create(seed));
+      created += 1;
+      continue;
     }
 
-    console.log(
-      `Catálogo de estados de postulación listo: ${created} creados, ${updated} actualizados.`,
-    );
-  } finally {
-    await AppDataSource.destroy();
+    existing.name = seed.name;
+    existing.description = seed.description;
+    existing.sortOrder = seed.sortOrder;
+    existing.isFinal = seed.isFinal;
+    await repo.save(existing);
+    updated += 1;
   }
+
+  return `Estados de postulación · ${created} creados, ${updated} actualizados.`;
 }
 
-void main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
+if (require.main === module) {
+  void runSeedScript(seedApplicationStatuses);
+}

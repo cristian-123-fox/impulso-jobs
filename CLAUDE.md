@@ -33,11 +33,61 @@ AGENTS.md describes the **target**. These are the deliberate, still-standing div
 Both apps use pnpm. Backend on `:3000` (`/api/v1`, docs at `/docs`), frontend on `:4200`.
 
 - **Backend** (`cd backend`): `pnpm run start:dev` (watch) · `pnpm run build` · `pnpm run start:prod` (`node dist/main`) · `pnpm test` — single test: `pnpm test -- app.controller` or `pnpm test -- -t "name"` · `pnpm run test:e2e` · `pnpm run lint` · `pnpm run format`
-- **Backend DB** (`cd backend`): `pnpm run migration:run` · `pnpm run migration:revert` · seeds `pnpm run seed:rbac` (roles + matriz de permisos), `seed:admin`, `seed:candidate`, `seed:company`, `seed:applications` (catálogo de estados de postulación). Each has a `:prod` twin that runs the compiled `dist/` version. **Re-run `seed:rbac` after adding any permission code** — the guard reads the DB, not the source list. `seed:applications` is required for M11 to work at all: without it there is no status to assign; `seed:plan-features` likewise for M14 — it seeds the 13 benefit codes but **no plans**: prices in MXN are a business decision, captured in the back-office (`/admin/planes`, sobre `POST /admin/plans`).
+- **Backend DB** (`cd backend`): `pnpm run migration:run` · `pnpm run migration:revert` · **`pnpm run seed`** — un solo comando que corre las seis semillas en orden. Ver § "Semillas y datos de catálogo" más abajo.
 - **Jobs de cron** (`cd backend`, ninguno está agendado — engánchalos a cron, cada uno tiene gemelo `:prod`): `pnpm run billing:expire` (**diario**: caduca promociones y revierte distintivos; caduca suscripciones vencidas a `EXPIRED`; y avisa de las que están por vencer según `SUBSCRIPTION_EXPIRY_NOTICE_DAYS`, default `30,7,1`, con acuse en `subscription_notices` para no repetir — T22) · `pnpm run vacancies:expire` (T20: cierra vacantes con `expires_at` vencido; la vigencia nace de `VACANCY_LIFETIME_DAYS`, default 60, 0 la desactiva) · `pnpm run views:consolidate` (T18: suma `vacancy_view_events` a `views_count` y borra los eventos — la UI dice "se actualizan una vez al día").
 - **Account purge** (`cd backend`): `pnpm run purge:accounts` hard-deletes soft-deleted accounts past `ACCOUNT_RETENTION_DAYS` (default 90). **Dry-run by default** — it only lists; add `-- --confirm` to actually delete. It is not scheduled; run it manually or from cron.
 - **Rehost de imágenes** (`cd backend`): `pnpm run uploads:rehost` reescribe el host de las URLs ya guardadas en `companies.logo_url`, `candidate_profiles.profile_photo_url` y `vacancies.image_url` (T24) para que apunten a `APP_PUBLIC_URL` (T23: se persisten **absolutas**, así que un deploy sin la variable deja filas con `localhost` que definirla después no repara). **Simulación por defecto** — `-- --confirm` para escribir, `-- --from=<origen>` para acotar. Tiene gemelo `:prod`. **Si añades una cuarta columna que guarde una URL subida, añádela también a `rehost-uploaded-files.ts`**: es la única herramienta que repara lo ya guardado, y T24 se creó sin hacerlo. Desde T23, arrancar con `NODE_ENV=production` sin `APP_PUBLIC_URL` **falla en el bootstrap** en vez de caer a localhost.
 - **Frontend** (`cd frontend`): `pnpm start` · `pnpm run build` · `pnpm test` · `pnpm run serve:ssr:frontend`
+
+## Semillas y datos de catálogo
+
+**Regla de oro: los datos que ya existen se siembran con `pnpm seed`; los datos *nuevos* entran por migración.** Un seeder depende de que alguien se acuerde de ejecutarlo — y cuando no se ejecuta, la app responde 403 o se queda sin catálogo sin avisar (es exactamente el fallo de T29). Una migración corre sola en el despliegue, deja constancia en la tabla `migrations` y no se repite.
+
+### Las seis semillas existentes: un comando
+
+```bash
+cd backend
+pnpm run seed            # catálogos + administrador — seguro en cualquier entorno
+pnpm run seed:demo       # lo anterior + cuentas de prueba (candidato y empresa)
+pnpm run seed -- --list  # qué hay y qué hace cada una
+```
+
+- Orquestador en `src/database/seed.ts`. Abre **una sola conexión** para las seis y respeta el orden (RBAC primero: crea los roles que el resto asigna). Si una falla, dice **cuál** y aborta; las siguientes no corren.
+- Filtros: `-- --only=rbac,admin` · `-- --skip=plan-features`. `-- --demo` añade las cuentas de prueba, y **se bloquea con `NODE_ENV=production`** salvo `--force`: `pnpm seed` en un servidor no siembra basura.
+- Gemelos compilados: `seed:prod` y `seed:demo:prod`. **Los scripts individuales siguen existiendo** (`seed:rbac`, `seed:admin`, …, con sus `:prod`) — cada `seed-*.ts` exporta su función y sólo se auto-ejecuta si se invoca directamente (`require.main === module`).
+- **Todas son idempotentes y actualizadoras**: insertan lo que falta y refrescan lo existente (nombres, descripciones, orden). Correrlas dos veces no duplica nada.
+- Lo que `seed:rbac` **no** hace: retirar permisos. Quitar un código de `MATRIX` no borra la fila de `role_permissions`, porque un borrado en ciego arrasaría también los permisos que un admin haya dado a mano en `/admin/roles`. Para revocar, hazlo desde el back-office o con una migración de datos.
+- `seed:plan-features` siembra los 13 códigos de beneficio pero **ningún plan**: los precios en MXN son decisión de negocio y se capturan en `/admin/planes`.
+- ⚠️ **Tras sembrar contra un servidor en marcha hay que reiniciar el proceso.** `PermissionsService` cachea el mapa rol→permisos en memoria y el seed escribe en la BD por fuera de la app: sin reinicio, los permisos nuevos siguen dando 403.
+
+### Datos nuevos: siempre una migración
+
+Añadir una fila a un catálogo (un estado de postulación, un beneficio, **un permiso nuevo**) se hace con una migración de datos, no tocando un seeder. Usa `src/database/migrations/helpers/seed-data.helper.ts`:
+
+```ts
+import { upsertSeedRows, deleteSeedRows } from './helpers/seed-data.helper';
+
+const ROWS = [{ code: 'HIRED', name: 'Contratado', sort_order: 8, is_final: true }];
+
+export class AddHiredApplicationStatus1720000026000 implements MigrationInterface {
+  name = 'AddHiredApplicationStatus1720000026000';
+
+  public async up(q: QueryRunner): Promise<void> {
+    await upsertSeedRows(q, { table: 'application_status', matchBy: ['code'], rows: ROWS });
+  }
+
+  public async down(q: QueryRunner): Promise<void> {
+    await deleteSeedRows(q, { table: 'application_status', column: 'code', values: ROWS.map((r) => r.code) });
+  }
+}
+```
+
+- `upsertSeedRows` es **idempotente**: inserta si falta, actualiza si está. Así convive con una BD donde el seeder equivalente ya pasó. Con `updateColumns: []` inserta pero no pisa lo existente — útil cuando el back-office puede haber editado el dato.
+- Rellena solo el `id` (UUID v4 en Node, como `BaseEntity`) y `created_at`/`updated_at`. Desactivables con `withId` / `withTimestamps`.
+- **Nada de entidades ni repositorios dentro de una migración.** Una migración es inmutable: describe el esquema del día que se escribió. Si importara una entidad, un cambio futuro en esa entidad rompería una migración vieja. Por eso el helper es SQL con nombres literales.
+- Portable MySQL/PostgreSQL: identificadores escapados con el driver y parámetros con `createParameter` (`$1` en PG, `?` en MySQL). Escribir `"tabla"` a mano revienta en MySQL con ER_PARSE_ERROR 1064.
+- El helper vive en `migrations/helpers/`, **no** en `migrations/`: el glob del `AppDataSource` es `migrations/*{.ts,.js}` y no cruza subdirectorios, así que no se intenta ejecutar como migración.
+- Sigue aplicando lo de siempre: **numera la migración mirando primero el directorio** (los timestamps son correlativos a mano).
 
 ## Tooling notes (not in AGENTS.md)
 
