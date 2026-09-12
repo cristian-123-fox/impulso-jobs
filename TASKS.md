@@ -5,6 +5,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
 - **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21–T27 hechas**; lo que T26 dejó fuera a propósito (áreas privadas y correos) está levantado como **T28**, pendiente de la decisión N10.
+- **Parte D — Backlog solicitado (lista del 2026-09-12):** segunda tanda de apuntes del equipo (T29–T34), verificada igual contra el código. **T29 es un bug de producción** (403 al postularse) y va primero; el resto son mejoras de back-office y del área del candidato. Decisiones abiertas: N11, N12, N13.
 
 ---
 
@@ -556,3 +557,225 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 5. ~~**T24**~~ ✅ hecha y ~~**T25**~~ ✅ hecha — skills normalizadas en backend, pendiente el frontend de chips.
 6. ~~**T26**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos. Ojo con una cosa en el servidor: el portal y `/auth` ya **no** se prerenderizan, así que la app Node SSR pasa a atender esas rutas en cada petición.
 7. **T28** — la última, y **sólo si N10 dice que sí**: cierra la i18n (áreas privadas + correos). Nada la bloquea técnicamente; la infraestructura quedó hecha en T26.
+
+---
+
+# Parte D · Backlog solicitado (lista del 2026-09-12)
+
+Levantado el **2026-09-12** a partir de los apuntes del equipo ("Tasks impulso job") y **verificado contra el código**. Mismo criterio que la Parte C: cada bloque `### T##` es autocontenido y se pega tal cual en la tarjeta del gestor de tareas.
+
+Dos notas antes de empezar, porque cambian el tamaño de las tarjetas:
+
+- **T29 no es un cambio de código.** El apunte dice "los candidatos deberían poder aplicar sin tener un permiso", pero el permiso está bien puesto y bien concedido en el código: lo que falla es la **base de datos de producción**. Es un arreglo de despliegue, no de diseño.
+- **T32 son cuatro peticiones en una línea** (responsabilidades, skills, editor de texto y wizard). Se deja como una sola tarjeta porque las cuatro tocan el mismo formulario, pero el alcance está partido en fases: la fase 1 se puede entregar sola.
+
+## Resumen para el gestor de tareas
+
+| # | Título | Tipo | Prioridad | Estimación | Depende de |
+|---|---|---|---|---|---|
+| T29 | 403 `PERMISSION_DENIED` al postularse a una vacante | **Bug** | **Bloqueante producción** | XS (1–3 h) | — |
+| T30 | Previsualizar el CV del candidato desde la empresa | Mejora UX | Alta | S (1–2 d) | — |
+| T31 | Formulario de usuarios del admin: más campos | Mejora | Media | M (2–3 d) | 🔷 N11 |
+| T32 | Vacante: responsabilidades, skills, editor de texto y alta en wizard | Feature | Alta | L (5–8 d) | T25 ✅ · 🔷 N12 |
+| T33 | Ver la vacante en modal desde "Mis postulaciones" y "Guardadas" | Mejora UX | Media | S (1 d) | — |
+| T34 | El admin asigna, cambia y quita el plan de una empresa | Feature | Alta | M (3–5 d) | 🔷 N13 |
+
+Estimaciones a ojo, para ordenar el tablero — no son compromisos.
+
+---
+
+### T29 · 403 `PERMISSION_DENIED` al postularse a una vacante
+
+**Qué se pide:** *"los candidatos deberían poder aplicar a la vacante sin tener un permiso"* — `POST https://api.impulsojobs.com/api/v1/candidate/applications` responde 403 `PERMISSION_DENIED`.
+
+**Estado hoy (verificado 2026-09-12):** el permiso **no sobra**, y quitarlo sería un error: `applications.create` es lo que impide que un EMPLOYER se postule a sus propias vacantes. El código está bien; lo que está mal es la **BD de producción**.
+
+- `POST candidate/applications` exige `applications.create` y `GET candidate/applications` exige `applications.read` (`backend/src/modules/applications/controllers/candidate-applications.controller.ts:44-46,62-64`). Los dos cuelgan de la URL del reporte, así que el 403 puede venir de cualquiera de los dos verbos.
+- La matriz del seed **sí se los concede a CANDIDATE** (`backend/src/database/seed-rbac.ts:192-211`) y están ahí desde el commit que introdujo RBAC. Nada que corregir en la fuente.
+- `PermissionsGuard` **no lee los roles del token**: los resuelve contra la BD en cada petición (`jwt.strategy.ts:71`) y consulta `role_permissions`. ⚠️ **Cerrar sesión y volver a entrar no arregla nada** — no pierdas tiempo por ahí.
+- `PermissionsService` **cachea en memoria** el mapa `rol → permisos` y sólo se invalida cuando la mutación pasa por la app (`permissions.service.ts:13,21-22`). Correr el seed por CLI escribe en la BD **sin que el proceso vivo se entere**.
+
+**Diagnóstico — dos consultas en la BD de producción:**
+
+```sql
+-- 1) ¿El rol CANDIDATE tiene los permisos?
+SELECT p.code FROM role_permissions rp
+  JOIN permissions p ON p.id = rp.permission_id
+  JOIN roles r       ON r.id = rp.role_id
+ WHERE r.code = 'CANDIDATE' AND p.code LIKE 'applications.%';
+
+-- 2) ¿La cuenta que falla tiene rol asignado?
+SELECT r.code FROM user_roles ur
+  JOIN roles r ON r.id = ur.role_id
+  JOIN users u ON u.id = ur.user_id
+ WHERE u.email = '<correo del candidato que reporta el fallo>';
+```
+
+**Fix según lo que devuelvan:**
+
+- **(1) vacío** → la matriz nunca se sembró en producción, o se sembró con una versión vieja. `cd backend && pnpm run seed:rbac:prod` **y reiniciar la app Node** (sin reinicio, la caché en memoria sigue sirviendo el mapa viejo y el 403 persiste; es el fallo que más tiempo hace perder aquí).
+- **(2) vacío** → la cuenta quedó huérfana de rol: `roleIds` llega como `[]` y `hasPermissions` niega todo, para cualquier endpoint. Ojo con la reparación: **no hay ruta de API que la arregle**. `PUT /admin/users/:id/roles` sólo toca los roles *adicionales* (rechaza los base) y `PATCH /admin/users/:id` sólo sincroniza `user_roles` **si el rol cambia** (`update-user.use-case.ts:72`), así que reenviar `role: 'CANDIDATE'` sobre una cuenta que ya lo tiene es un no-op. Hay que insertar la fila en `user_roles` a mano, y de paso **buscar si hay más cuentas afectadas**:
+
+```sql
+SELECT u.id, u.email, u.role FROM users u
+  LEFT JOIN user_roles ur ON ur.user_id = u.id
+ WHERE ur.user_id IS NULL AND u.deleted_at IS NULL;
+```
+
+**Alcance propuesto (además del arreglo puntual):**
+
+1. Reparar la BD de producción según el diagnóstico y **anotar el seed RBAC + reinicio en [DEPLOY-CPANEL.md](DEPLOY-CPANEL.md)** como paso obligatorio de despliegue, no opcional.
+2. **Que el no-op deje de ser silencioso:** que `PATCH /admin/users/:id` reconcilie `user_roles` con `users.role` aunque el rol no cambie (repara la cuenta sin tocar SQL), o exponer una acción explícita de "resincronizar roles" en `/admin/usuarios`.
+3. **Invalidar la caché sin reiniciar:** un endpoint `POST /admin/permissions/refresh` (rol ADMIN + `permissions.assign`) que llame a `PermissionsService.invalidate()`. Tres líneas, y evita que el próximo permiso nuevo repita este mismo incidente.
+4. **Mensaje de error honesto en el frontend:** hoy el candidato ve "No tienes permiso para realizar esta acción", que no le dice nada. En el flujo de postulación conviene un texto del tipo "No pudimos enviar tu postulación. Escríbenos si el problema continúa".
+
+**Criterios de aceptación:** un candidato recién registrado en producción se postula y recibe 201; el mismo candidato lista sus postulaciones sin 403; un EMPLOYER que intente `POST candidate/applications` **sigue recibiendo 403** (la protección no se aflojó); la consulta de cuentas huérfanas devuelve 0 filas.
+
+**Ojo:** si al mirar producción resulta que (1) y (2) devuelven datos correctos, el 403 no es de este endpoint — revisa si el frontend está llamando con el token de otra sesión. Pero empieza por el seed: es la causa con diferencia más probable.
+
+---
+
+### T30 · Previsualizar el CV del candidato desde la empresa
+
+**Qué se pide:** *"Previsualizar CV del candidato en el admin empresa"* — poder **ver** el CV sin descargarlo.
+
+**Estado hoy (verificado 2026-09-12):** son dos pantallas distintas y están en puntos muy distintos, conviene no confundirlas.
+
+- **`/empresa/postulaciones`** — ya **descarga**: `GET company/applications/:id/resume` devuelve el PDF (`company-applications.controller.ts:90-110`) y el frontend lo baja como fichero (`applications-page.ts:390-410`, `saveBlob`). Falta sólo la vista previa.
+- **`/empresa/candidatos`** — la ficha **lista los CV por nombre de archivo pero no se pueden abrir** (`candidate-detail.ts:141-160`: pinta `fileName` y la etiqueta "Principal", sin acción). `GET company/candidates/:id` devuelve sólo metadatos (`CandidateResumeSummary` = id, fileName, fileSize, mimeType, isDefault) y **no existe endpoint para bajar ese fichero**. Aquí hace falta backend.
+
+**A favor:** los CV son **sólo PDF** — se valida en la subida (`candidate-resume.use-case.ts:317-318`, por extensión y por mime). Así que la previsualización es un `<iframe>` con un blob URL, sin librería de terceros. El `Content-Disposition: attachment` del endpoint **no estorba**: al pedir el fichero con `responseType: 'blob'` y crear el object URL en el navegador, la cabecera ya no interviene.
+
+**Alcance propuesto:**
+
+1. **Backend — endpoint nuevo para la base de talento:** `GET company/candidates/:id/resumes/:resumeId` con `@RequirePermissions('candidates.cv.read')`, mismo patrón que el de postulaciones. **Debe respetar el grant de talento**: no puede ser una puerta trasera para leer CV sin consumir/tener cupo. Reutilizar la comprobación que ya hace `GET company/candidates/:id` antes de servir el fichero.
+2. **Frontend — un solo visor reutilizable**, p. ej. `shared/ui/pdf-viewer`, dentro de `ij-modal`: recibe el blob, pinta el `<iframe>`, y ofrece "Descargar" y "Abrir en pestaña nueva". Lo usan las dos pantallas.
+3. **`/empresa/postulaciones`:** la acción "CV" abre el visor en lugar de descargar; la descarga queda como botón dentro del modal.
+4. **`/empresa/candidatos`:** cada CV de la lista pasa a ser clicable y abre el mismo visor.
+5. **Estados:** cargando, error ("No se pudo abrir el CV") y el caso "la postulación no traía CV" (`resume: null` ya existe en el modelo).
+6. **`URL.revokeObjectURL` al cerrar el modal** — si no, cada apertura filtra un blob en memoria.
+
+**Criterios de aceptación:** desde una postulación con CV, un clic abre el PDF en un modal y se lee sin descargar; desde la ficha de un candidato de la base de talento pasa lo mismo; la descarga sigue funcionando; una empresa sin cupo de talento **no** puede abrir el CV por el endpoint nuevo; en móvil el visor es usable (o degrada a "Abrir en pestaña nueva", que es lo razonable en iOS).
+
+---
+
+### T31 · Formulario de usuarios del admin: más campos
+
+**Qué se pide:** *"Mejorar el formulario de usuarios, add más campos"* (`/admin/usuarios`).
+
+**Estado hoy (verificado 2026-09-12):** el problema real no es que falten campos en el alta — es que **el alta y la edición no son simétricas**, y eso deja al admin sin poder corregir los datos de una cuenta existente.
+
+- **Alta** (`POST /admin/users`): ya es bastante completa. `CreateUserDto` acepta email, password, rol, estado, `emailVerified`, empresa + rol interno para EMPLOYER, roles adicionales, y **el bloque entero del candidato** (`RegisterCandidateDto`: nombre, apellidos, tipo y número de documento, CURP, fecha de nacimiento, título profesional, país, estado, municipio). El formulario los pinta todos (`user-create-form`).
+- **Edición** (`PATCH /admin/users/:id`): `UpdateUserDto` sólo admite **email, rol, estado, contraseña y `emailVerified`** — cinco campos, y el formulario refleja exactamente eso (`user-edit-form`). **El admin no puede corregir el nombre, el documento, el estado/municipio ni la empresa de una cuenta ya creada.** Si un candidato se registró con el apellido mal escrito, desde el back-office no hay forma de arreglarlo.
+
+**Alcance propuesto:**
+
+1. **Cerrar la asimetría (lo importante):** que `PATCH /admin/users/:id` acepte también el bloque de perfil — para CANDIDATE los campos de `candidate_profiles`, para EMPLOYER la empresa y el rol interno. Es la mitad del valor de esta tarjeta.
+2. **Que el detalle devuelva lo que edita:** `UserResponseDto` tiene que exponer el perfil para poder precargar el formulario; hoy no lo hace.
+3. **Campos nuevos que sí faltan en ambos lados** — la lista concreta es 🔷 **N11**, pero los candidatos obvios son **teléfono / celular** (no existe ni en `RegisterCandidateDto` ni en la entidad: hoy no hay forma de llamar por teléfono a un candidato desde el back-office) y **notas internas del administrador**.
+4. **Reorganizar el formulario por secciones** (Cuenta · Perfil · Roles y accesos): con ~15 campos, el modal actual ya va justo. Si crece más, aplica lo mismo que T32 y conviene sacarlo del `ij-modal`.
+5. **Auditoría:** los cambios de perfil desde el back-office deben quedar en `audit` como ya quedan los de rol/estado.
+
+**Criterios de aceptación:** el admin corrige el nombre y el municipio de un candidato existente y el cambio se ve en su perfil; el admin cambia la empresa de un empleador; los campos nuevos aparecen tanto en alta como en edición; la cuenta sigue naciendo verificada por defecto; el cambio queda registrado en auditoría.
+
+**🔷 Decisión pendiente (N11):** *"más campos"* es demasiado abierto para cerrarlo desde el código. Ver N11 al final de esta parte.
+
+---
+
+### T32 · Vacante: responsabilidades, skills, editor de texto y alta en wizard
+
+**Qué se pide:** *"add campos de skills y campo de responsibilities y add editores de texto para descripción, adicionalmente pasar el formulario a una página o vista nueva y debe quedar tipo wizard"*.
+
+**Estado hoy (verificado 2026-09-12):**
+
+- **Skills:** el backend **ya está hecho** (T25) — `SaveVacancyDto.skills[]`, tablas `skills` + `vacancy_skills`, endpoints `GET/PUT company/vacancies/:id/skills` y autocomplete `GET company/vacancies/skills/search?q=`. **Falta sólo el frontend**, tal como quedó anotado al cerrar T25. El `vacancy-form` actual **no tiene ningún control de skills**.
+- **Responsabilidades:** **no existe** — ni en `SaveVacancyDto` ni en la entidad `vacancy`. Hoy sólo hay `description` y `requirements` (ambos `text`, tope 10.000 caracteres). Requiere columna, migración y DTO.
+- **Editor de texto:** **no existe nada**. `description` y `requirements` son `ij-textarea` de texto plano, y el detalle público los pinta con `whitespace-pre-line` (`public-vacancy-detail-page.ts:271-272`). **No hay editor enriquecido en el UI kit** — el kit es `ij-{input,select,multiselect,autocomplete,datepicker,textarea,modal,badge,button,icon,logo,pricing-card}`.
+- **Wizard:** el formulario son **16 campos en un solo `ij-modal`** (`vacancies-list-page.ts:174-189`, `vacancy-form.ts` con 498 líneas). Es el formulario más grande del back-office y el único que ya no cabe cómodo en un diálogo — justo la excepción que CLAUDE.md contempla ("el detalle en ruta propia queda sólo para lo que no cabe en un diálogo").
+
+**Alcance propuesto — en tres fases entregables por separado:**
+
+**Fase 1 · Skills (rápida, sin backend).** Control de chips con autocomplete contra `GET company/vacancies/skills/search`, marcando `isRequired`, tope de 15 (ya validado en el DTO). Pintarlas en el detalle público, que ya las recibe. **Esto cierra el frontend pendiente de T25 y se puede entregar solo.**
+
+**Fase 2 · Responsabilidades + editor.**
+- Columna `responsibilities` (`text`, nullable) + migración. ⚠️ **Numerar la migración mirando primero el directorio** — los timestamps son correlativos a mano y ya hubo un choque entre T25 y T22 en `1720000023000`.
+- Editor enriquecido: componente nuevo `shared/ui/editor` sobre una librería ligera. **Restringir el formato a lo mínimo** (negrita, cursiva, listas, enlaces) — cuanto más permita, más difícil es que el detalle público no se rompa.
+- ⚠️ **El cambio a HTML no es sólo del formulario.** Hay que tocar, como mínimo: el render público (`whitespace-pre-line` → HTML **saneado**, nunca `[innerHTML]` a pelo), el `description` del **JSON-LD de SEO** y el **snapshot de la vacante**, el recorte de descripción en las tarjetas del listado, y las vacantes **ya guardadas en texto plano**, que deben seguir viéndose bien. Presupuestar esto: es más trabajo que el editor en sí.
+
+**Fase 3 · Wizard en página propia.** Sacar el formulario del modal a `/empresa/vacantes/nueva` y `/empresa/vacantes/:id/editar`, en pasos: **1) Básicos** (título, área, tipo de contrato/contratación, modalidad, ubicación) · **2) Descripción** (descripción, responsabilidades, requisitos, skills) · **3) Condiciones** (salario, plazas, escolaridad, comisiones, fecha límite, confidencial) · **4) Imagen y publicación** (la imagen ya existe desde T24). Validación por paso, navegación libre entre pasos ya visitados, y **borrador conservado si el usuario recarga**. Las preguntas de filtrado (M15) siguen en su modal aparte, o se integran como paso 5.
+
+**Criterios de aceptación:** crear una vacante completa desde el wizard sin perder datos al navegar entre pasos; editar una existente precarga todo; las skills se guardan y se ven en el detalle público; las responsabilidades aparecen en el detalle público; una vacante creada **antes** de esta tarjeta se sigue viendo correctamente (texto plano); el HTML del editor no permite inyectar scripts.
+
+**🔷 Decisión pendiente (N12):** ver N12 al final de esta parte.
+
+---
+
+### T33 · Ver la vacante en modal desde "Mis postulaciones" y "Guardadas"
+
+**Qué se pide:** *"al dar click en la vacante en el módulo mis postulaciones y guardados no debe redirigir a la web, debería mostrar un modal con la información de la vacante"*.
+
+**Estado hoy (verificado 2026-09-12):**
+
+- `/candidato/postulaciones` enlaza con `[routerLink]="['/vacantes', vacancy.id]"` (`candidate-applications-page.ts:81`) — saca al candidato de su área al portal público.
+- **Además, ese enlace está mal construido:** usa el UUID pelado en vez de `vacancyPath()` de `shared/utils/seo.ts`, que es lo que CLAUDE.md exige ("construye links con `vacancyPath()`, nunca a mano"). Funciona porque la ruta sólo mira los primeros 36 caracteres, pero pierde el slug de SEO.
+- `/candidato/guardadas` hoy **ni siquiera enlaza** a la vacante: sólo tiene la acción de quitar de guardados (`candidate-saved-vacancies-page.ts:79`). El candidato guarda vacantes que después no puede consultar sin buscarlas de nuevo.
+
+**A favor:** el endpoint público `GET /api/v1/vacancies/:id` ya devuelve el detalle completo (con skills e imagen) y **no exige autenticación**, así que el modal puede reutilizarlo tal cual. No hace falta backend.
+
+**Alcance propuesto:**
+
+1. Componente compartido `features/candidate/components/vacancy-detail-modal` sobre `ij-modal`, alimentado por `GET vacancies/:id`: título, empresa, ubicación, modalidad, salario, descripción, requisitos, skills e imagen.
+2. Usarlo en **las dos** pantallas; en "guardadas" hay que añadir además el clic sobre la tarjeta, que hoy no existe.
+3. **Acciones dentro del modal según el contexto:** en postulaciones, el estado de la postulación y su historial (ya hay endpoint); en guardadas, "Postularme" y "Quitar de guardados" — que es donde esta tarjeta gana de verdad, porque evita el viaje de ida y vuelta al portal.
+4. **Dejar una salida al detalle completo** ("Ver publicación completa") — pero con `vacancyPath()`, y de paso arreglar el enlace de `candidate-applications-page.ts:81`.
+5. Estados: cargando, error, y **vacante cerrada o vencida** (caso real en guardadas: las vacantes caducan con T20). El modal debe decirlo, no fallar.
+
+**Criterios de aceptación:** desde "Mis postulaciones", un clic abre el modal sin salir de `/candidato`; desde "Guardadas", lo mismo, y se puede postular desde ahí; una vacante cerrada muestra un aviso claro en vez de un error; el enlace "ver publicación completa" lleva a la URL con slug.
+
+---
+
+### T34 · El admin asigna, cambia y quita el plan de una empresa
+
+**Qué se pide:** *"el super admin debería poder asignar, quitar, actualizar planes a las empresas"*.
+
+**Estado hoy (verificado 2026-09-12):** **no existe nada de esto.** Es un hueco real, no una mejora de UI.
+
+- El admin gestiona **el catálogo** de planes (`/admin/planes` → `admin-plans.controller.ts`: crear, editar, activar/desactivar, beneficios) pero **no la suscripción de ninguna empresa**. Ni un endpoint.
+- La suscripción sólo nace por **autoservicio**: `POST company/subscriptions` la crea la propia empresa (`company-billing.controller.ts:111`), y sólo se activa cuando el pago liquida (`SettlePaymentUseCase`).
+- Lo único que el admin puede hacer hoy es `POST /payments/confirm` (`plans.manage`), que confirma un pago **si la empresa ya creó la suscripción**. No sirve para asignar un plan desde cero, ni para cambiarlo, ni para retirarlo.
+- `/admin/empresas` **no muestra el plan de la empresa** por ninguna parte — el modelo del frontend no tiene ni el campo (`admin/companies/models`). El admin no puede ni *ver* en qué plan está cada empresa.
+
+**Alcance propuesto:**
+
+1. **Ver antes que editar:** que `GET /admin/companies` y `GET /admin/companies/:id` devuelvan la suscripción vigente (plan, estado, `currentPeriodEnd`, `autoRenew`), y que el listado tenga columna "Plan". Aunque la asignación se posponga, esto ya es útil por sí solo.
+2. **Endpoints nuevos**, en `admin-plans.controller.ts` o un `admin-subscriptions.controller.ts`, **siempre con `@RequireRoles(Role.ADMIN)` + `@RequirePermissions('plans.manage')`** — los dos, como manda la convención de `/admin/**`:
+   - `POST /admin/companies/:id/subscription` — asignar o cambiar de plan.
+   - `PATCH /admin/companies/:id/subscription` — ajustar `currentPeriodEnd` y `autoRenew` (prórrogas, cortesías).
+   - `DELETE /admin/companies/:id/subscription` — cancelar / retirar.
+3. **Reutilizar el camino que ya existe, no abrir uno paralelo.** La activación vive en `SettlePaymentUseCase` + `EntitlementService` (cupos de talento, distintivos). La asignación manual debe pasar por ahí — con un evento del `ManualPaymentAdapter`, que es exactamente el caso para el que se diseñó el puerto. **Escribir un alta de suscripción "por la izquierda" dejaría a la empresa con plan pero sin cupos.**
+4. **Qué pasa al bajar de plan o al retirarlo:** es lo que más cuidado pide. Hay que decidir y documentar qué ocurre con las vacantes destacadas activas, los cupos de talento ya concedidos y las promociones vigentes. `ExpireSubscriptionsUseCase` ya resuelve el caso del vencimiento natural: **seguir ese mismo camino**, no inventar otro.
+5. **Auditoría obligatoria.** Un admin regalando o quitando un plan mueve dinero: `audit` con quién, a quién, qué plan, y **un campo de motivo** en el cuerpo de la petición.
+6. **Frontend:** sección "Plan" en `/admin/empresas/:id` (la empresa ya tiene página de detalle propia) con el plan actual, su vigencia y las acciones. En `ij-modal`, como el resto del back-office.
+7. **Aviso al cliente:** T21/T22 ya tienen el canal de notificaciones. Un cambio de plan hecho por el admin debería avisar a la empresa — si no, se entera cuando algo deja de funcionar.
+
+**Criterios de aceptación:** el admin ve el plan de cada empresa en el listado; asigna un plan a una empresa sin suscripción y la empresa ve los beneficios y los cupos aplicados de inmediato; cambia de plan y los cupos se recalculan; retira el plan y la empresa queda como una sin suscripción, sin filas huérfanas; todo queda en auditoría con motivo; un EMPLOYER **no** puede llamar a ninguno de los endpoints nuevos.
+
+**🔷 Decisión pendiente (N13):** ver N13 al final de esta parte.
+
+---
+
+## Decisiones que necesita el negocio (Parte D) 🔷
+
+- **N11 · ¿Qué campos exactamente en el formulario de usuarios (T31)?** La parte técnica clara es la asimetría alta/edición, y esa se arregla sin preguntar. Lo que hay que decidir es la lista de campos nuevos: **¿teléfono/celular del candidato?** (hoy no existe en el modelo, y sin él el back-office no puede llamar a nadie) · ¿notas internas del administrador? · ¿algún dato fiscal más del empleador? Cada campo nuevo de candidato arrastra migración, DTO, formulario público de registro y perfil del candidato — conviene pedirlos todos de una vez, no de uno en uno.
+- **N12 · ¿El wizard de vacante sustituye al modal o convive con él (T32)?** Publicar una vacante en 4 pasos es más completo, pero también más lento para una empresa que sólo quiere corregir el salario. Lo razonable es **wizard para el alta, edición rápida en modal** — pero hay que confirmarlo, porque mantener los dos caminos es más código. Y una segunda pregunta, más de fondo: **¿el editor enriquecido es necesario, o basta con respetar los saltos de línea?** La descripción en HTML obliga a sanear, a rehacer el render público y el JSON-LD de SEO, y a convivir con las vacantes ya guardadas en texto plano. Es la mitad del coste de T32.
+- **N13 · ¿Un plan asignado a mano por el admin es una venta o una cortesía (T34)?** De esto depende si la asignación manual genera un cobro/registro de pago (y mañana una factura CFDI) o si es un regalo que no toca facturación. También hace falta la política de **bajada de plan**: ¿se respetan hasta el final los cupos y distintivos ya concedidos, o se recortan al momento? Y si el admin retira el plan a mitad de periodo, **¿la empresa conserva las vacantes destacadas que ya publicó?**
+
+## Orden sugerido (Parte D)
+
+1. **T29** — primero y con diferencia: hay candidatos que **no pueden postularse en producción ahora mismo**, y el arreglo es de horas. Todo lo demás puede esperar a esto.
+2. **T32 fase 1 (skills)** — el backend ya está hecho desde T25; es la mejor relación valor/esfuerzo del lote y cierra una tarjeta que quedó a medias.
+3. **T33** — pequeña, sin backend, y arregla de paso el enlace sin `vacancyPath()`.
+4. **T30** — necesita un endpoint nuevo para la base de talento, pero el patrón ya está escrito en postulaciones.
+5. **T34** — el hueco funcional más grande de los seis. Empezar por el punto 1 (mostrar el plan en `/admin/empresas`), que se puede entregar aparte mientras se resuelve N13.
+6. **T31** — la asimetría alta/edición se puede arreglar ya; los campos nuevos esperan a N11.
+7. **T32 fases 2 y 3** — la más cara del lote y la que más superficie toca (SEO, render público, datos existentes). Entra cuando N12 esté resuelta.
