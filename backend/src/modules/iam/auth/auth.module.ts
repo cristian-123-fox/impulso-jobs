@@ -1,11 +1,9 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MailerModule } from '@/common/mailer/mailer.module';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { UsersModule } from '@/modules/iam/users/users.module';
-import { RolesModule } from '@/modules/iam/roles/roles.module';
-import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
 import { AuthController } from '@/modules/iam/auth/controllers/auth.controller';
 import { PasswordResetController } from '@/modules/iam/auth/controllers/password-reset.controller';
 import { EmailVerificationController } from '@/modules/iam/auth/controllers/email-verification.controller';
@@ -29,8 +27,6 @@ import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/co
     UsersModule,
     AuditModule,
     MailerModule,
-    forwardRef(() => RolesModule),
-    forwardRef(() => PermissionsModule),
   ],
   controllers: [
     AuthController,

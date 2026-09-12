@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -33,6 +34,8 @@ import { PermissionsService } from '@/modules/iam/permissions/services/permissio
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly logger = new Logger(JwtStrategy.name);
+  private roles?: IRoleRepository;
+  private permissions?: PermissionsService;
 
   constructor(
     config: ConfigService,
@@ -41,15 +44,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly blacklist: IBlacklistTokenRepository,
     @Inject(USER_ROLE_REPOSITORY)
     private readonly userRoles: IUserRoleRepository,
-    @Inject(ROLE_REPOSITORY)
-    private readonly roles: IRoleRepository,
-    private readonly permissions: PermissionsService,
+    private readonly moduleRef: ModuleRef,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: config.getOrThrow<string>('JWT_ACCESS_SECRET'),
     });
+  }
+
+  private getRoles(): IRoleRepository {
+    if (!this.roles) {
+      this.roles = this.moduleRef.get(ROLE_REPOSITORY, { strict: false });
+    }
+    return this.roles;
+  }
+
+  private getPermissions(): PermissionsService {
+    if (!this.permissions) {
+      this.permissions = this.moduleRef.get(PermissionsService, {
+        strict: false,
+      });
+    }
+    return this.permissions;
   }
 
   async validate(payload: AccessTokenPayload): Promise<AuthenticatedUser> {
@@ -83,11 +100,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Defensive fallback: si el usuario no tiene user_roles (creado antes
     // del RBAC o el seed no corrió), auto-asigna el rol desde users.role.
     if (roleIds.length === 0 && user.role) {
-      const role = await this.roles.findByCode(user.role);
+      const role = await this.getRoles().findByCode(user.role);
       if (role) {
         await this.userRoles.add(user.id, role.id);
         roleIds = [role.id];
-        this.permissions.invalidate();
+        this.getPermissions().invalidate();
         this.logger.warn(
           `Auto-asignado rol ${user.role} al usuario ${user.id} (faltaba en user_roles)`,
         );
