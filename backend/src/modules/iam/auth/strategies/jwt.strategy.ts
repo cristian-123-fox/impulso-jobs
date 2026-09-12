@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -20,6 +20,11 @@ import {
   type IUserRoleRepository,
   USER_ROLE_REPOSITORY,
 } from '@/modules/iam/users/repositories/user-role.repository.interface';
+import {
+  type IRoleRepository,
+  ROLE_REPOSITORY,
+} from '@/modules/iam/roles/repositories/role.repository.interface';
+import { PermissionsService } from '@/modules/iam/permissions/services/permissions.service';
 
 /**
  * Valida el access token: firma + expiración (Passport), tipo, no revocado
@@ -27,6 +32,8 @@ import {
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     config: ConfigService,
     @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
@@ -34,6 +41,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly blacklist: IBlacklistTokenRepository,
     @Inject(USER_ROLE_REPOSITORY)
     private readonly userRoles: IUserRoleRepository,
+    @Inject(ROLE_REPOSITORY)
+    private readonly roles: IRoleRepository,
+    private readonly permissions: PermissionsService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -68,7 +78,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         'La sesión fue invalidada. Inicia sesión de nuevo.',
       );
     }
-    const roleIds = await this.userRoles.findRoleIdsByUserId(user.id);
+    let roleIds = await this.userRoles.findRoleIdsByUserId(user.id);
+
+    // Defensive fallback: si el usuario no tiene user_roles (creado antes
+    // del RBAC o el seed no corrió), auto-asigna el rol desde users.role.
+    if (roleIds.length === 0 && user.role) {
+      const role = await this.roles.findByCode(user.role);
+      if (role) {
+        await this.userRoles.add(user.id, role.id);
+        roleIds = [role.id];
+        this.permissions.invalidate();
+        this.logger.warn(
+          `Auto-asignado rol ${user.role} al usuario ${user.id} (faltaba en user_roles)`,
+        );
+      }
+    }
+
     return {
       userId: user.id,
       email: user.email,

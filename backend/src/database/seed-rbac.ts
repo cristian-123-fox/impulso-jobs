@@ -342,12 +342,13 @@ export async function seedRbac(dataSource: DataSource): Promise<string> {
     }
   }
 
-  // Backfill user_roles desde users.role.
+  // Backfill user_roles desde users.role. Excluye soft-deleted y usuarios
+  // sin rol válido (edge case de migración).
   let backfilled = 0;
-  const users = await userRepo.find();
+  const users = await userRepo.find({ withDeleted: false });
   for (const user of users) {
-    const roleId = roleIds.get(user.role);
-    if (!roleId) continue;
+    if (!user.role || !roleIds.has(user.role)) continue;
+    const roleId = roleIds.get(user.role)!;
     const exists = await userRoleRepo.findOne({
       where: { userId: user.id, roleId },
     });

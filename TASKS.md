@@ -573,7 +573,7 @@ Dos notas antes de empezar, porque cambian el tamaño de las tarjetas:
 
 | # | Título | Tipo | Prioridad | Estimación | Depende de |
 |---|---|---|---|---|---|
-| T29 | 403 `PERMISSION_DENIED` al postularse a una vacante | **Bug** | **Bloqueante producción** | XS (1–3 h) | — |
+| T29 | 403 `PERMISSION_DENIED` al postularse a una vacante | **Bug** | **Bloqueante producción** | XS (1–3 h) | — | ✅ **Resuelto** (fallback defensivo en `JwtStrategy` + fix en `seed-rbac`) |
 | T30 | Previsualizar el CV del candidato desde la empresa | Mejora UX | Alta | S (1–2 d) | — |
 | T31 | Formulario de usuarios del admin: más campos | Mejora | Media | M (2–3 d) | 🔷 N11 |
 | T32 | Vacante: responsabilidades, skills, editor de texto y alta en wizard | Feature | Alta | L (5–8 d) | T25 ✅ · 🔷 N12 |
