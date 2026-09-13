@@ -11,13 +11,19 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { CandidateResumeFacade } from '@/features/candidate/data/candidate-resume.facade';
 import { CandidateResume } from '@/features/candidate/models/candidate-resume.models';
-import { IjBadge, IjButton, IjIcon } from '@/shared/ui';
+import {
+  IjBadge,
+  IjButton,
+  IjIcon,
+  IjPdfFile,
+  IjPdfViewer,
+} from '@/shared/ui';
 
 @Component({
   selector: 'app-candidate-resumes',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjBadge, IjButton, IjIcon],
+  imports: [IjBadge, IjButton, IjIcon, IjPdfViewer],
   template: `
     <div class="space-y-5">
       <section class="rounded-2xl bg-white p-6 shadow-card">
@@ -166,6 +172,19 @@ import { IjBadge, IjButton, IjIcon } from '@/shared/ui';
                     shape="rounded"
                     size="sm"
                     [disabled]="busyId() === resume.id"
+                    (click)="preview(resume)"
+                  >
+                    <ij-icon name="eye" [size]="14" />
+                    Ver
+                  </button>
+
+                  <button
+                    ij-button
+                    type="button"
+                    variant="white"
+                    shape="rounded"
+                    size="sm"
+                    [disabled]="busyId() === resume.id"
                     (click)="download(resume)"
                   >
                     <ij-icon name="file" [size]="14" />
@@ -192,6 +211,17 @@ import { IjBadge, IjButton, IjIcon } from '@/shared/ui';
         }
       </section>
     </div>
+
+    @if (previewOf(); as resume) {
+      <ij-pdf-viewer
+        title="Tu hoja de vida"
+        [subtitle]="resume.fileName"
+        [file]="previewFile()"
+        [loading]="previewLoading()"
+        [error]="previewError()"
+        (close)="closePreview()"
+      />
+    }
   `,
 })
 export class CandidateResumesComponent {
@@ -202,6 +232,12 @@ export class CandidateResumesComponent {
   protected readonly busyId = signal<string | null>(null);
   protected readonly banner = signal<string | null>(null);
   protected readonly bannerTone = signal<'success' | 'error'>('success');
+
+  /** Visor de CV (T30): el CV abierto y su fichero ya descargado. */
+  protected readonly previewOf = signal<CandidateResume | null>(null);
+  protected readonly previewFile = signal<IjPdfFile | null>(null);
+  protected readonly previewLoading = signal(false);
+  protected readonly previewError = signal<string | null>(null);
 
   protected readonly resumes = this.facade.resumes;
   protected readonly defaultResume = computed(
@@ -270,6 +306,39 @@ export class CandidateResumesComponent {
           this.showError(this.messageOf(error));
         },
       });
+  }
+
+  /** Abre el CV en el visor sin descargarlo (T30). */
+  protected preview(resume: CandidateResume): void {
+    this.clearBanner();
+    this.previewFile.set(null);
+    this.previewError.set(null);
+    this.previewLoading.set(true);
+    this.previewOf.set(resume);
+
+    this.facade
+      .download(resume.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (download) => {
+          this.previewLoading.set(false);
+          this.previewFile.set({
+            blob: download.blob,
+            fileName: download.fileName,
+          });
+        },
+        error: (error: unknown) => {
+          this.previewLoading.set(false);
+          this.previewError.set(this.messageOf(error));
+        },
+      });
+  }
+
+  protected closePreview(): void {
+    this.previewOf.set(null);
+    this.previewFile.set(null);
+    this.previewError.set(null);
+    this.previewLoading.set(false);
   }
 
   protected download(resume: CandidateResume): void {

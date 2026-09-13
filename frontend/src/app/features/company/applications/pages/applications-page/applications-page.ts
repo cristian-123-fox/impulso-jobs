@@ -11,7 +11,15 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
-import { IjButton, IjIcon, IjModal, IjOption, IjSelect } from '@/shared/ui';
+import {
+  IjButton,
+  IjIcon,
+  IjModal,
+  IjOption,
+  IjPdfFile,
+  IjPdfViewer,
+  IjSelect,
+} from '@/shared/ui';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
 import { ApplicationsFacade } from '@/features/company/applications/data/applications.facade';
 import { StatusForm } from '@/features/company/applications/components/status-form/status-form';
@@ -39,6 +47,7 @@ import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
     IjButton,
     IjIcon,
     IjModal,
+    IjPdfViewer,
     IjSelect,
   ],
   template: `
@@ -254,6 +263,17 @@ import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
         </div>
       </ij-modal>
     }
+
+    @if (resumeOf(); as application) {
+      <ij-pdf-viewer
+        title="Hoja de vida"
+        [subtitle]="subtitleOf(application)"
+        [file]="resumeFile()"
+        [loading]="resumeLoading()"
+        [error]="resumeError()"
+        (close)="closeResume()"
+      />
+    }
   `,
 })
 export class ApplicationsPage {
@@ -268,6 +288,12 @@ export class ApplicationsPage {
   protected readonly answersList = signal<ApplicationAnswer[]>([]);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
+
+  /** Visor de CV: la postulación abierta y el fichero ya descargado. */
+  protected readonly resumeOf = signal<CompanyApplication | null>(null);
+  protected readonly resumeFile = signal<IjPdfFile | null>(null);
+  protected readonly resumeLoading = signal(false);
+  protected readonly resumeError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
 
   private readonly vacancies = signal<readonly IjOption[]>([]);
@@ -325,7 +351,7 @@ export class ApplicationsPage {
     }
 
     if (action === 'resume') {
-      this.downloadResume(application);
+      this.openResume(application);
       return;
     }
 
@@ -387,27 +413,43 @@ export class ApplicationsPage {
     this.formError.set(null);
   }
 
-  private downloadResume(application: CompanyApplication): void {
+  protected closeResume(): void {
+    this.resumeOf.set(null);
+    this.resumeFile.set(null);
+    this.resumeError.set(null);
+    this.resumeLoading.set(false);
+  }
+
+  /**
+   * T30: el CV se previsualiza en el visor; la descarga vive dentro de él. El
+   * endpoint manda `Content-Disposition: attachment`, pero la respuesta se pide
+   * como blob y esa cabecera no llega a intervenir.
+   */
+  private openResume(application: CompanyApplication): void {
     this.actionError.set(null);
+    this.resumeFile.set(null);
+    this.resumeError.set(null);
+    this.resumeLoading.set(true);
+    this.resumeOf.set(application);
+
     this.facade
       .downloadResume(application.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (download) => this.saveBlob(download.blob, download.fileName),
-        error: () =>
-          this.actionError.set(
-            'No se pudo descargar el CV de esta postulación.',
-          ),
+        next: (download) => {
+          this.resumeLoading.set(false);
+          this.resumeFile.set({
+            blob: download.blob,
+            fileName: download.fileName,
+          });
+        },
+        error: (error: unknown) => {
+          this.resumeLoading.set(false);
+          this.resumeError.set(
+            this.messageOf(error, 'No se pudo abrir el CV de esta postulación.'),
+          );
+        },
       });
-  }
-
-  private saveBlob(blob: Blob, fileName: string): void {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    anchor.click();
-    URL.revokeObjectURL(url);
   }
 
   private messageOf(error: unknown, fallback: string): string {

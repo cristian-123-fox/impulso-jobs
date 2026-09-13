@@ -69,6 +69,12 @@ export interface CandidateResumeSummary {
   isDefault: boolean;
 }
 
+/** Fichero de un CV ya descargado, listo para el visor. */
+export interface CandidateResumeDownload {
+  blob: Blob;
+  fileName: string;
+}
+
 export interface CandidateDetail {
   id: string;
   firstName: string;

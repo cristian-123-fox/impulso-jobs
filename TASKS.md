@@ -574,7 +574,7 @@ Dos notas antes de empezar, porque cambian el tamaño de las tarjetas:
 | # | Título | Tipo | Prioridad | Estimación | Depende de |
 |---|---|---|---|---|---|
 | T29 | 403 `PERMISSION_DENIED` al postularse a una vacante | **Bug** | **Bloqueante producción** | XS (1–3 h) | — | ✅ **Resuelto** (fallback defensivo en `JwtStrategy` + fix en `seed-rbac`) |
-| T30 | Previsualizar el CV del candidato desde la empresa | Mejora UX | Alta | S (1–2 d) | — |
+| T30 | Previsualizar el CV del candidato desde la empresa | Mejora UX | Alta | S (1–2 d) | — | ✅ **Hecha** (visor `ij-pdf-viewer` + `GET company/candidates/:id/resumes/:resumeId`) |
 | T31 | Formulario de usuarios del admin: más campos | Mejora | Media | M (2–3 d) | 🔷 N11 |
 | T32 | Vacante: responsabilidades, skills, editor de texto y alta en wizard | Feature | Alta | L (5–8 d) | T25 ✅ · 🔷 N12 |
 | T33 | Ver la vacante en modal desde "Mis postulaciones" y "Guardadas" | Mejora UX | Media | S (1 d) | — |
@@ -656,6 +656,15 @@ SELECT u.id, u.email, u.role FROM users u
 6. **`URL.revokeObjectURL` al cerrar el modal** — si no, cada apertura filtra un blob en memoria.
 
 **Criterios de aceptación:** desde una postulación con CV, un clic abre el PDF en un modal y se lee sin descargar; desde la ficha de un candidato de la base de talento pasa lo mismo; la descarga sigue funcionando; una empresa sin cupo de talento **no** puede abrir el CV por el endpoint nuevo; en móvil el visor es usable (o degrada a "Abrir en pestaña nueva", que es lo razonable en iOS).
+
+**✅ Hecha el 2026-09-12.** Cuatro decisiones tomadas al implementarla, todas explícitas:
+
+1. **Render con `<iframe>` + blob URL, sin librería.** Se descartó pdf.js (~1 MB de bundle) porque los CV son sólo PDF y el visor nativo del navegador ya trae zoom y paginación. En iOS y por debajo de 768px el `<iframe>` no es fiable, así que ahí el visor **degrada a "Abrir en pestaña nueva" / "Descargar"** (`supportsEmbeddedPdf()`; `maxTouchPoints` cubre al iPad, que se anuncia como Mac).
+2. **Overlay a pantalla completa, no `ij-modal`.** Una hoja A4 no se lee cómoda en los 900px del diálogo más grande del kit. `shared/ui/pdf-viewer` es la segunda excepción a "todo el back-office edita en `ij-modal`", junto con la matriz de permisos.
+3. ⚠️ **El endpoint nuevo NO mira el cupo de talento — decisión de negocio, no descuido.** `GET company/candidates/:id/resumes/:resumeId` comprueba permiso (`candidates.cv.read`), visibilidad del perfil para esa empresa y que el CV pertenezca a ese perfil, pero **no consume ni exige visitas**. Esto deja **deliberadamente sin cumplir** el criterio de aceptación *"una empresa sin cupo de talento no puede abrir el CV por el endpoint nuevo"*: en la práctica el `resumeId` sólo se conoce tras abrir la ficha (que sí cobra), pero llamando al endpoint en frío una empresa sin plan sí puede leer el CV de un perfil público. Si se revierte, el punto de extensión está señalado en el JSDoc de `getResumeDownload`: `this.quota.consume(...)`, ya idempotente por (empresa, candidato).
+4. **El visor se reutiliza también en `/candidato/cv`** (botón "Ver"), además de las dos pantallas que pedía la tarjeta.
+
+**Qué se tocó:** backend — `CandidateSearchUseCase.getResumeDownload` + endpoint en `company-candidates.controller.ts`, con auditoría `company.candidate.resume.read` y 5 specs nuevas. Frontend — `shared/ui/pdf-viewer` (nuevo, exportado del kit), `/empresa/postulaciones` (la acción CV abre el visor; el icono pasa a `eye` y la descarga vive dentro), `/empresa/candidatos` (los CV de la ficha pasan a ser clicables), `/candidato/cv`. Sin migración y sin permisos nuevos: **nada que hacer en el despliegue**.
 
 ---
 
@@ -775,7 +784,7 @@ SELECT u.id, u.email, u.role FROM users u
 1. **T29** — primero y con diferencia: hay candidatos que **no pueden postularse en producción ahora mismo**, y el arreglo es de horas. Todo lo demás puede esperar a esto.
 2. **T32 fase 1 (skills)** — el backend ya está hecho desde T25; es la mejor relación valor/esfuerzo del lote y cierra una tarjeta que quedó a medias.
 3. **T33** — pequeña, sin backend, y arregla de paso el enlace sin `vacancyPath()`.
-4. **T30** — necesita un endpoint nuevo para la base de talento, pero el patrón ya está escrito en postulaciones.
+4. ~~**T30**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos (el endpoint nuevo reutiliza `candidates.cv.read`).
 5. **T34** — el hueco funcional más grande de los seis. Empezar por el punto 1 (mostrar el plan en `/admin/empresas`), que se puede entregar aparte mientras se resuelve N13.
 6. **T31** — la asimetría alta/edición se puede arreglar ya; los campos nuevos esperan a N11.
 7. **T32 fases 2 y 3** — la más cara del lote y la que más superficie toca (SEO, render público, datos existentes). Entra cuando N12 esté resuelta.

@@ -3,6 +3,7 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { AuditService } from '@/modules/audit/audit.service';
 import { CandidateProfileSettings } from '@/modules/candidates/entities/candidate-profile-settings.entity';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
+import { CandidateResume } from '@/modules/candidates/entities/candidate-resume.entity';
 import {
   InformationVisibility,
   ProfileVisibility,
@@ -13,6 +14,7 @@ import { ICandidateLanguageRepository } from '@/modules/candidates/repositories/
 import { ICandidateProfileSettingsRepository } from '@/modules/candidates/repositories/candidate-profile-settings.repository.interface';
 import { ICandidateResumeRepository } from '@/modules/candidates/repositories/candidate-resume.repository.interface';
 import { ICandidateSkillRepository } from '@/modules/candidates/repositories/candidate-skill.repository.interface';
+import { ICandidateResumeStorage } from '@/modules/candidates/services/candidate-resume-storage.port';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import { IUserRepository } from '@/modules/iam/users/repositories/user.repository.interface';
 import { CandidateAccessSource } from '@/modules/talent/enums/talent-access.enum';
@@ -52,6 +54,18 @@ function settingsRow(
   });
 }
 
+function resumeRow(overrides: Partial<CandidateResume> = {}): CandidateResume {
+  return Object.assign(new CandidateResume(), {
+    id: 'cv-1',
+    candidateProfileId: 'cand-1',
+    fileName: 'ana-lopez.pdf',
+    mimeType: 'application/pdf',
+    storageKey: 'resumes/cand-1/cv-1.pdf',
+    isDefault: true,
+    ...overrides,
+  });
+}
+
 const actor = { userId: 'recruiter-1', ip: '127.0.0.1', userAgent: 'jest' };
 const freeQuota = {
   totalVisits: 20,
@@ -68,6 +82,7 @@ describe('CandidateSearchUseCase', () => {
   let languages: jest.Mocked<ICandidateLanguageRepository>;
   let skills: jest.Mocked<ICandidateSkillRepository>;
   let resumes: jest.Mocked<ICandidateResumeRepository>;
+  let resumeStorage: jest.Mocked<ICandidateResumeStorage>;
   let users: jest.Mocked<IUserRepository>;
   let access: jest.Mocked<ITalentAccessRepository>;
   let companyOwnership: jest.Mocked<VacancyOwnershipService>;
@@ -94,7 +109,15 @@ describe('CandidateSearchUseCase', () => {
     educations = empty as unknown as jest.Mocked<ICandidateEducationRepository>;
     languages = empty as unknown as jest.Mocked<ICandidateLanguageRepository>;
     skills = empty as unknown as jest.Mocked<ICandidateSkillRepository>;
-    resumes = empty as unknown as jest.Mocked<ICandidateResumeRepository>;
+
+    resumes = {
+      findByProfileId: jest.fn().mockResolvedValue([]),
+      findByIdAndProfileId: jest.fn().mockResolvedValue(resumeRow()),
+    } as unknown as jest.Mocked<ICandidateResumeRepository>;
+
+    resumeStorage = {
+      openReadStream: jest.fn().mockResolvedValue('stream'),
+    } as unknown as jest.Mocked<ICandidateResumeStorage>;
 
     users = {
       findById: jest.fn().mockResolvedValue(
@@ -129,6 +152,7 @@ describe('CandidateSearchUseCase', () => {
       languages,
       skills,
       resumes,
+      resumeStorage,
       users,
       access,
       companyOwnership,
@@ -279,6 +303,62 @@ describe('CandidateSearchUseCase', () => {
       const detail = await useCase.get('cand-1', actor);
 
       expect(detail.email).toBe('ana@example.com');
+    });
+  });
+
+  describe('getResumeDownload', () => {
+    it('sirve el fichero del CV con su nombre y tipo', async () => {
+      const file = await useCase.getResumeDownload('cand-1', 'cv-1', actor);
+
+      expect(file.fileName).toBe('ana-lopez.pdf');
+      expect(file.mimeType).toBe('application/pdf');
+      expect(resumeStorage.openReadStream).toHaveBeenCalledWith(
+        'resumes/cand-1/cv-1.pdf',
+      );
+      expect(audit.record).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'company.candidate.resume.read' }),
+      );
+    });
+
+    it('no consume ni exige cupo de talento (decisión de negocio de T30)', async () => {
+      await useCase.getResumeDownload('cand-1', 'cv-1', actor);
+
+      expect(quota.consume).not.toHaveBeenCalled();
+    });
+
+    it('404 si el perfil no es visible para la empresa', async () => {
+      candidates.findVisibleById.mockResolvedValue(null);
+
+      try {
+        await useCase.getResumeDownload('cand-1', 'cv-1', actor);
+        fail('debió lanzar');
+      } catch (e) {
+        expect(errorCodeOf(e)).toBe(ErrorCode.TALENT_CANDIDATE_NOT_FOUND);
+      }
+      expect(resumeStorage.openReadStream).not.toHaveBeenCalled();
+    });
+
+    it('404 si el CV no pertenece a ese perfil', async () => {
+      resumes.findByIdAndProfileId.mockResolvedValue(null);
+
+      try {
+        await useCase.getResumeDownload('cand-1', 'cv-ajeno', actor);
+        fail('debió lanzar');
+      } catch (e) {
+        expect(errorCodeOf(e)).toBe(ErrorCode.CANDIDATE_RESUME_NOT_FOUND);
+      }
+    });
+
+    it('404 y sin auditoría si el fichero no está en el storage', async () => {
+      resumeStorage.openReadStream.mockRejectedValue(new Error('ENOENT'));
+
+      try {
+        await useCase.getResumeDownload('cand-1', 'cv-1', actor);
+        fail('debió lanzar');
+      } catch (e) {
+        expect(errorCodeOf(e)).toBe(ErrorCode.CANDIDATE_RESUME_FILE_NOT_FOUND);
+      }
+      expect(audit.record).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { ReadStream } from 'node:fs';
 import {
   PaginatedResponse,
   toPaginated,
@@ -32,6 +33,10 @@ import {
   type ICandidateSkillRepository,
   CANDIDATE_SKILL_REPOSITORY,
 } from '@/modules/candidates/repositories/candidate-skill.repository.interface';
+import {
+  type ICandidateResumeStorage,
+  CANDIDATE_RESUME_STORAGE,
+} from '@/modules/candidates/services/candidate-resume-storage.port';
 import {
   type IUserRepository,
   USER_REPOSITORY,
@@ -109,6 +114,8 @@ export class CandidateSearchUseCase {
     private readonly skills: ICandidateSkillRepository,
     @Inject(CANDIDATE_RESUME_REPOSITORY)
     private readonly resumes: ICandidateResumeRepository,
+    @Inject(CANDIDATE_RESUME_STORAGE)
+    private readonly resumeStorage: ICandidateResumeStorage,
     @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
     @Inject(TALENT_ACCESS_REPOSITORY)
     private readonly access: ITalentAccessRepository,
@@ -246,6 +253,83 @@ export class CandidateSearchUseCase {
       accessSource,
       quota: consumption.quota,
     });
+  }
+
+  /**
+   * Fichero de una hoja de vida del candidato, para previsualizarla o
+   * descargarla desde la ficha de talento (T30).
+   *
+   * **Alcance decidido a propósito:** comprueba el permiso, que el perfil sea
+   * visible para esta empresa y que el CV pertenezca a ese perfil — pero **no
+   * mira el cupo de visitas ni lo consume**. Es decisión de negocio del
+   * 2026-09-12; el criterio de aceptación de T30 que pedía bloquear a una
+   * empresa sin cupo queda deliberadamente sin cumplir. Si algún día se
+   * revierte, el punto de extensión es `this.quota.consume(...)`, que ya es
+   * idempotente por (empresa, candidato), igual que en `get()`.
+   */
+  async getResumeDownload(
+    candidateProfileId: string,
+    resumeId: string,
+    actor: TalentActor,
+  ): Promise<{ fileName: string; mimeType: string; stream: ReadStream }> {
+    const company = await this.companyOwnership.requireCompany(actor.userId);
+
+    const profile = await this.candidates.findVisibleById(
+      candidateProfileId,
+      company.id,
+    );
+    if (!profile) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.TALENT_CANDIDATE_NOT_FOUND,
+        'El candidato no existe o su perfil no es visible para tu empresa.',
+      );
+    }
+
+    // Acotado por perfil: un `resumeId` de otro candidato no se sirve aunque
+    // ese otro candidato también fuera visible para la empresa.
+    const resume = await this.resumes.findByIdAndProfileId(
+      resumeId,
+      profile.id,
+    );
+    if (!resume) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CANDIDATE_RESUME_NOT_FOUND,
+        'La hoja de vida no existe.',
+      );
+    }
+
+    let stream: ReadStream;
+    try {
+      stream = await this.resumeStorage.openReadStream(resume.storageKey);
+    } catch {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CANDIDATE_RESUME_FILE_NOT_FOUND,
+        'No fue posible abrir la hoja de vida.',
+      );
+    }
+
+    await this.audit.record({
+      action: 'company.candidate.resume.read',
+      actorUserId: actor.userId,
+      entity: 'candidate_resume',
+      entityId: resume.id,
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+      metadata: {
+        companyId: company.id,
+        candidateProfileId: profile.id,
+        fileName: resume.fileName,
+      },
+    });
+
+    return {
+      fileName: resume.fileName,
+      mimeType: resume.mimeType,
+      stream,
+    };
   }
 
   /** Estado del cupo, para el contador de la UI. */

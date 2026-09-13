@@ -1,7 +1,10 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { IjIcon } from '@/shared/ui';
-import { CandidateDetail } from '@/features/company/candidates/models/candidates.models';
+import {
+  CandidateDetail,
+  CandidateResumeSummary,
+} from '@/features/company/candidates/models/candidates.models';
 
 /** Ficha completa del candidato: experiencia, formación, idiomas y CV. */
 @Component({
@@ -145,16 +148,28 @@ import { CandidateDetail } from '@/features/company/candidates/models/candidates
           </h4>
           <ul class="flex flex-col gap-2">
             @for (resume of data.resumes; track resume.id) {
-              <li class="flex items-center gap-2.5 rounded-xl bg-surface px-4 py-2.5">
-                <ij-icon name="file" [size]="16" />
-                <span class="min-w-0 flex-1 truncate text-[13px] text-body">
-                  {{ resume.fileName }}
-                </span>
-                @if (resume.isDefault) {
-                  <span class="rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-brand">
-                    Principal
+              <li>
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2.5 rounded-xl bg-surface px-4 py-2.5 text-left transition-colors hover:bg-brand-50 disabled:cursor-progress"
+                  [title]="'Ver ' + resume.fileName"
+                  [disabled]="busyResumeId() === resume.id"
+                  (click)="openResume.emit(resume)"
+                >
+                  <ij-icon name="file" [size]="16" />
+                  <span class="min-w-0 flex-1 truncate text-[13px] text-body">
+                    {{ resume.fileName }}
                   </span>
-                }
+                  @if (resume.isDefault) {
+                    <span class="rounded-md bg-white px-2 py-0.5 text-[11px] font-bold text-brand">
+                      Principal
+                    </span>
+                  }
+                  <span class="flex items-center gap-1 text-[12px] font-semibold text-brand">
+                    <ij-icon name="eye" [size]="14" />
+                    {{ busyResumeId() === resume.id ? 'Abriendo…' : 'Ver' }}
+                  </span>
+                </button>
               </li>
             }
           </ul>
@@ -165,6 +180,9 @@ import { CandidateDetail } from '@/features/company/candidates/models/candidates
 })
 export class CandidateDetailView {
   readonly candidate = input.required<CandidateDetail>();
+  /** CV que se está descargando, para bloquear su fila mientras tanto. */
+  readonly busyResumeId = input<string | null>(null);
+  readonly openResume = output<CandidateResumeSummary>();
 
   protected initials(candidate: CandidateDetail): string {
     return (candidate.firstName[0] ?? '?')

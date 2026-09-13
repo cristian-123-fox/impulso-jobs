@@ -126,14 +126,14 @@ export interface ApplicationActionEvent {
                     [class]="actionClass + ' disabled:cursor-not-allowed disabled:opacity-40'"
                     [title]="
                       item.resume
-                        ? 'Descargar CV: ' + item.resume.fileName
+                        ? 'Ver CV: ' + item.resume.fileName
                         : 'La postulación no tiene CV adjunto'
                     "
-                    aria-label="Descargar CV"
+                    aria-label="Ver CV"
                     [disabled]="!item.resume"
                     (click)="emit('resume', item)"
                   >
-                    <ij-icon name="file" [size]="15" />
+                    <ij-icon name="eye" [size]="15" />
                   </button>
                   <button
                     type="button"

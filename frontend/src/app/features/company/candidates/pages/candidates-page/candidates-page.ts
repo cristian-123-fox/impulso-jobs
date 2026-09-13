@@ -11,13 +11,21 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
-import { IjIcon, IjModal, IjOption, IjSelect } from '@/shared/ui';
+import {
+  IjIcon,
+  IjModal,
+  IjOption,
+  IjPdfFile,
+  IjPdfViewer,
+  IjSelect,
+} from '@/shared/ui';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
 import { CandidatesFacade } from '@/features/company/candidates/data/candidates.facade';
 import { CandidateDetailView } from '@/features/company/candidates/components/candidate-detail/candidate-detail';
 import {
   CandidateAccessSource,
   CandidateDetail,
+  CandidateResumeSummary,
   CandidateSearchItem,
 } from '@/features/company/candidates/models/candidates.models';
 
@@ -34,6 +42,7 @@ import {
     CandidateDetailView,
     IjIcon,
     IjModal,
+    IjPdfViewer,
     IjSelect,
   ],
   template: `
@@ -231,8 +240,23 @@ import {
         size="lg"
         (close)="detail.set(null)"
       >
-        <app-candidate-detail [candidate]="data" />
+        <app-candidate-detail
+          [candidate]="data"
+          [busyResumeId]="openingResume()"
+          (openResume)="onOpenResume(data, $event)"
+        />
       </ij-modal>
+    }
+
+    @if (resumeOf(); as resume) {
+      <ij-pdf-viewer
+        title="Hoja de vida"
+        [subtitle]="resume.fileName"
+        [file]="resumeFile()"
+        [loading]="openingResume() !== null"
+        [error]="resumeError()"
+        (close)="closeResume()"
+      />
     }
   `,
 })
@@ -243,6 +267,12 @@ export class CandidatesPage {
   protected readonly applicant = CandidateAccessSource.APPLICANT;
   protected readonly detail = signal<CandidateDetail | null>(null);
   protected readonly opening = signal<string | null>(null);
+
+  /** Visor de CV: el CV abierto, el fichero y la fila que está descargando. */
+  protected readonly resumeOf = signal<CandidateResumeSummary | null>(null);
+  protected readonly resumeFile = signal<IjPdfFile | null>(null);
+  protected readonly openingResume = signal<string | null>(null);
+  protected readonly resumeError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
 
   protected readonly stateOptions: readonly IjOption[] = [
@@ -305,6 +335,47 @@ export class CandidatesPage {
           );
         },
       });
+  }
+
+  /**
+   * T30: abre el CV en el visor. El fichero se pide autenticado y se pinta
+   * como blob; el endpoint no descuenta cupo — la visita ya se cobró al abrir
+   * esta ficha, que es de donde sale el `resumeId`.
+   */
+  protected onOpenResume(
+    candidate: CandidateDetail,
+    resume: CandidateResumeSummary,
+  ): void {
+    this.resumeFile.set(null);
+    this.resumeError.set(null);
+    this.openingResume.set(resume.id);
+    this.resumeOf.set(resume);
+
+    this.facade
+      .resume(candidate.id, resume.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (download) => {
+          this.openingResume.set(null);
+          this.resumeFile.set({
+            blob: download.blob,
+            fileName: download.fileName,
+          });
+        },
+        error: (error: unknown) => {
+          this.openingResume.set(null);
+          this.resumeError.set(
+            this.messageOf(error, 'No se pudo abrir el CV del candidato.'),
+          );
+        },
+      });
+  }
+
+  protected closeResume(): void {
+    this.resumeOf.set(null);
+    this.resumeFile.set(null);
+    this.resumeError.set(null);
+    this.openingResume.set(null);
   }
 
   private messageOf(error: unknown, fallback: string): string {

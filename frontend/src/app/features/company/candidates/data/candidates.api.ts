@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -6,6 +6,7 @@ import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
   CandidateDetail,
+  CandidateResumeDownload,
   CandidatesFilters,
   CandidatesPage,
   TalentQuota,
@@ -47,5 +48,29 @@ export class CandidatesApi {
     return this.http
       .get<ApiSuccessResponse<CandidateDetail>>(`${this.base}/${id}`)
       .pipe(map((r) => r.content));
+  }
+
+  /**
+   * Fichero de un CV del candidato (T30). No descuenta cupo: la visita ya se
+   * cobró al abrir la ficha, que es de donde sale el `resumeId`.
+   */
+  resume(id: string, resumeId: string): Observable<CandidateResumeDownload> {
+    return this.http
+      .get(`${this.base}/${id}/resumes/${resumeId}`, {
+        observe: 'response',
+        responseType: 'blob',
+      })
+      .pipe(map((response) => this.toDownload(response)));
+  }
+
+  private toDownload(response: HttpResponse<Blob>): CandidateResumeDownload {
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const encodedName =
+      disposition.match(/filename="([^"]+)"/i)?.[1] ?? 'hoja-de-vida.pdf';
+
+    return {
+      blob: response.body ?? new Blob(),
+      fileName: decodeURIComponent(encodedName),
+    };
   }
 }

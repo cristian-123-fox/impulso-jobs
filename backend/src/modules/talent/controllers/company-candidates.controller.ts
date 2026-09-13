@@ -1,5 +1,14 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Res,
+  StreamableFile,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import {
   ClientInfo,
   type ClientInfoPayload,
@@ -82,6 +91,37 @@ export class CompanyCandidatesController {
     @ClientInfo() client: ClientInfoPayload,
   ): Promise<CandidateDetailDto> {
     return this.candidates.get(id, this.actor(user, client));
+  }
+
+  /**
+   * Fichero de una hoja de vida del candidato (T30). Sirve al visor del
+   * front (`responseType: 'blob'`), así que la cabecera `attachment` no
+   * estorba: el navegador nunca ve esta respuesta como una navegación.
+   *
+   * No consume cupo ni lo exige — ver `getResumeDownload` en el caso de uso.
+   */
+  @Get(':id/resumes/:resumeId')
+  @RequirePermissions('candidates.cv.read')
+  async resume(
+    @Param('id') id: string,
+    @Param('resumeId') resumeId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const result = await this.candidates.getResumeDownload(
+      id,
+      resumeId,
+      this.actor(user, client),
+    );
+
+    response.setHeader('Content-Type', result.mimeType);
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${encodeURIComponent(result.fileName)}"`,
+    );
+
+    return new StreamableFile(result.stream);
   }
 
   private actor(

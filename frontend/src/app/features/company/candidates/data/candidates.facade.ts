@@ -4,6 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { CandidatesApi } from '@/features/company/candidates/data/candidates.api';
 import {
   CandidateDetail,
+  CandidateResumeDownload,
   CandidateSearchItem,
   TalentQuota,
 } from '@/features/company/candidates/models/candidates.models';
@@ -83,5 +84,10 @@ export class CandidatesFacade {
         );
       }),
     );
+  }
+
+  /** Fichero de un CV de la ficha abierta, para el visor (T30). */
+  resume(id: string, resumeId: string): Observable<CandidateResumeDownload> {
+    return this.api.resume(id, resumeId);
   }
 }

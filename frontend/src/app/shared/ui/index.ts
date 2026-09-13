@@ -5,6 +5,10 @@ export { IjLogo } from '@/shared/ui/logo/logo';
 export { IjModal } from '@/shared/ui/modal/modal';
 export { IjPricingCard } from '@/shared/ui/pricing-card/pricing-card';
 export { IjPageHeader } from '@/shared/ui/page-header/page-header';
+export {
+  IjPdfViewer,
+  type IjPdfFile,
+} from '@/shared/ui/pdf-viewer/pdf-viewer';
 export { TONE_SOFT, TONE_TEXT, type Tone } from '@/shared/ui/tone';
 
 // Controles de formulario (CVA + Tailwind + CDK)
