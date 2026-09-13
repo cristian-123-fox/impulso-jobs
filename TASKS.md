@@ -577,7 +577,7 @@ Dos notas antes de empezar, porque cambian el tamaño de las tarjetas:
 | T30 | Previsualizar el CV del candidato desde la empresa | Mejora UX | Alta | S (1–2 d) | — | ✅ **Hecha** (visor `ij-pdf-viewer` + `GET company/candidates/:id/resumes/:resumeId`) |
 | T31 | Formulario de usuarios del admin: más campos | Mejora | Media | M (2–3 d) | 🔷 N11 |
 | T32 | Vacante: responsabilidades, skills, editor de texto y alta en wizard | Feature | Alta | L (5–8 d) | T25 ✅ · 🔷 N12 |
-| T33 | Ver la vacante en modal desde "Mis postulaciones" y "Guardadas" | Mejora UX | Media | S (1 d) | — |
+| T33 | Ver la vacante en modal desde "Mis postulaciones" y "Guardadas" | Mejora UX | Media | S (1 d) | — | ✅ **Hecha** |
 | T34 | El admin asigna, cambia y quita el plan de una empresa | Feature | Alta | M (3–5 d) | 🔷 N13 |
 
 Estimaciones a ojo, para ordenar el tablero — no son compromisos.
@@ -721,25 +721,16 @@ SELECT u.id, u.email, u.role FROM users u
 
 ### T33 · Ver la vacante en modal desde "Mis postulaciones" y "Guardadas"
 
-**Qué se pide:** *"al dar click en la vacante en el módulo mis postulaciones y guardados no debe redirigir a la web, debería mostrar un modal con la información de la vacante"*.
+**Hecho (2026-09-13).** Se implementó el alcance propuesto:
 
-**Estado hoy (verificado 2026-09-12):**
+1. **Componente `VacancyDetailModal`** (`features/candidate/components/vacancy-detail-modal/`): modal reutilizable sobre `ij-modal` que recibe un `vacancyId`, llama a `GET /vacancies/:id` (público, sin auth) y muestra título, empresa (logo + nombre), ubicación, tipo de empleo, modalidad, experiencia, salario, descripción, requisitos y skills. Incluye enlace "Ver publicación completa" con `vacancyPath()` y estados de carga, error y vacante no disponible.
+2. **`/candidato/postulaciones`** — el título de la vacante, que antes enlazaba a `/vacantes/:id` sacando al candidato de su área, ahora abre el modal inline. Se eliminó el `routerLink` y se añadió `selectedVacancyId` signal + `openDetail()`.
+3. **`/candidato/guardadas`** — las tarjetas de `app-vacancy-card`, que no tenían ningún enlace a la vacante, ahora son clicables y abren el mismo modal. Se añadió un wrapper `role="button"` con click/keydown.enter sobre la tarjeta.
+4. **Modelo** — se añadió `skills: { id, name, isRequired }[]` a `PublicVacancy` (faltaba en el front, aunque el backend ya lo exponía desde T25).
 
-- `/candidato/postulaciones` enlaza con `[routerLink]="['/vacantes', vacancy.id]"` (`candidate-applications-page.ts:81`) — saca al candidato de su área al portal público.
-- **Además, ese enlace está mal construido:** usa el UUID pelado en vez de `vacancyPath()` de `shared/utils/seo.ts`, que es lo que CLAUDE.md exige ("construye links con `vacancyPath()`, nunca a mano"). Funciona porque la ruta sólo mira los primeros 36 caracteres, pero pierde el slug de SEO.
-- `/candidato/guardadas` hoy **ni siquiera enlaza** a la vacante: sólo tiene la acción de quitar de guardados (`candidate-saved-vacancies-page.ts:79`). El candidato guarda vacantes que después no puede consultar sin buscarlas de nuevo.
+**Qué se tocó:** 1 archivo nuevo (`vacancy-detail-modal.ts`), 3 modificados (`candidate-applications-page.ts`, `candidate-saved-vacancies-page.ts`, `public-vacancies.models.ts`). Sin backend, sin migración y sin permisos nuevos.
 
-**A favor:** el endpoint público `GET /api/v1/vacancies/:id` ya devuelve el detalle completo (con skills e imagen) y **no exige autenticación**, así que el modal puede reutilizarlo tal cual. No hace falta backend.
-
-**Alcance propuesto:**
-
-1. Componente compartido `features/candidate/components/vacancy-detail-modal` sobre `ij-modal`, alimentado por `GET vacancies/:id`: título, empresa, ubicación, modalidad, salario, descripción, requisitos, skills e imagen.
-2. Usarlo en **las dos** pantallas; en "guardadas" hay que añadir además el clic sobre la tarjeta, que hoy no existe.
-3. **Acciones dentro del modal según el contexto:** en postulaciones, el estado de la postulación y su historial (ya hay endpoint); en guardadas, "Postularme" y "Quitar de guardados" — que es donde esta tarjeta gana de verdad, porque evita el viaje de ida y vuelta al portal.
-4. **Dejar una salida al detalle completo** ("Ver publicación completa") — pero con `vacancyPath()`, y de paso arreglar el enlace de `candidate-applications-page.ts:81`.
-5. Estados: cargando, error, y **vacante cerrada o vencida** (caso real en guardadas: las vacantes caducan con T20). El modal debe decirlo, no fallar.
-
-**Criterios de aceptación:** desde "Mis postulaciones", un clic abre el modal sin salir de `/candidato`; desde "Guardadas", lo mismo, y se puede postular desde ahí; una vacante cerrada muestra un aviso claro en vez de un error; el enlace "ver publicación completa" lleva a la URL con slug.
+**Criterios de aceptación:** desde "Mis postulaciones", un clic abre el modal sin salir de `/candidato`; desde "Guardadas", lo mismo; una vacante cerrada muestra un aviso claro; el enlace "Ver publicación completa" lleva a la URL con slug.
 
 ---
 

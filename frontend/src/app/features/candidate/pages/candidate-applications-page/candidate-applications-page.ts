@@ -15,6 +15,7 @@ import {
   CandidateApplication,
 } from '@/features/candidate/models/candidate-applications.models';
 import { IjBadge, IjButton, IjIcon, Tone } from '@/shared/ui';
+import { VacancyDetailModal } from '@/features/candidate/components/vacancy-detail-modal/vacancy-detail-modal';
 
 const PAGE_SIZE = 10;
 
@@ -22,7 +23,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-candidate-applications-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, AdminPagination, IjBadge, IjButton, IjIcon],
+  imports: [DatePipe, RouterLink, AdminPagination, IjBadge, IjButton, IjIcon, VacancyDetailModal],
   template: `
     <div class="mx-auto max-w-[1180px]">
       <div class="mb-6">
@@ -77,12 +78,13 @@ const PAGE_SIZE = 10;
 
               <div class="min-w-0 flex-1">
                 @if (item.vacancy; as vacancy) {
-                  <a
-                    [routerLink]="['/vacantes', vacancy.id]"
-                    class="block truncate text-[15px] font-bold text-ink-900 hover:text-brand"
+                  <button
+                    type="button"
+                    class="block truncate text-left text-[15px] font-bold text-ink-900 hover:text-brand"
+                    (click)="openDetail(vacancy.id)"
                   >
                     {{ vacancy.title }}
-                  </a>
+                  </button>
                   <p class="mt-0.5 truncate text-[13px] text-muted">
                     {{ vacancy.companyName ?? 'Empresa confidencial' }}
                     · {{ vacancy.municipality }}, {{ vacancy.state }}
@@ -117,6 +119,13 @@ const PAGE_SIZE = 10;
           </div>
         }
       }
+
+      @if (selectedVacancyId(); as vacancyId) {
+        <app-vacancy-detail-modal
+          [vacancyId]="vacancyId"
+          (close)="selectedVacancyId.set(null)"
+        />
+      }
     </div>
   `,
 })
@@ -130,6 +139,7 @@ export class CandidateApplicationsPage {
   protected readonly page = signal(1);
   protected readonly pages = signal(1);
   protected readonly total = signal(0);
+  protected readonly selectedVacancyId = signal<string | null>(null);
 
   constructor() {
     this.load(1);
@@ -137,6 +147,10 @@ export class CandidateApplicationsPage {
 
   protected onPageChange(page: number): void {
     this.load(page);
+  }
+
+  protected openDetail(vacancyId: string): void {
+    this.selectedVacancyId.set(vacancyId);
   }
 
   protected statusTone(status: ApplicationStatus): Tone {

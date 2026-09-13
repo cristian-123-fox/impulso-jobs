@@ -12,6 +12,7 @@ import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-
 import { CandidateSavedVacanciesApi } from '@/features/candidate/data/candidate-saved-vacancies.api';
 import { SavedVacancyItem } from '@/features/candidate/models/candidate-saved-vacancies.models';
 import { VacancyCard } from '@/features/public/vacancies/components/vacancy-card/vacancy-card';
+import { VacancyDetailModal } from '@/features/candidate/components/vacancy-detail-modal/vacancy-detail-modal';
 
 const PAGE_SIZE = 10;
 
@@ -19,7 +20,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-candidate-saved-vacancies-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, AdminPagination, VacancyCard, IjButton, IjIcon],
+  imports: [RouterLink, AdminPagination, VacancyCard, IjButton, IjIcon, VacancyDetailModal],
   template: `
     <h1 class="text-[22px] font-extrabold text-ink-900">Vacantes guardadas</h1>
     <p class="mt-1 text-[13.5px] text-muted">
@@ -83,7 +84,15 @@ const PAGE_SIZE = 10;
                 </button>
               </div>
               @if (item.vacancy; as vacancy) {
-                <app-vacancy-card [vacancy]="vacancy" />
+                <div
+                  role="button"
+                  tabindex="0"
+                  class="cursor-pointer"
+                  (click)="openDetail(vacancy.id)"
+                  (keydown.enter)="openDetail(vacancy.id)"
+                >
+                  <app-vacancy-card [vacancy]="vacancy" />
+                </div>
               } @else {
                 <div
                   class="rounded-2xl bg-white p-6 text-[13.5px] text-muted shadow-card"
@@ -104,6 +113,13 @@ const PAGE_SIZE = 10;
         }
       }
     </div>
+
+    @if (selectedVacancyId(); as vacancyId) {
+      <app-vacancy-detail-modal
+        [vacancyId]="vacancyId"
+        (close)="selectedVacancyId.set(null)"
+      />
+    }
   `,
 })
 export class CandidateSavedVacanciesPage {
@@ -118,6 +134,7 @@ export class CandidateSavedVacanciesPage {
   protected readonly total = signal(0);
   /** Id de vacante cuyo "Quitar" está en curso. */
   protected readonly removing = signal<string | null>(null);
+  protected readonly selectedVacancyId = signal<string | null>(null);
 
   constructor() {
     // Ruta Client (área privada): se puede cargar desde el constructor.
@@ -154,6 +171,10 @@ export class CandidateSavedVacanciesPage {
     return new Intl.DateTimeFormat('es-MX', { dateStyle: 'long' }).format(
       new Date(item.savedAt),
     );
+  }
+
+  protected openDetail(vacancyId: string): void {
+    this.selectedVacancyId.set(vacancyId);
   }
 
   protected remove(item: SavedVacancyItem): void {

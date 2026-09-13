@@ -57,6 +57,8 @@ export interface PublicVacancy {
   viewsCount: number;
   /** Imagen de referencia de la vacante (T24). */
   imageUrl: string | null;
+  /** Skills requeridas/deseadas para la vacante (T25). */
+  skills: { id: string; name: string; isRequired: boolean }[];
   company: PublicVacancyCompany | null;
 }
 
