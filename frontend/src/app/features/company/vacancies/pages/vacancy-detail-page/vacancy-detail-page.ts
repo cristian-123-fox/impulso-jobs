@@ -11,7 +11,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
-import { IjIcon } from '@/shared/ui';
+import {
+  IjIcon,
+  IjRichText,
+} from '@/shared/ui';
 import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -34,7 +37,12 @@ const STATUS_BADGE: Record<VacancyStatus, string> = {
 @Component({
   selector: 'app-vacancy-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, IjIcon],
+  imports: [
+    DatePipe,
+    IjIcon,
+    IjRichText,
+    RouterLink,
+  ],
   template: `
     <div class="mx-auto max-w-[900px]">
       <a
@@ -109,15 +117,46 @@ const STATUS_BADGE: Record<VacancyStatus, string> = {
 
             <div class="rounded-2xl bg-white p-6 shadow-card">
               <h2 class="text-base font-bold text-ink-900">Descripción</h2>
-              <p class="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-body">
-                {{ data.description }}
-              </p>
+              <ij-rich-text class="mt-2" [value]="data.description" />
+
+              @if (data.responsibilities) {
+                <h2 class="mt-6 text-base font-bold text-ink-900">
+                  Responsabilidades
+                </h2>
+                <ij-rich-text
+                  class="mt-2"
+                  variant="check"
+                  [value]="data.responsibilities"
+                />
+              }
 
               @if (data.requirements) {
                 <h2 class="mt-6 text-base font-bold text-ink-900">Requisitos</h2>
-                <p class="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-body">
-                  {{ data.requirements }}
-                </p>
+                <ij-rich-text
+                  class="mt-2"
+                  variant="check"
+                  [value]="data.requirements"
+                />
+              }
+
+              @if (data.skills.length > 0) {
+                <h2 class="mt-6 text-base font-bold text-ink-900">
+                  Habilidades
+                </h2>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  @for (skill of data.skills; track skill.id) {
+                    <span
+                      class="rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold"
+                      [class]="
+                        skill.isRequired
+                          ? 'bg-brand-50 text-brand-strong'
+                          : 'bg-surface text-body'
+                      "
+                    >
+                      {{ skill.name }}
+                    </span>
+                  }
+                </div>
               }
             </div>
           }

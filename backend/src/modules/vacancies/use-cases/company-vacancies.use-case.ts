@@ -43,6 +43,7 @@ export interface VacancyData {
   title: string;
   description: string;
   requirements?: string;
+  responsibilities?: string;
   employmentType: EmploymentType;
   workMode: WorkMode;
   state: string;
@@ -261,6 +262,9 @@ export class CompanyVacanciesUseCase {
     vacancy.title = data.title.trim();
     vacancy.description = data.description.trim();
     vacancy.requirements = data.requirements?.trim() || null;
+    // Ya viene saneado por `@RichText` en el DTO; aquí sólo se normaliza el
+    // "vacío" a null para que el portal pueda ocultar la sección.
+    vacancy.responsibilities = data.responsibilities?.trim() || null;
     vacancy.employmentType = data.employmentType;
     vacancy.workMode = data.workMode;
     vacancy.state = data.state;

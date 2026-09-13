@@ -13,6 +13,7 @@ import {
   Min,
 } from 'class-validator';
 import { MX_STATE_CODES } from '@/common/catalogs/mx-states';
+import { RichText } from '@/common/decorators/rich-text.decorator';
 import { PROFESSIONAL_AREA_IDS } from '@/common/catalogs/professional-areas';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
 import { SaveVacancySkillDto } from '@/modules/vacancies/dto/vacancy-skill.dto';
@@ -47,17 +48,31 @@ export class SaveVacancyDto {
   @MaxLength(160)
   title!: string;
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty({ message: 'La descripción es obligatoria.' })
-  @MaxLength(10_000)
+  /**
+   * Los tres campos largos pasan por `@RichText`, que **sanea el HTML del
+   * editor antes de validarlo** (T32). El tope cuenta caracteres de contenido,
+   * no etiquetas: con `@MaxLength` a secas, unas cuantas negritas agotarían el
+   * límite sólo con marcado.
+   */
+  @ApiProperty({ description: 'HTML del editor; se sanea al recibirlo.' })
+  @RichText({
+    max: 10_000,
+    required: true,
+    message: 'La descripción es obligatoria.',
+  })
   description!: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(10_000)
+  @ApiPropertyOptional({
+    description: 'HTML del editor; se sanea al recibirlo.',
+  })
+  @RichText({ max: 10_000 })
   requirements?: string;
+
+  @ApiPropertyOptional({
+    description: 'Responsabilidades del puesto. HTML del editor; se sanea.',
+  })
+  @RichText({ max: 10_000 })
+  responsibilities?: string;
 
   @ApiProperty({ enum: [...EMPLOYMENT_TYPES] })
   @IsIn([...EMPLOYMENT_TYPES], {

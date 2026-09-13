@@ -16,14 +16,12 @@ import { IjButton, IjIcon, IjModal, IjOption, IjSelect } from '@/shared/ui';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
 import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
 import { VacanciesFacade } from '@/features/company/vacancies/data/vacancies.facade';
-import { VacancyForm } from '@/features/company/vacancies/components/vacancy-form/vacancy-form';
 import { VacancyQuestionsForm } from '@/features/company/vacancies/components/vacancy-questions-form/vacancy-questions-form';
 import {
   VacanciesTable,
   VacancyActionEvent,
 } from '@/features/company/vacancies/components/vacancies-table/vacancies-table';
 import {
-  SaveVacancyPayload,
   SaveVacancyQuestionPayload,
   VACANCY_STATUS_LABELS,
   Vacancy,
@@ -38,7 +36,6 @@ import {
     FormsModule,
     AdminPagination,
     VacanciesTable,
-    VacancyForm,
     VacancyQuestionsForm,
     IjButton,
     IjIcon,
@@ -170,25 +167,6 @@ import {
       }
     </div>
 
-    @if (formOpen()) {
-      <ij-modal
-        [title]="editing() ? 'Editar vacante' : 'Nueva vacante'"
-        [subtitle]="editing()?.title ?? 'Se publicará de inmediato en el portal.'"
-        size="lg"
-        (close)="closeForm()"
-      >
-        <app-vacancy-form
-          [vacancy]="editing()"
-          [submitting]="saving()"
-          [error]="formError()"
-          (save)="onSave($event)"
-          (imageSelected)="pendingImage.set($event)"
-          (imageRemoved)="onImageRemoved()"
-          (cancel)="closeForm()"
-        />
-      </ij-modal>
-    }
-
     @if (questionsFor(); as vacancy) {
       <ij-modal
         title="Preguntas de filtrado"
@@ -213,8 +191,6 @@ export class VacanciesListPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly formOpen = signal(false);
-  protected readonly editing = signal<Vacancy | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -222,8 +198,6 @@ export class VacanciesListPage {
   protected readonly questionsData = signal<VacancyQuestion[]>([]);
   protected readonly questionsSaving = signal(false);
   protected readonly questionsError = signal<string | null>(null);
-  protected readonly pendingImage = signal<File | null>(null);
-  protected readonly imageRemoved = signal(false);
 
   protected readonly statusOptions: readonly IjOption[] = [
     { value: '', label: 'Todos los estados' },
@@ -271,23 +245,14 @@ export class VacanciesListPage {
     this.facade.load(1);
   }
 
+  /**
+   * T32: el alta y la edición viven en `/empresa/vacantes/nueva` y
+   * `/empresa/vacantes/:id/editar`. El `ij-modal` que había aquí se retiró: 19
+   * campos y tres editores enriquecidos no caben en un diálogo, que es la
+   * excepción que CLAUDE.md contempla para sacar un formulario a ruta propia.
+   */
   protected openCreate(): void {
-    this.editing.set(null);
-    this.formError.set(null);
-    this.formOpen.set(true);
-  }
-
-  protected closeForm(): void {
-    this.formOpen.set(false);
-    this.editing.set(null);
-    this.formError.set(null);
-    this.pendingImage.set(null);
-    this.imageRemoved.set(false);
-  }
-
-  protected onImageRemoved(): void {
-    this.imageRemoved.set(true);
-    this.pendingImage.set(null);
+    void this.router.navigate(['/empresa/vacantes/nueva']);
   }
 
   protected onAction(event: VacancyActionEvent): void {
@@ -297,9 +262,7 @@ export class VacanciesListPage {
         void this.router.navigate(['/empresa/vacantes', vacancy.id]);
         return;
       case 'edit':
-        this.editing.set(vacancy);
-        this.formError.set(null);
-        this.formOpen.set(true);
+        void this.router.navigate(['/empresa/vacantes', vacancy.id, 'editar']);
         return;
       case 'questions':
         this.openQuestions(vacancy);
@@ -329,57 +292,6 @@ export class VacanciesListPage {
         }
         this.run(this.facade.close(vacancy.id), 'No se pudo cerrar la vacante.');
     }
-  }
-
-  protected onSave(payload: SaveVacancyPayload): void {
-    const editing = this.editing();
-    const shouldRemoveImage = this.imageRemoved();
-    this.saving.set(true);
-    this.formError.set(null);
-
-    const request = editing
-      ? this.facade.update(editing.id, payload)
-      : this.facade.create(payload);
-
-    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: (saved) => {
-        const image = this.pendingImage();
-        this.pendingImage.set(null);
-        this.imageRemoved.set(false);
-
-        if (image && saved.id) {
-          this.vacanciesApi
-            .uploadImage(saved.id, image)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: () => this.finishSave(editing),
-              error: () => this.finishSave(editing),
-            });
-        } else if (shouldRemoveImage && editing) {
-          this.vacanciesApi
-            .deleteImage(saved.id)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: () => this.finishSave(editing),
-              error: () => this.finishSave(editing),
-            });
-        } else {
-          this.finishSave(editing);
-        }
-      },
-      error: (error: unknown) => {
-        this.saving.set(false);
-        this.formError.set(
-          this.messageOf(error, 'No se pudo guardar la vacante.'),
-        );
-      },
-    });
-  }
-
-  private finishSave(editing: Vacancy | null): void {
-    this.saving.set(false);
-    this.closeForm();
-    this.facade.load(editing ? this.facade.page() : 1);
   }
 
   protected closeQuestions(): void {

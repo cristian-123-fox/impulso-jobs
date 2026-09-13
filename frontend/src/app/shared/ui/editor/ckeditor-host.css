@@ -1,0 +1,71 @@
+/*
+ * CSS de CKEditor 5, importado aquí y no en `angular.json` a propósito: así
+ * viaja en el chunk de `/empresa` y el portal público —que nunca abre un
+ * editor— no carga ~250 KB de estilos que no usa.
+ *
+ * El componente declara `ViewEncapsulation.None`, así que estas reglas son
+ * globales una vez cargado. Es necesario: CKEditor monta la barra, los globos
+ * y los menús en `document.body`, fuera del árbol del componente.
+ */
+/* `exports` del paquete mapea './*' → './dist/*': la ruta va SIN `dist/`. */
+@import 'ckeditor5/ckeditor5.css';
+
+/*
+ * Ajustes para que el editor se parezca al resto del UI Kit: el borde y el
+ * foco los pinta la caja del componente (`ij-editor__box`), no CKEditor.
+ */
+.ij-editor__box .ck.ck-editor__top .ck-toolbar {
+  border: 0;
+  border-bottom: 1px solid var(--ij-editor-line, #e5e7eb);
+  border-radius: 0.75rem 0.75rem 0 0;
+  background: #fafafa;
+}
+
+.ij-editor__box .ck.ck-editor__editable {
+  border: 0;
+  border-radius: 0 0 0.75rem 0.75rem;
+  min-height: 220px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* El anillo de foco propio de CKEditor sobraría: ya lo pinta la caja. */
+.ij-editor__box .ck.ck-editor__editable.ck-focused {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
+.ij-editor__box .ck.ck-editor {
+  border-radius: 0.75rem;
+}
+
+/* Que el contenido del editor se lea igual que en el detalle público. */
+.ij-editor__box .ck-content ul,
+.ij-editor__box .ck-content ol {
+  padding-left: 1.35rem;
+}
+
+.ij-editor__box .ck-content ul {
+  list-style: disc;
+}
+
+.ij-editor__box .ck-content ol {
+  list-style: decimal;
+}
+
+.ij-editor__box .ck-content h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.ij-editor__box .ck-content h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.ij-editor__box .ck-content blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 0.9rem;
+  font-style: italic;
+}

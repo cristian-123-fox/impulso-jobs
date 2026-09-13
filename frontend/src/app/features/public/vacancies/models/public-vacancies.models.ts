@@ -31,6 +31,8 @@ export interface PublicVacancy {
   title: string;
   description: string;
   requirements: string | null;
+  /** Responsabilidades del puesto (T32). HTML del editor o texto plano antiguo. */
+  responsibilities: string | null;
   employmentType: string;
   workMode: string;
   state: string;

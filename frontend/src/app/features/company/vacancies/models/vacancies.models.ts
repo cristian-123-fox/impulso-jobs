@@ -96,12 +96,41 @@ export const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
 };
 
 /** Vacante vista por su empresa. */
+/** Skill de la vacante tal como la ve la empresa (T25 backend, T32 frontend). */
+export interface VacancySkill {
+  id: string;
+  skillId: string;
+  name: string;
+  isRequired: boolean;
+  sortOrder: number;
+}
+
+/** Skill tal como viaja al guardar: sin `id` si es nueva. */
+export interface SaveVacancySkill {
+  skillId?: string;
+  name: string;
+  isRequired?: boolean;
+  sortOrder?: number;
+}
+
+/** Sugerencia del autocomplete (`GET company/vacancies/skills/search`). */
+export interface SkillSuggestion {
+  id: string;
+  name: string;
+}
+
+/** Tope por vacante, igual que `MAX_SKILLS_PER_VACANCY` del backend. */
+export const MAX_VACANCY_SKILLS = 15;
+
 export interface Vacancy {
   id: string;
   companyId: string;
   title: string;
+  /** HTML saneado desde T32; las vacantes antiguas siguen en texto plano. */
   description: string;
   requirements: string | null;
+  /** Responsabilidades del puesto (T32). */
+  responsibilities: string | null;
   employmentType: EmploymentType;
   workMode: WorkMode;
   state: string;
@@ -140,6 +169,8 @@ export interface Vacancy {
   viewsCount: number;
   /** Imagen de referencia de la vacante (T24). */
   imageUrl: string | null;
+  /** Skills de la vacante (T25 en backend; el formulario las edita desde T32). */
+  skills: VacancySkill[];
 }
 
 export interface VacancyStats {
@@ -168,8 +199,10 @@ export interface VacanciesFilters {
 /** Alta y edición. Los distintivos los otorga el plan, no el formulario. */
 export interface SaveVacancyPayload {
   title: string;
+  /** HTML del editor; el backend lo sanea al recibirlo. */
   description: string;
   requirements?: string;
+  responsibilities?: string;
   employmentType: EmploymentType;
   workMode: WorkMode;
   state: string;
@@ -187,6 +220,11 @@ export interface SaveVacancyPayload {
   salaryHidden?: boolean;
   /** Sólo se honra si el plan otorgó `canBeConfidential`. */
   isConfidential?: boolean;
+  /**
+   * Skills de la vacante. Al **crear** sólo se guardan si vienen con elementos;
+   * al **editar**, mandar `[]` las borra todas — así lo trata el backend.
+   */
+  skills?: SaveVacancySkill[];
 }
 
 // ---- Preguntas de filtrado (M15) ----

@@ -7,6 +7,7 @@ import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
   SaveVacancyPayload,
   SaveVacancyQuestionPayload,
+  SkillSuggestion,
   VacanciesFilters,
   VacanciesPage,
   Vacancy,
@@ -46,6 +47,20 @@ export class VacanciesApi {
   update(id: string, payload: SaveVacancyPayload): Observable<Vacancy> {
     return this.http
       .put<ApiSuccessResponse<Vacancy>>(`${this.base}/${id}`, payload)
+      .pipe(map((r) => r.content));
+  }
+
+  /**
+   * Autocomplete de skills del catálogo (T25). Devuelve las que ya existen; el
+   * formulario puede además mandar un nombre nuevo, que el backend crea o
+   * reutiliza por nombre al guardar.
+   */
+  searchSkills(query: string, limit = 10): Observable<SkillSuggestion[]> {
+    const params = new HttpParams().set('q', query).set('limit', limit);
+    return this.http
+      .get<
+        ApiSuccessResponse<SkillSuggestion[]>
+      >(`${this.base}/skills/search`, { params })
       .pipe(map((r) => r.content));
   }
 

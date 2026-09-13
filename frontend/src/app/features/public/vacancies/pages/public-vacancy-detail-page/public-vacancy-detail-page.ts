@@ -25,11 +25,18 @@ import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { Role } from '@/core/models/role.enum';
 import { SeoService } from '@/core/services/seo.service';
 import { vacancyPath } from '@/shared/utils/seo';
+import { excerpt, toPlainText } from '@/shared/utils/rich-text';
 import { CandidateApplicationsApi } from '@/features/candidate/data/candidate-applications.api';
 import { CandidateSavedVacanciesApi } from '@/features/candidate/data/candidate-saved-vacancies.api';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { PROFESSIONAL_AREA_NAMES } from '@/shared/catalogs/professional-areas.catalogs';
-import { IconName, IjButton, IjIcon, IjModal } from '@/shared/ui';
+import {
+  IconName,
+  IjButton,
+  IjIcon,
+  IjModal,
+  IjRichText,
+} from '@/shared/ui';
 import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
 import {
   ApplicationAnswerPayload,
@@ -75,24 +82,18 @@ interface MapCoords {
 /** Color de marca (tailwind.config.js) para el marcador del mapa. */
 const BRAND_COLOR = '#e47c3f';
 
-/** Skills quemadas por enquanto — se reemplazarán con datos del backend. */
-const JOB_SKILLS = [
-  'Html',
-  'Python',
-  'WordPress',
-  'JavaScript',
-  'Figma',
-  'Angular',
-  'Reactjs',
-  'Drupal',
-  'Joomla',
-];
-
 /** Detalle público de una vacante activa. Oculta la empresa si es confidencial. */
 @Component({
   selector: 'app-public-vacancy-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, IjButton, IjIcon, IjModal, TranslocoDirective],
+  imports: [
+    RouterLink,
+    IjButton,
+    IjIcon,
+    IjModal,
+    IjRichText,
+    TranslocoDirective,
+  ],
   styles: `
     .vacancy-banner {
       background: linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%);
@@ -268,35 +269,29 @@ const JOB_SKILLS = [
                   <h2 class="mt-8 text-lg font-bold text-ink-900">
                     {{ t('vacancy.description') }}
                   </h2>
-                  <p class="mt-3 whitespace-pre-line text-[14.5px] leading-relaxed text-body">
-                    {{ data.description }}
-                  </p>
+                  <ij-rich-text class="mt-3" [value]="data.description" />
+
+                  @if (data.responsibilities) {
+                    <h2 class="mt-8 text-lg font-bold text-ink-900">
+                      {{ t('vacancy.responsibilities') }}
+                    </h2>
+                    <ij-rich-text
+                      class="mt-3"
+                      variant="check"
+                      [value]="data.responsibilities"
+                    />
+                  }
 
                   @if (data.requirements) {
                     <h2 class="mt-8 text-lg font-bold text-ink-900">
                       {{ t('vacancy.requirements') }}
                     </h2>
-                    <ul class="mt-3 space-y-3">
-                      @for (item of lines(data.requirements); track $index) {
-                        <li class="flex items-start gap-3 text-[14.5px] leading-relaxed text-body">
-                          <ij-icon name="check" [size]="18" class="mt-0.5 flex-shrink-0 text-amber-600" [strokeWidth]="3" />
-                          <span>{{ item }}</span>
-                        </li>
-                      }
-                    </ul>
+                    <ij-rich-text
+                      class="mt-3"
+                      variant="check"
+                      [value]="data.requirements"
+                    />
                   }
-
-                  <h2 class="mt-8 text-lg font-bold text-ink-900">
-                    {{ t('vacancy.responsibilities') }}
-                  </h2>
-                  <ul class="mt-3 space-y-3">
-                    @for (item of lines(data.description); track $index) {
-                      <li class="flex items-start gap-3 text-[14.5px] leading-relaxed text-body">
-                        <ij-icon name="check" [size]="18" class="mt-0.5 flex-shrink-0 text-amber-600" [strokeWidth]="3" />
-                        <span>{{ item }}</span>
-                      </li>
-                    }
-                  </ul>
 
                   @if (shareLinks().length > 0) {
                     <h2 class="mt-7 border-t border-line pt-5 text-base font-bold text-ink-900">
@@ -378,20 +373,30 @@ const JOB_SKILLS = [
                     </dl>
                   </div>
 
-                  <div class="rounded-2xl bg-white p-6 shadow-card">
-                    <h2 class="border-l-4 border-brand pl-3 text-lg font-bold text-ink-900">
-                      {{ t('vacancy.skills') }}
-                    </h2>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                      @for (skill of jobSkills; track skill) {
-                        <span
-                          class="rounded-full bg-brand-50 px-4 py-1.5 text-[13px] font-semibold text-brand-strong"
-                        >
-                          {{ skill }}
-                        </span>
-                      }
+                  @if (data.skills.length > 0) {
+                    <div class="rounded-2xl bg-white p-6 shadow-card">
+                      <h2 class="border-l-4 border-brand pl-3 text-lg font-bold text-ink-900">
+                        {{ t('vacancy.skills') }}
+                      </h2>
+                      <div class="mt-4 flex flex-wrap gap-2">
+                        @for (skill of data.skills; track skill.id) {
+                          <span
+                            class="rounded-full px-4 py-1.5 text-[13px] font-semibold"
+                            [class]="
+                              skill.isRequired
+                                ? 'bg-brand-50 text-brand-strong'
+                                : 'bg-surface text-body'
+                            "
+                            [title]="
+                              skill.isRequired ? 'Obligatoria' : 'Deseable'
+                            "
+                          >
+                            {{ skill.name }}
+                          </span>
+                        }
+                      </div>
                     </div>
-                  </div>
+                  }
 
                   <div class="rounded-2xl bg-white p-6 shadow-card">
                     <div class="flex items-center gap-3">
@@ -616,7 +621,6 @@ export class PublicVacancyDetailPage {
   private readonly platformId = inject(PLATFORM_ID);
 
   protected readonly candidateRole = Role.CANDIDATE;
-  protected readonly jobSkills = JOB_SKILLS;
   protected readonly vacancy = signal<PublicVacancy | null>(null);
   // Guardar vacante (T17): estado del toggle.
   protected readonly saved = signal(false);
@@ -786,7 +790,10 @@ export class PublicVacancyDetailPage {
         company: companyName,
         place,
       }),
-      description: vacancy.description,
+      // Texto plano y en una sola línea: una `<meta description>` con etiquetas
+      // o saltos dentro se ve fatal en el buscador, que además la corta sobre
+      // los ~160 caracteres (T32).
+      description: excerpt(vacancy.description, 160),
       canonicalPath: vacancyPath(vacancy),
       image: vacancy.imageUrl ?? vacancy.company?.logoUrl ?? undefined,
     });
@@ -803,7 +810,9 @@ export class PublicVacancyDetailPage {
       '@context': 'https://schema.org/',
       '@type': 'JobPosting',
       title: vacancy.title,
-      description: vacancy.description,
+      // El JSON-LD va dentro de un `<script>`: un `</script>` en la descripción
+      // se escaparía del bloque. `toPlainText` lo neutraliza.
+      description: toPlainText(vacancy.description),
       datePosted: vacancy.publishedAt?.slice(0, 10),
       ...(validThrough && { validThrough }),
       employmentType: SCHEMA_EMPLOYMENT[vacancy.employmentType] ?? 'OTHER',
@@ -1009,12 +1018,6 @@ export class PublicVacancyDetailPage {
     return STATE_NAMES.get(code) ?? code;
   }
 
-  protected lines(text: string): readonly string[] {
-    return text
-      .split(/\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-  }
 
   protected vacancyPath(vacancy: PublicVacancy): string {
     return vacancyPath(vacancy);

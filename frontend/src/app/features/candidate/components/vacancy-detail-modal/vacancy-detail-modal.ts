@@ -14,7 +14,7 @@ import { DatePipe } from '@angular/common';
 import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { vacancyPath } from '@/shared/utils/seo';
-import { IjBadge, IjIcon, IjModal } from '@/shared/ui';
+import { IjBadge, IjIcon, IjModal, IjRichText } from '@/shared/ui';
 import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
 import { PublicVacancy } from '@/features/public/vacancies/models/public-vacancies.models';
 
@@ -27,7 +27,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
 @Component({
   selector: 'app-vacancy-detail-modal',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, IjBadge, IjIcon, IjModal],
+  imports: [DatePipe, IjBadge, IjIcon, IjModal, IjRichText, RouterLink],
   styles: `
     .vacancy-banner {
       background: linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%);
@@ -163,23 +163,31 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
               @if (v.description) {
                 <div>
                   <h4 class="text-[15px] font-bold text-ink-900">Descripción</h4>
-                  <p class="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-body">
-                    {{ v.description }}
-                  </p>
+                  <ij-rich-text class="mt-2" [value]="v.description" />
+                </div>
+              }
+
+              @if (v.responsibilities) {
+                <div>
+                  <h4 class="text-[15px] font-bold text-ink-900">
+                    Responsabilidades
+                  </h4>
+                  <ij-rich-text
+                    class="mt-2"
+                    variant="check"
+                    [value]="v.responsibilities"
+                  />
                 </div>
               }
 
               @if (v.requirements) {
                 <div>
                   <h4 class="text-[15px] font-bold text-ink-900">Requisitos</h4>
-                  <ul class="mt-2 space-y-2">
-                    @for (line of lines(v.requirements); track $index) {
-                      <li class="flex items-start gap-2.5 text-[13.5px] leading-relaxed text-body">
-                        <ij-icon name="check" [size]="16" class="mt-0.5 flex-shrink-0 text-amber-600" [strokeWidth]="3" />
-                        <span>{{ line }}</span>
-                      </li>
-                    }
-                  </ul>
+                  <ij-rich-text
+                    class="mt-2"
+                    variant="check"
+                    [value]="v.requirements"
+                  />
                 </div>
               }
 
@@ -311,12 +319,6 @@ export class VacancyDetailModal {
     return `Publicada hace ${days} días`;
   }
 
-  protected lines(text: string): readonly string[] {
-    return text
-      .split(/\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0);
-  }
 
   protected companyInitials(name: string): string {
     return name

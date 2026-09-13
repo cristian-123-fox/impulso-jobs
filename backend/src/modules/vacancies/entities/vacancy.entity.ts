@@ -27,11 +27,20 @@ export class Vacancy extends BaseEntity {
   @Column({ type: 'varchar', length: 160 })
   title!: string;
 
+  /**
+   * Descripción del puesto. Desde T32 guarda **HTML saneado** del editor; las
+   * vacantes anteriores siguen en texto plano con saltos de línea y el portal
+   * detecta el caso para pintarlas bien (ver `RichText` y `sanitizeRichText`).
+   */
   @Column({ type: 'text' })
   description!: string;
 
   @Column({ type: 'text', nullable: true })
   requirements?: string | null;
+
+  /** Responsabilidades del puesto (T32). HTML saneado, como `description`. */
+  @Column({ type: 'text', nullable: true })
+  responsibilities?: string | null;
 
   @Column({ name: 'employment_type', type: 'varchar', length: 20 })
   employmentType!: EmploymentType;

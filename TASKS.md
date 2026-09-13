@@ -576,7 +576,7 @@ Dos notas antes de empezar, porque cambian el tamaño de las tarjetas:
 | T29 | 403 `PERMISSION_DENIED` al postularse a una vacante | **Bug** | **Bloqueante producción** | XS (1–3 h) | — | ✅ **Resuelto** (fallback defensivo en `JwtStrategy` + fix en `seed-rbac`) |
 | T30 | Previsualizar el CV del candidato desde la empresa | Mejora UX | Alta | S (1–2 d) | — | ✅ **Hecha** (visor `ij-pdf-viewer` + `GET company/candidates/:id/resumes/:resumeId`) |
 | T31 | Formulario de usuarios del admin: más campos | Mejora | Media | M (2–3 d) | 🔷 N11 |
-| T32 | Vacante: responsabilidades, skills, editor de texto y alta en wizard | Feature | Alta | L (5–8 d) | T25 ✅ · 🔷 N12 |
+| T32 | Vacante: responsabilidades, skills, editor de texto y alta en wizard | Feature | Alta | L (5–8 d) | T25 ✅ · N12 ✅ | ✅ **Hecha** (CKEditor 5, wizard en `/empresa/vacantes/nueva` y `/:id/editar`) |
 | T33 | Ver la vacante en modal desde "Mis postulaciones" y "Guardadas" | Mejora UX | Media | S (1 d) | — | ✅ **Hecha** |
 | T34 | El admin asigna, cambia y quita el plan de una empresa | Feature | Alta | M (3–5 d) | N13 ✅ | ✅ **Hecha** (`/admin/companies/:id/subscription` + sección «Plan» en `/admin/empresas/:id`) |
 
@@ -715,7 +715,27 @@ SELECT u.id, u.email, u.role FROM users u
 
 **Criterios de aceptación:** crear una vacante completa desde el wizard sin perder datos al navegar entre pasos; editar una existente precarga todo; las skills se guardan y se ven en el detalle público; las responsabilidades aparecen en el detalle público; una vacante creada **antes** de esta tarjeta se sigue viendo correctamente (texto plano); el HTML del editor no permite inyectar scripts.
 
-**🔷 Decisión pendiente (N12):** ver N12 al final de esta parte.
+**✅ Decisión N12 (2026-09-13):** resuelta — editor **sí** (CKEditor 5), y el wizard **sustituye** al modal en vez de convivir con él.
+
+**Qué se hizo, por fases:**
+
+**Fase 1 · Skills.** `app-vacancy-skills-input`: chips con autocomplete contra `GET company/vacancies/skills/search`, marca obligatoria/deseable, tope de 15 y deduplicado con `Intl.Collator` (mismo criterio que el `slug` del backend, para que "Diseño" y "diseno" no entren dos veces). El backend ya aceptaba `skills[]` en el alta y la edición desde T25; sólo faltaba el frontend.
+
+**Fase 2 · Responsabilidades y editor.**
+- Columna `responsibilities` (`text`, nullable) — migración `1720000027000`.
+- **Saneado en el servidor**, no sólo en el cliente: `common/utils/rich-text.util.ts` (`sanitize-html`) con una lista corta de etiquetas, y el decorador `@RichText({ max, required })` que **sanea antes de validar**, de modo que no se puede añadir un campo largo y olvidarse de limpiarlo. El tope cuenta caracteres de **contenido**, no de marcado.
+- `ij-rich-text` para pintar: detecta si el valor es HTML o texto plano y **las vacantes anteriores se siguen viendo bien**, sin migrar datos. La variante `check` conserva la lista con palomita naranja del diseño original.
+- SEO: la `<meta description>` usa `excerpt()` y el `description` del **JSON-LD** usa `toPlainText()`. Esto último no es cosmético — el JSON-LD vive dentro de un `<script>`, y un `</script>` en la descripción se escaparía del bloque; Angular sanea `[innerHTML]` pero no ese caso.
+
+**Fase 3 · Wizard.** `/empresa/vacantes/nueva` y `/empresa/vacantes/:id/editar` en 4 pasos (básicos · puesto · condiciones · imagen y publicación), con validación por paso, navegación libre entre pasos visitados y **borrador en `localStorage`** que se ofrece restaurar. Se **eliminó** `vacancy-form.ts` (498 líneas) y el `ij-modal` del listado.
+
+**Dos placeholders del template Jobzilla que salieron a la luz y se arreglaron:**
+- El detalle público pintaba una lista de skills **quemada** (`Html, Python, WordPress, Figma…`) idéntica en todas las vacantes, aunque el backend devolvía las reales desde T25.
+- La sección "Responsabilidades" pintaba **la descripción otra vez**. Ahora usa el campo nuevo y se oculta si está vacío.
+
+**⚠️ Deuda legal consciente:** CKEditor 5 exige clave de licencia desde la v44. Se usa `licenseKey: 'GPL'` en `shared/ui/editor/ckeditor-host.ts`, que **obliga a que la aplicación que lo incrusta sea GPL**. Impulso Jobs es un producto comercial: al contratar la licencia de CKEditor hay que cambiar esa cadena por la clave comprada.
+
+**Pasos de despliegue:** `pnpm run migration:run` (o `:prod`). Sin permisos nuevos ni semillas.
 
 ---
 
@@ -780,7 +800,9 @@ SELECT u.id, u.email, u.role FROM users u
 ## Decisiones que necesita el negocio (Parte D) 🔷
 
 - **N11 · ¿Qué campos exactamente en el formulario de usuarios (T31)?** La parte técnica clara es la asimetría alta/edición, y esa se arregla sin preguntar. Lo que hay que decidir es la lista de campos nuevos: **¿teléfono/celular del candidato?** (hoy no existe en el modelo, y sin él el back-office no puede llamar a nadie) · ¿notas internas del administrador? · ¿algún dato fiscal más del empleador? Cada campo nuevo de candidato arrastra migración, DTO, formulario público de registro y perfil del candidato — conviene pedirlos todos de una vez, no de uno en uno.
-- **N12 · ¿El wizard de vacante sustituye al modal o convive con él (T32)?** Publicar una vacante en 4 pasos es más completo, pero también más lento para una empresa que sólo quiere corregir el salario. Lo razonable es **wizard para el alta, edición rápida en modal** — pero hay que confirmarlo, porque mantener los dos caminos es más código. Y una segunda pregunta, más de fondo: **¿el editor enriquecido es necesario, o basta con respetar los saltos de línea?** La descripción en HTML obliga a sanear, a rehacer el render público y el JSON-LD de SEO, y a convivir con las vacantes ya guardadas en texto plano. Es la mitad del coste de T32.
+- **✅ N12 · ¿El wizard de vacante sustituye al modal o convive con él (T32)?** **Resuelta el 2026-09-13:**
+  - **El wizard sustituye al modal.** Alta y edición usan la misma vista en ruta propia; al editar, los cuatro pasos nacen ya desbloqueados y se puede saltar directo al que interese. Se descartó mantener los dos caminos: son dos formularios que se desincronizan.
+  - **El editor enriquecido sí es necesario, y es CKEditor 5**, en descripción, responsabilidades y requisitos. El coste que N12 anticipaba (sanear, rehacer el render público, el JSON-LD y convivir con el texto plano ya guardado) se pagó entero — ver la tarjeta T32.
 - **✅ N13 · ¿Un plan asignado a mano por el admin es una venta o una cortesía (T34)?** **Resuelta el 2026-09-13:**
   - **Siempre una venta.** Toda asignación manual registra una orden pagada con el precio vigente del plan; el administrador **puede corregir el importe** (descuento negociado, precio antiguo) y el IVA se recalcula con la tasa del plan. No hay figura aparte de "cortesía": un regalo se registra con el importe que se quiera, incluso 0.
   - **Vigencia:** un año desde hoy por defecto, editable por el administrador en el mismo formulario.
@@ -793,9 +815,9 @@ SELECT u.id, u.email, u.role FROM users u
 ## Orden sugerido (Parte D)
 
 1. **T29** — primero y con diferencia: hay candidatos que **no pueden postularse en producción ahora mismo**, y el arreglo es de horas. Todo lo demás puede esperar a esto.
-2. **T32 fase 1 (skills)** — el backend ya está hecho desde T25; es la mejor relación valor/esfuerzo del lote y cierra una tarjeta que quedó a medias.
+2. ~~**T32 fase 1 (skills)**~~ ✅ hecha junto con el resto de T32.
 3. **T33** — pequeña, sin backend, y arregla de paso el enlace sin `vacancyPath()`.
 4. ~~**T30**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos (el endpoint nuevo reutiliza `candidates.cv.read`).
 5. ~~**T34**~~ ✅ hecha — era el hueco funcional más grande de los seis. Sin pasos de despliegue: ni migración, ni permiso nuevo, ni semilla.
 6. **T31** — la asimetría alta/edición se puede arreglar ya; los campos nuevos esperan a N11.
-7. **T32 fases 2 y 3** — la más cara del lote y la que más superficie toca (SEO, render público, datos existentes). Entra cuando N12 esté resuelta.
+7. ~~**T32 fases 2 y 3**~~ ✅ hecha — era la más cara del lote. Único paso de despliegue: `migration:run` para la columna `responsibilities`.

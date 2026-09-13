@@ -3,6 +3,8 @@ export { IjButton } from '@/shared/ui/button/button';
 export { IjBadge } from '@/shared/ui/badge/badge';
 export { IjLogo } from '@/shared/ui/logo/logo';
 export { IjModal } from '@/shared/ui/modal/modal';
+// Render del texto de la vacante: HTML del editor o texto plano antiguo (T32).
+export { IjRichText } from '@/shared/ui/rich-text/rich-text';
 export { IjPricingCard } from '@/shared/ui/pricing-card/pricing-card';
 export { IjPageHeader } from '@/shared/ui/page-header/page-header';
 export {
@@ -14,6 +16,8 @@ export { TONE_SOFT, TONE_TEXT, type Tone } from '@/shared/ui/tone';
 // Controles de formulario (CVA + Tailwind + CDK)
 export { IjInput } from '@/shared/ui/input/input';
 export { IjTextarea } from '@/shared/ui/textarea/textarea';
+// Editor enriquecido (T32). Sólo para áreas cliente: CKEditor necesita `window`.
+export { IjEditor } from '@/shared/ui/editor/editor';
 export { IjSelect } from '@/shared/ui/select/select';
 export { IjMultiselect } from '@/shared/ui/multiselect/multiselect';
 export { IjAutocomplete } from '@/shared/ui/autocomplete/autocomplete';

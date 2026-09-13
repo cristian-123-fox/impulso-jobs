@@ -1,0 +1,129 @@
+/*
+ * Estilos del contenido que escribe la empresa (T32).
+ *
+ * El editor sólo permite un puñado de etiquetas (ver `sanitizeRichText` en el
+ * backend), así que esta hoja cubre exactamente esas y nada más. Van con
+ * `:host ::ng-deep` porque el marcado entra por `[innerHTML]`: Angular no le
+ * pone los atributos de encapsulación, así que un selector encapsulado normal
+ * no lo alcanzaría. El `:host` de delante lo mantiene acotado a este
+ * componente — sin él, `::ng-deep` sería global.
+ */
+
+:host ::ng-deep .ij-prose {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: #35354a;
+}
+
+:host ::ng-deep .ij-prose > *:first-child {
+  margin-top: 0;
+}
+
+:host ::ng-deep .ij-prose p {
+  margin: 0 0 0.85rem;
+}
+
+:host ::ng-deep .ij-prose p:last-child {
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .ij-prose strong,
+:host ::ng-deep .ij-prose b {
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+:host ::ng-deep .ij-prose em,
+:host ::ng-deep .ij-prose i {
+  font-style: italic;
+}
+
+:host ::ng-deep .ij-prose u {
+  text-decoration: underline;
+}
+
+:host ::ng-deep .ij-prose s {
+  text-decoration: line-through;
+}
+
+:host ::ng-deep .ij-prose h3 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+:host ::ng-deep .ij-prose h4 {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+:host ::ng-deep .ij-prose ul,
+:host ::ng-deep .ij-prose ol {
+  margin: 0 0 0.85rem;
+  padding-left: 1.35rem;
+}
+
+:host ::ng-deep .ij-prose ul {
+  list-style: disc;
+}
+
+:host ::ng-deep .ij-prose ol {
+  list-style: decimal;
+}
+
+:host ::ng-deep .ij-prose li {
+  margin-bottom: 0.35rem;
+}
+
+:host ::ng-deep .ij-prose a {
+  color: #a34d1a;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+:host ::ng-deep .ij-prose blockquote {
+  margin: 0 0 0.85rem;
+  border-left: 3px solid #e5e7eb;
+  padding-left: 0.9rem;
+  font-style: italic;
+}
+
+/*
+ * Variante "check": conserva el aspecto que el portal ya tenía para requisitos
+ * —palomita naranja en vez de viñeta— ahora que el contenido puede venir como
+ * `<ul>` del editor. La palomita va como imagen de fondo porque `[innerHTML]`
+ * no admite meter un componente `<ij-icon>` dentro.
+ */
+:host ::ng-deep .ij-prose--check ul {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .ij-prose--check ul > li {
+  position: relative;
+  margin-bottom: 0.75rem;
+  padding-left: 1.85rem;
+}
+
+:host ::ng-deep .ij-prose--check ul > li::before {
+  content: '';
+  position: absolute;
+  top: 0.3rem;
+  left: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d97706' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* Las listas numeradas del editor sí conservan su número. */
+:host ::ng-deep .ij-prose--check ol {
+  list-style: decimal;
+  padding-left: 1.35rem;
+}

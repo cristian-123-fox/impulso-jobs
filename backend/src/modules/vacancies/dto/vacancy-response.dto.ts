@@ -14,6 +14,7 @@ export interface VacancyResponseDto {
   title: string;
   description: string;
   requirements: string | null;
+  responsibilities: string | null;
   employmentType: string;
   workMode: string;
   state: string;
@@ -67,6 +68,7 @@ export interface PublicVacancyResponseDto {
   title: string;
   description: string;
   requirements: string | null;
+  responsibilities: string | null;
   employmentType: string;
   workMode: string;
   state: string;
@@ -125,6 +127,7 @@ export function toVacancyResponse(
     title: vacancy.title,
     description: vacancy.description,
     requirements: vacancy.requirements ?? null,
+    responsibilities: vacancy.responsibilities ?? null,
     employmentType: vacancy.employmentType,
     workMode: vacancy.workMode,
     state: vacancy.state,
@@ -172,6 +175,7 @@ export function toPublicVacancyResponse(
     title: vacancy.title,
     description: vacancy.description,
     requirements: vacancy.requirements ?? null,
+    responsibilities: vacancy.responsibilities ?? null,
     employmentType: vacancy.employmentType,
     workMode: vacancy.workMode,
     state: vacancy.state,
