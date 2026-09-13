@@ -18,6 +18,7 @@ import {
 } from '@/modules/iam/roles/repositories/role.repository.interface';
 import {
   AssignedRoleDto,
+  CandidateProfileSummary,
   UserProfileSummary,
 } from '@/modules/iam/users/dto/user-response.dto';
 import { User } from '@/modules/iam/users/entities/user.entity';
@@ -56,8 +57,21 @@ export class UserProfileResolver {
 
     const profiles = await this.candidates.findByUserIds(candidateIds);
     for (const profile of profiles) {
+      const candidateSummary: CandidateProfileSummary = {
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        documentType: profile.documentType,
+        documentNumber: profile.documentNumber,
+        curp: profile.curp,
+        birthDate: profile.birthDate,
+        professionalTitle: profile.professionalTitle,
+        state: profile.state,
+        municipality: profile.municipality,
+        phone: profile.phone,
+      };
       result.set(profile.userId, {
         displayName: `${profile.firstName} ${profile.lastName}`.trim(),
+        candidateProfile: candidateSummary,
       });
     }
 

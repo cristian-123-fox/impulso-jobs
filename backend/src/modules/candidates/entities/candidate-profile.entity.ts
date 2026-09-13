@@ -58,4 +58,7 @@ export class CandidateProfile extends BaseEntity {
 
   @Column({ type: 'varchar', length: 120 })
   municipality!: string;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone?: string | null;
 }

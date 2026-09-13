@@ -12,6 +12,20 @@ export interface AssignedRoleDto {
   isSystem: boolean;
 }
 
+/** Datos del perfil del candidato para la respuesta del admin. */
+export interface CandidateProfileSummary {
+  firstName?: string;
+  lastName?: string;
+  documentType?: string;
+  documentNumber?: string;
+  curp?: string | null;
+  birthDate?: string;
+  professionalTitle?: string | null;
+  state?: string;
+  municipality?: string;
+  phone?: string | null;
+}
+
 /** Datos del perfil asociados a la cuenta, resueltos por el caso de uso. */
 export interface UserProfileSummary {
   /** Nombre para mostrar: candidato (nombre + apellido) o empresa. */
@@ -21,6 +35,10 @@ export interface UserProfileSummary {
   companyRole?: string | null;
   /** Todos los roles asignados; el guard usa estos, no `role`. */
   roles?: AssignedRoleDto[];
+  /** Datos del perfil del candidato (solo para rol CANDIDATE). */
+  candidateProfile?: CandidateProfileSummary;
+  /** Notas internas del administrador sobre esta cuenta. */
+  adminNotes?: string | null;
 }
 
 export class UserResponseDto {
@@ -71,6 +89,14 @@ export class UserResponseDto {
   /** Roles de plataforma asignados (base + adicionales). */
   @ApiPropertyOptional({ type: 'array', items: { type: 'object' } })
   roles?: AssignedRoleDto[];
+
+  /** Datos del perfil del candidato (solo para rol CANDIDATE). */
+  @ApiPropertyOptional({ nullable: true })
+  candidateProfile?: CandidateProfileSummary | null;
+
+  /** Notas internas del administrador sobre esta cuenta. */
+  @ApiPropertyOptional({ nullable: true })
+  adminNotes?: string | null;
 }
 
 export function toUserResponse(
@@ -95,5 +121,7 @@ export function toUserResponse(
     companyName: profile.companyName ?? null,
     companyRole: profile.companyRole ?? null,
     roles: profile.roles ?? [],
+    candidateProfile: profile.candidateProfile ?? null,
+    adminNotes: profile.adminNotes ?? null,
   };
 }

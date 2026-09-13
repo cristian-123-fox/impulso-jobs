@@ -4,6 +4,8 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role as PlatformRole } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { AuditService } from '@/modules/audit/audit.service';
+import { ICandidateProfileRepository } from '@/modules/candidates/repositories/candidate-profile.repository.interface';
+import { ICompanyUserRepository } from '@/modules/companies/repositories/company-user.repository.interface';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
 import { IRoleRepository } from '@/modules/iam/roles/repositories/role.repository.interface';
@@ -37,6 +39,8 @@ describe('UpdateUserUseCase', () => {
   let users: jest.Mocked<IUserRepository>;
   let userRoles: jest.Mocked<IUserRoleRepository>;
   let roles: jest.Mocked<IRoleRepository>;
+  let candidates: jest.Mocked<ICandidateProfileRepository>;
+  let companyUsers: jest.Mocked<ICompanyUserRepository>;
   let hasher: jest.Mocked<PasswordHasherService>;
   let profiles: jest.Mocked<UserProfileResolver>;
   let audit: jest.Mocked<AuditService>;
@@ -58,16 +62,28 @@ describe('UpdateUserUseCase', () => {
     } as unknown as jest.Mocked<IUserRepository>;
     userRoles = {
       findRoleIdsByUserId: jest.fn(),
+      findByUserIds: jest.fn().mockResolvedValue([]),
       countByRoleId: jest.fn(),
       exists: jest.fn(),
       add: jest.fn(),
       remove: jest.fn(),
-    };
+    } as unknown as jest.Mocked<IUserRoleRepository>;
     roles = {
       findByCode: jest.fn((code: string) =>
         Promise.resolve(Object.assign(new Role(), { id: `role-${code}` })),
       ),
     } as unknown as jest.Mocked<IRoleRepository>;
+    candidates = {
+      findByUserId: jest.fn().mockResolvedValue(null),
+      findByUserIds: jest.fn().mockResolvedValue([]),
+      save: jest.fn(),
+    } as unknown as jest.Mocked<ICandidateProfileRepository>;
+    companyUsers = {
+      findByUserId: jest.fn().mockResolvedValue(null),
+      findByUserIds: jest.fn().mockResolvedValue([]),
+      save: jest.fn(),
+      remove: jest.fn(),
+    } as unknown as jest.Mocked<ICompanyUserRepository>;
     hasher = {
       hash: jest.fn().mockResolvedValue('new-hash'),
     } as unknown as jest.Mocked<PasswordHasherService>;
@@ -85,6 +101,8 @@ describe('UpdateUserUseCase', () => {
       users,
       userRoles,
       roles,
+      candidates,
+      companyUsers,
       hasher,
       profiles,
       audit,

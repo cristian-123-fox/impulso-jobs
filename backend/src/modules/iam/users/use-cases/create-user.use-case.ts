@@ -152,6 +152,7 @@ export class CreateUserUseCase {
         profile.country = data.country?.trim() || 'MX';
         profile.state = data.state;
         profile.municipality = data.municipality.trim();
+        profile.phone = data.phone?.trim() || null;
         await this.candidates.save(profile, manager);
       }
 

@@ -70,4 +70,8 @@ export class User extends BaseEntity {
     nullable: true,
   })
   emailVerificationWindowStart?: Date | null;
+
+  /** Notas internas del administrador sobre esta cuenta. */
+  @Column({ name: 'admin_notes', type: 'text', nullable: true })
+  adminNotes?: string | null;
 }

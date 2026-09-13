@@ -180,6 +180,11 @@ const CANDIDATE_CONTROLS = [
             [error]="invalid('municipality') ? 'El municipio es obligatorio.' : null"
             formControlName="municipality"
           />
+          <ij-input
+            label="Teléfono"
+            placeholder="3312345678"
+            formControlName="phone"
+          />
         }
       </div>
 
@@ -268,6 +273,7 @@ export class UserCreateForm implements OnInit {
     birthDate: this.fb.control(''),
     state: this.fb.control(''),
     municipality: this.fb.control(''),
+    phone: this.fb.control(''),
   });
 
   /** Los inputs aún no están asignados en el constructor: se lee aquí. */
@@ -345,6 +351,7 @@ export class UserCreateForm implements OnInit {
         birthDate: value.birthDate,
         state: value.state,
         municipality: value.municipality.trim(),
+        phone: value.phone.trim() || undefined,
       };
     }
 

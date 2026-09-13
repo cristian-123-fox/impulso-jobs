@@ -65,6 +65,7 @@ export interface RegisterCandidateData {
   country?: string;
   state: string;
   municipality: string;
+  phone?: string;
 }
 
 export interface RegisterCommand {

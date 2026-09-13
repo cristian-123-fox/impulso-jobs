@@ -123,6 +123,16 @@ const EMPTY_MESSAGE: Record<Role, string> = {
                 </td>
               }
 
+              @if (isCandidate()) {
+                <td class="px-5 py-3.5 text-[13.5px]">
+                  @if (user.candidateProfile?.phone) {
+                    <span class="text-body">{{ user.candidateProfile?.phone }}</span>
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+              }
+
               <td class="px-5 py-3.5">
                 <div class="flex flex-wrap items-center gap-1.5">
                   <span
@@ -231,6 +241,7 @@ export class UsersTable {
 
   protected readonly isEmployer = computed(() => this.role() === Role.EMPLOYER);
   protected readonly isAdmin = computed(() => this.role() === Role.ADMIN);
+  protected readonly isCandidate = computed(() => this.role() === Role.CANDIDATE);
 
   protected readonly headers = computed(() => {
     if (this.isEmployer()) {
@@ -239,7 +250,7 @@ export class UsersTable {
     if (this.isAdmin()) {
       return ['Usuario', 'Roles adicionales', 'Estado', 'Alta', ''];
     }
-    return ['Usuario', 'Estado', 'Alta', ''];
+    return ['Usuario', 'Teléfono', 'Estado', 'Alta', ''];
   });
 
   /** El rol base ya lo indica la pestaña; aquí sólo los personalizados. */

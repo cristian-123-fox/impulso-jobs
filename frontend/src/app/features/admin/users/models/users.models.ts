@@ -24,6 +24,20 @@ export interface AssignedRole {
   isSystem: boolean;
 }
 
+/** Datos del perfil del candidato en la respuesta del admin. */
+export interface CandidateProfileData {
+  firstName?: string;
+  lastName?: string;
+  documentType?: string;
+  documentNumber?: string;
+  curp?: string | null;
+  birthDate?: string;
+  professionalTitle?: string | null;
+  state?: string;
+  municipality?: string;
+  phone?: string | null;
+}
+
 export interface AdminUser {
   id: string;
   email: string;
@@ -41,6 +55,10 @@ export interface AdminUser {
   companyRole: string | null;
   /** Roles asignados: el base más los personalizados. */
   roles: AssignedRole[];
+  /** Datos del perfil del candidato (solo para rol CANDIDATE). */
+  candidateProfile?: CandidateProfileData | null;
+  /** Notas internas del administrador sobre esta cuenta. */
+  adminNotes?: string | null;
 }
 
 export interface UserStats {
@@ -77,6 +95,7 @@ export interface CandidatePayload {
   state: string;
   municipality: string;
   professionalTitle?: string;
+  phone?: string;
 }
 
 export interface CreateUserPayload {
@@ -92,12 +111,29 @@ export interface CreateUserPayload {
   candidate?: CandidatePayload;
 }
 
+export interface UpdateCandidateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  documentType?: string;
+  documentNumber?: string;
+  curp?: string;
+  birthDate?: string;
+  professionalTitle?: string;
+  state?: string;
+  municipality?: string;
+  phone?: string;
+}
+
 export interface UpdateUserPayload {
   email?: string;
   role?: Role;
   status?: UserStatus;
   password?: string;
   emailVerified?: boolean;
+  adminNotes?: string;
+  candidateProfile?: UpdateCandidateProfilePayload;
+  companyId?: string;
+  companyRole?: CompanyMemberRole;
 }
 
 export const ROLE_LABELS: Record<Role, string> = {

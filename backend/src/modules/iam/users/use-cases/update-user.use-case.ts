@@ -7,6 +7,17 @@ import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { runInTransaction } from '@/common/utils/transaction.util';
 import { AuditService } from '@/modules/audit/audit.service';
+import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
+import {
+  type ICandidateProfileRepository,
+  CANDIDATE_PROFILE_REPOSITORY,
+} from '@/modules/candidates/repositories/candidate-profile.repository.interface';
+import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
+import { CompanyMemberRole } from '@/modules/companies/enums/company-member-role.enum';
+import {
+  type ICompanyUserRepository,
+  COMPANY_USER_REPOSITORY,
+} from '@/modules/companies/repositories/company-user.repository.interface';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
 import {
   type IRoleRepository,
@@ -16,6 +27,9 @@ import {
   UserResponseDto,
   toUserResponse,
 } from '@/modules/iam/users/dto/user-response.dto';
+import {
+  UpdateCandidateProfileDto,
+} from '@/modules/iam/users/dto/update-user.dto';
 import {
   type IUserRepository,
   USER_REPOSITORY,
@@ -33,16 +47,21 @@ export interface UpdateUserCommand {
   status?: UserStatus;
   password?: string;
   emailVerified?: boolean;
+  adminNotes?: string;
+  candidateProfile?: UpdateCandidateProfileDto;
+  companyId?: string;
+  companyRole?: CompanyMemberRole;
   actorUserId: string;
   ip: string;
   userAgent: string;
 }
 
 /**
- * Edición administrativa de una cuenta: correo, rol, estado, verificación y
- * restablecimiento de contraseña. Cambiar la contraseña o desactivar la cuenta
- * invalida las sesiones vigentes vía `tokensValidFrom`. El administrador no
- * puede degradarse ni desactivarse a sí mismo (evita quedarse fuera).
+ * Edición administrativa de una cuenta: correo, rol, estado, verificación,
+ * restablecimiento de contraseña y datos del perfil. Cambiar la contraseña o
+ * desactivar la cuenta invalida las sesiones vigentes vía `tokensValidFrom`.
+ * El administrador no puede degradarse ni desactivarse a sí mismo (evita
+ * quedarse fuera).
  */
 @Injectable()
 export class UpdateUserUseCase {
@@ -51,6 +70,10 @@ export class UpdateUserUseCase {
     @Inject(USER_ROLE_REPOSITORY)
     private readonly userRoles: IUserRoleRepository,
     @Inject(ROLE_REPOSITORY) private readonly roles: IRoleRepository,
+    @Inject(CANDIDATE_PROFILE_REPOSITORY)
+    private readonly candidates: ICandidateProfileRepository,
+    @Inject(COMPANY_USER_REPOSITORY)
+    private readonly companyUsers: ICompanyUserRepository,
     private readonly hasher: PasswordHasherService,
     private readonly profiles: UserProfileResolver,
     private readonly audit: AuditService,
@@ -137,6 +160,10 @@ export class UpdateUserUseCase {
       user.tokensValidFrom = new Date();
     }
 
+    if (command.adminNotes !== undefined) {
+      user.adminNotes = command.adminNotes?.trim() || null;
+    }
+
     let saved!: typeof user;
     await runInTransaction(this.dataSource, async (manager) => {
       saved = await this.users.save(user, manager);
@@ -146,6 +173,25 @@ export class UpdateUserUseCase {
           await this.userRoles.remove(saved.id, previousRoleId, manager);
         }
         await this.userRoles.add(saved.id, nextRoleId, manager);
+      }
+
+      // Actualizar perfil del candidato si se proporcionaron datos.
+      if (command.candidateProfile) {
+        await this.updateCandidateProfile(
+          saved.id,
+          command.candidateProfile,
+          manager,
+        );
+      }
+
+      // Actualizar membresía de empresa si se proporcionaron datos.
+      if (command.role === Role.EMPLOYER || user.role === Role.EMPLOYER) {
+        await this.updateCompanyMembership(
+          saved.id,
+          command.companyId,
+          command.companyRole,
+          manager,
+        );
       }
 
       await this.audit.record(
@@ -160,6 +206,10 @@ export class UpdateUserUseCase {
             role: changesRole ? { from: previousRole, to: saved.role } : null,
             status: command.status ?? null,
             passwordReset: Boolean(command.password),
+            profileUpdated: Boolean(command.candidateProfile),
+            companyUpdated:
+              command.companyId !== undefined ||
+              command.companyRole !== undefined,
           },
         },
         manager,
@@ -167,5 +217,83 @@ export class UpdateUserUseCase {
     });
 
     return toUserResponse(saved, await this.profiles.resolveOne(saved));
+  }
+
+  private async updateCandidateProfile(
+    userId: string,
+    data: UpdateCandidateProfileDto,
+    manager: import('typeorm').EntityManager,
+  ): Promise<void> {
+    let profile = await this.candidates.findByUserId(userId, manager);
+
+    if (!profile) {
+      // Crear perfil si no existe (puede ocurrir si el rol se cambió a CANDIDATE).
+      profile = new CandidateProfile();
+      profile.userId = userId;
+      profile.firstName = data.firstName?.trim() ?? '';
+      profile.lastName = data.lastName?.trim() ?? '';
+      profile.documentType = (data.documentType as any) ?? 'INE';
+      profile.documentNumber = data.documentNumber?.trim() ?? '';
+      profile.birthDate = data.birthDate ?? new Date().toISOString().slice(0, 10);
+      profile.state = data.state ?? 'JAL';
+      profile.municipality = data.municipality?.trim() ?? '';
+    } else {
+      if (data.firstName !== undefined) profile.firstName = data.firstName.trim();
+      if (data.lastName !== undefined) profile.lastName = data.lastName.trim();
+      if (data.documentType !== undefined)
+        profile.documentType = data.documentType as any;
+      if (data.documentNumber !== undefined)
+        profile.documentNumber = data.documentNumber.trim();
+      if (data.birthDate !== undefined) profile.birthDate = data.birthDate;
+      if (data.state !== undefined) profile.state = data.state;
+      if (data.municipality !== undefined)
+        profile.municipality = data.municipality.trim();
+    }
+
+    if (data.curp !== undefined) profile.curp = data.curp?.trim().toUpperCase() || null;
+    if (data.professionalTitle !== undefined)
+      profile.professionalTitle = data.professionalTitle?.trim() || null;
+    if (data.phone !== undefined) profile.phone = data.phone?.trim() || null;
+
+    await this.candidates.save(profile, manager);
+  }
+
+  private async updateCompanyMembership(
+    userId: string,
+    companyId: string | undefined,
+    companyRole: CompanyMemberRole | undefined,
+    manager: import('typeorm').EntityManager,
+  ): Promise<void> {
+    const existing = await this.companyUsers.findByUserId(userId, manager);
+
+    if (companyId !== undefined) {
+      if (existing) {
+        // Actualizar membresía existente.
+        if (existing.companyId !== companyId) {
+          // Cambio de empresa: eliminar la vieja y crear la nueva.
+          await this.companyUsers.remove(existing.companyId, userId, manager);
+          const member = new CompanyUser();
+          member.companyId = companyId;
+          member.userId = userId;
+          member.role = companyRole ?? CompanyMemberRole.ADMIN;
+          await this.companyUsers.save(member, manager);
+        } else if (companyRole !== undefined && existing.role !== companyRole) {
+          // Solo cambió el rol interno.
+          existing.role = companyRole;
+          await this.companyUsers.save(existing, manager);
+        }
+      } else {
+        // Crear nueva membresía.
+        const member = new CompanyUser();
+        member.companyId = companyId;
+        member.userId = userId;
+        member.role = companyRole ?? CompanyMemberRole.ADMIN;
+        await this.companyUsers.save(member, manager);
+      }
+    } else if (companyRole !== undefined && existing) {
+      // Solo cambió el rol interno, sin cambiar de empresa.
+      existing.role = companyRole;
+      await this.companyUsers.save(existing, manager);
+    }
   }
 }

@@ -79,4 +79,10 @@ export class RegisterCandidateDto {
   @IsNotEmpty({ message: 'El municipio es obligatorio.' })
   @MaxLength(120)
   municipality!: string;
+
+  @ApiPropertyOptional({ example: '3312345678' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
 }

@@ -83,6 +83,7 @@ describe('CreateUserUseCase', () => {
     } as unknown as jest.Mocked<IUserRepository>;
     userRoles = {
       findRoleIdsByUserId: jest.fn(),
+      findByUserIds: jest.fn().mockResolvedValue([]),
       countByRoleId: jest.fn(),
       exists: jest.fn(),
       add: jest.fn(),
