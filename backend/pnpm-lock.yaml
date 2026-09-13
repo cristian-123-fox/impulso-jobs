@@ -66,7 +66,7 @@ importers:
         specifier: ^7.8.1
         version: 7.8.2
       sanitize-html:
-        specifier: ^2.16.0
+        specifier: 2.16.0
         version: 2.16.0
       typeorm:
         specifier: ^1.0.0
