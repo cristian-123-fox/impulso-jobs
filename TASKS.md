@@ -206,7 +206,7 @@ Propuesta original: área (23), plazas, contrato MX, escolaridad (9), comisiones
 - Frontend: botón "Guardar/Guardada" (toggle optimista, icono `bookmark` nuevo en ij-icon) junto a Postularme en el detalle; página **`/candidato/guardadas`** (reutiliza `app-vacancy-card`, quitar por fila, paginación) + ítem en el sidebar del candidato.
 - 6 pruebas nuevas; suite 238 en verde.
 
-**Fases pendientes (en orden):** ocultar vacante ⬜ · seguir empresa ⬜ · alertas de búsqueda (job `send-search-alerts`; bloqueado por SMTP real) ⬜ · "recibir similares" ⬜.
+**Fases pendientes (en orden):** ocultar vacante ⬜ · seguir empresa ⬜ · alertas de búsqueda (job `send-search-alerts`; el correo real ya existe — T21/Resend) ⬜ · "recibir similares" ⬜.
 
 ### T18 · Contador de vistas por vacante ✅
 
@@ -283,6 +283,8 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ### T21 · Módulo de notificaciones (plataforma + correo) ✅
 
+> **Actualización 2026-09-13 — el proveedor de correo es Resend.** `MailerModule` elige adaptador por configuración: `RESEND_API_KEY` → `ResendMailerAdapter` (API HTTP, sin SDK: el backend es CJS en cPanel) · `SMTP_HOST` → `SmtpMailerAdapter` (nodemailer, se conserva como alternativa) · ninguna → consola. Despliegue: `RESEND_API_KEY` + `MAIL_FROM` con el **dominio verificado** en Resend (SPF/DKIM). De paso muere el riesgo de que cPanel bloquee el puerto 587 saliente — Resend va por HTTPS.
+
 **Qué se pide:** notificaciones dentro de la plataforma (campana / bandeja) y por correo electrónico.
 
 **Estado hoy (verificado 2026-09-10):**
@@ -334,7 +336,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 **Verificado:** 10 casos nuevos en `expire-subscriptions.use-case.spec.ts` y `notify-subscription-expiry.use-case.spec.ts` (incluidos "no reenvía aunque el job corra a diario" y "tras avisar a 7 todavía avisa al llegar a 1"); suite backend completa **41 suites / 262 tests en verde**; build del frontend con prerender. Y **end-to-end contra Postgres**: suscripción a 7 días → 1 aviso + correo renderizado a `empresa@impulso.test`; segunda pasada → 0 avisos; periodo movido al pasado → `EXPIRED` con su fila de auditoría; `GET /company/subscriptions/current` deja de devolverla y `GET /notifications/unread-count` responde 1.
 
-**Despliegue:** `migration:run:prod` (tabla `subscription_notices`) y enganchar `pnpm billing:expire:prod` a un cron **diario**. Sin permisos nuevos. Los correos sólo salen de verdad con `SMTP_*` configurado (T21); sin ellas el adaptador de consola los escribe en el log.
+**Despliegue:** `migration:run:prod` (tabla `subscription_notices`) y enganchar `pnpm billing:expire:prod` a un cron **diario**. Sin permisos nuevos. Los correos sólo salen de verdad con `RESEND_API_KEY` configurada (T21); sin ella el adaptador de consola los escribe en el log.
 
 **Nota (fuera de T22):** al empezar, el backend estaba **roto en `main`** por el merge de T21 — `nodemailer` declarado pero sin instalar, migraciones 21 y 22 sin aplicar, `seed:rbac` sin re-correr, y 17 tests en rojo en `candidate-applications` y `vacancy-status` porque sus specs no se actualizaron al añadir la dependencia de notificaciones. Todo eso quedó arreglado de paso.
 
@@ -552,7 +554,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 1. ~~**T23**~~ ✅ hecha — falta sólo definir `APP_PUBLIC_URL` en el servidor y correr `uploads:rehost:prod`.
 2. ~~**T27**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos.
-3. ~~**T21**~~ ✅ hecha — queda configurar `SMTP_*` en el servidor; sin ellas el adaptador de consola sólo escribe el correo en el log.
+3. ~~**T21**~~ ✅ hecha — queda configurar `RESEND_API_KEY` y `MAIL_FROM` en el servidor (con el dominio verificado en Resend); sin ellas el adaptador de consola sólo escribe el correo en el log.
 4. ~~**T22**~~ ✅ hecha — despliegue: `migration:run:prod` (tabla `subscription_notices`) y enganchar `billing:expire` a un cron diario.
 5. ~~**T24**~~ ✅ hecha y ~~**T25**~~ ✅ hecha — skills normalizadas en backend, pendiente el frontend de chips.
 6. ~~**T26**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos. Ojo con una cosa en el servidor: el portal y `/auth` ya **no** se prerenderizan, así que la app Node SSR pasa a atender esas rutas en cada petición.

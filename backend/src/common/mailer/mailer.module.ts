@@ -1,12 +1,38 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MAILER_PORT } from '@/common/mailer/mailer.port';
+import { MAILER_PORT, MailerPort } from '@/common/mailer/mailer.port';
 import { ConsoleMailerAdapter } from '@/common/mailer/console-mailer.adapter';
+import { ResendMailerAdapter } from '@/common/mailer/resend-mailer.adapter';
 import { SmtpMailerAdapter } from '@/common/mailer/smtp-mailer.adapter';
 
 /**
- * Módulo transversal de correo. Provee `MAILER_PORT` como global: si
- * `SMTP_HOST` está definido usa SMTP real, si no cae a consola (dev).
+ * Elige el adaptador de correo por configuración, en este orden:
+ *   1. RESEND_API_KEY → Resend (el proveedor de producción).
+ *   2. SMTP_HOST      → SMTP con nodemailer (cuenta de cPanel, legado).
+ *   3. nada           → consola (desarrollo): el correo se escribe en el log.
+ *
+ * Está fuera del decorador para poder probar la elección sin levantar Nest.
+ */
+export function createMailerAdapter(config: ConfigService): MailerPort {
+  const logger = new Logger('MailerModule');
+
+  if (config.get<string>('RESEND_API_KEY')) {
+    logger.log('Correo: Resend');
+    return new ResendMailerAdapter(config);
+  }
+  if (config.get<string>('SMTP_HOST')) {
+    logger.log('Correo: SMTP');
+    return new SmtpMailerAdapter(config);
+  }
+  logger.warn(
+    'Correo: consola — sin RESEND_API_KEY ni SMTP_HOST no se envía nada, sólo se registra en el log',
+  );
+  return new ConsoleMailerAdapter();
+}
+
+/**
+ * Módulo transversal de correo. Provee `MAILER_PORT` eligiendo adaptador
+ * por configuración (ver `createMailerAdapter`).
  *
  * Otros módulos sólo necesitan `@Inject(MAILER_PORT)` — no importan este
  * módulo directamente si ya está en la cadena de imports de un módulo que
@@ -17,13 +43,7 @@ import { SmtpMailerAdapter } from '@/common/mailer/smtp-mailer.adapter';
     {
       provide: MAILER_PORT,
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const smtpHost = config.get<string>('SMTP_HOST');
-        if (smtpHost) {
-          return new SmtpMailerAdapter(config);
-        }
-        return new ConsoleMailerAdapter();
-      },
+      useFactory: createMailerAdapter,
     },
   ],
   exports: [MAILER_PORT],

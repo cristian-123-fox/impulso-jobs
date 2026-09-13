@@ -112,6 +112,10 @@ CORS_ORIGIN=https://demo.impulsojobs.com
 # Archivos subidos (foto de perfil, logo, CV): almacenamiento LOCAL en disco.
 # APP_PUBLIC_URL es la base de las URLs de imagen que se guardan en BD.
 APP_PUBLIC_URL=https://api.impulsojobs.com
+
+# Correo saliente (Resend). Sin RESEND_API_KEY los correos sólo van al log.
+RESEND_API_KEY=re_<clave de https://resend.com/api-keys>
+MAIL_FROM=Impulso Jobs <no-reply@impulsojobs.com>
 ```
 
 Genera cada secreto con: `openssl rand -hex 32`.
@@ -226,9 +230,11 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 
 ## Notas importantes
 
-- ⚠️ **Correos (verificación / recuperación):** hoy el backend **solo escribe los enlaces en el log** (`ConsoleMailerAdapter`); **no envía correos reales**. Un usuario nuevo no recibirá el correo de verificación y **no podrá iniciar sesión** por el flujo normal. Opciones:
-  1. Implementar un adaptador **SMTP** (nodemailer con la cuenta de correo de cPanel) — se puede agregar cuando quieras.
-  2. Mientras tanto, usar los **seeders** para cuentas ya verificadas (`seed:admin:prod`, `seed:candidate:prod`, `seed:company:prod`).
+- ✉️ **Correos (verificación / recuperación / notificaciones):** el proveedor es **Resend** y se activa **sólo con variables de entorno**, sin tocar código. `MailerModule` elige adaptador en este orden: `RESEND_API_KEY` → Resend · `SMTP_HOST` → SMTP con nodemailer (legado) · ninguna de las dos → consola, que **escribe el enlace en el log y no envía nada**. Al arrancar, el log dice cuál quedó activo (`[MailerModule] Correo: Resend`).
+  1. Crea la clave en <https://resend.com/api-keys> (basta permiso *Sending access*) y ponla en `RESEND_API_KEY`.
+  2. **Verifica el dominio** en Resend (añade los registros SPF y DKIM en el DNS del dominio en cPanel) y pon el remitente en `MAIL_FROM`. Si el dominio no está verificado, la API rechaza el envío: el correo **no sale** y el fallo queda en el log (es best-effort, no rompe el registro ni el reset).
+  3. Ventaja sobre SMTP en cPanel: es HTTPS saliente, así que **no depende de que el hosting deje abierto el puerto 587**.
+  4. Sin correo configurado, usa los **seeders** para cuentas ya verificadas (`seed:admin:prod`, `seed:candidate:prod`, `seed:company:prod`).
 - 🧪 **El entorno virtual se activa por sesión:** cada Terminal nueva de la API requiere `source ~/nodevenv/api/.../bin/activate`.
 - 🔁 **Redeploy del backend:** activar venv → `git pull` (o subir cambios) → `pnpm install` → `pnpm run build` → `pnpm run migration:run:prod` → `pnpm run seed:prod` → **Restart** en la Node.js App.
   > `seed:prod` es idempotente y hay que ejecutarlo **siempre**: si la versión nueva añadió permisos (p. ej. `users.create`, `companies.create`), sin él los endpoints responden `403 PERMISSION_DENIED` aunque el código esté desplegado.
