@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuditModule } from '@/modules/audit/audit.module';
+import { AdminCompanySubscriptionsController } from '@/modules/billing/controllers/admin-company-subscriptions.controller';
 import { AdminPlansController } from '@/modules/billing/controllers/admin-plans.controller';
 import { CompanyBillingController } from '@/modules/billing/controllers/company-billing.controller';
 import { PaymentsController } from '@/modules/billing/controllers/payments.controller';
@@ -17,10 +18,12 @@ import { BILLING_REPOSITORY } from '@/modules/billing/repositories/billing.repos
 import { BillingRepository } from '@/modules/billing/repositories/billing.repository';
 import { PLAN_REPOSITORY } from '@/modules/billing/repositories/plan.repository.interface';
 import { PlanRepository } from '@/modules/billing/repositories/plan.repository';
+import { CompanySubscriptionNotifier } from '@/modules/billing/services/company-subscription-notifier.service';
 import { EntitlementService } from '@/modules/billing/services/entitlement.service';
 import { ManualPaymentAdapter } from '@/modules/billing/services/manual-payment.adapter';
 import { PAYMENT_PROVIDER } from '@/modules/billing/services/payment-provider.port';
 import { PricingService } from '@/modules/billing/services/pricing.service';
+import { AdminSubscriptionUseCase } from '@/modules/billing/use-cases/admin-subscription.use-case';
 import { CompanySubscriptionUseCase } from '@/modules/billing/use-cases/company-subscription.use-case';
 import { ExpirePromotionsUseCase } from '@/modules/billing/use-cases/expire-promotions.use-case';
 import { ExpireSubscriptionsUseCase } from '@/modules/billing/use-cases/expire-subscriptions.use-case';
@@ -69,6 +72,7 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
   controllers: [
     PublicPlansController,
     AdminPlansController,
+    AdminCompanySubscriptionsController,
     CompanyBillingController,
     PaymentsController,
   ],
@@ -79,9 +83,11 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     { provide: PAYMENT_PROVIDER, useClass: ManualPaymentAdapter },
     PricingService,
     EntitlementService,
+    CompanySubscriptionNotifier,
     PlanCatalogUseCase,
     VacancyPromotionUseCase,
     CompanySubscriptionUseCase,
+    AdminSubscriptionUseCase,
     SettlePaymentUseCase,
     ExpirePromotionsUseCase,
     ExpireSubscriptionsUseCase,

@@ -32,6 +32,9 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreference[] = [
     email: true,
   },
   { type: NotificationType.SUBSCRIPTION_EXPIRING, platform: true, email: true },
+  { type: NotificationType.SUBSCRIPTION_ASSIGNED, platform: true, email: true },
+  { type: NotificationType.SUBSCRIPTION_UPDATED, platform: true, email: true },
+  { type: NotificationType.SUBSCRIPTION_REVOKED, platform: true, email: true },
   { type: NotificationType.PROMOTION_EXPIRED, platform: true, email: true },
   {
     type: NotificationType.VACANCY_REPORT_RESOLVED,

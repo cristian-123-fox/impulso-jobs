@@ -7,13 +7,16 @@ import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
   AddCompanyMemberPayload,
   AdminCompany,
+  AssignSubscriptionPayload,
   CompaniesFilters,
   CompaniesPage,
   CompanyMember,
   CompanyMemberRole,
+  CompanySubscriptionDetail,
   CreateCompanyPayload,
   CreateCompanyResult,
   UpdateCompanyPayload,
+  UpdateSubscriptionPayload,
 } from '@/features/admin/companies/models/companies.models';
 
 /** Cliente HTTP del back-office de empresas (desenvuelve el envelope). */
@@ -89,6 +92,54 @@ export class CompaniesApi {
       .delete<
         ApiSuccessResponse<unknown>
       >(`${this.base}/${companyId}/members/${userId}`)
+      .pipe(map(() => undefined));
+  }
+
+  // -------------------------------------------------------------- plan (T34)
+  /**
+   * El plan vive en `billing`, no en `companies`, aunque la ruta cuelgue de
+   * `/admin/companies/:id`: billing ya depende de companies y al revés sería
+   * un ciclo. Para el cliente HTTP es la misma URL.
+   */
+  getSubscription(
+    companyId: string,
+  ): Observable<CompanySubscriptionDetail | null> {
+    return this.http
+      .get<
+        ApiSuccessResponse<CompanySubscriptionDetail | null>
+      >(`${this.base}/${companyId}/subscription`)
+      .pipe(map((r) => r.content));
+  }
+
+  /** Asigna el plan, o lo cambia si la empresa ya tenía uno. */
+  assignSubscription(
+    companyId: string,
+    payload: AssignSubscriptionPayload,
+  ): Observable<CompanySubscriptionDetail> {
+    return this.http
+      .post<
+        ApiSuccessResponse<CompanySubscriptionDetail>
+      >(`${this.base}/${companyId}/subscription`, payload)
+      .pipe(map((r) => r.content));
+  }
+
+  updateSubscription(
+    companyId: string,
+    payload: UpdateSubscriptionPayload,
+  ): Observable<CompanySubscriptionDetail> {
+    return this.http
+      .patch<
+        ApiSuccessResponse<CompanySubscriptionDetail>
+      >(`${this.base}/${companyId}/subscription`, payload)
+      .pipe(map((r) => r.content));
+  }
+
+  /** El motivo es obligatorio, así que el DELETE lleva cuerpo. */
+  revokeSubscription(companyId: string, reason: string): Observable<void> {
+    return this.http
+      .delete<
+        ApiSuccessResponse<unknown>
+      >(`${this.base}/${companyId}/subscription`, { body: { reason } })
       .pipe(map(() => undefined));
   }
 }

@@ -1,3 +1,34 @@
+/** Estado de la suscripción de una empresa (espeja `SubscriptionStatus`). */
+export enum SubscriptionStatus {
+  PENDING_PAYMENT = 'PENDING_PAYMENT',
+  ACTIVE = 'ACTIVE',
+  PAST_DUE = 'PAST_DUE',
+  CANCELLED = 'CANCELLED',
+  EXPIRED = 'EXPIRED',
+}
+
+export const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
+  [SubscriptionStatus.PENDING_PAYMENT]: 'Pendiente de pago',
+  [SubscriptionStatus.ACTIVE]: 'Activo',
+  [SubscriptionStatus.PAST_DUE]: 'Pago vencido',
+  [SubscriptionStatus.CANCELLED]: 'Cancelado',
+  [SubscriptionStatus.EXPIRED]: 'Vencido',
+};
+
+/**
+ * Plan vigente de la empresa (T34). Llega dentro de `AdminCompany`, tanto en
+ * el listado como en el detalle; `null` significa que no tiene ninguno.
+ */
+export interface AdminCompanySubscription {
+  subscriptionId: string;
+  planId: string;
+  planName: string | null;
+  planCode: string | null;
+  status: string;
+  currentPeriodEnd: string | null;
+  autoRenew: boolean;
+}
+
 /** Empresa en el back-office (`GET /admin/companies`). */
 export interface AdminCompany {
   id: string;
@@ -18,6 +49,7 @@ export interface AdminCompany {
   createdAt: string;
   ownerEmail: string | null;
   memberCount: number;
+  subscription: AdminCompanySubscription | null;
 }
 
 export interface CompaniesPage {
@@ -104,4 +136,40 @@ export interface AddCompanyMemberPayload {
   userId?: string;
   email?: string;
   password?: string;
+}
+
+// ------------------------------------------------------------------- T34
+
+/**
+ * Asignación o cambio de plan desde el back-office.
+ *
+ * `amount` va **sin IVA**: es el subtotal que se registra como cobrado, y el
+ * backend recalcula el impuesto con la tasa del plan. Si se omite, se usa el
+ * precio vigente del plan.
+ */
+export interface AssignSubscriptionPayload {
+  planId: string;
+  reason: string;
+  currentPeriodEnd?: string;
+  amount?: number;
+  method?: string;
+  autoRenew?: boolean;
+}
+
+/** Prórrogas y ajustes de renovación sobre la suscripción vigente. */
+export interface UpdateSubscriptionPayload {
+  reason: string;
+  currentPeriodEnd?: string;
+  autoRenew?: boolean;
+}
+
+/** Suscripción tal como la devuelven los endpoints de `/subscription`. */
+export interface CompanySubscriptionDetail {
+  id: string;
+  planId: string;
+  planName: string | null;
+  status: string;
+  startsAt: string | null;
+  currentPeriodEnd: string | null;
+  autoRenew: boolean;
 }

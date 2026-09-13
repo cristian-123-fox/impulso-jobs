@@ -1,9 +1,20 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  output,
+} from '@angular/core';
+import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { IjIcon } from '@/shared/ui';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
-import { AdminCompany } from '@/features/admin/companies/models/companies.models';
+import {
+  AdminCompany,
+  SUBSCRIPTION_STATUS_LABELS,
+  SubscriptionStatus,
+} from '@/features/admin/companies/models/companies.models';
 
 const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
 
@@ -62,6 +73,23 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
                   </span>
                 }
               </td>
+              <td class="px-5 py-3.5">
+                @if (company.subscription; as plan) {
+                  <div class="flex flex-col gap-1">
+                    <span
+                      class="w-fit rounded-md px-2 py-1 text-[11.5px] font-bold"
+                      [class]="planToneClass(plan.status)"
+                    >
+                      {{ plan.planName ?? 'Plan sin nombre' }}
+                    </span>
+                    <span class="text-[11.5px] text-muted">
+                      {{ planCaption(plan) }}
+                    </span>
+                  </div>
+                } @else {
+                  <span class="text-[12.5px] text-muted">Sin plan</span>
+                }
+              </td>
               <td class="px-5 py-3.5 text-sm font-bold text-ink-900">
                 {{ company.memberCount }}
               </td>
@@ -93,7 +121,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
             </tr>
           } @empty {
             <tr>
-              <td colspan="7">
+              <td colspan="8">
                 <app-admin-empty
                   icon="building"
                   message="No hay empresas registradas todavía."
@@ -108,6 +136,8 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
   `,
 })
 export class CompaniesTable {
+  private readonly format = inject(LocaleFormatService);
+
   readonly companies = input.required<readonly AdminCompany[]>();
   /** Abre la ficha de la empresa (datos + equipo). */
   readonly open = output<AdminCompany>();
@@ -119,6 +149,7 @@ export class CompaniesTable {
     'RFC',
     'Ubicación',
     'Usuario dueño',
+    'Plan',
     'Miembros',
     'Alta',
     '',
@@ -126,6 +157,24 @@ export class CompaniesTable {
 
   protected stateName(code: string): string {
     return STATE_NAMES.get(code) ?? code;
+  }
+
+  /**
+   * Sólo ACTIVE se pinta en verde. Un plan pendiente de pago o con el cobro
+   * vencido sigue siendo "vigente" para el backend, pero el administrador
+   * necesita distinguirlo de un vistazo.
+   */
+  protected planToneClass(status: string): string {
+    if (status === SubscriptionStatus.ACTIVE) {
+      return 'bg-brand-50 text-brand-strong';
+    }
+    return 'bg-accent-amber-soft text-accent-amber-strong';
+  }
+
+  protected planCaption(plan: NonNullable<AdminCompany['subscription']>): string {
+    const state = SUBSCRIPTION_STATUS_LABELS[plan.status] ?? plan.status;
+    if (!plan.currentPeriodEnd) return state;
+    return `${state} · hasta ${this.format.shortDate(plan.currentPeriodEnd)}`;
   }
 
   protected initials(name: string): string {

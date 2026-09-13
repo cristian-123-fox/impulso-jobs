@@ -7,6 +7,7 @@ import { Company } from '@/modules/companies/entities/company.entity';
 import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
 import { CompanyMemberRole } from '@/modules/companies/enums/company-member-role.enum';
 import { ICompanyRepository } from '@/modules/companies/repositories/company.repository.interface';
+import { ICompanyPlanRepository } from '@/modules/companies/repositories/company-plan.repository.interface';
 import { ICompanyUserRepository } from '@/modules/companies/repositories/company-user.repository.interface';
 import {
   AdminCompaniesUseCase,
@@ -46,6 +47,7 @@ const withOwner = (): CreateCompanyCommand => ({
 describe('AdminCompaniesUseCase', () => {
   let companies: jest.Mocked<ICompanyRepository>;
   let companyUsers: jest.Mocked<ICompanyUserRepository>;
+  let companyPlans: jest.Mocked<ICompanyPlanRepository>;
   let users: jest.Mocked<IUserRepository>;
   let userRoles: jest.Mocked<IUserRoleRepository>;
   let roles: jest.Mocked<IRoleRepository>;
@@ -66,6 +68,9 @@ describe('AdminCompaniesUseCase', () => {
           Object.assign(c, { id: 'company-1', createdAt: new Date() }),
         ),
       ),
+    };
+    companyPlans = {
+      findLiveByCompanyIds: jest.fn().mockResolvedValue(new Map()),
     };
     companyUsers = {
       findByUserId: jest.fn(),
@@ -107,6 +112,7 @@ describe('AdminCompaniesUseCase', () => {
     useCase = new AdminCompaniesUseCase(
       companies,
       companyUsers,
+      companyPlans,
       users,
       userRoles,
       roles,

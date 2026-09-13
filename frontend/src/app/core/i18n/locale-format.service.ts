@@ -53,9 +53,23 @@ export class LocaleFormatService {
       }),
   );
 
-  /** 25000 → "$25,000" / "MX$25,000". Sin decimales: son sueldos, no facturas. */
-  currency(amount: number): string {
-    return this.currencyFormatter().format(amount);
+  /**
+   * 25000 → "$25,000" / "MX$25,000". Sin decimales por defecto: el uso normal
+   * son sueldos, no facturas.
+   *
+   * `fractionDigits: 2` es para lo contrario —un importe que alguien tecleó y
+   * espera ver tal cual, como el desglose de IVA de una venta (T34)—, donde
+   * redondear a pesos enteros haría que la cifra mostrada no cuadrase con la
+   * cobrada.
+   */
+  currency(amount: number, fractionDigits = 0): string {
+    if (fractionDigits === 0) return this.currencyFormatter().format(amount);
+    return new Intl.NumberFormat(this.locale(), {
+      style: 'currency',
+      currency: CURRENCY,
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(amount);
   }
 
   /** "2026-03-15" → "15 de marzo de 2026" / "March 15, 2026". */

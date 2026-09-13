@@ -12,6 +12,7 @@ import { UserStatus } from '@/common/types/user-status.enum';
 import { runInTransaction } from '@/common/utils/transaction.util';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
+  AdminCompanyPlanDto,
   AdminCompanyResponseDto,
   toAdminCompanyResponse,
 } from '@/modules/companies/dto/admin-company.dto';
@@ -24,6 +25,11 @@ import {
   COMPANY_REPOSITORY,
   CompanySearchCriteria,
 } from '@/modules/companies/repositories/company.repository.interface';
+import {
+  type ICompanyPlanRepository,
+  COMPANY_PLAN_REPOSITORY,
+  CompanyPlanSummary,
+} from '@/modules/companies/repositories/company-plan.repository.interface';
 import {
   type ICompanyUserRepository,
   COMPANY_USER_REPOSITORY,
@@ -98,6 +104,8 @@ export class AdminCompaniesUseCase {
     @Inject(COMPANY_REPOSITORY) private readonly companies: ICompanyRepository,
     @Inject(COMPANY_USER_REPOSITORY)
     private readonly companyUsers: ICompanyUserRepository,
+    @Inject(COMPANY_PLAN_REPOSITORY)
+    private readonly companyPlans: ICompanyPlanRepository,
     @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
     @Inject(USER_ROLE_REPOSITORY)
     private readonly userRoles: IUserRoleRepository,
@@ -260,15 +268,22 @@ export class AdminCompaniesUseCase {
     return item;
   }
 
-  /** Añade dueño y número de miembros a cada empresa, en lote (sin N+1). */
+  /**
+   * Añade dueño, número de miembros y plan vigente a cada empresa, **en lote**
+   * (sin N+1). El plan (T34) se lee de las tablas de billing en sólo lectura;
+   * ver `ICompanyPlanRepository` para por qué no se le pide al módulo.
+   */
   private async decorate(
     companies: Company[],
   ): Promise<AdminCompanyResponseDto[]> {
     if (companies.length === 0) return [];
 
-    const memberships = await this.companyUsers.findByCompanyIds(
-      companies.map((c) => c.id),
+    const companyIds = companies.map((c) => c.id);
+    const plans = await this.companyPlans.findLiveByCompanyIds(
+      companyIds,
+      new Date(),
     );
+    const memberships = await this.companyUsers.findByCompanyIds(companyIds);
     const owners = memberships.filter(
       (m) => m.role === CompanyMemberRole.OWNER,
     );
@@ -294,6 +309,7 @@ export class AdminCompaniesUseCase {
       toAdminCompanyResponse(company, {
         ownerEmail: ownerByCompany.get(company.id) ?? null,
         memberCount: countByCompany.get(company.id) ?? 0,
+        subscription: toCompanyPlan(plans.get(company.id)),
       }),
     );
   }
@@ -305,4 +321,19 @@ export class AdminCompaniesUseCase {
       'La empresa no existe.',
     );
   }
+}
+
+function toCompanyPlan(
+  summary: CompanyPlanSummary | undefined,
+): AdminCompanyPlanDto | null {
+  if (!summary) return null;
+  return {
+    subscriptionId: summary.subscriptionId,
+    planId: summary.planId,
+    planName: summary.planName,
+    planCode: summary.planCode,
+    status: summary.status,
+    currentPeriodEnd: summary.currentPeriodEnd?.toISOString() ?? null,
+    autoRenew: summary.autoRenew,
+  };
 }

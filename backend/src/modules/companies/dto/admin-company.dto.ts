@@ -209,6 +209,20 @@ export class UpdateCompanyDto {
 }
 
 /** Empresa en el listado admin, con su dueño y número de miembros. */
+/**
+ * Plan vigente de la empresa (T34). `null` cuando no tiene ninguno, que es lo
+ * que el listado pinta como "Sin plan".
+ */
+export interface AdminCompanyPlanDto {
+  subscriptionId: string;
+  planId: string;
+  planName: string | null;
+  planCode: string | null;
+  status: string;
+  currentPeriodEnd: string | null;
+  autoRenew: boolean;
+}
+
 export interface AdminCompanyResponseDto {
   id: string;
   businessName: string;
@@ -228,11 +242,13 @@ export interface AdminCompanyResponseDto {
   createdAt: string;
   ownerEmail: string | null;
   memberCount: number;
+  subscription: AdminCompanyPlanDto | null;
 }
 
 export interface AdminCompanyExtras {
   ownerEmail?: string | null;
   memberCount?: number;
+  subscription?: AdminCompanyPlanDto | null;
 }
 
 export function toAdminCompanyResponse(
@@ -258,5 +274,6 @@ export function toAdminCompanyResponse(
     createdAt: company.createdAt.toISOString(),
     ownerEmail: extras.ownerEmail ?? null,
     memberCount: extras.memberCount ?? 0,
+    subscription: extras.subscription ?? null,
   };
 }
