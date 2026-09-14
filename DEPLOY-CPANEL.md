@@ -115,8 +115,16 @@ APP_PUBLIC_URL=https://api.impulsojobs.com
 
 # Correo saliente (Resend). Sin RESEND_API_KEY los correos sólo van al log.
 RESEND_API_KEY=re_<clave de https://resend.com/api-keys>
-MAIL_FROM=Impulso Jobs <no-reply@impulsojobs.com>
+MAIL_FROM="Impulso Jobs <no-reply@impulsojobs.com>"
 ```
+
+> ⚠️ **Entrecomilla todo valor con espacios o `<` `>`.** El wrapper de `node` del
+> entorno virtual de CloudLinux lee el `.env` **como script de shell**, así que
+> `MAIL_FROM=Impulso Jobs <no-reply@…>` hace que bash interprete el `<` como una
+> redirección y ensucie cada invocación de `node` con
+> `no-reply@…: No such file or directory`. Con comillas, dotenv y bash lo leen
+> igual de bien. La alternativa es un remitente sin nombre visible
+> (`MAIL_FROM=no-reply@impulsojobs.com`).
 
 Genera cada secreto con: `openssl rand -hex 32`.
 

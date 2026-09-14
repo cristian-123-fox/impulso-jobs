@@ -36,11 +36,6 @@
               "node_modules/leaflet/dist/leaflet.css",
               "src/styles.scss"
             ],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
-            "ssr": {
-              "entry": "src/server.ts"
-            },
             "security": {
               "allowedHosts": [
                 "localhost",
@@ -71,7 +66,12 @@
                   "maximumError": "260kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "outputMode": "server",
+              "ssr": {
+                "entry": "src/server.ts"
+              },
+              "server": "src/main.server.ts"
             },
             "development": {
               "optimization": false,
