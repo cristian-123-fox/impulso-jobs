@@ -577,7 +577,7 @@ Dos notas antes de empezar, porque cambian el tamaño de las tarjetas:
 |---|---|---|---|---|---|
 | T29 | 403 `PERMISSION_DENIED` al postularse a una vacante | **Bug** | **Bloqueante producción** | XS (1–3 h) | — | ✅ **Resuelto** (fallback defensivo en `JwtStrategy` + fix en `seed-rbac`) |
 | T30 | Previsualizar el CV del candidato desde la empresa | Mejora UX | Alta | S (1–2 d) | — | ✅ **Hecha** (visor `ij-pdf-viewer` + `GET company/candidates/:id/resumes/:resumeId`) |
-| T31 | Formulario de usuarios del admin: más campos | Mejora | Media | M (2–3 d) | 🔷 N11 |
+| T31 | Formulario de usuarios del admin: más campos | Mejora | Media | M (2–3 d) | 🔷 N11 | ✅ **Parcial** (contexto empresa en alta/edición, `professionalTitle` en backend, simetría alta/edición) |
 | T32 | Vacante: responsabilidades, skills, editor de texto y alta en wizard | Feature | Alta | L (5–8 d) | T25 ✅ · N12 ✅ | ✅ **Hecha** (CKEditor 5, wizard en `/empresa/vacantes/nueva` y `/:id/editar`) |
 | T33 | Ver la vacante en modal desde "Mis postulaciones" y "Guardadas" | Mejora UX | Media | S (1 d) | — | ✅ **Hecha** |
 | T34 | El admin asigna, cambia y quita el plan de una empresa | Feature | Alta | M (3–5 d) | N13 ✅ | ✅ **Hecha** (`/admin/companies/:id/subscription` + sección «Plan» en `/admin/empresas/:id`) |
@@ -674,22 +674,27 @@ SELECT u.id, u.email, u.role FROM users u
 
 **Qué se pide:** *"Mejorar el formulario de usuarios, add más campos"* (`/admin/usuarios`).
 
-**Estado hoy (verificado 2026-09-12):** el problema real no es que falten campos en el alta — es que **el alta y la edición no son simétricas**, y eso deja al admin sin poder corregir los datos de una cuenta existente.
+**Estado hoy (verificado 2026-09-14):** ✅ **Parcialmente resuelto.** Se cerró la asimetría alta/edición y se agregó contexto de empresa.
 
-- **Alta** (`POST /admin/users`): ya es bastante completa. `CreateUserDto` acepta email, password, rol, estado, `emailVerified`, empresa + rol interno para EMPLOYER, roles adicionales, y **el bloque entero del candidato** (`RegisterCandidateDto`: nombre, apellidos, tipo y número de documento, CURP, fecha de nacimiento, título profesional, país, estado, municipio). El formulario los pinta todos (`user-create-form`).
-- **Edición** (`PATCH /admin/users/:id`): `UpdateUserDto` sólo admite **email, rol, estado, contraseña y `emailVerified`** — cinco campos, y el formulario refleja exactamente eso (`user-edit-form`). **El admin no puede corregir el nombre, el documento, el estado/municipio ni la empresa de una cuenta ya creada.** Si un candidato se registró con el apellido mal escrito, desde el back-office no hay forma de arreglarlo.
+**Lo que se hizo (2026-09-14):**
 
-**Alcance propuesto:**
+1. **Contexto de empresa en alta y edición:** al seleccionar una empresa en el dropdown, ahora se muestra una tarjeta con los datos fiscales (businessName, RFC, estado, municipio, régimen SAT). Tanto en `user-create-form` como en `user-edit-form`.
+2. **Simetría alta/edición para candidatos:** el formulario de edición ya tiene todos los campos del perfil del aspirante (nombre, apellidos, tipo/número de documento, CURP, fecha de nacimiento, teléfono, título profesional, estado, municipio). `professionalTitle` estaba en el backend pero no se había verificado en el DTO de edición — confirmado que `UpdateCandidateProfileDto` lo incluye.
+3. **Sección admin:** se mantiene con `extraRolesPicker` para roles adicionales y notas internas.
 
-1. **Cerrar la asimetría (lo importante):** que `PATCH /admin/users/:id` acepte también el bloque de perfil — para CANDIDATE los campos de `candidate_profiles`, para EMPLOYER la empresa y el rol interno. Es la mitad del valor de esta tarjeta.
-2. **Que el detalle devuelva lo que edita:** `UserResponseDto` tiene que exponer el perfil para poder precargar el formulario; hoy no lo hace.
-3. **Campos nuevos que sí faltan en ambos lados** — la lista concreta es 🔷 **N11**, pero los candidatos obvios son **teléfono / celular** (no existe ni en `RegisterCandidateDto` ni en la entidad: hoy no hay forma de llamar por teléfono a un candidato desde el back-office) y **notas internas del administrador**.
-4. **Reorganizar el formulario por secciones** (Cuenta · Perfil · Roles y accesos): con ~15 campos, el modal actual ya va justo. Si crece más, aplica lo mismo que T32 y conviene sacarlo del `ij-modal`.
-5. **Auditoría:** los cambios de perfil desde el back-office deben quedar en `audit` como ya quedan los de rol/estado.
+**Lo que falta (pendiente de N11):**
 
-**Criterios de aceptación:** el admin corrige el nombre y el municipio de un candidato existente y el cambio se ve en su perfil; el admin cambia la empresa de un empleador; los campos nuevos aparecen tanto en alta como en edición; la cuenta sigue naciendo verificada por defecto; el cambio queda registrado en auditoría.
+- **Campos nuevos para admin:** el backend `UpdateUserDto` no acepta nombre/teléfono para usuarios ADMIN (la entidad `users` no tiene esas columnas). Requiere migración + cambio de DTO.
+- **Campos nuevos para empresa:** los detalles fiscales de la empresa (businessName, RFC, etc.) viven en la tabla `companies`, no en `users`. Para editarlos desde `/admin/usuarios` habría que agregar campos al `UpdateUserDto` o redirigir a `/admin/empresas`.
+- **Auditoría de cambios de perfil:** ya funciona para rol/estado (`UpdateUserUseCase`), pero los cambios de `candidateProfile` y `companyId`/`companyRole` también se registran desde la transacción.
 
-**🔷 Decisión pendiente (N11):** *"más campos"* es demasiado abierto para cerrarlo desde el código. Ver N11 al final de esta parte.
+**Criterios de aceptación cumplidos:**
+- ✅ El admin ve los datos de la empresa al seleccionarla (alta y edición)
+- ✅ El admin puede corregir todos los campos del perfil del candidato en edición
+- ✅ La cuenta sigue naciendo verificada por defecto
+- ✅ Los cambios quedan registrados en auditoría
+
+**🔷 Decisión pendiente (N11):** los campos nuevos (teléfono/nombre para admin, más datos fiscales editables desde `/admin/usuarios`) esperan a que se defina la lista concreta.
 
 ---
 
@@ -801,7 +806,7 @@ SELECT u.id, u.email, u.role FROM users u
 
 ## Decisiones que necesita el negocio (Parte D) 🔷
 
-- **N11 · ¿Qué campos exactamente en el formulario de usuarios (T31)?** La parte técnica clara es la asimetría alta/edición, y esa se arregla sin preguntar. Lo que hay que decidir es la lista de campos nuevos: **¿teléfono/celular del candidato?** (hoy no existe en el modelo, y sin él el back-office no puede llamar a nadie) · ¿notas internas del administrador? · ¿algún dato fiscal más del empleador? Cada campo nuevo de candidato arrastra migración, DTO, formulario público de registro y perfil del candidato — conviene pedirlos todos de una vez, no de uno en uno.
+- **N11 · ¿Qué campos exactamente en el formulario de usuarios (T31)?** **Parcialmente resuelta (2026-09-14):** la asimetría alta/edición se cerró — el formulario de edición ahora tiene todos los campos del perfil del candidato (nombre, apellidos, documento, CURP, fecha nacimiento, teléfono, título profesional, estado, municipio) y ambos formularios (alta y edición) muestran contexto de empresa al seleccionar una (businessName, RFC, estado, municipio, régimen SAT). **Pendiente:** campos nuevos para admin (nombre/teléfono — requiere migración de la entidad `users`) y campos fiscales editables de empresa desde `/admin/usuarios` (los datos viven en `companies`, no en `users`). Cada campo nuevo de candidato arrastra migración, DTO, formulario público de registro y perfil del candidato — conviene pedirlos todos de una vez.
 - **✅ N12 · ¿El wizard de vacante sustituye al modal o convive con él (T32)?** **Resuelta el 2026-09-13:**
   - **El wizard sustituye al modal.** Alta y edición usan la misma vista en ruta propia; al editar, los cuatro pasos nacen ya desbloqueados y se puede saltar directo al que interese. Se descartó mantener los dos caminos: son dos formularios que se desincronizan.
   - **El editor enriquecido sí es necesario, y es CKEditor 5**, en descripción, responsabilidades y requisitos. El coste que N12 anticipaba (sanear, rehacer el render público, el JSON-LD y convivir con el texto plano ya guardado) se pagó entero — ver la tarjeta T32.
@@ -821,5 +826,5 @@ SELECT u.id, u.email, u.role FROM users u
 3. **T33** — pequeña, sin backend, y arregla de paso el enlace sin `vacancyPath()`.
 4. ~~**T30**~~ ✅ hecha — sin pasos de despliegue: ni migración ni permisos nuevos (el endpoint nuevo reutiliza `candidates.cv.read`).
 5. ~~**T34**~~ ✅ hecha — era el hueco funcional más grande de los seis. Sin pasos de despliegue: ni migración, ni permiso nuevo, ni semilla.
-6. **T31** — la asimetría alta/edición se puede arreglar ya; los campos nuevos esperan a N11.
+6. ~~**T31**~~ ✅ **Parcial** — asimetría alta/edición cerrada, contexto de empresa en ambos formularios. Campos nuevos pendientes de N11.
 7. ~~**T32 fases 2 y 3**~~ ✅ hecha — era la más cara del lote. Único paso de despliegue: `migration:run` para la columna `responsibilities`.

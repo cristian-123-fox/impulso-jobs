@@ -1,10 +1,18 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  ComponentRef,
   computed,
+  effect,
+  inject,
+  PLATFORM_ID,
   signal,
+  ViewChild,
+  ViewContainerRef,
 } from '@angular/core';
-import { IjCkeditorHost } from '@/shared/ui/editor/ckeditor-host';
+import { isPlatformBrowser } from '@angular/common';
+import type { IjCkeditorHost } from '@/shared/ui/editor/ckeditor-host';
 import {
   IJ_ERROR,
   IJ_HINT,
@@ -33,7 +41,6 @@ import { IjControlBase } from '@/shared/ui/forms/ij-control-base';
   selector: 'ij-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
-  imports: [IjCkeditorHost],
   template: `
     @if (label()) {
       <label [class]="labelClass">
@@ -42,16 +49,8 @@ import { IjControlBase } from '@/shared/ui/forms/ij-control-base';
     }
 
     <div [class]="boxClass()">
-      @defer (on immediate) {
-        <ij-ckeditor-host
-          [data]="pushedData()"
-          [disabled]="disabled()"
-          [placeholder]="placeholder()"
-          (dataChange)="onEditorData($event)"
-          (focused)="focused.set(true)"
-          (blurred)="onEditorBlur()"
-        />
-      } @placeholder {
+      <ng-template #editorHost />
+      @if (!editorReady()) {
         <div
           class="flex min-h-[264px] items-center justify-center text-[13px] text-muted"
         >
@@ -68,10 +67,17 @@ import { IjControlBase } from '@/shared/ui/forms/ij-control-base';
   `,
 })
 export class IjEditor extends IjControlBase<string> {
+  @ViewChild('editorHost', { read: ViewContainerRef, static: true })
+  private readonly editorContainer?: ViewContainerRef;
+
+  private readonly platformId = inject(PLATFORM_ID);
+  private editorRef?: ComponentRef<IjCkeditorHost>;
+
   protected readonly labelClass = IJ_LABEL;
   protected readonly hintClass = IJ_HINT;
   protected readonly errorClass = IJ_ERROR;
   protected readonly focused = signal(false);
+  protected readonly editorReady = signal(false);
 
   /**
    * Lo que se **empuja** al editor, distinto de `value()`: sólo cambia cuando el
@@ -80,6 +86,36 @@ export class IjEditor extends IjControlBase<string> {
    * documento en cada pulsación y el cursor saltaría al principio.
    */
   protected readonly pushedData = signal('');
+
+  constructor() {
+    super();
+    effect(() => {
+      const editor = this.editorRef;
+      if (!editor) return;
+      editor.setInput('data', this.pushedData());
+      editor.setInput('disabled', this.disabled());
+      editor.setInput('placeholder', this.placeholder());
+    });
+
+    afterNextRender(() => {
+      if (isPlatformBrowser(this.platformId)) void this.loadEditor();
+    });
+  }
+
+  private async loadEditor(): Promise<void> {
+    if (!this.editorContainer || this.editorRef) return;
+
+    const { IjCkeditorHost } = await import('@/shared/ui/editor/ckeditor-host');
+    const editor = this.editorContainer.createComponent(IjCkeditorHost);
+    this.editorRef = editor;
+    editor.instance.dataChange.subscribe((html) => this.onEditorData(html));
+    editor.instance.focused.subscribe(() => this.focused.set(true));
+    editor.instance.blurred.subscribe(() => this.onEditorBlur());
+    editor.setInput('data', this.pushedData());
+    editor.setInput('disabled', this.disabled());
+    editor.setInput('placeholder', this.placeholder());
+    this.editorReady.set(true);
+  }
 
   protected readonly boxClass = computed(() => {
     const base = 'ij-editor__box overflow-hidden rounded-xl border transition-colors';

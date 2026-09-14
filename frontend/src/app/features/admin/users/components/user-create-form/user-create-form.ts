@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   input,
   OnInit,
@@ -128,6 +129,25 @@ const CANDIDATE_CONTROLS = [
             [searchable]="false"
             formControlName="companyRole"
           />
+          @if (selectedCompany(); as company) {
+            <div class="sm:col-span-2 rounded-lg border border-line bg-surface/50 p-3">
+              <p class="text-[12px] font-semibold text-body">{{ company.businessName }}</p>
+              <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-muted">
+                @if (company.rfc) {
+                  <span>RFC: {{ company.rfc }}</span>
+                }
+                @if (company.state) {
+                  <span>Estado: {{ company.state }}</span>
+                }
+                @if (company.municipality) {
+                  <span>Municipio: {{ company.municipality }}</span>
+                }
+                @if (company.taxRegime) {
+                  <span>Régimen: {{ company.taxRegime }}</span>
+                }
+              </div>
+            </div>
+          }
         }
 
         @if (form.controls.role.value === candidate) {
@@ -240,6 +260,15 @@ export class UserCreateForm implements OnInit {
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly showPassword = signal(false);
   protected readonly companyOptions = signal<readonly IjOption[]>([]);
+  protected readonly allCompanies = signal<
+    readonly { id: string; businessName: string; rfc: string; state: string; municipality: string; taxRegime: string }[]
+  >([]);
+
+  /** Empresa seleccionada actualmente en el formulario. */
+  protected readonly selectedCompany = computed(() => {
+    const companyId = this.form.controls.companyId.value;
+    return this.allCompanies().find((c) => c.id === companyId) ?? null;
+  });
 
   protected readonly roleOptions: readonly IjOption[] = Object.values(Role).map(
     (role) => ({ value: role, label: ROLE_LABELS[role] }),
@@ -290,14 +319,24 @@ export class UserCreateForm implements OnInit {
     this.companiesApi
       .list({ page: 1, limit: 100 })
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((result) =>
+      .subscribe((result) => {
         this.companyOptions.set(
           result.items.map((company) => ({
             value: company.id,
             label: `${company.businessName} · ${company.rfc}`,
           })),
-        ),
-      );
+        );
+        this.allCompanies.set(
+          result.items.map((company) => ({
+            id: company.id,
+            businessName: company.businessName,
+            rfc: company.rfc,
+            state: company.state,
+            municipality: company.municipality,
+            taxRegime: company.taxRegime,
+          })),
+        );
+      });
   }
 
   /** Activa/desactiva los validadores del bloque que corresponde al rol. */

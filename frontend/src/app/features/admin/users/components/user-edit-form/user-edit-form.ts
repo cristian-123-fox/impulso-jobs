@@ -1,12 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  computed,
   effect,
   inject,
   input,
   output,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   NonNullableFormBuilder,
@@ -28,6 +31,7 @@ import {
   PASSWORD_POLICY_HINT,
   passwordPolicyValidator,
 } from '@/shared/validators/password.validator';
+import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
 import { ExtraRolesPicker } from '@/features/admin/users/components/extra-roles-picker/extra-roles-picker';
 import {
   AdminUser,
@@ -208,6 +212,25 @@ export interface UserEditResult {
             formControlName="companyRole"
           />
         </div>
+        @if (selectedCompany(); as company) {
+          <div class="mt-3 rounded-lg border border-line bg-surface/50 p-3">
+            <p class="text-[12px] font-semibold text-body">{{ company.businessName }}</p>
+            <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-muted">
+              @if (company.rfc) {
+                <span>RFC: {{ company.rfc }}</span>
+              }
+              @if (company.state) {
+                <span>Estado: {{ company.state }}</span>
+              }
+              @if (company.municipality) {
+                <span>Municipio: {{ company.municipality }}</span>
+              }
+              @if (company.taxRegime) {
+                <span>Régimen: {{ company.taxRegime }}</span>
+              }
+            </div>
+          </div>
+        }
       }
 
       <!-- ===== SECCIÓN: ROLES Y ACCESOS ===== -->
@@ -265,6 +288,8 @@ export class UserEditForm {
   readonly cancel = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly companiesApi = inject(CompaniesApi);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly passwordHint = PASSWORD_POLICY_HINT;
   protected readonly showPassword = signal(false);
@@ -274,8 +299,17 @@ export class UserEditForm {
   protected readonly extraRoleIds = signal<string[]>([]);
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly companyOptions = signal<readonly IjOption[]>([]);
+  protected readonly allCompanies = signal<
+    readonly { id: string; businessName: string; rfc: string; state: string; municipality: string; taxRegime: string }[]
+  >([]);
   /** Selección de partida, para saber si los roles cambiaron al guardar. */
   private readonly initialExtraRoleIds = signal<string[]>([]);
+
+  /** Empresa seleccionada actualmente en el formulario. */
+  protected readonly selectedCompany = computed(() => {
+    const companyId = this.form.controls.companyId.value;
+    return this.allCompanies().find((c) => c.id === companyId) ?? null;
+  });
 
   protected readonly roleOptions: readonly IjOption[] = Object.values(Role).map(
     (role) => ({ value: role, label: ROLE_LABELS[role] }),
@@ -322,6 +356,28 @@ export class UserEditForm {
   });
 
   constructor() {
+    this.companiesApi
+      .list({ page: 1, limit: 100 })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result) => {
+        this.companyOptions.set(
+          result.items.map((company) => ({
+            value: company.id,
+            label: `${company.businessName} · ${company.rfc}`,
+          })),
+        );
+        this.allCompanies.set(
+          result.items.map((company) => ({
+            id: company.id,
+            businessName: company.businessName,
+            rfc: company.rfc,
+            state: company.state,
+            municipality: company.municipality,
+            taxRegime: company.taxRegime,
+          })),
+        );
+      });
+
     effect(() => {
       const user = this.user();
       const cp = user.candidateProfile;
