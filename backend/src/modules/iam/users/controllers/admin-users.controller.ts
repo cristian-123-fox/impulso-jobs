@@ -10,9 +10,16 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import {
+  IMAGE_MULTER_LIMIT_BYTES,
+  type UploadedImageFile,
+} from '@/common/storage/image-upload';
 import {
   ClientInfo,
   type ClientInfoPayload,
@@ -42,6 +49,7 @@ import {
   ListUsersUseCase,
 } from '@/modules/iam/users/use-cases/list-users.use-case';
 import { SetUserRolesUseCase } from '@/modules/iam/users/use-cases/set-user-roles.use-case';
+import { UpdateUserPhotoUseCase } from '@/modules/iam/users/use-cases/update-user-photo.use-case';
 import { UpdateUserUseCase } from '@/modules/iam/users/use-cases/update-user.use-case';
 
 @ApiTags('admin-users')
@@ -57,6 +65,7 @@ export class AdminUsersController {
     private readonly updateUser: UpdateUserUseCase,
     private readonly setUserRoles: SetUserRolesUseCase,
     private readonly deleteUser: DeleteUserUseCase,
+    private readonly userPhoto: UpdateUserPhotoUseCase,
   ) {}
 
   @Get()
@@ -146,6 +155,49 @@ export class AdminUsersController {
     return this.updateUser.execute({
       id,
       status: dto.status,
+      actorUserId: actor.userId,
+      ip: client.ip,
+      userAgent: client.userAgent,
+    });
+  }
+
+  @Post(':id/photo')
+  @RequirePermissions('users.update')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: IMAGE_MULTER_LIMIT_BYTES } }),
+  )
+  @ResponseMessage('Foto actualizada.')
+  async uploadPhoto(
+    @Param('id') id: string,
+    @UploadedFile() file: UploadedImageFile | undefined,
+    @CurrentUser() actor: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<{ photoUrl: string | null }> {
+    const photoUrl = await this.userPhoto.upload(id, file, {
+      actorUserId: actor.userId,
+      ip: client.ip,
+      userAgent: client.userAgent,
+    });
+    return { photoUrl };
+  }
+
+  @Delete(':id/photo')
+  @RequirePermissions('users.update')
+  @ResponseMessage('Foto eliminada.')
+  removePhoto(
+    @Param('id') id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<void> {
+    return this.userPhoto.remove(id, {
       actorUserId: actor.userId,
       ip: client.ip,
       userAgent: client.userAgent,

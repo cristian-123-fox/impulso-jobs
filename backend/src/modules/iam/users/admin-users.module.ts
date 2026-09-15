@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { LocalPublicFileStorageAdapter } from '@/common/storage/local-public-file-storage.adapter';
+import { PUBLIC_FILE_STORAGE } from '@/common/storage/public-file-storage.port';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
@@ -12,6 +14,7 @@ import { DeleteUserUseCase } from '@/modules/iam/users/use-cases/delete-user.use
 import { GetUserUseCase } from '@/modules/iam/users/use-cases/get-user.use-case';
 import { ListUsersUseCase } from '@/modules/iam/users/use-cases/list-users.use-case';
 import { SetUserRolesUseCase } from '@/modules/iam/users/use-cases/set-user-roles.use-case';
+import { UpdateUserPhotoUseCase } from '@/modules/iam/users/use-cases/update-user-photo.use-case';
 import { UpdateUserUseCase } from '@/modules/iam/users/use-cases/update-user.use-case';
 import { UsersModule } from '@/modules/iam/users/users.module';
 
@@ -39,6 +42,8 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     UpdateUserUseCase,
     SetUserRolesUseCase,
     DeleteUserUseCase,
+    UpdateUserPhotoUseCase,
+    { provide: PUBLIC_FILE_STORAGE, useClass: LocalPublicFileStorageAdapter },
   ],
 })
 export class AdminUsersModule {}

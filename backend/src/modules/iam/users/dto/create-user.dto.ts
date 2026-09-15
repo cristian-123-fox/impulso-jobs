@@ -7,6 +7,7 @@ import {
   IsEmail,
   IsEnum,
   IsOptional,
+  IsString,
   IsUUID,
   Matches,
   MaxLength,
@@ -44,6 +45,38 @@ export class CreateUserDto {
   @ApiProperty({ enum: Role })
   @IsEnum(Role, { message: 'El rol no es válido.' })
   role!: Role;
+
+  /**
+   * Identidad de la persona. Obligatoria para ADMIN: es su único nombre y sin
+   * ella la cuenta nace anónima en listados y auditoría, que es justo el
+   * agujero que esto viene a tapar. Un candidato lo trae en `candidate` y una
+   * empresa hereda el suyo, así que ahí es opcional.
+   */
+  @ApiPropertyOptional({ example: 'Oscar' })
+  @ValidateIf((o: CreateUserDto) => o.role === Role.ADMIN)
+  @IsDefined({ message: 'El nombre es obligatorio.' })
+  @IsString()
+  @MaxLength(80)
+  firstName?: string;
+
+  @ApiPropertyOptional({ example: 'Ruiz' })
+  @ValidateIf((o: CreateUserDto) => o.role === Role.ADMIN)
+  @IsDefined({ message: 'Los apellidos son obligatorios.' })
+  @IsString()
+  @MaxLength(80)
+  lastName?: string;
+
+  @ApiPropertyOptional({ example: '3312345678' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'Coordinador de soporte' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  jobTitle?: string;
 
   @ApiPropertyOptional({ enum: UserStatus, default: UserStatus.ACTIVE })
   @IsOptional()

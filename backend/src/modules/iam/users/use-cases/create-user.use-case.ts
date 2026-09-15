@@ -50,6 +50,10 @@ export interface CreateUserCommand {
   role: Role;
   status?: UserStatus;
   emailVerified?: boolean;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  jobTitle?: string;
   companyId?: string;
   companyRole?: CompanyMemberRole;
   /** Roles personalizados adicionales al rol base. */
@@ -121,6 +125,14 @@ export class CreateUserUseCase {
     user.role = command.role;
     user.status = command.status ?? UserStatus.ACTIVE;
     user.emailVerifiedAt = command.emailVerified === false ? null : new Date();
+    // Para un candidato el nombre canónico vive en su perfil; si el alta no
+    // lo trae aparte, se copia de ahí para que la cuenta nunca nazca anónima.
+    user.firstName =
+      command.firstName?.trim() || command.candidate?.firstName?.trim() || null;
+    user.lastName =
+      command.lastName?.trim() || command.candidate?.lastName?.trim() || null;
+    user.phone = command.phone?.trim() || null;
+    user.jobTitle = command.jobTitle?.trim() || null;
 
     let created!: User;
     await runInTransaction(this.dataSource, async (manager) => {

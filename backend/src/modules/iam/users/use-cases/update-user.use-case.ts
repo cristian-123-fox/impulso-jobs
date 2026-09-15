@@ -45,6 +45,10 @@ export interface UpdateUserCommand {
   status?: UserStatus;
   password?: string;
   emailVerified?: boolean;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  jobTitle?: string;
   adminNotes?: string;
   candidateProfile?: UpdateCandidateProfileDto;
   companyId?: string;
@@ -156,6 +160,19 @@ export class UpdateUserUseCase {
       user.blockedUntil = null;
     } else if (deactivates) {
       user.tokensValidFrom = new Date();
+    }
+
+    if (command.firstName !== undefined) {
+      user.firstName = command.firstName.trim() || null;
+    }
+    if (command.lastName !== undefined) {
+      user.lastName = command.lastName.trim() || null;
+    }
+    if (command.phone !== undefined) {
+      user.phone = command.phone.trim() || null;
+    }
+    if (command.jobTitle !== undefined) {
+      user.jobTitle = command.jobTitle.trim() || null;
     }
 
     if (command.adminNotes !== undefined) {

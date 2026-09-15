@@ -50,6 +50,12 @@ export interface AdminUser {
   lastLogin: string | null;
   createdAt: string;
   displayName: string | null;
+  /** Identidad de la persona, guardada en `users` (única fuente para ADMIN). */
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  jobTitle: string | null;
+  photoUrl: string | null;
   companyId: string | null;
   companyName: string | null;
   companyRole: string | null;
@@ -102,6 +108,11 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   role: Role;
+  /** Obligatorios para ADMIN: es su único nombre. */
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  jobTitle?: string;
   status?: UserStatus;
   emailVerified?: boolean;
   companyId?: string;
@@ -130,6 +141,10 @@ export interface UpdateUserPayload {
   status?: UserStatus;
   password?: string;
   emailVerified?: boolean;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  jobTitle?: string;
   adminNotes?: string;
   candidateProfile?: UpdateCandidateProfilePayload;
   companyId?: string;

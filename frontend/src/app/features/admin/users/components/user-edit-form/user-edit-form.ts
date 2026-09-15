@@ -32,6 +32,7 @@ import {
   passwordPolicyValidator,
 } from '@/shared/validators/password.validator';
 import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
+import { UsersApi } from '@/features/admin/users/data/users.api';
 import { ExtraRolesPicker } from '@/features/admin/users/components/extra-roles-picker/extra-roles-picker';
 import {
   AdminUser,
@@ -131,6 +132,102 @@ export interface UserEditResult {
         />
         Correo verificado (sin esto la cuenta no puede iniciar sesión)
       </label>
+
+      <!-- ===== SECCIÓN: IDENTIDAD =====
+           No se pinta para un candidato: su nombre, teléfono y título viven
+           en candidate_profiles y se editan abajo. Duplicar los campos aquí
+           dejaría dos orígenes para el mismo dato. -->
+      @if (form.controls.role.value !== candidate) {
+        <h3
+          class="mb-3 mt-6 text-[13px] font-bold uppercase tracking-wide text-muted"
+        >
+          Identidad
+        </h3>
+
+        <div class="mb-4 flex items-center gap-4">
+          <div
+            class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-line bg-surface"
+          >
+            @if (photoUrl(); as url) {
+              <img [src]="url" alt="" class="h-full w-full object-cover" />
+            } @else {
+              <ij-icon name="user" [size]="26" class="text-muted" />
+            }
+          </div>
+          <div class="space-y-2">
+            <input
+              #photoInput
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              class="hidden"
+              (change)="onPhotoSelected($event)"
+            />
+            <div class="flex flex-wrap gap-2">
+              <button
+                ij-button
+                type="button"
+                variant="white"
+                shape="rounded"
+                size="sm"
+                [disabled]="uploadingPhoto()"
+                (click)="photoInput.click()"
+              >
+                {{ uploadingPhoto() ? 'Subiendo…' : 'Cambiar foto' }}
+              </button>
+              @if (photoUrl()) {
+                <button
+                  ij-button
+                  type="button"
+                  variant="white"
+                  shape="rounded"
+                  size="sm"
+                  [disabled]="uploadingPhoto()"
+                  (click)="removePhoto()"
+                >
+                  Quitar
+                </button>
+              }
+            </div>
+            <p class="text-[12.5px] text-muted">
+              JPG, PNG o WebP · máximo 5 MB. Se guarda al instante.
+            </p>
+          </div>
+        </div>
+
+        @if (photoError(); as photoMessage) {
+          <p
+            role="alert"
+            class="mb-4 rounded-lg bg-red-50 px-3 py-2 text-[13px] font-medium text-red-700"
+          >
+            {{ photoMessage }}
+          </p>
+        }
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <ij-input
+            label="Nombre(s)"
+            [required]="form.controls.role.value === admin"
+            [error]="invalid('firstName') ? 'El nombre es obligatorio.' : null"
+            formControlName="firstName"
+          />
+          <ij-input
+            label="Apellidos"
+            [required]="form.controls.role.value === admin"
+            [error]="invalid('lastName') ? 'Los apellidos son obligatorios.' : null"
+            formControlName="lastName"
+          />
+          <ij-input
+            label="Teléfono"
+            placeholder="3312345678"
+            formControlName="phone"
+          />
+          <ij-input
+            label="Puesto o cargo"
+            placeholder="Coordinador de soporte"
+            formControlName="jobTitle"
+          />
+        </div>
+      }
 
       <!-- ===== SECCIÓN: PERFIL ===== -->
       @if (form.controls.role.value === candidate) {
@@ -289,7 +386,17 @@ export class UserEditForm {
 
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly companiesApi = inject(CompaniesApi);
+  private readonly usersApi = inject(UsersApi);
   private readonly destroyRef = inject(DestroyRef);
+
+  /**
+   * La foto no viaja con el resto del formulario: la cuenta ya existe, así
+   * que se sube al momento contra `POST /admin/users/:id/photo` y esta señal
+   * refleja lo que devolvió el backend.
+   */
+  protected readonly photoUrl = signal<string | null>(null);
+  protected readonly uploadingPhoto = signal(false);
+  protected readonly photoError = signal<string | null>(null);
 
   protected readonly passwordHint = PASSWORD_POLICY_HINT;
   protected readonly showPassword = signal(false);
@@ -337,6 +444,11 @@ export class UserEditForm {
     status: this.fb.control<UserStatus>(UserStatus.ACTIVE),
     password: this.fb.control('', [passwordPolicyValidator]),
     emailVerified: this.fb.control(true),
+    // Identidad (en `users`; para ADMIN es su único nombre)
+    firstName: this.fb.control(''),
+    lastName: this.fb.control(''),
+    phone: this.fb.control(''),
+    jobTitle: this.fb.control(''),
     // Perfil candidato
     cpFirstName: this.fb.control(''),
     cpLastName: this.fb.control(''),
@@ -378,6 +490,10 @@ export class UserEditForm {
         );
       });
 
+    this.form.controls.role.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((role) => this.syncNameValidators(role));
+
     effect(() => {
       const user = this.user();
       const cp = user.candidateProfile;
@@ -388,6 +504,10 @@ export class UserEditForm {
         status: user.status,
         password: '',
         emailVerified: user.emailVerified,
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        phone: user.phone ?? '',
+        jobTitle: user.jobTitle ?? '',
         cpFirstName: cp?.firstName ?? '',
         cpLastName: cp?.lastName ?? '',
         cpDocumentType: cp?.documentType ?? '',
@@ -402,6 +522,10 @@ export class UserEditForm {
         companyRole: (user.companyRole as CompanyMemberRole) ?? CompanyMemberRole.ADMIN,
         adminNotes: user.adminNotes ?? '',
       });
+
+      this.photoUrl.set(user.photoUrl ?? null);
+      this.photoError.set(null);
+      this.syncNameValidators(user.role);
 
       const extra = (user.roles ?? [])
         .filter((role) => !role.isSystem)
@@ -418,9 +542,73 @@ export class UserEditForm {
     });
   }
 
+  /**
+   * El nombre sólo es obligatorio para ADMIN. Un empleador lo tiene como dato
+   * opcional de contacto —su nombre para mostrar es el de la empresa— y un
+   * candidato lo lleva en su propio perfil, no aquí.
+   */
+  private syncNameValidators(role: Role): void {
+    for (const control of [
+      this.form.controls.firstName,
+      this.form.controls.lastName,
+    ]) {
+      if (role === Role.ADMIN) {
+        control.addValidators(Validators.required);
+      } else {
+        control.removeValidators(Validators.required);
+      }
+      control.updateValueAndValidity({ emitEvent: false });
+    }
+  }
+
   protected invalid(name: string): boolean {
     const control = this.form.get(name) as AbstractControl;
     return control.invalid && (control.dirty || control.touched);
+  }
+
+  protected onPhotoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    // Se limpia siempre: si no, elegir el mismo archivo dos veces seguidas
+    // no vuelve a disparar el `change`.
+    input.value = '';
+    if (!file) return;
+
+    this.photoError.set(null);
+    this.uploadingPhoto.set(true);
+    this.usersApi
+      .uploadPhoto(this.user().id, file)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (url) => {
+          this.photoUrl.set(url);
+          this.uploadingPhoto.set(false);
+        },
+        error: () => {
+          this.photoError.set(
+            'No se pudo subir la imagen. Debe ser JPG, PNG o WebP de máximo 5 MB.',
+          );
+          this.uploadingPhoto.set(false);
+        },
+      });
+  }
+
+  protected removePhoto(): void {
+    this.photoError.set(null);
+    this.uploadingPhoto.set(true);
+    this.usersApi
+      .removePhoto(this.user().id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.photoUrl.set(null);
+          this.uploadingPhoto.set(false);
+        },
+        error: () => {
+          this.photoError.set('No se pudo quitar la foto.');
+          this.uploadingPhoto.set(false);
+        },
+      });
   }
 
   protected onSubmit(): void {
@@ -444,6 +632,22 @@ export class UserEditForm {
       payload.emailVerified = value.emailVerified;
     }
     if (value.password) payload.password = value.password;
+
+    // Identidad
+    if (value.role !== Role.CANDIDATE) {
+      if (value.firstName.trim() !== (user.firstName ?? '')) {
+        payload.firstName = value.firstName.trim();
+      }
+      if (value.lastName.trim() !== (user.lastName ?? '')) {
+        payload.lastName = value.lastName.trim();
+      }
+      if (value.phone.trim() !== (user.phone ?? '')) {
+        payload.phone = value.phone.trim();
+      }
+      if (value.jobTitle.trim() !== (user.jobTitle ?? '')) {
+        payload.jobTitle = value.jobTitle.trim();
+      }
+    }
 
     // Perfil candidato
     if (value.role === Role.CANDIDATE) {

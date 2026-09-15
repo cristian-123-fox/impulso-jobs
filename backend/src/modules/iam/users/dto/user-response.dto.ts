@@ -77,6 +77,22 @@ export class UserResponseDto {
   @ApiPropertyOptional({ nullable: true })
   displayName?: string | null;
 
+  /** Identidad de la persona, guardada en `users` (ver `User`). */
+  @ApiPropertyOptional({ nullable: true })
+  firstName?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  lastName?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  phone?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  jobTitle?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  photoUrl?: string | null;
+
   @ApiPropertyOptional({ nullable: true })
   companyId?: string | null;
 
@@ -99,6 +115,16 @@ export class UserResponseDto {
   adminNotes?: string | null;
 }
 
+/**
+ * Nombre a partir de lo guardado en `users`. Es el respaldo cuando el
+ * resolver no trae nada del perfil — el caso de una cuenta ADMIN, que no
+ * tiene ni `candidate_profiles` ni empresa.
+ */
+function fullName(user: User): string | null {
+  const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+  return name || null;
+}
+
 export function toUserResponse(
   user: User,
   profile: UserProfileSummary = {},
@@ -116,7 +142,12 @@ export function toUserResponse(
     lastLogin: user.lastLogin?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
     deletedAt: user.deletedAt?.toISOString() ?? null,
-    displayName: profile.displayName ?? null,
+    displayName: profile.displayName ?? fullName(user),
+    firstName: user.firstName ?? null,
+    lastName: user.lastName ?? null,
+    phone: user.phone ?? null,
+    jobTitle: user.jobTitle ?? null,
+    photoUrl: user.photoUrl ?? null,
     companyId: profile.companyId ?? null,
     companyName: profile.companyName ?? null,
     companyRole: profile.companyRole ?? null,

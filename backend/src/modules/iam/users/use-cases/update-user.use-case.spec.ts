@@ -129,6 +129,46 @@ describe('UpdateUserUseCase', () => {
     );
   });
 
+  it('guarda la identidad de la cuenta en users', async () => {
+    const result = await useCase.execute({
+      ...command,
+      firstName: '  Oscar  ',
+      lastName: 'Ruiz',
+      phone: '3312345678',
+      jobTitle: 'Coordinador de soporte',
+    });
+
+    expect(users.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        firstName: 'Oscar',
+        lastName: 'Ruiz',
+        phone: '3312345678',
+        jobTitle: 'Coordinador de soporte',
+      }),
+      expect.anything(),
+    );
+    // Sin perfil que resuelva un nombre —el caso de un ADMIN— el nombre para
+    // mostrar sale de lo guardado en `users`.
+    expect(result.displayName).toBe('Oscar Ruiz');
+  });
+
+  it('vaciar el nombre lo deja en null, no en cadena vacía', async () => {
+    await useCase.execute({ ...command, firstName: '   ', lastName: '' });
+
+    expect(users.save).toHaveBeenCalledWith(
+      expect.objectContaining({ firstName: null, lastName: null }),
+      expect.anything(),
+    );
+  });
+
+  it('no toca la identidad si el comando no la trae', async () => {
+    await useCase.execute({ ...command, status: UserStatus.ACTIVE });
+
+    const [saved] = users.save.mock.calls[0] as [Record<string, unknown>];
+    expect(saved.firstName).toBeUndefined();
+    expect(saved.jobTitle).toBeUndefined();
+  });
+
   it('al restablecer la contraseña invalida las sesiones vigentes', async () => {
     await useCase.execute({ ...command, password: 'Otra#12345' });
 

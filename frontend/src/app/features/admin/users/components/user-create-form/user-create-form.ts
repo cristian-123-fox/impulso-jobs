@@ -150,6 +150,33 @@ const CANDIDATE_CONTROLS = [
           }
         }
 
+        @if (form.controls.role.value !== candidate) {
+          <ij-input
+            label="Nombre(s)"
+            placeholder="Oscar"
+            [required]="form.controls.role.value === admin"
+            [error]="invalid('firstName') ? 'El nombre es obligatorio.' : null"
+            formControlName="firstName"
+          />
+          <ij-input
+            label="Apellidos"
+            placeholder="Ruiz"
+            [required]="form.controls.role.value === admin"
+            [error]="invalid('lastName') ? 'Los apellidos son obligatorios.' : null"
+            formControlName="lastName"
+          />
+          <ij-input
+            label="Teléfono"
+            placeholder="3312345678"
+            formControlName="phone"
+          />
+          <ij-input
+            label="Puesto o cargo"
+            placeholder="Coordinador de soporte"
+            formControlName="jobTitle"
+          />
+        }
+
         @if (form.controls.role.value === candidate) {
           <ij-input
             label="Nombre(s)"
@@ -303,6 +330,7 @@ export class UserCreateForm implements OnInit {
     state: this.fb.control(''),
     municipality: this.fb.control(''),
     phone: this.fb.control(''),
+    jobTitle: this.fb.control(''),
   });
 
   /** Los inputs aún no están asignados en el constructor: se lee aquí. */
@@ -353,6 +381,19 @@ export class UserCreateForm implements OnInit {
       }
       control.updateValueAndValidity({ emitEvent: false });
     }
+
+    // El nombre también es obligatorio para ADMIN. El bucle de arriba se los
+    // acaba de limpiar porque están en CANDIDATE_CONTROLS, así que se vuelven
+    // a poner aquí; para EMPLOYER quedan opcionales.
+    if (role === Role.ADMIN) {
+      for (const control of [
+        this.form.controls.firstName,
+        this.form.controls.lastName,
+      ]) {
+        control.addValidators(Validators.required);
+        control.updateValueAndValidity({ emitEvent: false });
+      }
+    }
   }
 
   protected invalid(name: string): boolean {
@@ -375,6 +416,16 @@ export class UserCreateForm implements OnInit {
     if (value.role === Role.EMPLOYER) {
       payload.companyId = value.companyId;
       payload.companyRole = value.companyRole;
+    }
+
+    // Identidad. Un candidato la lleva dentro de `candidate` (el backend la
+    // copia a `users` al crearla); el resto la manda en la raíz, que es su
+    // único sitio.
+    if (value.role !== Role.CANDIDATE) {
+      payload.firstName = value.firstName.trim() || undefined;
+      payload.lastName = value.lastName.trim() || undefined;
+      payload.phone = value.phone.trim() || undefined;
+      payload.jobTitle = value.jobTitle.trim() || undefined;
     }
 
     if (value.role === Role.ADMIN && this.extraRoleIds().length) {

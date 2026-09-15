@@ -9,6 +9,7 @@ import {
 import { AppDataSource } from './typeorm.config';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
 import { Company } from '@/modules/companies/entities/company.entity';
+import { User } from '@/modules/iam/users/entities/user.entity';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
 import {
   rehostUploadedFileUrl,
@@ -17,7 +18,8 @@ import {
 
 /**
  * Backfill de T23: las URLs de los archivos subidos se guardan **absolutas** en
- * BD —logo de empresa, foto del candidato e imagen de vacante (T24)—, así que
+ * BD —logo de empresa, foto del candidato, imagen de vacante (T24) y foto de
+ * la cuenta—, así que
  * las filas escritas mientras `APP_PUBLIC_URL` no estaba definida quedaron con
  * `http://localhost:3000/uploads/...` y la imagen se ve rota.
  * Definir la variable arregla las subidas nuevas, no las viejas: esto las
@@ -83,6 +85,16 @@ const TARGETS = [
     },
     describe: (row: Vacancy) => row.title ?? row.id,
   } satisfies RehostTarget<Vacancy>,
+  {
+    label: 'users.photo_url',
+    entity: User,
+    where: { photoUrl: Not(IsNull()) },
+    read: (row: User) => row.photoUrl,
+    write: (row: User, url: string) => {
+      row.photoUrl = url;
+    },
+    describe: (row: User) => row.email,
+  } satisfies RehostTarget<User>,
 ];
 
 async function rehost<T extends ObjectLiteral>(

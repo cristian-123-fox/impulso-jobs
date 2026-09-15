@@ -61,6 +61,23 @@ export class UsersApi {
       .pipe(map((r) => r.content));
   }
 
+  /** Sube la foto de la cuenta (multipart). Devuelve la URL ya persistida. */
+  uploadPhoto(id: string, file: File): Observable<string | null> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http
+      .post<
+        ApiSuccessResponse<{ photoUrl: string | null }>
+      >(`${this.base}/${id}/photo`, body)
+      .pipe(map((r) => r.content.photoUrl));
+  }
+
+  removePhoto(id: string): Observable<void> {
+    return this.http
+      .delete<ApiSuccessResponse<unknown>>(`${this.base}/${id}/photo`)
+      .pipe(map(() => undefined));
+  }
+
   remove(id: string): Observable<void> {
     return this.http
       .delete<ApiSuccessResponse<unknown>>(`${this.base}/${id}`)

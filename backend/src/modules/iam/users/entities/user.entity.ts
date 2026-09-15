@@ -74,4 +74,27 @@ export class User extends BaseEntity {
   /** Notas internas del administrador sobre esta cuenta. */
   @Column({ name: 'admin_notes', type: 'text', nullable: true })
   adminNotes?: string | null;
+
+  /**
+   * Identidad de la persona. Para CANDIDATE y EMPLOYER el nombre para mostrar
+   * sigue saliendo de su perfil o de su empresa (ver `UserProfileResolver`);
+   * esto es lo único que tiene una cuenta ADMIN, que no tiene ni una cosa ni
+   * la otra. Nullable porque las cuentas anteriores a la migración no lo traen.
+   */
+  @Column({ name: 'first_name', type: 'varchar', length: 80, nullable: true })
+  firstName?: string | null;
+
+  @Column({ name: 'last_name', type: 'varchar', length: 80, nullable: true })
+  lastName?: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone?: string | null;
+
+  /** Puesto o cargo. Columna `job_title`: `position` es reservada en SQL. */
+  @Column({ name: 'job_title', type: 'varchar', length: 120, nullable: true })
+  jobTitle?: string | null;
+
+  /** URL absoluta de la foto (almacenamiento público local, ver T23). */
+  @Column({ name: 'photo_url', type: 'varchar', length: 500, nullable: true })
+  photoUrl?: string | null;
 }

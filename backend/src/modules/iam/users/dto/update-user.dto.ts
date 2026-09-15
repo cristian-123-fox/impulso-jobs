@@ -1,9 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
-  IsDefined,
   IsEmail,
   IsEnum,
   IsOptional,
@@ -121,6 +120,35 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   emailVerified?: boolean;
+
+  /**
+   * Identidad de la persona. Para un ADMIN es el único sitio donde vive su
+   * nombre; en candidatos y empresas el nombre para mostrar sigue saliendo
+   * de su perfil, y esto queda como dato de contacto de la cuenta.
+   */
+  @ApiPropertyOptional({ example: 'Oscar' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  firstName?: string;
+
+  @ApiPropertyOptional({ example: 'Ruiz' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  lastName?: string;
+
+  @ApiPropertyOptional({ example: '3312345678' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'Coordinador de soporte' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  jobTitle?: string;
 
   /** Notas internas del administrador sobre esta cuenta. */
   @ApiPropertyOptional()
