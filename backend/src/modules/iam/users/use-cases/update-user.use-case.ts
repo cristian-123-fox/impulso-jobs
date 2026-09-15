@@ -27,9 +27,7 @@ import {
   UserResponseDto,
   toUserResponse,
 } from '@/modules/iam/users/dto/user-response.dto';
-import {
-  UpdateCandidateProfileDto,
-} from '@/modules/iam/users/dto/update-user.dto';
+import { UpdateCandidateProfileDto } from '@/modules/iam/users/dto/update-user.dto';
 import {
   type IUserRepository,
   USER_REPOSITORY,
@@ -234,11 +232,13 @@ export class UpdateUserUseCase {
       profile.lastName = data.lastName?.trim() ?? '';
       profile.documentType = (data.documentType as any) ?? 'INE';
       profile.documentNumber = data.documentNumber?.trim() ?? '';
-      profile.birthDate = data.birthDate ?? new Date().toISOString().slice(0, 10);
+      profile.birthDate =
+        data.birthDate ?? new Date().toISOString().slice(0, 10);
       profile.state = data.state ?? 'JAL';
       profile.municipality = data.municipality?.trim() ?? '';
     } else {
-      if (data.firstName !== undefined) profile.firstName = data.firstName.trim();
+      if (data.firstName !== undefined)
+        profile.firstName = data.firstName.trim();
       if (data.lastName !== undefined) profile.lastName = data.lastName.trim();
       if (data.documentType !== undefined)
         profile.documentType = data.documentType as any;
@@ -250,7 +250,8 @@ export class UpdateUserUseCase {
         profile.municipality = data.municipality.trim();
     }
 
-    if (data.curp !== undefined) profile.curp = data.curp?.trim().toUpperCase() || null;
+    if (data.curp !== undefined)
+      profile.curp = data.curp?.trim().toUpperCase() || null;
     if (data.professionalTitle !== undefined)
       profile.professionalTitle = data.professionalTitle?.trim() || null;
     if (data.phone !== undefined) profile.phone = data.phone?.trim() || null;

@@ -67,7 +67,7 @@ describe('UpdateUserUseCase', () => {
       exists: jest.fn(),
       add: jest.fn(),
       remove: jest.fn(),
-    } as unknown as jest.Mocked<IUserRoleRepository>;
+    };
     roles = {
       findByCode: jest.fn((code: string) =>
         Promise.resolve(Object.assign(new Role(), { id: `role-${code}` })),

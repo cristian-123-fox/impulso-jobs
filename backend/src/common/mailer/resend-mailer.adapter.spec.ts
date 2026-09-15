@@ -4,6 +4,20 @@ import { createMailerAdapter } from '@/common/mailer/mailer.module';
 import { ResendMailerAdapter } from '@/common/mailer/resend-mailer.adapter';
 import { SmtpMailerAdapter } from '@/common/mailer/smtp-mailer.adapter';
 
+// `jest.mock` se iza por encima de estas constantes: sólo se pueden
+// referenciar dentro de la factoría si el nombre empieza por `mock`.
+const mockSend = jest.fn();
+const mockConstructor = jest.fn();
+
+jest.mock('resend', () => ({
+  Resend: class {
+    readonly emails = { send: mockSend };
+    constructor(key?: string) {
+      mockConstructor(key);
+    }
+  },
+}));
+
 function buildConfig(env: Record<string, string | undefined>): ConfigService {
   return {
     get: jest.fn((key: string) => env[key]),
@@ -11,7 +25,6 @@ function buildConfig(env: Record<string, string | undefined>): ConfigService {
 }
 
 describe('ResendMailerAdapter', () => {
-  const fetchMock = jest.fn();
   const mail = {
     to: 'persona@test.io',
     subject: 'Verifica tu correo',
@@ -19,8 +32,9 @@ describe('ResendMailerAdapter', () => {
   };
 
   beforeEach(() => {
-    fetchMock.mockReset();
-    global.fetch = fetchMock;
+    mockSend.mockReset();
+    mockConstructor.mockReset();
+    mockSend.mockResolvedValue({ data: { id: 'msg-1' }, error: null });
   });
 
   function buildAdapter(
@@ -31,25 +45,19 @@ describe('ResendMailerAdapter', () => {
     );
   }
 
-  it('envía el correo a la API de Resend con la clave y el remitente', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ id: 'msg-1' }),
-    });
+  it('construye el cliente con la clave de la configuración', () => {
+    buildAdapter();
 
+    expect(mockConstructor).toHaveBeenCalledWith('re_test_key');
+  });
+
+  it('envía el correo por el SDK con el remitente configurado', async () => {
     await buildAdapter({
       MAIL_FROM: 'Impulso <no-reply@impulsojobs.com>',
     }).send(mail);
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://api.resend.com/emails');
-    expect(init.method).toBe('POST');
-    expect((init.headers as Record<string, string>).Authorization).toBe(
-      'Bearer re_test_key',
-    );
-    expect(JSON.parse(init.body as string)).toEqual({
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(mockSend.mock.calls[0][0]).toEqual({
       from: 'Impulso <no-reply@impulsojobs.com>',
       to: ['persona@test.io'],
       subject: 'Verifica tu correo',
@@ -57,46 +65,38 @@ describe('ResendMailerAdapter', () => {
     });
   });
 
-  it('añade reply_to sólo si está configurado', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ id: 'msg-2' }),
-    });
-
+  it('añade replyTo sólo si está configurado', async () => {
     await buildAdapter({ MAIL_REPLY_TO: 'hola@impulsojobs.com' }).send(mail);
+    expect(mockSend.mock.calls[0][0].replyTo).toBe('hola@impulsojobs.com');
 
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(init.body as string).reply_to).toBe(
-      'hola@impulsojobs.com',
-    );
+    mockSend.mockClear();
+    await buildAdapter().send(mail);
+    expect(mockSend.mock.calls[0][0]).not.toHaveProperty('replyTo');
   });
 
   it('cae al remitente de SMTP_FROM si no hay MAIL_FROM', async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ id: 'msg-3' }),
-    });
-
     await buildAdapter({ SMTP_FROM: 'legado@impulsojobs.com' }).send(mail);
 
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(init.body as string).from).toBe('legado@impulsojobs.com');
+    expect(mockSend.mock.calls[0][0].from).toBe('legado@impulsojobs.com');
+  });
+
+  it('corta la petición con un AbortSignal para no colgar la operación', async () => {
+    await buildAdapter().send(mail);
+
+    expect(mockSend.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
   });
 
   it('no propaga el error si Resend responde con fallo', async () => {
-    fetchMock.mockResolvedValue({
-      ok: false,
-      status: 422,
-      text: () => Promise.resolve('{"message":"domain is not verified"}'),
+    mockSend.mockResolvedValue({
+      data: null,
+      error: { name: 'validation_error', message: 'domain is not verified' },
     });
 
     await expect(buildAdapter().send(mail)).resolves.toBeUndefined();
   });
 
   it('no propaga el error si la petición falla', async () => {
-    fetchMock.mockRejectedValue(new Error('network down'));
+    mockSend.mockRejectedValue(new Error('network down'));
 
     await expect(buildAdapter().send(mail)).resolves.toBeUndefined();
   });

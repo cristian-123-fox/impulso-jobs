@@ -283,7 +283,7 @@ Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
 ### T21 · Módulo de notificaciones (plataforma + correo) ✅
 
-> **Actualización 2026-09-13 — el proveedor de correo es Resend.** `MailerModule` elige adaptador por configuración: `RESEND_API_KEY` → `ResendMailerAdapter` (API HTTP, sin SDK: el backend es CJS en cPanel) · `SMTP_HOST` → `SmtpMailerAdapter` (nodemailer, se conserva como alternativa) · ninguna → consola. Despliegue: `RESEND_API_KEY` + `MAIL_FROM` con el **dominio verificado** en Resend (SPF/DKIM). De paso muere el riesgo de que cPanel bloquee el puerto 587 saliente — Resend va por HTTPS.
+> **Actualización 2026-09-13 — el proveedor de correo es Resend.** `MailerModule` elige adaptador por configuración: `RESEND_API_KEY` → `ResendMailerAdapter` (SDK oficial `resend`; nació sin SDK porque entonces era ESM-only y el backend es CJS en cPanel — desde la 6.x el paquete trae build dual y se migró) · `SMTP_HOST` → `SmtpMailerAdapter` (nodemailer, se conserva como alternativa) · ninguna → consola. Despliegue: `RESEND_API_KEY` + `MAIL_FROM` con el **dominio verificado** en Resend (SPF/DKIM). De paso muere el riesgo de que cPanel bloquee el puerto 587 saliente — Resend va por HTTPS.
 
 **Qué se pide:** notificaciones dentro de la plataforma (campana / bandeja) y por correo electrónico.
 
