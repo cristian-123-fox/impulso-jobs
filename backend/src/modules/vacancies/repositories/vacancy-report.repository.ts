@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, FindOptionsWhere, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
+import { buildOrder } from '@/common/utils/sort.util';
+import { VACANCY_REPORT_SORT_COLUMNS } from '@/modules/vacancies/dto/vacancy-report.dto';
 import { VacancyReport } from '@/modules/vacancies/entities/vacancy-report.entity';
 import {
   IVacancyReportRepository,
@@ -43,7 +45,12 @@ export class VacancyReportRepository
     if (criteria.status) where.status = criteria.status;
     return this.repo(manager).findAndCount({
       where,
-      order: { createdAt: 'DESC' },
+      order: buildOrder<VacancyReport>(
+        criteria.sortBy,
+        criteria.sortOrder,
+        VACANCY_REPORT_SORT_COLUMNS,
+        { createdAt: 'DESC' },
+      ),
       skip: (criteria.page - 1) * criteria.limit,
       take: criteria.limit,
     });

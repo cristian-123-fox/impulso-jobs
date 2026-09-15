@@ -78,6 +78,8 @@ export class AdminUsersController {
       status: query.status,
       emailVerified: query.emailVerified,
       deleted: query.deleted,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
       page: query.page ?? 1,
       limit: query.limit ?? 10,
     });

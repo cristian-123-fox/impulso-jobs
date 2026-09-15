@@ -88,6 +88,9 @@ export interface UsersFilters {
   search?: string;
   role?: Role;
   status?: UserStatus;
+  /** Clave de columna; debe existir en `USER_SORT_COLUMNS` del backend. */
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
   page: number;
   limit: number;
 }

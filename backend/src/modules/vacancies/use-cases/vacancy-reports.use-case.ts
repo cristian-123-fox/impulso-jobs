@@ -138,6 +138,8 @@ export class VacancyReportsUseCase {
     const limit = query.limit ?? 10;
     const [rows, total] = await this.reports.findAndCount({
       status: query.status,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
       page,
       limit,
     });

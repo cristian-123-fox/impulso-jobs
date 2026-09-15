@@ -11,7 +11,7 @@ import {
   MaxLength,
   ValidateNested,
 } from 'class-validator';
-import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { SortableQueryDto } from '@/common/dto/sortable-query.dto';
 import { MX_STATE_CODES } from '@/common/catalogs/mx-states';
 import { SAT_TAX_REGIME_CODES } from '@/common/catalogs/sat-tax-regimes';
 import { RFC_REGEX } from '@/common/utils/mx-identifiers';
@@ -31,8 +31,23 @@ const toUpper = ({ value }: { value: unknown }): unknown =>
 const toLower = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
 
+/** Lista blanca de columnas ordenables. Ver `buildOrder`. */
+export const COMPANY_SORT_COLUMNS = {
+  businessName: 'businessName',
+  legalName: 'legalName',
+  rfc: 'rfc',
+  state: 'state',
+  createdAt: 'createdAt',
+} as const;
+
+export const COMPANY_SORT_KEYS = Object.keys(
+  COMPANY_SORT_COLUMNS,
+) as (keyof typeof COMPANY_SORT_COLUMNS)[];
+
+export type CompanySortKey = keyof typeof COMPANY_SORT_COLUMNS;
+
 /** Filtros del listado administrativo de empresas. */
-export class ListCompaniesQueryDto extends PaginationQueryDto {
+export class ListCompaniesQueryDto extends SortableQueryDto {
   @IsOptional()
   @IsString()
   @MaxLength(160)
@@ -41,6 +56,11 @@ export class ListCompaniesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsIn([...MX_STATE_CODES], { message: 'El estado no es válido.' })
   state?: string;
+
+  @ApiPropertyOptional({ enum: COMPANY_SORT_KEYS })
+  @IsOptional()
+  @IsIn(COMPANY_SORT_KEYS, { message: 'La columna de orden no es válida.' })
+  sortBy?: CompanySortKey;
 }
 
 /** Cuenta de acceso creada junto con la empresa (dueño / OWNER). */

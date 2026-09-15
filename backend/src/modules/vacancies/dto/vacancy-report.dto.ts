@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
-import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
+import { SortableQueryDto } from '@/common/dto/sortable-query.dto';
 import { VacancyReport } from '@/modules/vacancies/entities/vacancy-report.entity';
 import {
   VACANCY_REPORT_REASONS,
@@ -25,13 +25,34 @@ export class CreateVacancyReportDto {
   comment?: string;
 }
 
-export class ListVacancyReportsQueryDto extends PaginationQueryDto {
+/** Lista blanca de columnas ordenables. Ver `buildOrder`. */
+export const VACANCY_REPORT_SORT_COLUMNS = {
+  status: 'status',
+  reasonCode: 'reasonCode',
+  createdAt: 'createdAt',
+  resolvedAt: 'resolvedAt',
+} as const;
+
+export const VACANCY_REPORT_SORT_KEYS = Object.keys(
+  VACANCY_REPORT_SORT_COLUMNS,
+) as (keyof typeof VACANCY_REPORT_SORT_COLUMNS)[];
+
+export type VacancyReportSortKey = keyof typeof VACANCY_REPORT_SORT_COLUMNS;
+
+export class ListVacancyReportsQueryDto extends SortableQueryDto {
   @ApiPropertyOptional({ enum: VacancyReportStatus })
   @IsOptional()
   @IsIn(Object.values(VacancyReportStatus), {
     message: 'El estado no es válido.',
   })
   status?: VacancyReportStatus;
+
+  @ApiPropertyOptional({ enum: VACANCY_REPORT_SORT_KEYS })
+  @IsOptional()
+  @IsIn(VACANCY_REPORT_SORT_KEYS, {
+    message: 'La columna de orden no es válida.',
+  })
+  sortBy?: VacancyReportSortKey;
 }
 
 export interface VacancyReportResponseDto {

@@ -1,6 +1,12 @@
 import { CurrencyPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { IjIcon } from '@/shared/ui';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input,
+  model,
+  output,
+} from '@angular/core';
+import { IjCell, IjColumn, IjIcon, IjSortState, IjTable } from '@/shared/ui';
 import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import {
   BILLING_PERIOD_LABELS,
@@ -17,150 +23,185 @@ export interface PlanActionEvent {
   plan: Plan;
 }
 
-/** Tabla del catálogo de planes. Presentacional: sólo emite intenciones. */
+/**
+ * Tabla del catálogo de planes. Presentacional: sólo emite intenciones.
+ *
+ * Orden **de cliente**: `GET /admin/plans` devuelve el catálogo entero sin
+ * paginar, así que TanStack puede ordenarlo sin ir al servidor. No hay
+ * columnas de orden en el backend para este listado, ni hacen falta.
+ */
 @Component({
   selector: 'app-plans-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, IjIcon, AdminEmpty],
+  imports: [CurrencyPipe, IjIcon, IjTable, IjCell, AdminEmpty],
   template: `
-    <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
-      <table class="w-full min-w-[920px] border-collapse text-left">
-        <thead>
-          <tr class="border-b border-line">
-            @for (h of headers; track h) {
-              <th class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted">
-                {{ h }}
-              </th>
+    @if (plans().length === 0) {
+      <app-admin-empty
+        icon="tag"
+        message="Aún no hay planes."
+        hint="Crea el primero con el botón de arriba para que aparezca en el portal."
+      />
+    } @else {
+      <ij-table
+        [data]="plans()"
+        [columns]="columns"
+        sortMode="client"
+        [rowId]="rowId"
+        [(sort)]="sort"
+      >
+        <ng-template ijCell="name" [ijCellOf]="plans()" let-plan>
+          <button
+            type="button"
+            class="text-left text-sm font-semibold text-ink-900 transition-colors hover:text-brand-strong"
+            (click)="emit('edit', plan)"
+          >
+            {{ plan.name }}
+          </button>
+          <div class="mt-1 flex flex-wrap items-center gap-1.5">
+            <span
+              class="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-strong"
+            >
+              {{ plan.code }}
+            </span>
+            @if (plan.isPopular) {
+              <span
+                class="rounded-md bg-accent-amber-soft px-2 py-0.5 text-[11px] font-bold text-accent-amber-strong"
+              >
+                Más popular
+              </span>
             }
-          </tr>
-        </thead>
-        <tbody>
-          @for (plan of plans(); track plan.id) {
-            <tr class="border-b border-line/70 transition-colors hover:bg-surface">
-              <td class="px-5 py-3.5">
-                <button
-                  type="button"
-                  class="text-left text-sm font-semibold text-ink-900 transition-colors hover:text-brand-strong"
-                  (click)="emit('edit', plan)"
-                >
-                  {{ plan.name }}
-                </button>
-                <div class="mt-1 flex flex-wrap items-center gap-1.5">
-                  <span
-                    class="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-strong"
-                  >
-                    {{ plan.code }}
-                  </span>
-                  @if (plan.isPopular) {
-                    <span
-                      class="rounded-md bg-accent-amber-soft px-2 py-0.5 text-[11px] font-bold text-accent-amber-strong"
-                    >
-                      Más popular
-                    </span>
-                  }
-                </div>
-              </td>
-              <td class="px-5 py-3.5 text-[13.5px] text-body">
-                {{ typeLabel(plan) }}
-                <div class="text-[12.5px] text-muted">{{ periodLabel(plan) }}</div>
-              </td>
-              <td class="px-5 py-3.5">
-                <div class="text-sm font-bold text-ink-900">
-                  {{ plan.price.total | currency: plan.price.currency : 'symbol-narrow' : '1.2-2' }}
-                </div>
-                <div class="text-[12px] text-muted">
-                  {{ plan.price.subtotal | currency: plan.price.currency : 'symbol-narrow' : '1.2-2' }}
-                  + IVA
-                </div>
-              </td>
-              <td class="px-5 py-3.5 text-[13.5px] text-body">{{ scopeLabel(plan) }}</td>
-              <td class="px-5 py-3.5 text-[13.5px] text-body">
-                {{ includedCount(plan) }} / {{ plan.features.length }}
-              </td>
-              <td class="px-5 py-3.5">
-                <span
-                  class="inline-block rounded-md px-2 py-1 text-[11.5px] font-bold"
-                  [class]="
-                    plan.isActive
-                      ? 'bg-accent-green-soft text-accent-green-strong'
-                      : 'bg-surface text-muted'
-                  "
-                >
-                  {{ plan.isActive ? 'Publicado' : 'Borrador' }}
-                </span>
-              </td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center justify-end gap-1.5">
-                  <button
-                    type="button"
-                    [class]="actionClass"
-                    title="Editar plan"
-                    aria-label="Editar plan"
-                    (click)="emit('edit', plan)"
-                  >
-                    <ij-icon name="pen" [size]="15" />
-                  </button>
-                  <button
-                    type="button"
-                    [class]="actionClass"
-                    title="Beneficios del plan"
-                    aria-label="Beneficios del plan"
-                    (click)="emit('features', plan)"
-                  >
-                    <ij-icon name="list" [size]="15" />
-                  </button>
-                  @if (plan.isActive) {
-                    <button
-                      type="button"
-                      class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-[1px]"
-                      title="Despublicar (deja de venderse)"
-                      aria-label="Despublicar plan"
-                      (click)="emit('deactivate', plan)"
-                    >
-                      <ij-icon name="pause" [size]="15" />
-                    </button>
-                  } @else {
-                    <button
-                      type="button"
-                      [class]="actionClass"
-                      title="Publicar en el portal"
-                      aria-label="Publicar plan"
-                      (click)="emit('activate', plan)"
-                    >
-                      <ij-icon name="check" [size]="16" />
-                    </button>
-                  }
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="7">
-                <app-admin-empty
-                  icon="tag"
-                  message="Aún no hay planes."
-                  hint="Crea el primero con el botón de arriba para que aparezca en el portal."
-                />
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </div>
+        </ng-template>
+
+        <ng-template ijCell="planType" [ijCellOf]="plans()" let-plan>
+          <span class="text-[13.5px] text-body">{{ typeLabel(plan) }}</span>
+          <div class="text-[12.5px] text-muted">{{ periodLabel(plan) }}</div>
+        </ng-template>
+
+        <ng-template ijCell="price" [ijCellOf]="plans()" let-plan>
+          <div class="text-sm font-bold text-ink-900">
+            {{
+              plan.price.total
+                | currency: plan.price.currency : 'symbol-narrow' : '1.2-2'
+            }}
+          </div>
+          <div class="text-[12px] text-muted">
+            {{
+              plan.price.subtotal
+                | currency: plan.price.currency : 'symbol-narrow' : '1.2-2'
+            }}
+            + IVA
+          </div>
+        </ng-template>
+
+        <ng-template ijCell="scope" [ijCellOf]="plans()" let-plan>
+          <span class="text-[13.5px] text-body">{{ scopeLabel(plan) }}</span>
+        </ng-template>
+
+        <ng-template ijCell="features" [ijCellOf]="plans()" let-plan>
+          <span class="text-[13.5px] text-body">
+            {{ includedCount(plan) }} / {{ plan.features.length }}
+          </span>
+        </ng-template>
+
+        <ng-template ijCell="isActive" [ijCellOf]="plans()" let-plan>
+          <span
+            class="inline-block rounded-md px-2 py-1 text-[11.5px] font-bold"
+            [class]="
+              plan.isActive
+                ? 'bg-accent-green-soft text-accent-green-strong'
+                : 'bg-surface text-muted'
+            "
+          >
+            {{ plan.isActive ? 'Publicado' : 'Borrador' }}
+          </span>
+        </ng-template>
+
+        <ng-template ijCell="actions" [ijCellOf]="plans()" let-plan>
+          <div class="flex items-center justify-end gap-1.5">
+            <button
+              type="button"
+              [class]="actionClass"
+              title="Editar plan"
+              aria-label="Editar plan"
+              (click)="emit('edit', plan)"
+            >
+              <ij-icon name="pen" [size]="15" />
+            </button>
+            <button
+              type="button"
+              [class]="actionClass"
+              title="Beneficios del plan"
+              aria-label="Beneficios del plan"
+              (click)="emit('features', plan)"
+            >
+              <ij-icon name="list" [size]="15" />
+            </button>
+            @if (plan.isActive) {
+              <button
+                type="button"
+                class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-[1px]"
+                title="Despublicar (deja de venderse)"
+                aria-label="Despublicar plan"
+                (click)="emit('deactivate', plan)"
+              >
+                <ij-icon name="pause" [size]="15" />
+              </button>
+            } @else {
+              <button
+                type="button"
+                [class]="actionClass"
+                title="Publicar en el portal"
+                aria-label="Publicar plan"
+                (click)="emit('activate', plan)"
+              >
+                <ij-icon name="check" [size]="16" />
+              </button>
+            }
+          </div>
+        </ng-template>
+      </ij-table>
+    }
   `,
+
 })
 export class PlansTable {
   readonly plans = input.required<readonly Plan[]>();
+  readonly sort = model<IjSortState | null>(null);
   readonly action = output<PlanActionEvent>();
 
-  protected readonly headers = [
-    'Plan',
-    'Modalidad',
-    'Precio',
-    'Alcance',
-    'Beneficios',
-    'Estado',
-    '',
+  protected readonly rowId = (plan: Plan) => plan.id;
+
+  protected readonly columns: IjColumn<Plan>[] = [
+    { id: 'name', header: 'Plan', sortable: true, value: (p) => p.name },
+    {
+      id: 'planType',
+      header: 'Modalidad',
+      sortable: true,
+      value: (p) => this.typeLabel(p),
+      hideBelow: 'md',
+    },
+    {
+      id: 'price',
+      header: 'Precio',
+      sortable: true,
+      value: (p) => p.price.total,
+    },
+    { id: 'scope', header: 'Alcance', hideBelow: 'lg' },
+    {
+      id: 'features',
+      header: 'Beneficios',
+      sortable: true,
+      value: (p) => this.includedCount(p),
+      hideBelow: 'lg',
+    },
+    {
+      id: 'isActive',
+      header: 'Estado',
+      sortable: true,
+      value: (p) => (p.isActive ? 1 : 0),
+    },
+    { id: 'actions', header: '', class: 'text-right' },
   ];
 
   protected readonly actionClass =

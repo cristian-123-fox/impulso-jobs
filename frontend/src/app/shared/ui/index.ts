@@ -23,3 +23,13 @@ export { IjMultiselect } from '@/shared/ui/multiselect/multiselect';
 export { IjAutocomplete } from '@/shared/ui/autocomplete/autocomplete';
 export { IjDatepicker } from '@/shared/ui/datepicker/datepicker';
 export { type IjOption } from '@/shared/ui/forms/option';
+
+// Tabla del back-office: TanStack Table headless + marcado del kit.
+export { IjTable } from '@/shared/ui/table/table';
+export { IjCell } from '@/shared/ui/table/cell.directive';
+export {
+  type IjColumn,
+  type IjSortState,
+  type IjSortOrder,
+  type IjCellContext,
+} from '@/shared/ui/table/table.models';

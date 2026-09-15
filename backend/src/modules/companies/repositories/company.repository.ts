@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, FindOptionsWhere, In, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { containsInsensitive } from '@/common/utils/search.util';
+import { buildOrder } from '@/common/utils/sort.util';
+import { COMPANY_SORT_COLUMNS } from '@/modules/companies/dto/admin-company.dto';
 import { Company } from '@/modules/companies/entities/company.entity';
 import {
   CompanySearchCriteria,
@@ -41,7 +43,12 @@ export class CompanyRepository
   ): Promise<[Company[], number]> {
     return this.repo(manager).findAndCount({
       where: this.buildWhere(criteria),
-      order: { createdAt: 'DESC' },
+      order: buildOrder<Company>(
+        criteria.sortBy,
+        criteria.sortOrder,
+        COMPANY_SORT_COLUMNS,
+        { createdAt: 'DESC' },
+      ),
       skip: (criteria.page - 1) * criteria.limit,
       take: criteria.limit,
     });

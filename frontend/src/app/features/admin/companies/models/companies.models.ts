@@ -63,6 +63,9 @@ export interface CompaniesPage {
 export interface CompaniesFilters {
   search?: string;
   state?: string;
+  /** Clave de columna; debe existir en `COMPANY_SORT_COLUMNS` del backend. */
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
   page: number;
   limit: number;
 }

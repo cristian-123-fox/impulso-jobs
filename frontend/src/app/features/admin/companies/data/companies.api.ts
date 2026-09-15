@@ -31,6 +31,11 @@ export class CompaniesApi {
       .set('limit', filters.limit);
     if (filters.search) params = params.set('search', filters.search);
     if (filters.state) params = params.set('state', filters.state);
+    if (filters.sortBy) {
+      params = params
+        .set('sortBy', filters.sortBy)
+        .set('sortOrder', filters.sortOrder ?? 'ASC');
+    }
 
     return this.http
       .get<ApiSuccessResponse<CompaniesPage>>(this.base, { params })

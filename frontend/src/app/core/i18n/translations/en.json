@@ -590,7 +590,8 @@
     "summaryOne": "{{total}} record · page {{page}} of {{pages}}",
     "summaryMany": "{{total}} records · page {{page}} of {{pages}}",
     "prev": "Previous page",
-    "next": "Next page"
+    "next": "Next page",
+    "pageSize": "Rows"
   },
   "ui": {
     "search": "Search…",

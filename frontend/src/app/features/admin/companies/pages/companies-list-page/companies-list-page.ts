@@ -90,6 +90,8 @@ import {
         @default {
           <app-companies-table
             [companies]="facade.companies()"
+            [sort]="facade.sort()"
+            (sortChange)="facade.applySort($event)"
             (open)="openCompany($event)"
             (edit)="openEdit($event)"
           />
@@ -97,7 +99,9 @@ import {
             [page]="facade.page()"
             [pages]="facade.pages()"
             [total]="facade.total()"
+            [pageSize]="facade.pageSize()"
             (pageChange)="facade.load($event)"
+            (pageSizeChange)="facade.applyPageSize($event)"
           />
         }
       }

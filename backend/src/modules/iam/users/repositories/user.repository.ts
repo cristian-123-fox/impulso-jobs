@@ -9,6 +9,8 @@ import {
   Not,
   Repository,
 } from 'typeorm';
+import { buildOrder } from '@/common/utils/sort.util';
+import { USER_SORT_COLUMNS } from '@/modules/iam/users/dto/list-users-query.dto';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { containsInsensitive } from '@/common/utils/search.util';
 import { Role } from '@/common/types/role.enum';
@@ -55,7 +57,12 @@ export class UserRepository
       where: this.buildWhere(criteria),
       // `withDeleted` trae también las bajas; el `where` las acota a sólo ésas.
       withDeleted: criteria.deleted === true,
-      order: { createdAt: 'DESC' },
+      order: buildOrder<User>(
+        criteria.sortBy,
+        criteria.sortOrder,
+        USER_SORT_COLUMNS,
+        { createdAt: 'DESC' },
+      ),
       skip: (criteria.page - 1) * criteria.limit,
       take: criteria.limit,
     });

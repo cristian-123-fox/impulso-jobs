@@ -1,4 +1,5 @@
 import { EntityManager } from 'typeorm';
+import { SortOrder } from '@/common/dto/sortable-query.dto';
 import { VacancyReport } from '@/modules/vacancies/entities/vacancy-report.entity';
 import { VacancyReportStatus } from '@/modules/vacancies/enums/vacancy-report.enums';
 
@@ -6,6 +7,9 @@ export const VACANCY_REPORT_REPOSITORY = 'VACANCY_REPORT_REPOSITORY';
 
 export interface VacancyReportSearch {
   status?: VacancyReportStatus;
+  /** Clave de `VACANCY_REPORT_SORT_COLUMNS`; cualquier otra cosa se ignora. */
+  sortBy?: string;
+  sortOrder?: SortOrder;
   page: number;
   limit: number;
 }

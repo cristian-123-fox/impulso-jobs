@@ -2,6 +2,7 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable } from 'rxjs';
 import { Role } from '@/core/models/role.enum';
+import { IjSortState } from '@/shared/ui';
 import { UsersApi } from '@/features/admin/users/data/users.api';
 import {
   AdminUser,
@@ -14,7 +15,7 @@ import {
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 const EMPTY_STATS: UserStats = {
   total: 0,
@@ -35,12 +36,16 @@ export class UsersFacade {
   readonly state = signal<LoadState>('idle');
   readonly total = signal(0);
   readonly page = signal(1);
+  /** Filas por página; la elige el usuario desde la paginación. */
+  readonly pageSize = signal(DEFAULT_PAGE_SIZE);
   readonly pages = signal(1);
 
   readonly search = signal('');
   /** Pestaña activa: el listado siempre está separado por tipo de cuenta. */
   readonly role = signal<Role>(Role.EMPLOYER);
   readonly status = signal<UserStatus | ''>('');
+  /** Orden de servidor. `null` deja el del backend (alta descendente). */
+  readonly sort = signal<IjSortState | null>(null);
 
   readonly hasFilters = computed(
     () => Boolean(this.search()) || Boolean(this.status()),
@@ -52,11 +57,16 @@ export class UsersFacade {
 
     const filters: UsersFilters = {
       page,
-      limit: PAGE_SIZE,
+      limit: this.pageSize(),
       role: this.role(),
     };
     if (this.search().trim()) filters.search = this.search().trim();
     if (this.status()) filters.status = this.status() as UserStatus;
+    const sort = this.sort();
+    if (sort) {
+      filters.sortBy = sort.column;
+      filters.sortOrder = sort.order;
+    }
 
     this.api
       .list(filters)
@@ -75,6 +85,22 @@ export class UsersFacade {
 
   /** Aplica filtros volviendo siempre a la primera página. */
   applyFilters(): void {
+    this.load(1);
+  }
+
+  /**
+   * Cambia el orden y recarga. Vuelve a la página 1 a propósito: con otro
+   * orden, seguir en la página 3 muestra filas que no tienen nada que ver
+   * con las que el usuario estaba mirando.
+   */
+  applySort(sort: IjSortState | null): void {
+    this.sort.set(sort);
+    this.load(1);
+  }
+
+  /** Cambia el tamaño de página y vuelve a la primera. */
+  applyPageSize(size: number): void {
+    this.pageSize.set(size);
     this.load(1);
   }
 

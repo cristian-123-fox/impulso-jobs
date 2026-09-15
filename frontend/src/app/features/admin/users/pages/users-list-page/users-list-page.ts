@@ -102,6 +102,35 @@ const CREATE_TITLE: Record<Role, string> = {
         (clear)="facade.clearFilters()"
       />
 
+      @if (selection().length > 0) {
+        <div
+          class="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3"
+        >
+          <span class="text-[13.5px] font-semibold text-brand-strong">
+            {{ selection().length }}
+            {{ selection().length === 1 ? 'cuenta seleccionada' : 'cuentas seleccionadas' }}
+          </span>
+          <div class="ml-auto flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-bold text-body transition-colors hover:bg-surface active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
+              [disabled]="bulkRunning()"
+              (click)="onBulkStatus(active)"
+            >
+              Reactivar
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-bold text-body transition-colors hover:bg-surface hover:text-red-600 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
+              [disabled]="bulkRunning()"
+              (click)="onBulkStatus(inactive)"
+            >
+              Desactivar
+            </button>
+          </div>
+        </div>
+      }
+
       @switch (facade.state()) {
         @case ('loading') {
           <app-admin-table-skeleton label="Cargando usuarios…" />
@@ -117,6 +146,9 @@ const CREATE_TITLE: Record<Role, string> = {
             [users]="facade.users()"
             [role]="facade.role()"
             [currentUserId]="currentUserId()"
+            [sort]="facade.sort()"
+            (sortChange)="facade.applySort($event)"
+            (selectionChange)="selection.set($event)"
             (edit)="onEdit($event)"
             (activate)="onStatus($event, active)"
             (deactivate)="onStatus($event, inactive)"
@@ -126,7 +158,9 @@ const CREATE_TITLE: Record<Role, string> = {
             [page]="facade.page()"
             [pages]="facade.pages()"
             [total]="facade.total()"
+            [pageSize]="facade.pageSize()"
             (pageChange)="facade.load($event)"
+            (pageSizeChange)="facade.applyPageSize($event)"
           />
         }
       }
@@ -190,6 +224,9 @@ export class UsersListPage {
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
+  /** Filas marcadas en la tabla, para las acciones en lote. */
+  protected readonly selection = signal<readonly AdminUser[]>([]);
+  protected readonly bulkRunning = signal(false);
 
   protected readonly currentUserId = computed(
     () => this.auth.currentUser()?.id ?? null,
@@ -293,6 +330,46 @@ export class UsersListPage {
           this.actionError.set(
             this.messageOf(error, 'No se pudo cambiar el estado.'),
           ),
+      });
+  }
+
+  /**
+   * Cambia el estado de todas las cuentas marcadas. Se excluye la propia
+   * sesión: el backend rechaza que un administrador se desactive a sí mismo,
+   * y sin filtrarlo aquí el lote entero fallaría por una sola fila.
+   *
+   * Las peticiones van en serie (`concat`) y no en paralelo: son 10 como
+   * mucho y así un fallo intermedio no deja la mitad aplicada sin saber cuál.
+   */
+  protected onBulkStatus(status: UserStatus): void {
+    const targets = this.selection().filter(
+      (user) => user.id !== this.currentUserId() && user.status !== status,
+    );
+    if (targets.length === 0) {
+      this.actionError.set('Las cuentas seleccionadas ya están en ese estado.');
+      return;
+    }
+
+    this.actionError.set(null);
+    this.bulkRunning.set(true);
+    concat(
+      ...targets.map((user) => this.facade.updateStatus(user.id, status)),
+    )
+      .pipe(last(), takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.bulkRunning.set(false);
+          this.selection.set([]);
+          this.facade.load(this.facade.page());
+        },
+        error: (error: unknown) => {
+          this.bulkRunning.set(false);
+          this.actionError.set(
+            this.messageOf(error, 'No se pudo cambiar el estado de todas.'),
+          );
+          // Algunas sí pudieron cambiar: hay que recargar para no mentir.
+          this.facade.load(this.facade.page());
+        },
       });
   }
 

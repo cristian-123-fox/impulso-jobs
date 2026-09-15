@@ -1,4 +1,5 @@
 import { EntityManager } from 'typeorm';
+import { SortOrder } from '@/common/dto/sortable-query.dto';
 import { Company } from '@/modules/companies/entities/company.entity';
 
 export const COMPANY_REPOSITORY = 'COMPANY_REPOSITORY';
@@ -9,6 +10,9 @@ export interface CompanySearchCriteria {
   search?: string;
   /** Código ISO 3166-2:MX. */
   state?: string;
+  /** Clave de `COMPANY_SORT_COLUMNS`; cualquier otra cosa se ignora. */
+  sortBy?: string;
+  sortOrder?: SortOrder;
   page: number;
   limit: number;
 }

@@ -30,6 +30,7 @@
     "@angular/ssr": "^20.0.2",
     "@ckeditor/ckeditor5-angular": "^11.2.0",
     "@jsverse/transloco": "^8.4.0",
+    "@tanstack/angular-table": "9.2.4",
     "ckeditor5": "^48.5.0",
     "express": "^5.1.0",
     "leaflet": "^1.9.4",

@@ -32,6 +32,20 @@ import { IjIcon } from '@/shared/ui';
           }}
         </span>
         <div class="flex items-center gap-2">
+          @if (pageSize() > 0) {
+            <label class="flex items-center gap-1.5 text-[13px] text-muted">
+              {{ t('pagination.pageSize') }}
+              <select
+                class="rounded-lg border border-line bg-white px-2 py-1 text-[13px] font-semibold text-body focus:border-brand focus:outline-none"
+                [value]="pageSize()"
+                (change)="onPageSize($event)"
+              >
+                @for (size of pageSizes; track size) {
+                  <option [value]="size">{{ size }}</option>
+                }
+              </select>
+            </label>
+          }
           <button
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-body transition-colors hover:bg-surface active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
@@ -59,5 +73,15 @@ export class AdminPagination {
   readonly page = input.required<number>();
   readonly pages = input.required<number>();
   readonly total = input.required<number>();
+  /** Filas por página. `0` oculta el selector (listados sin esa opción). */
+  readonly pageSize = input(0);
   readonly pageChange = output<number>();
+  readonly pageSizeChange = output<number>();
+
+  protected readonly pageSizes = [10, 25, 50, 100] as const;
+
+  protected onPageSize(event: Event): void {
+    const value = Number((event.target as HTMLSelectElement).value);
+    if (value > 0) this.pageSizeChange.emit(value);
+  }
 }

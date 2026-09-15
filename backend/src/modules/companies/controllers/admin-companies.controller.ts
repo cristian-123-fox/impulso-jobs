@@ -64,6 +64,8 @@ export class AdminCompaniesController {
     return this.useCase.list({
       search: query.search,
       state: query.state,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
       page: query.page ?? 1,
       limit: query.limit ?? 10,
     });

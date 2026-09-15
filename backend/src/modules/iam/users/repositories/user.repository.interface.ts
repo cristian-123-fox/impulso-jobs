@@ -1,4 +1,5 @@
 import { EntityManager } from 'typeorm';
+import { SortOrder } from '@/common/dto/sortable-query.dto';
 import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { User } from '@/modules/iam/users/entities/user.entity';
@@ -15,6 +16,9 @@ export interface UserSearchCriteria {
   emailVerified?: boolean;
   /** `true` = sólo las cuentas dadas de baja (M13, para restaurarlas). */
   deleted?: boolean;
+  /** Clave de `USER_SORT_COLUMNS`; cualquier otra cosa se ignora. */
+  sortBy?: string;
+  sortOrder?: SortOrder;
   page: number;
   limit: number;
 }

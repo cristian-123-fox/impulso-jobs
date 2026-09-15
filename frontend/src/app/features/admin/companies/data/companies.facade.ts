@@ -1,6 +1,7 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, tap } from 'rxjs';
+import { IjSortState } from '@/shared/ui';
 import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
 import {
   AdminCompany,
@@ -12,7 +13,7 @@ import {
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 
 /** Fachada del feature admin/empresas: filtros + paginación con Signals. */
 @Injectable()
@@ -24,10 +25,14 @@ export class CompaniesFacade {
   readonly state = signal<LoadState>('idle');
   readonly total = signal(0);
   readonly page = signal(1);
+  /** Filas por página; la elige el usuario desde la paginación. */
+  readonly pageSize = signal(DEFAULT_PAGE_SIZE);
   readonly pages = signal(1);
 
   readonly search = signal('');
   readonly stateCode = signal('');
+  /** Orden de servidor. `null` deja el del backend (alta descendente). */
+  readonly sort = signal<IjSortState | null>(null);
 
   readonly hasFilters = computed(
     () => Boolean(this.search()) || Boolean(this.stateCode()),
@@ -37,9 +42,14 @@ export class CompaniesFacade {
     this.state.set('loading');
     this.page.set(page);
 
-    const filters: CompaniesFilters = { page, limit: PAGE_SIZE };
+    const filters: CompaniesFilters = { page, limit: this.pageSize() };
     if (this.search().trim()) filters.search = this.search().trim();
     if (this.stateCode()) filters.state = this.stateCode();
+    const sort = this.sort();
+    if (sort) {
+      filters.sortBy = sort.column;
+      filters.sortOrder = sort.order;
+    }
 
     this.api
       .list(filters)
@@ -56,6 +66,18 @@ export class CompaniesFacade {
   }
 
   applyFilters(): void {
+    this.load(1);
+  }
+
+  /** Cambia el orden y vuelve a la página 1 (ver `UsersFacade.applySort`). */
+  applySort(sort: IjSortState | null): void {
+    this.sort.set(sort);
+    this.load(1);
+  }
+
+  /** Cambia el tamaño de página y vuelve a la primera. */
+  applyPageSize(size: number): void {
+    this.pageSize.set(size);
     this.load(1);
   }
 

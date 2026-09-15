@@ -26,6 +26,11 @@ export class UsersApi {
     if (filters.search) params = params.set('search', filters.search);
     if (filters.role) params = params.set('role', filters.role);
     if (filters.status) params = params.set('status', filters.status);
+    if (filters.sortBy) {
+      params = params
+        .set('sortBy', filters.sortBy)
+        .set('sortOrder', filters.sortOrder ?? 'ASC');
+    }
 
     return this.http
       .get<ApiSuccessResponse<UsersPage>>(this.base, { params })
