@@ -14,7 +14,7 @@ import { DatePipe } from '@angular/common';
 import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { vacancyPath } from '@/shared/utils/seo';
-import { IjBadge, IjIcon, IjModal, IjRichText } from '@/shared/ui';
+import { IjAvatar, IjBadge, IjIcon, IjModal, IjRichText } from '@/shared/ui';
 import { PublicVacanciesApi } from '@/features/public/vacancies/data/public-vacancies.api';
 import { PublicVacancy } from '@/features/public/vacancies/models/public-vacancies.models';
 
@@ -27,7 +27,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
 @Component({
   selector: 'app-vacancy-detail-modal',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, IjBadge, IjIcon, IjModal, IjRichText, RouterLink],
+  imports: [IjAvatar, DatePipe, IjBadge, IjIcon, IjModal, IjRichText, RouterLink],
   styles: `
     .vacancy-banner {
       background: linear-gradient(135deg, #0f2027 0%, #203a43 40%, #2c5364 100%);
@@ -108,15 +108,11 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
 
               @if (v.company) {
                 <div class="flex items-center gap-3">
-                  <span
-                    class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-brand-50 text-sm font-extrabold text-brand-strong"
-                  >
-                    @if (v.company.logoUrl; as logo) {
-                      <img [src]="logo" alt="" class="h-full w-full object-cover" />
-                    } @else {
-                      {{ companyInitials(v.company.businessName) }}
-                    }
-                  </span>
+                  <ij-avatar
+                    class="h-10 w-10 rounded-xl border border-line bg-brand-50 text-sm font-extrabold text-brand-strong"
+                    [src]="v.company.logoUrl"
+                    [name]="v.company.businessName"
+                  />
                   <div class="min-w-0">
                     <p class="truncate text-[14px] font-bold text-ink-900">
                       {{ v.company.businessName }}

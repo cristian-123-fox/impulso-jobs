@@ -11,10 +11,10 @@ import { CompanyProfileComponent } from '@/features/company/profile/components/c
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CompanyProfileComponent],
   template: `
-    <div class="mx-auto max-w-[1180px]">
+    <div class="mx-auto max-w-[1240px]">
       <div class="mb-6">
-        <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Perfil de empresa</h1>
-        <p class="mt-1.5 text-[13.5px] text-muted">
+        <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">Perfil de empresa</h1>
+        <p class="mt-1.5 text-[14px] font-medium text-muted">
           Datos fiscales y de contacto. Es lo que verán los aspirantes en tus vacantes.
         </p>
       </div>

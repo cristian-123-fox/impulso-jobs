@@ -32,13 +32,13 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TeamTable, MemberForm, MemberRoleForm, IjButton, IjIcon, IjModal],
   template: `
-    <div class="mx-auto max-w-[1180px]">
+    <div class="mx-auto max-w-[1240px]">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
             Usuarios de la empresa
           </h1>
-          <p class="mt-1.5 text-[13.5px] text-muted">
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
             Quién puede entrar a la cuenta de tu empresa y con qué alcance.
           </p>
         </div>
@@ -59,7 +59,7 @@ import {
 
       <div class="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         @for (card of statCards(); track card.label) {
-          <div class="flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-card">
+          <div class="flex items-center gap-3.5 rounded-2xl border border-line bg-white p-4 shadow-card">
             <span
               class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
               [class]="card.tone"
@@ -106,14 +106,15 @@ import {
         </div>
       }
 
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
       @switch (facade.state()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
+          <div class="p-10 text-center text-[13.5px] text-muted">
             Cargando el equipo…
           </div>
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
+          <div class="p-10 text-center text-[13.5px] font-medium text-red-600">
             No se pudo cargar el equipo.
           </div>
         }
@@ -126,6 +127,7 @@ import {
           />
         }
       }
+      </section>
     </div>
 
     @if (showAdd()) {

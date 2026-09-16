@@ -1,155 +1,70 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  computed,
-  inject,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  Router,
-  RouterLink,
-  RouterLinkActive,
-  RouterOutlet,
-} from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
 import { CandidateProfileFacade } from '@/features/candidate/data/candidate-profile.facade';
-import { NotificationBell } from '@/shared/notifications/notification-bell';
-import { IconName, IjAvatar, IjIcon, IjLogo } from '@/shared/ui';
-
-interface CandidateNavItem {
-  readonly path: string;
-  readonly label: string;
-  readonly icon: IconName;
-}
+import { IjIcon } from '@/shared/ui';
+import {
+  AppShell,
+  ShellMenuItem,
+  ShellNavItem,
+} from '@/layout/app-shell/app-shell';
 
 /**
- * Shell del área del candidato: sidebar + topbar (sesión) + outlet.
- * El nombre y la foto del header salen de `GET /candidate/profile`
- * (la sesión sólo trae email y rol), con el email como fallback.
+ * Área del candidato. El armazón es `app-shell`, el mismo que admin y empresa.
+ *
+ * Nombre y foto los sobrescribe con `GET /candidate/profile` en vez de dejar
+ * los de la sesión: es la ficha que el propio candidato edita, y el facade la
+ * refresca al instante al guardarla — `GET /auth/me` se cachea por carga.
+ *
+ * El pie del riel («Buscar empleo») se proyecta: es lo único que esta área
+ * tiene y las otras no.
  */
 @Component({
   selector: 'app-candidate-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    RouterLinkActive,
-    RouterOutlet,
-    IjAvatar,
-    IjLogo,
-    IjIcon,
-    NotificationBell,
-  ],
+  imports: [AppShell, RouterLink, RouterOutlet, IjIcon],
   template: `
-    <div class="flex min-h-screen bg-surface text-ink-900">
-      <aside
-        class="sticky top-0 hidden h-screen w-[248px] flex-shrink-0 flex-col border-r border-line bg-white lg:flex"
+    <app-shell
+      [navItems]="navItems"
+      [menuItems]="menuItems"
+      [displayName]="displayName()"
+      [avatarUrl]="photoUrl()"
+      sectionLabel="MI CUENTA"
+      breadcrumbRoot="Candidato"
+      homeRoute="/candidato/perfil"
+      roleLabel="Candidato"
+      notificationsRoute="/candidato/notificaciones"
+      storageKey="ij-candidate-sidebar"
+    >
+      <a
+        shellRailFooter
+        routerLink="/vacantes"
+        title="Buscar empleo"
+        class="flex items-center gap-3 rounded-xl border-t border-line px-3 py-2.5 pt-4 text-[13.5px] font-bold text-muted transition-colors hover:text-body"
       >
-        <div class="flex h-[68px] items-center border-b border-line px-6">
-          <ij-logo size="sm" />
-        </div>
-        <div class="px-4 pb-2 pt-4">
-          <span class="pl-2.5 text-[11px] font-bold tracking-[1px] text-muted">
-            MI CUENTA
-          </span>
-        </div>
-        <nav class="flex flex-1 flex-col gap-1 px-4">
-          @for (item of navItems; track item.path) {
-            <a
-              [routerLink]="item.path"
-              routerLinkActive="bg-brand-50 text-brand"
-              class="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-semibold text-body transition-colors hover:bg-surface"
-            >
-              <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
-              {{ item.label }}
-            </a>
-          }
-        </nav>
-        <div class="border-t border-line p-4">
-          <a
-            routerLink="/vacantes"
-            class="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-semibold text-muted transition-colors hover:bg-surface hover:text-body"
-          >
-            <ij-icon name="search" [size]="19" [strokeWidth]="1.9" />
-            Buscar empleo
-          </a>
-        </div>
-      </aside>
+        <ij-icon name="search" [size]="19" [strokeWidth]="1.9" />
+        <span class="truncate">Buscar empleo</span>
+      </a>
 
-      <div class="flex min-w-0 flex-1 flex-col">
-        <header
-          class="sticky top-0 z-10 flex h-[68px] items-center gap-3 border-b border-line bg-white px-5 sm:px-7"
-        >
-          <a routerLink="/candidato/perfil" class="lg:hidden" aria-label="Mi cuenta">
-            <ij-logo size="sm" />
-          </a>
-          <div class="ml-auto flex items-center gap-3">
-            <ij-notification-bell viewAllRoute="/candidato/notificaciones" />
-            <div class="hidden text-right sm:block">
-              <div class="text-[13px] font-bold text-ink-900">
-                {{ displayName() }}
-              </div>
-              <div class="text-[11.5px] text-muted">Candidato</div>
-            </div>
-            <ij-avatar
-              class="h-[42px] w-[42px] rounded-xl border border-line bg-brand-50 text-[13px] font-extrabold text-brand-strong"
-              [src]="photoUrl()"
-              [name]="displayName()"
-            />
-            <button
-              type="button"
-              aria-label="Cerrar sesión"
-              class="flex h-[42px] w-[42px] items-center justify-center rounded-[11px] border border-line bg-surface text-body transition-colors hover:text-brand"
-              (click)="onLogout()"
-            >
-              <ij-icon name="logout" [size]="19" [strokeWidth]="1.8" />
-            </button>
-          </div>
-        </header>
-
-        <!-- Navegación en móvil: el sidebar sólo existe desde lg. -->
-        <nav
-          class="flex gap-2 overflow-x-auto border-b border-line bg-white px-4 py-2.5 lg:hidden"
-        >
-          @for (item of navItems; track item.path) {
-            <a
-              [routerLink]="item.path"
-              routerLinkActive="bg-brand-50 text-brand"
-              class="flex flex-shrink-0 items-center gap-2 rounded-[11px] px-3 py-2 text-[13px] font-semibold text-body transition-colors hover:bg-surface"
-            >
-              <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
-              {{ item.label }}
-            </a>
-          }
-          <a
-            routerLink="/vacantes"
-            class="flex flex-shrink-0 items-center gap-2 rounded-[11px] px-3 py-2 text-[13px] font-semibold text-muted transition-colors hover:bg-surface"
-          >
-            <ij-icon name="search" [size]="17" [strokeWidth]="1.9" />
-            Buscar empleo
-          </a>
-        </nav>
-
-        <main class="flex-1 overflow-y-auto p-4 sm:p-7">
-          <router-outlet />
-        </main>
-      </div>
-    </div>
+      <router-outlet />
+    </app-shell>
   `,
 })
 export class CandidateLayout {
-  protected readonly auth = inject(AuthService);
+  private readonly auth = inject(AuthService);
   private readonly profileFacade = inject(CandidateProfileFacade);
-  private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly navItems: readonly CandidateNavItem[] = [
+  protected readonly navItems: readonly ShellNavItem[] = [
     { path: '/candidato/perfil', label: 'Mi perfil', icon: 'user' },
     { path: '/candidato/cv', label: 'Mis hojas de vida', icon: 'file' },
     { path: '/candidato/postulaciones', label: 'Mis postulaciones', icon: 'briefcase' },
     { path: '/candidato/guardadas', label: 'Guardadas', icon: 'bookmark' },
     { path: '/candidato/configuracion', label: 'Configuración', icon: 'settings' },
+  ];
+
+  protected readonly menuItems: readonly ShellMenuItem[] = [
     { path: '/candidato/mi-cuenta', label: 'Mi cuenta', icon: 'shield' },
+    { path: '/candidato/notificaciones', label: 'Notificaciones', icon: 'bell' },
   ];
 
   protected readonly displayName = computed(() => {
@@ -163,9 +78,8 @@ export class CandidateLayout {
 
   /**
    * Manda la foto del perfil de aspirante, que es la que el candidato gestiona
-   * en `/candidato/perfil`. `avatarUrl` (de `GET /auth/me`) cubre el hueco
-   * mientras la ficha no ha llegado y el caso de que la foto viniera de
-   * `users.photo_url`, que es lo que edita el back-office.
+   * en /candidato/perfil. La de la sesión cubre el hueco mientras la ficha no
+   * ha llegado y el caso de que viniera de users.photo_url (el back-office).
    */
   protected readonly photoUrl = computed(
     () =>
@@ -176,12 +90,5 @@ export class CandidateLayout {
 
   constructor() {
     this.profileFacade.ensureProfile();
-  }
-
-  protected onLogout(): void {
-    this.auth
-      .logout()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => void this.router.navigateByUrl('/auth/login'));
   }
 }

@@ -34,7 +34,7 @@ import { IjIcon } from '@/shared/ui';
           {{ facade.error() }}
         </div>
       } @else {
-        <section class="rounded-2xl bg-white p-6 shadow-card">
+        <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
           <div class="mb-5 flex items-start gap-3">
             <span class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand">
               <ij-icon name="eye" [size]="22" />
@@ -68,7 +68,7 @@ import { IjIcon } from '@/shared/ui';
           </div>
         </section>
 
-        <section class="rounded-2xl bg-white p-6 shadow-card">
+        <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
           <div class="mb-5 flex items-start gap-3">
             <span class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand">
               <ij-icon name="file" [size]="22" />
@@ -102,7 +102,7 @@ import { IjIcon } from '@/shared/ui';
           </div>
         </section>
 
-        <section class="rounded-2xl bg-white p-6 shadow-card">
+        <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-start gap-3">
               <span class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-brand/10 text-brand">

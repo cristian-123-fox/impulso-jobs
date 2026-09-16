@@ -127,7 +127,7 @@ const LOGO_MAX_BYTES = 5 * 1024 * 1024;
         </section>
 
         <!-- Datos generales -->
-        <section class="rounded-2xl bg-white p-6 shadow-card">
+        <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
           <h3 class="mb-4 text-base font-bold text-ink-900">Datos generales</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <ij-input label="Nombre comercial" [required]="true" formControlName="businessName" />
@@ -162,7 +162,7 @@ const LOGO_MAX_BYTES = 5 * 1024 * 1024;
         </section>
 
         <!-- Contacto -->
-        <section class="rounded-2xl bg-white p-6 shadow-card">
+        <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
           <h3 class="mb-4 text-base font-bold text-ink-900">Contacto</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <ij-input label="Correo corporativo" type="email" formControlName="corporateEmail" />
@@ -174,7 +174,7 @@ const LOGO_MAX_BYTES = 5 * 1024 * 1024;
         </section>
 
         <!-- Ubicación -->
-        <section class="rounded-2xl bg-white p-6 shadow-card">
+        <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
           <h3 class="mb-4 text-base font-bold text-ink-900">Ubicación</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <ij-select label="Estado" [required]="true" [options]="stateOptions" formControlName="state" />
@@ -186,7 +186,7 @@ const LOGO_MAX_BYTES = 5 * 1024 * 1024;
         </section>
 
         <!-- Acerca de -->
-        <section class="rounded-2xl bg-white p-6 shadow-card">
+        <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
           <h3 class="mb-4 text-base font-bold text-ink-900">Acerca de la empresa</h3>
           <ij-textarea [rows]="5" [maxLength]="2000" placeholder="Describe tu empresa…" formControlName="companyDescription" />
         </section>

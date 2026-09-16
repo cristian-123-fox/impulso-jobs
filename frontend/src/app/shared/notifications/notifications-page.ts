@@ -17,13 +17,20 @@ import { Notification } from '@/shared/notifications/notification.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IjIcon],
   template: `
-    <div class="mx-auto max-w-2xl">
-      <div class="mb-6 flex items-center justify-between">
-        <h1 class="text-xl font-bold text-ink-900">Notificaciones</h1>
+    <div class="mx-auto max-w-[760px]">
+      <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
+            Notificaciones
+          </h1>
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
+            Avisos de la plataforma sobre tu cuenta y tus procesos.
+          </p>
+        </div>
         @if (facade.unreadCount() > 0) {
           <button
             type="button"
-            class="text-[13px] font-semibold text-brand hover:underline"
+            class="rounded-xl border border-line bg-white px-3.5 py-2 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50 active:translate-y-px"
             (click)="markAllRead()"
           >
             Marcar todo como leído

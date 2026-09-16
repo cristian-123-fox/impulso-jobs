@@ -55,13 +55,13 @@ interface ExpiryNotice {
     IjModal,
   ],
   template: `
-    <div class="mx-auto max-w-[1180px]">
+    <div class="mx-auto max-w-[1240px]">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
             Promociona tus vacantes
           </h1>
-          <p class="mt-1.5 text-[13.5px] text-muted">
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
             Destaca una vacante o contrata la suscripción anual de la empresa.
           </p>
         </div>
@@ -88,7 +88,7 @@ interface ExpiryNotice {
       }
 
       @if (facade.subscription(); as subscription) {
-        <section class="mb-6 rounded-2xl bg-white p-5 shadow-card sm:p-6">
+        <section class="mb-6 rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 class="text-base font-bold text-ink-900">
@@ -137,7 +137,7 @@ interface ExpiryNotice {
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           @for (plan of facade.plans(); track plan.id) {
             <article
-              class="flex flex-col rounded-2xl bg-white p-5 shadow-card"
+              class="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-card"
               [class.ring-2]="plan.isPopular"
               [class.ring-brand]="plan.isPopular"
             >
@@ -179,7 +179,7 @@ interface ExpiryNotice {
             </article>
           } @empty {
             <p
-              class="rounded-2xl bg-white p-10 text-center text-[13.5px] text-muted shadow-card md:col-span-2 xl:col-span-3"
+              class="rounded-2xl border border-line bg-white p-10 text-center text-[13.5px] text-muted shadow-card md:col-span-2 xl:col-span-3"
             >
               El administrador aún no ha publicado planes.
             </p>
@@ -187,24 +187,28 @@ interface ExpiryNotice {
         </div>
       </section>
 
-      <section>
-        <h2 class="mb-3 text-lg font-bold text-ink-900">Mis promociones</h2>
+      <div>
+        <h2 class="text-[19px] font-extrabold tracking-tight text-ink-900">Mis promociones</h2>
+        <p class="mt-1.5 text-[14px] font-medium text-muted">
+          Historial de lo contratado y hasta cuándo está vigente.
+        </p>
+      </div>
+
+      <section class="mt-4 overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         @switch (facade.state()) {
           @case ('loading') {
-            <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-              Cargando promociones…
-            </div>
+            <div class="p-10 text-center text-[13.5px] text-muted">Cargando promociones…</div>
           }
           @case ('error') {
-            <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
+            <div class="p-10 text-center text-[13.5px] font-medium text-red-600">
               No se pudieron cargar las promociones.
             </div>
           }
           @default {
-            <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
+            <div class="overflow-x-auto">
               <table class="w-full min-w-[820px] border-collapse text-left">
                 <thead>
-                  <tr class="border-b border-line">
+                  <tr class="border-b border-line bg-surface/60">
                     @for (h of headers; track h) {
                       <th
                         class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted"
@@ -268,6 +272,7 @@ interface ExpiryNotice {
               </table>
             </div>
             <app-admin-pagination
+              [inCard]="true"
               [page]="facade.page()"
               [pages]="facade.pages()"
               [total]="facade.total()"

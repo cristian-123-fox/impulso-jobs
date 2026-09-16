@@ -55,12 +55,12 @@ const STATUS_BADGE: Record<VacancyStatus, string> = {
 
       @switch (state()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
+          <div class="rounded-2xl border border-line bg-white p-10 text-center text-muted shadow-card">
             Cargando vacante…
           </div>
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
+          <div class="rounded-2xl border border-line bg-white p-10 text-center text-red-600 shadow-card">
             {{ errorMessage() }}
           </div>
         }
@@ -68,10 +68,10 @@ const STATUS_BADGE: Record<VacancyStatus, string> = {
           @if (vacancy(); as data) {
             <div class="mb-5 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">
+                <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
                   {{ data.title }}
                 </h1>
-                <p class="mt-1.5 text-[13.5px] text-muted">
+                <p class="mt-1.5 text-[14px] font-medium text-muted">
                   Publicada el {{ data.publishedAt | date: 'dd MMM yyyy' }} ·
                   actualizada el
                   {{ data.refreshedAt || data.createdAt | date: 'dd MMM yyyy' }}
@@ -103,7 +103,7 @@ const STATUS_BADGE: Record<VacancyStatus, string> = {
             </div>
 
             <dl
-              class="mb-5 grid gap-x-6 gap-y-4 rounded-2xl bg-white p-5 shadow-card sm:grid-cols-2 lg:grid-cols-3"
+              class="mb-5 grid gap-x-6 gap-y-4 rounded-2xl border border-line bg-white p-5 shadow-card sm:grid-cols-2 lg:grid-cols-3"
             >
               @for (item of details(data); track item.label) {
                 <div>
@@ -115,7 +115,7 @@ const STATUS_BADGE: Record<VacancyStatus, string> = {
               }
             </dl>
 
-            <div class="rounded-2xl bg-white p-6 shadow-card">
+            <div class="rounded-2xl border border-line bg-white p-6 shadow-card">
               <h2 class="text-base font-bold text-ink-900">Descripción</h2>
               <ij-rich-text class="mt-2" [value]="data.description" />
 

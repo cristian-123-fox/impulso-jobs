@@ -51,10 +51,10 @@ import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
     IjSelect,
   ],
   template: `
-    <div class="mx-auto max-w-[1180px]">
+    <div class="mx-auto max-w-[1240px]">
       <div class="mb-6">
         <div class="flex flex-wrap items-center gap-3">
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Postulaciones</h1>
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">Postulaciones</h1>
           @if (facade.unread() > 0) {
             <span
               class="inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1 text-[12px] font-bold text-white"
@@ -63,24 +63,36 @@ import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
             </span>
           }
         </div>
-        <p class="mt-1.5 text-[13.5px] text-muted">
+        <p class="mt-1.5 text-[14px] font-medium text-muted">
           Aspirantes que aplicaron a tus vacantes. Mueve cada uno por tu proceso.
         </p>
       </div>
 
-      <div class="mb-5 flex flex-wrap gap-2">
-        <button type="button" [class]="tabClass('')" (click)="facade.filterByStatus('')">
+      <!-- Como en app-users-tabs: con -mb-px hace falta overflow-y-hidden. -->
+      <div
+        role="tablist"
+        class="mb-5 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line"
+      >
+        <button
+          type="button"
+          role="tab"
+          [attr.aria-selected]="facade.status() === ''"
+          [class]="tabClass('')"
+          (click)="facade.filterByStatus('')"
+        >
           Todas
-          <span class="ml-1.5 text-[12px] opacity-70">{{ facade.total() }}</span>
+          <span [class]="badgeClass('')">{{ facade.total() }}</span>
         </button>
         @for (status of facade.statuses(); track status.code) {
           <button
             type="button"
+            role="tab"
+            [attr.aria-selected]="facade.status() === status.code"
             [class]="tabClass(status.code)"
             (click)="facade.filterByStatus(status.code)"
           >
             {{ status.name }}
-            <span class="ml-1.5 text-[12px] opacity-70">{{ countOf(status.code) }}</span>
+            <span [class]="badgeClass(status.code)">{{ countOf(status.code) }}</span>
           </button>
         }
       </div>
@@ -94,47 +106,49 @@ import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
         </p>
       }
 
-      <div class="mb-4 grid gap-3 rounded-2xl bg-white p-4 shadow-card md:grid-cols-[1fr_auto]">
-        <ij-select
-          name="vacancy"
-          placeholder="Todas las vacantes"
-          [options]="vacancyOptions()"
-          [ngModel]="facade.vacancyId()"
-          (ngModelChange)="facade.filterByVacancy($event)"
-        />
-        <button
-          type="button"
-          class="h-[46px] rounded-xl border border-line bg-white px-4 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
-          (click)="facade.clearFilters()"
-        >
-          Limpiar filtros
-        </button>
-      </div>
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+        <div class="flex flex-wrap items-center gap-2.5 border-b border-line px-4 py-3.5">
+          <ij-select
+            class="min-w-[220px] flex-1"
+            name="vacancy"
+            placeholder="Todas las vacantes"
+            [options]="vacancyOptions()"
+            [ngModel]="facade.vacancyId()"
+            (ngModelChange)="facade.filterByVacancy($event)"
+          />
+          <button
+            type="button"
+            class="h-[42px] rounded-xl px-3 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
+            (click)="facade.clearFilters()"
+          >
+            Limpiar filtros
+          </button>
+        </div>
 
-      @switch (facade.state()) {
-        @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-            Cargando postulaciones…
-          </div>
+        @switch (facade.state()) {
+          @case ('loading') {
+            <div class="p-10 text-center text-[13.5px] text-muted">Cargando postulaciones…</div>
+          }
+          @case ('error') {
+            <div class="p-10 text-center text-[13.5px] font-medium text-red-600">
+              No se pudieron cargar las postulaciones.
+            </div>
+          }
+          @default {
+            <app-applications-table
+              [applications]="facade.applications()"
+              (action)="onAction($event)"
+            />
+            <app-admin-pagination
+              [inCard]="true"
+              [page]="facade.page()"
+              [pages]="facade.pages()"
+              [total]="facade.total()"
+              (pageChange)="facade.load($event)"
+            />
+          }
         }
-        @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-            No se pudieron cargar las postulaciones.
-          </div>
-        }
-        @default {
-          <app-applications-table
-            [applications]="facade.applications()"
-            (action)="onAction($event)"
-          />
-          <app-admin-pagination
-            [page]="facade.page()"
-            [pages]="facade.pages()"
-            [total]="facade.total()"
-            (pageChange)="facade.load($event)"
-          />
-        }
-      }
+      </section>
     </div>
 
     @if (editing(); as application) {
@@ -324,12 +338,21 @@ export class ApplicationsPage {
     return this.facade.stats()[code] ?? 0;
   }
 
+  /** Mismas clases que `app-users-tabs`: el panel subraya, no apastilla. */
   protected tabClass(code: string): string {
     const base =
-      'rounded-xl px-3.5 py-2 text-[13px] font-bold transition-colors';
+      'flex flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 pb-3 pt-2.5 ' +
+      '-mb-px text-[13.5px] font-bold transition-colors';
     return this.facade.status() === code
-      ? `${base} bg-brand text-white`
-      : `${base} bg-white text-body shadow-card hover:bg-surface`;
+      ? `${base} border-brand text-brand-strong`
+      : `${base} border-transparent text-muted hover:text-ink-900`;
+  }
+
+  protected badgeClass(code: string): string {
+    const base = 'rounded-full px-2 py-0.5 text-[11.5px] font-extrabold';
+    return this.facade.status() === code
+      ? `${base} bg-brand-50 text-brand-strong`
+      : `${base} bg-surface text-muted`;
   }
 
   protected subtitleOf(application: CompanyApplication): string {

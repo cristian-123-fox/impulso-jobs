@@ -105,7 +105,7 @@ const DRAFT_PREFIX = 'ij:vacancy-draft:';
         Vacantes
       </a>
 
-      <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">
+      <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
         {{ editing() ? 'Editar vacante' : 'Publicar una vacante' }}
       </h1>
       <p class="mt-1 text-[13.5px] text-muted">
@@ -163,7 +163,7 @@ const DRAFT_PREFIX = 'ij:vacancy-draft:';
 
         <form
           novalidate
-          class="mt-6 rounded-2xl bg-white p-6 shadow-card"
+          class="mt-6 rounded-2xl border border-line bg-white p-6 shadow-card"
           [formGroup]="form"
           (ngSubmit)="onSubmit()"
         >

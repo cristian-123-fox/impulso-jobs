@@ -14,7 +14,7 @@ import {
   ApplicationStatus,
   CandidateApplication,
 } from '@/features/candidate/models/candidate-applications.models';
-import { IjBadge, IjButton, IjIcon, Tone } from '@/shared/ui';
+import { IjAvatar, IjBadge, IjButton, IjIcon, Tone } from '@/shared/ui';
 import { VacancyDetailModal } from '@/features/candidate/components/vacancy-detail-modal/vacancy-detail-modal';
 
 const PAGE_SIZE = 10;
@@ -23,18 +23,18 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-candidate-applications-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, AdminPagination, IjBadge, IjButton, IjIcon, VacancyDetailModal],
+  imports: [IjAvatar, DatePipe, RouterLink, AdminPagination, IjBadge, IjButton, IjIcon, VacancyDetailModal],
   template: `
-    <div class="mx-auto max-w-[1180px]">
+    <div class="mx-auto max-w-[1240px]">
       <div class="mb-6">
-        <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Mis postulaciones</h1>
-        <p class="mt-1.5 text-[13.5px] text-muted">
+        <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">Mis postulaciones</h1>
+        <p class="mt-1.5 text-[14px] font-medium text-muted">
           El estado de cada vacante a la que te has postulado.
         </p>
       </div>
 
       @if (loading()) {
-        <div class="rounded-2xl bg-white p-8 shadow-card">
+        <div class="rounded-2xl border border-line bg-white p-8 shadow-card">
           <div class="animate-pulse space-y-4">
             @for (i of [1, 2, 3]; track i) {
               <div class="h-20 rounded-2xl bg-surface"></div>
@@ -46,7 +46,7 @@ const PAGE_SIZE = 10;
           {{ error() }}
         </div>
       } @else if (items().length === 0) {
-        <div class="rounded-2xl bg-white p-10 text-center shadow-card">
+        <div class="rounded-2xl border border-line bg-white p-10 text-center shadow-card">
           <span
             class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand"
           >
@@ -64,17 +64,14 @@ const PAGE_SIZE = 10;
         <div class="space-y-3">
           @for (item of items(); track item.id) {
             <article
-              class="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-card sm:flex-row sm:items-center"
+              class="flex flex-col gap-4 rounded-2xl border border-line bg-white p-5 shadow-card sm:flex-row sm:items-center"
             >
-              <div
-                class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-line bg-surface text-[15px] font-extrabold text-brand"
-              >
-                @if (item.vacancy?.companyLogoUrl; as logo) {
-                  <img [src]="logo" alt="" class="h-full w-full object-cover" />
-                } @else {
-                  {{ companyInitials(item) }}
-                }
-              </div>
+              <ij-avatar
+                class="h-14 w-14 rounded-2xl border border-line bg-surface text-[15px] font-extrabold text-brand-strong"
+                [src]="item.vacancy?.companyLogoUrl ?? null"
+                [name]="item.vacancy?.companyName ?? ''"
+                [fallback]="companyInitials(item)"
+              />
 
               <div class="min-w-0 flex-1">
                 @if (item.vacancy; as vacancy) {

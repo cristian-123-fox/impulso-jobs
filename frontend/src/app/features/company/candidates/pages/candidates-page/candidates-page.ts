@@ -46,18 +46,18 @@ import {
     IjSelect,
   ],
   template: `
-    <div class="mx-auto max-w-[1180px]">
+    <div class="mx-auto max-w-[1240px]">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
             Buscar candidatos
           </h1>
-          <p class="mt-1.5 text-[13.5px] text-muted">
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
             Perfiles públicos y quienes postularon a tus vacantes.
           </p>
         </div>
         @if (facade.quota(); as quota) {
-          <div class="rounded-2xl bg-white px-4 py-3 shadow-card">
+          <div class="rounded-2xl border border-line bg-white px-4 py-3 shadow-card">
             <div class="text-[12px] font-bold uppercase tracking-wide text-muted">
               Visitas disponibles
             </div>
@@ -85,7 +85,7 @@ import {
       }
 
       <form
-        class="mb-5 grid gap-3 rounded-2xl bg-white p-4 shadow-card lg:grid-cols-[1fr_200px_200px_auto]"
+        class="mb-5 grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-card lg:grid-cols-[1fr_200px_200px_auto]"
         (ngSubmit)="facade.applyFilters()"
       >
         <label class="relative block">
@@ -97,7 +97,7 @@ import {
             type="search"
             name="search"
             placeholder="Nombre o título profesional…"
-            class="h-[46px] w-full rounded-xl border border-line bg-white pl-10 pr-3 text-[13.5px] text-ink-900 placeholder:text-muted focus:border-brand focus:outline-none focus:ring-0"
+            class="h-[42px] w-full rounded-xl border border-line bg-white pl-10 pr-3 text-[13.5px] text-ink-900 placeholder:text-muted focus:border-brand focus:outline-none focus:ring-0"
             [ngModel]="facade.search()"
             (ngModelChange)="facade.search.set($event)"
           />
@@ -113,20 +113,20 @@ import {
           type="text"
           name="skill"
           placeholder="Habilidad…"
-          class="h-[46px] w-full rounded-xl border border-line bg-white px-3.5 text-[13.5px] text-ink-900 placeholder:text-muted focus:border-brand focus:outline-none focus:ring-0"
+          class="h-[42px] w-full rounded-xl border border-line bg-white px-3.5 text-[13.5px] text-ink-900 placeholder:text-muted focus:border-brand focus:outline-none focus:ring-0"
           [ngModel]="facade.skill()"
           (ngModelChange)="facade.skill.set($event)"
         />
         <div class="flex items-center gap-2">
           <button
             type="submit"
-            class="h-[46px] rounded-xl bg-brand px-5 text-[13.5px] font-bold text-white transition-colors hover:bg-brand-600"
+            class="h-[42px] rounded-xl bg-brand-700 px-4 text-[13px] font-bold text-white transition-colors hover:bg-brand-strong active:translate-y-px"
           >
             Buscar
           </button>
           <button
             type="button"
-            class="h-[46px] rounded-xl border border-line bg-white px-4 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+            class="h-[42px] rounded-xl px-3 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
             (click)="facade.clearFilters()"
           >
             Limpiar
@@ -146,19 +146,19 @@ import {
 
       @switch (facade.state()) {
         @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
+          <div class="rounded-2xl border border-line bg-white p-10 text-center text-muted shadow-card">
             Buscando candidatos…
           </div>
         }
         @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
+          <div class="rounded-2xl border border-line bg-white p-10 text-center text-red-600 shadow-card">
             No se pudo cargar el banco de talento.
           </div>
         }
         @default {
           <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             @for (candidate of facade.candidates(); track candidate.id) {
-              <article class="flex flex-col rounded-2xl bg-white p-5 shadow-card">
+              <article class="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-card">
                 <div class="flex items-start gap-3">
                   <span
                     class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-[14px] font-bold text-brand"
@@ -216,7 +216,7 @@ import {
               </article>
             } @empty {
               <div
-                class="rounded-2xl bg-white p-10 text-center text-[13.5px] text-muted shadow-card sm:col-span-2 xl:col-span-3"
+                class="rounded-2xl border border-line bg-white p-10 text-center text-[13.5px] text-muted shadow-card sm:col-span-2 xl:col-span-3"
               >
                 Ningún candidato coincide con la búsqueda.
               </div>

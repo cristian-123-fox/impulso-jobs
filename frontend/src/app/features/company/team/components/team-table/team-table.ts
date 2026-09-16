@@ -28,10 +28,10 @@ export interface TeamActionEvent {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [DatePipe, IjAvatar, IjIcon],
   template: `
-    <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
+    <div class="overflow-x-auto">
       <table class="w-full min-w-[760px] border-collapse text-left">
         <thead>
-          <tr class="border-b border-line">
+          <tr class="border-b border-line bg-surface/60">
             @for (h of headers; track h) {
               <th class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted">
                 {{ h }}

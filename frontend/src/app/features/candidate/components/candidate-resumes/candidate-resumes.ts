@@ -26,7 +26,7 @@ import {
   imports: [IjBadge, IjButton, IjIcon, IjPdfViewer],
   template: `
     <div class="space-y-5">
-      <section class="rounded-2xl bg-white p-6 shadow-card">
+      <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
         <div
           class="flex flex-col gap-4 rounded-2xl border border-dashed border-brand/30 bg-brand/5 p-6 lg:flex-row lg:items-center lg:justify-between"
         >
@@ -87,7 +87,7 @@ import {
         }
       </section>
 
-      <section class="rounded-2xl bg-white p-6 shadow-card">
+      <section class="rounded-2xl border border-line bg-white p-6 shadow-card">
         <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 class="text-base font-bold text-ink-900">Mis hojas de vida</h3>

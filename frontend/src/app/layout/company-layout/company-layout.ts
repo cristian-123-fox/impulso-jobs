@@ -1,154 +1,49 @@
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  computed,
-  inject,
-} from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import {
-  Router,
-  RouterLink,
-  RouterLinkActive,
-  RouterOutlet,
-} from '@angular/router';
-import { AuthService } from '@/core/auth/auth.service';
-import { NotificationBell } from '@/shared/notifications/notification-bell';
-import { IconName, IjAvatar, IjIcon, IjLogo } from '@/shared/ui';
+  AppShell,
+  ShellMenuItem,
+  ShellNavItem,
+} from '@/layout/app-shell/app-shell';
 
-interface CompanyNavItem {
-  readonly path: string;
-  readonly label: string;
-  readonly icon: IconName;
-}
-
-/** Shell del área de empresa: sidebar + topbar (sesión) + outlet. */
+/**
+ * Área de empresa. El armazón es `app-shell`, el mismo que admin y candidato.
+ *
+ * El nombre que pinta la cabecera es el **comercial** (`GET /auth/me` resuelve
+ * `companies.business_name` para un EMPLOYER): aquí se actúa en representación
+ * de la empresa. La foto sí es la personal, si el titular subió una.
+ */
 @Component({
   selector: 'app-company-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    RouterLinkActive,
-    RouterOutlet,
-    IjAvatar,
-    IjLogo,
-    IjIcon,
-    NotificationBell,
-  ],
+  imports: [AppShell, RouterOutlet],
   template: `
-    <div class="flex min-h-screen bg-surface text-ink-900">
-      <aside
-        class="sticky top-0 hidden h-screen w-[248px] flex-shrink-0 flex-col border-r border-line bg-white lg:flex"
-      >
-        <div class="flex h-[68px] items-center border-b border-line px-6">
-          <ij-logo size="sm" />
-        </div>
-        <div class="px-4 pb-2 pt-4">
-          <span class="pl-2.5 text-[11px] font-bold tracking-[1px] text-muted">
-            RECLUTAMIENTO
-          </span>
-        </div>
-        <nav class="flex flex-1 flex-col gap-1 px-4">
-          @for (item of navItems; track item.path) {
-            <a
-              [routerLink]="item.path"
-              routerLinkActive="bg-brand-50 text-brand"
-              class="flex items-center gap-3 rounded-[11px] px-3 py-2.5 text-[13.5px] font-semibold text-body transition-colors hover:bg-surface"
-            >
-              <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
-              {{ item.label }}
-            </a>
-          }
-        </nav>
-      </aside>
-
-      <div class="flex min-w-0 flex-1 flex-col">
-        <header
-          class="sticky top-0 z-10 flex h-[68px] items-center gap-3 border-b border-line bg-white px-5 sm:px-7"
-        >
-          <a routerLink="/empresa/vacantes" class="lg:hidden" aria-label="Empresa">
-            <ij-logo size="sm" />
-          </a>
-          <div class="ml-auto flex items-center gap-3">
-            <ij-notification-bell viewAllRoute="/empresa/notificaciones" />
-            <div class="hidden text-right sm:block">
-              <div class="max-w-[220px] truncate text-[13px] font-bold text-ink-900">
-                {{ displayName() }}
-              </div>
-              <div class="text-[11.5px] text-muted">Empresa</div>
-            </div>
-            <ij-avatar
-              class="h-[42px] w-[42px] rounded-xl border border-line bg-brand-50 text-[13px] font-extrabold text-brand-strong"
-              [src]="avatarUrl()"
-              [name]="displayName()"
-            />
-            <button
-              type="button"
-              aria-label="Cerrar sesión"
-              class="flex h-[42px] w-[42px] items-center justify-center rounded-[11px] border border-line bg-surface text-body transition-colors hover:text-brand"
-              (click)="onLogout()"
-            >
-              <ij-icon name="logout" [size]="19" [strokeWidth]="1.8" />
-            </button>
-          </div>
-        </header>
-
-        <!-- Navegación en móvil: el sidebar sólo existe desde lg. -->
-        <nav
-          class="flex gap-2 overflow-x-auto border-b border-line bg-white px-4 py-2.5 lg:hidden"
-        >
-          @for (item of navItems; track item.path) {
-            <a
-              [routerLink]="item.path"
-              routerLinkActive="bg-brand-50 text-brand"
-              class="flex flex-shrink-0 items-center gap-2 rounded-[11px] px-3 py-2 text-[13px] font-semibold text-body transition-colors hover:bg-surface"
-            >
-              <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
-              {{ item.label }}
-            </a>
-          }
-        </nav>
-
-        <main class="flex-1 overflow-y-auto p-4 sm:p-7">
-          <router-outlet />
-        </main>
-      </div>
-    </div>
+    <app-shell
+      [navItems]="navItems"
+      [menuItems]="menuItems"
+      sectionLabel="RECLUTAMIENTO"
+      breadcrumbRoot="Empresa"
+      homeRoute="/empresa/vacantes"
+      roleLabel="Empresa"
+      notificationsRoute="/empresa/notificaciones"
+      storageKey="ij-company-sidebar"
+    >
+      <router-outlet />
+    </app-shell>
   `,
 })
 export class CompanyLayout {
-  protected readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
-  private readonly destroyRef = inject(DestroyRef);
-
-  protected readonly navItems: readonly CompanyNavItem[] = [
+  protected readonly navItems: readonly ShellNavItem[] = [
     { path: '/empresa/vacantes', label: 'Mis vacantes', icon: 'briefcase' },
     { path: '/empresa/postulaciones', label: 'Postulaciones', icon: 'file' },
     { path: '/empresa/candidatos', label: 'Buscar candidatos', icon: 'search' },
     { path: '/empresa/promociones', label: 'Promociona tu vacante', icon: 'award' },
     { path: '/empresa/usuarios', label: 'Usuarios de la empresa', icon: 'users' },
     { path: '/empresa/perfil', label: 'Perfil de empresa', icon: 'building' },
-    { path: '/empresa/mi-cuenta', label: 'Mi cuenta', icon: 'shield' },
   ];
 
-  /**
-   * Identidad de la sesión (`GET /auth/me`). Para una empresa el nombre es el
-   * comercial —se actúa en su representación— pero la foto es la que el
-   * titular subiera en «Mi cuenta», con el logo de respaldo.
-   */
-  protected readonly displayName = computed(() => {
-    const user = this.auth.currentUser();
-    return user?.displayName?.trim() || user?.email || '';
-  });
-
-  protected readonly avatarUrl = computed(
-    () => this.auth.currentUser()?.avatarUrl ?? null,
-  );
-
-  protected onLogout(): void {
-    this.auth
-      .logout()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => void this.router.navigateByUrl('/auth/login'));
-  }
+  protected readonly menuItems: readonly ShellMenuItem[] = [
+    { path: '/empresa/mi-cuenta', label: 'Mi cuenta', icon: 'user' },
+    { path: '/empresa/notificaciones', label: 'Notificaciones', icon: 'bell' },
+  ];
 }

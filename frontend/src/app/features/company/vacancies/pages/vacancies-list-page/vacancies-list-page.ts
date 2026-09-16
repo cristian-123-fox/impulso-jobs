@@ -43,11 +43,11 @@ import {
     IjSelect,
   ],
   template: `
-    <div class="mx-auto max-w-[1180px]">
+    <div class="mx-auto max-w-[1240px]">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Mis vacantes</h1>
-          <p class="mt-1.5 text-[13.5px] text-muted">
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">Mis vacantes</h1>
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
             Publica, edita, pausa o cierra las vacantes de tu empresa.
           </p>
         </div>
@@ -68,7 +68,7 @@ import {
         @for (card of statCards(); track card.label) {
           <button
             type="button"
-            class="flex items-center gap-3.5 rounded-2xl bg-white p-4 text-left shadow-card transition-colors hover:bg-surface"
+            class="flex items-center gap-3.5 rounded-2xl border border-line bg-white p-4 text-left shadow-card transition-colors hover:bg-surface"
             [class.ring-2]="facade.status() === card.status"
             [class.ring-brand]="facade.status() === card.status"
             (click)="facade.filterByStatus(card.status)"
@@ -98,73 +98,74 @@ import {
         </p>
       }
 
-      <form
-        class="mb-4 grid gap-3 rounded-2xl bg-white p-4 shadow-card md:grid-cols-[1fr_200px_auto]"
-        (ngSubmit)="facade.applyFilters()"
-      >
-        <label class="relative block">
-          <span class="sr-only">Buscar vacante</span>
-          <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted">
-            <ij-icon name="search" [size]="17" />
-          </span>
-          <input
-            type="search"
-            name="search"
-            placeholder="Buscar por título…"
-            class="h-[46px] w-full rounded-xl border border-line bg-white pl-10 pr-3 text-[13.5px] text-ink-900 placeholder:text-muted focus:border-brand focus:outline-none focus:ring-0"
-            [ngModel]="facade.search()"
-            (ngModelChange)="facade.search.set($event)"
+      <!-- Filtros, tabla y paginación en una caja: operan sobre el mismo listado. -->
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+        <form
+          class="flex flex-wrap items-center gap-2.5 border-b border-line px-4 py-3.5"
+          (ngSubmit)="facade.applyFilters()"
+        >
+          <label
+            class="flex h-[42px] min-w-[220px] flex-1 items-center gap-2 rounded-xl border border-line bg-white px-3 text-muted focus-within:border-brand"
+          >
+            <span class="sr-only">Buscar vacante</span>
+            <ij-icon name="search" [size]="16" />
+            <input
+              type="search"
+              name="search"
+              placeholder="Buscar por título…"
+              class="min-w-0 flex-1 border-0 bg-transparent p-0 text-[13.5px] font-medium text-ink-900 placeholder:text-muted focus:border-0 focus:outline-none focus:ring-0"
+              [ngModel]="facade.search()"
+              (ngModelChange)="facade.search.set($event)"
+            />
+          </label>
+          <ij-select
+            class="w-[200px]"
+            name="status"
+            placeholder="Todos los estados"
+            [options]="statusOptions"
+            [searchable]="false"
+            [ngModel]="facade.status()"
+            (ngModelChange)="facade.status.set($event)"
           />
-        </label>
-        <ij-select
-          name="status"
-          placeholder="Todos los estados"
-          [options]="statusOptions"
-          [searchable]="false"
-          [ngModel]="facade.status()"
-          (ngModelChange)="facade.status.set($event)"
-        />
-        <div class="flex items-center gap-2">
           <button
             type="submit"
-            class="h-[46px] rounded-xl bg-brand px-5 text-[13.5px] font-bold text-white transition-colors hover:bg-brand-600"
+            class="h-[42px] rounded-xl bg-brand-700 px-4 text-[13px] font-bold text-white transition-colors hover:bg-brand-strong active:translate-y-px"
           >
-            Filtrar
+            Buscar
           </button>
           <button
             type="button"
-            class="h-[46px] rounded-xl border border-line bg-white px-4 text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+            class="h-[42px] rounded-xl px-3 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
             (click)="facade.clearFilters()"
           >
             Limpiar
           </button>
-        </div>
-      </form>
+        </form>
 
-      @switch (facade.state()) {
-        @case ('loading') {
-          <div class="rounded-2xl bg-white p-10 text-center text-muted shadow-card">
-            Cargando vacantes…
-          </div>
+        @switch (facade.state()) {
+          @case ('loading') {
+            <div class="p-10 text-center text-[13.5px] text-muted">Cargando vacantes…</div>
+          }
+          @case ('error') {
+            <div class="p-10 text-center text-[13.5px] font-medium text-red-600">
+              No se pudieron cargar las vacantes.
+            </div>
+          }
+          @default {
+            <app-vacancies-table
+              [vacancies]="facade.vacancies()"
+              (action)="onAction($event)"
+            />
+            <app-admin-pagination
+              [inCard]="true"
+              [page]="facade.page()"
+              [pages]="facade.pages()"
+              [total]="facade.total()"
+              (pageChange)="facade.load($event)"
+            />
+          }
         }
-        @case ('error') {
-          <div class="rounded-2xl bg-white p-10 text-center text-red-600 shadow-card">
-            No se pudieron cargar las vacantes.
-          </div>
-        }
-        @default {
-          <app-vacancies-table
-            [vacancies]="facade.vacancies()"
-            (action)="onAction($event)"
-          />
-          <app-admin-pagination
-            [page]="facade.page()"
-            [pages]="facade.pages()"
-            [total]="facade.total()"
-            (pageChange)="facade.load($event)"
-          />
-        }
-      }
+      </section>
     </div>
 
     @if (questionsFor(); as vacancy) {

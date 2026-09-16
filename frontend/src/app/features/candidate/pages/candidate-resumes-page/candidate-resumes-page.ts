@@ -6,10 +6,10 @@ import { CandidateResumesComponent } from '@/features/candidate/components/candi
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CandidateResumesComponent],
   template: `
-    <div class="mx-auto max-w-[1180px]">
+    <div class="mx-auto max-w-[1240px]">
       <div class="mb-6">
-        <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Mis hojas de vida</h1>
-        <p class="mt-1.5 text-[13.5px] text-muted">
+        <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">Mis hojas de vida</h1>
+        <p class="mt-1.5 text-[14px] font-medium text-muted">
           Sube tus CV en PDF y elige cuál acompaña tus postulaciones.
         </p>
       </div>
