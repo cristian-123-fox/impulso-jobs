@@ -1,5 +1,6 @@
 export { IjIcon, type IconName } from '@/shared/ui/icon/icon';
 export { IjButton } from '@/shared/ui/button/button';
+export { IjAvatar } from '@/shared/ui/avatar/avatar';
 export { IjBadge } from '@/shared/ui/badge/badge';
 export { IjLogo } from '@/shared/ui/logo/logo';
 export { IjModal } from '@/shared/ui/modal/modal';
@@ -18,6 +19,7 @@ export { IjInput } from '@/shared/ui/input/input';
 export { IjTextarea } from '@/shared/ui/textarea/textarea';
 // Editor enriquecido (T32). Sólo para áreas cliente: CKEditor necesita `window`.
 export { IjEditor } from '@/shared/ui/editor/editor';
+export { IjPasswordStrength } from '@/shared/ui/password-strength/password-strength';
 export { IjSelect } from '@/shared/ui/select/select';
 export { IjMultiselect } from '@/shared/ui/multiselect/multiselect';
 export { IjAutocomplete } from '@/shared/ui/autocomplete/autocomplete';

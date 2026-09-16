@@ -46,6 +46,7 @@ export interface PlanActionEvent {
         [data]="plans()"
         [columns]="columns"
         sortMode="client"
+        [bare]="true"
         [rowId]="rowId"
         [(sort)]="sort"
       >

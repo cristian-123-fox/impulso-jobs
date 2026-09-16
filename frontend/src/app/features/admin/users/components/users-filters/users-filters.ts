@@ -15,6 +15,10 @@ interface StatusChip {
  * Barra de filtros del listado de usuarios: búsqueda por correo y estado. El
  * rol no está aquí — lo determina la pestaña activa (`app-users-tabs`).
  *
+ * Los controles miden 42px, que es la altura de `ijControlClass`: así un
+ * `ij-select` cae al lado sin desalinearse, que es lo que necesitan las barras
+ * de los otros listados.
+ *
  * Va empotrada como primera franja de la tarjeta del listado, así que no lleva
  * fondo ni borde propios: los pone la tarjeta.
  *
@@ -33,7 +37,7 @@ interface StatusChip {
       (ngSubmit)="apply.emit()"
     >
       <label
-        class="flex h-[38px] min-w-[200px] flex-1 items-center gap-2 rounded-xl border border-line bg-white px-3 text-muted focus-within:border-brand"
+        class="flex h-[42px] min-w-[200px] flex-1 items-center gap-2 rounded-xl border border-line bg-white px-3 text-muted focus-within:border-brand"
       >
         <span class="sr-only">Buscar por nombre o correo</span>
         <ij-icon name="search" [size]="16" />
@@ -66,7 +70,7 @@ interface StatusChip {
 
       <button
         type="submit"
-        class="h-[38px] rounded-xl bg-brand-700 px-4 text-[13px] font-bold text-white transition-colors hover:bg-brand-strong active:translate-y-px"
+        class="h-[42px] rounded-xl bg-brand-700 px-4 text-[13px] font-bold text-white transition-colors hover:bg-brand-strong active:translate-y-px"
       >
         Buscar
       </button>
@@ -74,7 +78,7 @@ interface StatusChip {
       @if (hasFilters()) {
         <button
           type="button"
-          class="h-[38px] rounded-xl px-3 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
+          class="h-[42px] rounded-xl px-3 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
           (click)="clear.emit()"
         >
           Limpiar

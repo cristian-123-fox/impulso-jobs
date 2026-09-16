@@ -644,7 +644,8 @@
       "socialDivider": "Or sign in with",
       "socialWith": "Sign in with {{provider}}",
       "noAccount": "Don't have an account?",
-      "createAccount": "Create one"
+      "createAccount": "Create one",
+      "passwordChanged": "Password updated. Sign in again with your new password."
     },
     "errors": {
       "invalidCredentials": "Wrong email or password.",

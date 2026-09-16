@@ -18,12 +18,13 @@ function errorCodeOf(e: unknown): string | undefined {
     : undefined;
 }
 
-function user(role: Role): User {
+function user(role: Role, own: Partial<User> = {}): User {
   return Object.assign(new User(), {
     id: 'user-1',
     email: 'ana@example.com',
     role,
     status: UserStatus.ACTIVE,
+    ...own,
   });
 }
 
@@ -105,6 +106,66 @@ describe('GetCurrentUserUseCase', () => {
     });
     expect(candidates.findByUserId).not.toHaveBeenCalled();
     expect(companyUsers.findByUserId).not.toHaveBeenCalled();
+  });
+
+  it('usa la identidad de `users` cuando no hay perfil de dominio (ADMIN)', async () => {
+    users.findById.mockResolvedValue(
+      user(Role.ADMIN, {
+        firstName: 'Óscar',
+        lastName: 'Ruiz',
+        photoUrl: 'https://cdn.test/oscar.png',
+      }),
+    );
+
+    const result = await useCase.execute('user-1');
+
+    expect(result.displayName).toBe('Óscar Ruiz');
+    expect(result.avatarUrl).toBe('https://cdn.test/oscar.png');
+  });
+
+  /**
+   * Nombre y foto siguen precedencias opuestas a propósito: el comercial dice
+   * en representación de quién se actúa, la foto dice quién eres.
+   */
+  it('deja mandar al nombre comercial pero a la foto propia', async () => {
+    users.findById.mockResolvedValue(
+      user(Role.EMPLOYER, {
+        firstName: 'Lucía',
+        lastName: 'Mendoza',
+        photoUrl: 'https://cdn.test/lucia.png',
+      }),
+    );
+    companyUsers.findByUserId.mockResolvedValue(
+      Object.assign(new CompanyUser(), { companyId: 'company-1' }),
+    );
+    companies.findById.mockResolvedValue(
+      Object.assign(new Company(), {
+        businessName: 'Impulso SA',
+        logoUrl: 'https://cdn.test/logo.png',
+      }),
+    );
+
+    const result = await useCase.execute('user-1');
+
+    expect(result.displayName).toBe('Impulso SA');
+    expect(result.avatarUrl).toBe('https://cdn.test/lucia.png');
+  });
+
+  it('cae al logo de la empresa si el empleador no subió su foto', async () => {
+    users.findById.mockResolvedValue(user(Role.EMPLOYER));
+    companyUsers.findByUserId.mockResolvedValue(
+      Object.assign(new CompanyUser(), { companyId: 'company-1' }),
+    );
+    companies.findById.mockResolvedValue(
+      Object.assign(new Company(), {
+        businessName: 'Impulso SA',
+        logoUrl: 'https://cdn.test/logo.png',
+      }),
+    );
+
+    const result = await useCase.execute('user-1');
+
+    expect(result.avatarUrl).toBe('https://cdn.test/logo.png');
   });
 
   it('no consulta la empresa si el empleador no tiene membresía', async () => {

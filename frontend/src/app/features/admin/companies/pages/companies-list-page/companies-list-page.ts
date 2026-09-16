@@ -40,11 +40,13 @@ import {
     IjModal,
   ],
   template: `
-    <div class="mx-auto max-w-[1180px]">
-      <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div class="mx-auto flex max-w-[1240px] flex-col gap-5">
+      <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Empresas</h1>
-          <p class="mt-1.5 text-[13.5px] text-muted">
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
+            Empresas
+          </h1>
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
             Empresas registradas y su cuenta de acceso.
           </p>
         </div>
@@ -53,58 +55,63 @@ import {
           type="button"
           variant="primary"
           shape="rounded"
-          size="md"
+          size="sm"
           (click)="openCreate()"
         >
-          <ij-icon name="plus" [size]="16" />
+          <ij-icon name="plus" [size]="16" [strokeWidth]="2.5" />
           Nueva empresa
         </button>
       </div>
 
       @if (created(); as message) {
         <p
-          class="mb-5 rounded-xl bg-accent-green-soft px-4 py-3 text-[13.5px] font-semibold text-accent-green-strong"
+          class="rounded-xl bg-accent-green-soft px-4 py-3 text-[13.5px] font-semibold text-accent-green-strong"
         >
           {{ message }}
         </p>
       }
 
-      <app-companies-filters
-        class="mb-4 block"
-        [(search)]="facade.search"
-        [(stateCode)]="facade.stateCode"
-        (apply)="facade.applyFilters()"
-        (clear)="facade.clearFilters()"
-      />
+      <!-- Filtros, tabla y paginación en una sola caja: operan sobre el mismo listado. -->
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+        <app-companies-filters
+          class="border-b border-line"
+          [(search)]="facade.search"
+          [(stateCode)]="facade.stateCode"
+          (apply)="facade.applyFilters()"
+          (clear)="facade.clearFilters()"
+        />
 
-      @switch (facade.state()) {
-        @case ('loading') {
-          <app-admin-table-skeleton label="Cargando empresas…" />
+        @switch (facade.state()) {
+          @case ('loading') {
+            <app-admin-table-skeleton [bare]="true" label="Cargando empresas…" />
+          }
+          @case ('error') {
+            <app-admin-error
+              [bare]="true"
+              message="No se pudieron cargar las empresas."
+              (retry)="facade.load(facade.page())"
+            />
+          }
+          @default {
+            <app-companies-table
+              [companies]="facade.companies()"
+              [sort]="facade.sort()"
+              (sortChange)="facade.applySort($event)"
+              (open)="openCompany($event)"
+              (edit)="openEdit($event)"
+            />
+            <app-admin-pagination
+              [inCard]="true"
+              [page]="facade.page()"
+              [pages]="facade.pages()"
+              [total]="facade.total()"
+              [pageSize]="facade.pageSize()"
+              (pageChange)="facade.load($event)"
+              (pageSizeChange)="facade.applyPageSize($event)"
+            />
+          }
         }
-        @case ('error') {
-          <app-admin-error
-            message="No se pudieron cargar las empresas."
-            (retry)="facade.load(facade.page())"
-          />
-        }
-        @default {
-          <app-companies-table
-            [companies]="facade.companies()"
-            [sort]="facade.sort()"
-            (sortChange)="facade.applySort($event)"
-            (open)="openCompany($event)"
-            (edit)="openEdit($event)"
-          />
-          <app-admin-pagination
-            [page]="facade.page()"
-            [pages]="facade.pages()"
-            [total]="facade.total()"
-            [pageSize]="facade.pageSize()"
-            (pageChange)="facade.load($event)"
-            (pageSizeChange)="facade.applyPageSize($event)"
-          />
-        }
-      }
+      </section>
     </div>
 
     @if (showCreate()) {

@@ -6,7 +6,14 @@ import {
   model,
   output,
 } from '@angular/core';
-import { IjCell, IjColumn, IjIcon, IjSortState, IjTable } from '@/shared/ui';
+import {
+  IjAvatar,
+  IjCell,
+  IjColumn,
+  IjIcon,
+  IjSortState,
+  IjTable,
+} from '@/shared/ui';
 import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import {
   COMPANY_MEMBER_ROLE_LABELS,
@@ -38,7 +45,7 @@ const ROLE_RANK: Record<CompanyMemberRole, number> = {
 @Component({
   selector: 'app-company-members-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, IjIcon, IjTable, IjCell, AdminEmpty],
+  imports: [DatePipe, IjAvatar, IjIcon, IjTable, IjCell, AdminEmpty],
   template: `
     @if (members().length === 0) {
       <app-admin-empty
@@ -56,15 +63,20 @@ const ROLE_RANK: Record<CompanyMemberRole, number> = {
       >
         <ng-template ijCell="email" [ijCellOf]="members()" let-member>
           <div class="flex items-center gap-3">
-            <span
-              class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-[13px] font-bold"
+            <ij-avatar
+              class="h-9 w-9 rounded-xl text-[13px] font-bold"
               [class]="roleBadge(member.companyRole)"
-            >
-              {{ initials(member.email) }}
-            </span>
-            <span class="truncate text-sm font-semibold text-ink-900">
-              {{ member.email }}
-            </span>
+              [src]="member.photoUrl"
+              [name]="member.displayName || member.email"
+            />
+            <div class="min-w-0">
+              <div class="truncate text-sm font-semibold text-ink-900">
+                {{ member.displayName || member.email }}
+              </div>
+              @if (secondary(member); as line) {
+                <div class="truncate text-[12.5px] text-muted">{{ line }}</div>
+              }
+            </div>
           </div>
         </ng-template>
 
@@ -145,7 +157,14 @@ export class CompanyMembersTable {
   protected readonly rowId = (member: CompanyMember) => member.userId;
 
   protected readonly columns: IjColumn<CompanyMember>[] = [
-    { id: 'email', header: 'Usuario', sortable: true, value: (m) => m.email },
+    {
+      id: 'email',
+      header: 'Usuario',
+      sortable: true,
+      // Por lo que se lee en la celda: con nombre, ordenar por correo dejaba
+      // la columna en un orden que desde fuera parecía aleatorio.
+      value: (m) => m.displayName || m.email,
+    },
     {
       id: 'companyRole',
       header: 'Rol interno',
@@ -170,6 +189,13 @@ export class CompanyMembersTable {
     { id: 'actions', header: '', class: 'text-right' },
   ];
 
+  /** Correo y puesto bajo el nombre; sin nombre, el correo ya está arriba. */
+  protected secondary(member: CompanyMember): string {
+    return [member.displayName ? member.email : '', member.jobTitle ?? '']
+      .filter(Boolean)
+      .join(' · ');
+  }
+
   protected roleLabel(role: CompanyMemberRole): string {
     return COMPANY_MEMBER_ROLE_LABELS[role] ?? role;
   }
@@ -193,8 +219,4 @@ export class CompanyMembersTable {
       : 'Quitar del equipo';
   }
 
-  protected initials(email: string): string {
-    const parts = email.split(/[\s@.]+/).filter(Boolean);
-    return (parts[0]?.[0] ?? '?').concat(parts[1]?.[0] ?? '').toUpperCase();
-  }
 }

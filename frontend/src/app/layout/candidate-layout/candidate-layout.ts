@@ -15,7 +15,7 @@ import {
 import { AuthService } from '@/core/auth/auth.service';
 import { CandidateProfileFacade } from '@/features/candidate/data/candidate-profile.facade';
 import { NotificationBell } from '@/shared/notifications/notification-bell';
-import { IconName, IjIcon, IjLogo } from '@/shared/ui';
+import { IconName, IjAvatar, IjIcon, IjLogo } from '@/shared/ui';
 
 interface CandidateNavItem {
   readonly path: string;
@@ -31,7 +31,15 @@ interface CandidateNavItem {
 @Component({
   selector: 'app-candidate-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, IjLogo, IjIcon, NotificationBell],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    IjAvatar,
+    IjLogo,
+    IjIcon,
+    NotificationBell,
+  ],
   template: `
     <div class="flex min-h-screen bg-surface text-ink-900">
       <aside
@@ -83,15 +91,11 @@ interface CandidateNavItem {
               </div>
               <div class="text-[11.5px] text-muted">Candidato</div>
             </div>
-            <div
-              class="flex h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[11px] border border-line bg-brand-50 text-[13px] font-extrabold text-brand"
-            >
-              @if (photoUrl(); as photo) {
-                <img [src]="photo" alt="" class="h-full w-full object-cover" />
-              } @else {
-                {{ initials() }}
-              }
-            </div>
+            <ij-avatar
+              class="h-[42px] w-[42px] rounded-xl border border-line bg-brand-50 text-[13px] font-extrabold text-brand-strong"
+              [src]="photoUrl()"
+              [name]="displayName()"
+            />
             <button
               type="button"
               aria-label="Cerrar sesión"
@@ -145,6 +149,7 @@ export class CandidateLayout {
     { path: '/candidato/postulaciones', label: 'Mis postulaciones', icon: 'briefcase' },
     { path: '/candidato/guardadas', label: 'Guardadas', icon: 'bookmark' },
     { path: '/candidato/configuracion', label: 'Configuración', icon: 'settings' },
+    { path: '/candidato/mi-cuenta', label: 'Mi cuenta', icon: 'shield' },
   ];
 
   protected readonly displayName = computed(() => {
@@ -156,17 +161,17 @@ export class CandidateLayout {
     return this.auth.currentUser()?.email ?? '';
   });
 
-  protected readonly initials = computed(() =>
-    this.displayName()
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((word) => word[0]?.toUpperCase() ?? '')
-      .join(''),
-  );
-
+  /**
+   * Manda la foto del perfil de aspirante, que es la que el candidato gestiona
+   * en `/candidato/perfil`. `avatarUrl` (de `GET /auth/me`) cubre el hueco
+   * mientras la ficha no ha llegado y el caso de que la foto viniera de
+   * `users.photo_url`, que es lo que edita el back-office.
+   */
   protected readonly photoUrl = computed(
-    () => this.profileFacade.profile()?.profilePhotoUrl ?? null,
+    () =>
+      this.profileFacade.profile()?.profilePhotoUrl ??
+      this.auth.currentUser()?.avatarUrl ??
+      null,
   );
 
   constructor() {

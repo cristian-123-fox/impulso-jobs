@@ -39,11 +39,13 @@ import { RoleForm } from '@/features/admin/roles/components/role-form/role-form'
     IjModal,
   ],
   template: `
-    <div class="mx-auto max-w-[1100px]">
-      <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div class="mx-auto flex max-w-[1240px] flex-col gap-5">
+      <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Roles y permisos</h1>
-          <p class="mt-1.5 text-[13.5px] text-muted">
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
+            Roles y permisos
+          </h1>
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
             Administra los roles de la plataforma y los permisos que otorgan.
           </p>
         </div>
@@ -52,10 +54,10 @@ import { RoleForm } from '@/features/admin/roles/components/role-form/role-form'
           type="button"
           variant="primary"
           shape="rounded"
-          size="md"
+          size="sm"
           (click)="openCreate()"
         >
-          <ij-icon name="plus" [size]="16" />
+          <ij-icon name="plus" [size]="16" [strokeWidth]="2.5" />
           Nuevo rol
         </button>
       </div>
@@ -63,26 +65,30 @@ import { RoleForm } from '@/features/admin/roles/components/role-form/role-form'
       @if (actionError(); as message) {
         <p
           role="alert"
-          class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
+          class="rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
         >
           {{ message }}
         </p>
       }
 
-      @switch (facade.rolesState()) {
-        @case ('loading') {
-          <app-admin-table-skeleton label="Cargando roles…" />
+      <!-- Sin filtros ni paginación: los roles son una lista corta y completa. -->
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+        @switch (facade.rolesState()) {
+          @case ('loading') {
+            <app-admin-table-skeleton [bare]="true" label="Cargando roles…" />
+          }
+          @case ('error') {
+            <app-admin-error
+              [bare]="true"
+              message="No se pudieron cargar los roles."
+              (retry)="facade.loadRoles()"
+            />
+          }
+          @default {
+            <app-roles-table [roles]="facade.roles()" (action)="onAction($event)" />
+          }
         }
-        @case ('error') {
-          <app-admin-error
-            message="No se pudieron cargar los roles."
-            (retry)="facade.loadRoles()"
-          />
-        }
-        @default {
-          <app-roles-table [roles]="facade.roles()" (action)="onAction($event)" />
-        }
-      }
+      </section>
     </div>
 
     @if (formOpen()) {

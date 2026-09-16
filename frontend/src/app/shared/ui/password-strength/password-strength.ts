@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { IjIcon } from '@/shared/ui';
+import { IjIcon } from '@/shared/ui/icon/icon';
 
 interface PasswordRule {
   readonly label: string;
@@ -23,11 +23,13 @@ const RULES: readonly PasswordRule[] = [
  * Medidor de la contraseña: barra de fuerza y desglose de la política.
  *
  * Es informativo, no valida: quien decide si el formulario se puede enviar
- * sigue siendo `passwordPolicyValidator` sobre el control. Sirve para que el
- * alta no sea un juego de adivinar por qué el campo está en rojo.
+ * sigue siendo `passwordPolicyValidator` sobre el control. Sirve para que
+ * escribir una contraseña no sea un juego de adivinar por qué el campo está
+ * en rojo. Lo usan el alta de usuario del back-office y el cambio de
+ * contraseña de «Mi cuenta».
  */
 @Component({
-  selector: 'app-password-strength',
+  selector: 'ij-password-strength',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IjIcon],
   host: { class: 'block' },
@@ -58,7 +60,7 @@ const RULES: readonly PasswordRule[] = [
     </div>
   `,
 })
-export class PasswordStrength {
+export class IjPasswordStrength {
   readonly value = input<string>('');
 
   protected readonly rules = computed(() => {

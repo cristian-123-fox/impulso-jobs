@@ -45,4 +45,9 @@ export const routes: Routes = [
         (m) => m.NotificationsPage,
       ),
   },
+  {
+    path: 'mi-cuenta',
+    loadChildren: () =>
+      import('@/features/account/account.routes').then((m) => m.routes),
+  },
 ];

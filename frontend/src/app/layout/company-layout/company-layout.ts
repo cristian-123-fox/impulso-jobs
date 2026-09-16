@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -13,7 +14,7 @@ import {
 } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
 import { NotificationBell } from '@/shared/notifications/notification-bell';
-import { IconName, IjIcon, IjLogo } from '@/shared/ui';
+import { IconName, IjAvatar, IjIcon, IjLogo } from '@/shared/ui';
 
 interface CompanyNavItem {
   readonly path: string;
@@ -25,7 +26,15 @@ interface CompanyNavItem {
 @Component({
   selector: 'app-company-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, RouterOutlet, IjLogo, IjIcon, NotificationBell],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    IjAvatar,
+    IjLogo,
+    IjIcon,
+    NotificationBell,
+  ],
   template: `
     <div class="flex min-h-screen bg-surface text-ink-900">
       <aside
@@ -63,11 +72,16 @@ interface CompanyNavItem {
           <div class="ml-auto flex items-center gap-3">
             <ij-notification-bell viewAllRoute="/empresa/notificaciones" />
             <div class="hidden text-right sm:block">
-              <div class="text-[13px] font-bold text-ink-900">
-                {{ auth.currentUser()?.email }}
+              <div class="max-w-[220px] truncate text-[13px] font-bold text-ink-900">
+                {{ displayName() }}
               </div>
               <div class="text-[11.5px] text-muted">Empresa</div>
             </div>
+            <ij-avatar
+              class="h-[42px] w-[42px] rounded-xl border border-line bg-brand-50 text-[13px] font-extrabold text-brand-strong"
+              [src]="avatarUrl()"
+              [name]="displayName()"
+            />
             <button
               type="button"
               aria-label="Cerrar sesión"
@@ -114,7 +128,22 @@ export class CompanyLayout {
     { path: '/empresa/promociones', label: 'Promociona tu vacante', icon: 'award' },
     { path: '/empresa/usuarios', label: 'Usuarios de la empresa', icon: 'users' },
     { path: '/empresa/perfil', label: 'Perfil de empresa', icon: 'building' },
+    { path: '/empresa/mi-cuenta', label: 'Mi cuenta', icon: 'shield' },
   ];
+
+  /**
+   * Identidad de la sesión (`GET /auth/me`). Para una empresa el nombre es el
+   * comercial —se actúa en su representación— pero la foto es la que el
+   * titular subiera en «Mi cuenta», con el logo de respaldo.
+   */
+  protected readonly displayName = computed(() => {
+    const user = this.auth.currentUser();
+    return user?.displayName?.trim() || user?.email || '';
+  });
+
+  protected readonly avatarUrl = computed(
+    () => this.auth.currentUser()?.avatarUrl ?? null,
+  );
 
   protected onLogout(): void {
     this.auth

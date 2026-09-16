@@ -644,7 +644,8 @@
       "socialDivider": "O ingresa con",
       "socialWith": "Ingresar con {{provider}}",
       "noAccount": "¿No tienes cuenta?",
-      "createAccount": "Crea una cuenta"
+      "createAccount": "Crea una cuenta",
+      "passwordChanged": "Contraseña actualizada. Entra de nuevo con la contraseña nueva."
     },
     "errors": {
       "invalidCredentials": "Correo o contraseña incorrectos.",

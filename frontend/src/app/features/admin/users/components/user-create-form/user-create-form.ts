@@ -24,13 +24,13 @@ import {
   IjIcon,
   IjInput,
   IjOption,
+  IjPasswordStrength,
   IjSelect,
 } from '@/shared/ui';
 import { notFutureDateValidator } from '@/shared/validators/mx-identifiers.validator';
 import { passwordPolicyValidator } from '@/shared/validators/password.validator';
 import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
 import { ExtraRolesPicker } from '@/features/admin/users/components/extra-roles-picker/extra-roles-picker';
-import { PasswordStrength } from '@/features/admin/users/components/password-strength/password-strength';
 import {
   CompanyMemberRole,
   CreateUserPayload,
@@ -114,7 +114,7 @@ const COMPANY_ROLE_CARDS: readonly {
   imports: [
     ReactiveFormsModule,
     ExtraRolesPicker,
-    PasswordStrength,
+    IjPasswordStrength,
     IjButton,
     IjIcon,
     IjInput,
@@ -167,7 +167,7 @@ const COMPANY_ROLE_CARDS: readonly {
                   <ij-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="19" />
                 </button>
               </ij-input>
-              <app-password-strength [value]="password()" />
+              <ij-password-strength [value]="password()" />
             </div>
             <ij-select
               class="sm:col-span-2"

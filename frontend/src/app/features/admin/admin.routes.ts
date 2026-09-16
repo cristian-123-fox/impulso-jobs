@@ -30,6 +30,11 @@ export const routes: Routes = [
       import('@/features/admin/reports/reports.routes').then((m) => m.routes),
   },
   {
+    path: 'mi-cuenta',
+    loadChildren: () =>
+      import('@/features/account/account.routes').then((m) => m.routes),
+  },
+  {
     path: 'notificaciones',
     loadChildren: () =>
       import('@/features/admin/notifications/notifications.routes').then(

@@ -57,13 +57,13 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
     IjModal,
   ],
   template: `
-    <div class="mx-auto max-w-[1180px]">
-      <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div class="mx-auto flex max-w-[1240px] flex-col gap-5">
+      <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
             Planes y beneficios
           </h1>
-          <p class="mt-1.5 text-[13.5px] text-muted">
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
             Tarifas en MXN, vigencias y beneficios que verán las empresas en el portal.
           </p>
         </div>
@@ -81,18 +81,20 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
             type="button"
             variant="primary"
             shape="rounded"
-            size="md"
+            size="sm"
             (click)="openPlan(null)"
           >
-            <ij-icon name="plus" [size]="16" />
+            <ij-icon name="plus" [size]="16" [strokeWidth]="2.5" />
             Nuevo plan
           </button>
         </div>
       </div>
 
-      <div class="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         @for (card of statCards(); track card.label) {
-          <div class="flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-card">
+          <div
+            class="flex items-center gap-3.5 rounded-2xl border border-line bg-white p-4 shadow-card"
+          >
             <span
               class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl"
               [class]="card.tone"
@@ -112,41 +114,44 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
       @if (actionError(); as message) {
         <p
           role="alert"
-          class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
+          class="rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
         >
           {{ message }}
         </p>
       }
 
-      @switch (facade.state()) {
-        @case ('loading') {
-          <app-admin-table-skeleton [rows]="4" label="Cargando planes…" />
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+        @switch (facade.state()) {
+          @case ('loading') {
+            <app-admin-table-skeleton [bare]="true" [rows]="4" label="Cargando planes…" />
+          }
+          @case ('error') {
+            <app-admin-error
+              [bare]="true"
+              message="No se pudieron cargar los planes."
+              (retry)="facade.load()"
+            />
+          }
+          @default {
+            <app-plans-table [plans]="facade.plans()" (action)="onAction($event)" />
+          }
         }
-        @case ('error') {
-          <app-admin-error
-            message="No se pudieron cargar los planes."
-            (retry)="facade.load()"
-          />
-        }
-        @default {
-          <app-plans-table [plans]="facade.plans()" (action)="onAction($event)" />
-        }
-      }
+      </section>
 
-      <section class="mt-8">
-        <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 class="text-lg font-bold text-ink-900">Catálogo de beneficios</h2>
-            <p class="mt-1 text-[13.5px] text-muted">
-              Los códigos disponibles para armar cada plan.
-            </p>
-          </div>
-        </div>
+      <div class="mt-3">
+        <h2 class="text-[19px] font-extrabold tracking-tight text-ink-900">
+          Catálogo de beneficios
+        </h2>
+        <p class="mt-1.5 text-[14px] font-medium text-muted">
+          Los códigos disponibles para armar cada plan.
+        </p>
+      </div>
 
-        <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+        <div class="overflow-x-auto">
           <table class="w-full min-w-[680px] border-collapse text-left">
             <thead>
-              <tr class="border-b border-line">
+              <tr class="border-b border-line bg-surface/60">
                 @for (h of featureHeaders; track h) {
                   <th
                     class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted"

@@ -146,7 +146,7 @@ import {
     @if (editing(); as member) {
       <ij-modal
         title="Rol dentro de la empresa"
-        [subtitle]="member.email"
+        [subtitle]="memberLabel(member)"
         size="sm"
         (close)="closeForms()"
       >
@@ -259,10 +259,15 @@ export class TeamPage {
     );
   }
 
+  /** A quién nombra un diálogo: la persona si la conocemos, si no el correo. */
+  protected memberLabel(member: CompanyMember): string {
+    return member.displayName || member.email;
+  }
+
   private onRemove(member: CompanyMember): void {
     if (
       !confirm(
-        `¿Quitar a ${member.email} del equipo? Su cuenta se conserva, pero dejará de tener acceso a la empresa.`,
+        `¿Quitar a ${this.memberLabel(member)} del equipo? Su cuenta se conserva, pero dejará de tener acceso a la empresa.`,
       )
     ) {
       return;

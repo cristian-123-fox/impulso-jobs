@@ -36,18 +36,21 @@ const PAGE_SIZE = 10;
     IjIcon,
   ],
   template: `
-    <div class="mx-auto max-w-[1180px]">
-      <div class="mb-6">
-        <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Denuncias</h1>
-        <p class="mt-1.5 text-[13.5px] text-muted">
+    <div class="mx-auto flex max-w-[1240px] flex-col gap-5">
+      <div>
+        <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
+          Denuncias
+        </h1>
+        <p class="mt-1.5 text-[14px] font-medium text-muted">
           Reportes de candidatos sobre vacantes publicadas. Varias denuncias sobre una misma
           empresa son motivo para revisar al empleador.
         </p>
       </div>
 
+      <!-- Como en app-users-tabs: con -mb-px hace falta overflow-y-hidden. -->
       <div
         role="tablist"
-        class="mb-4 flex gap-2 overflow-x-auto rounded-2xl bg-white p-1.5 shadow-card"
+        class="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line"
       >
         @for (tab of tabs; track tab.value) {
           <button
@@ -63,26 +66,28 @@ const PAGE_SIZE = 10;
       </div>
 
       @if (actionError(); as message) {
-        <p role="alert" class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700">
+        <p role="alert" class="rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700">
           {{ message }}
         </p>
       }
 
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
       @switch (state()) {
         @case ('loading') {
-          <app-admin-table-skeleton label="Cargando denuncias…" />
+          <app-admin-table-skeleton [bare]="true" label="Cargando denuncias…" />
         }
         @case ('error') {
           <app-admin-error
+            [bare]="true"
             message="No se pudieron cargar las denuncias."
             (retry)="load(page())"
           />
         }
         @default {
-          <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
+          <div class="overflow-x-auto">
             <table class="w-full min-w-[860px] border-collapse text-left">
               <thead>
-                <tr class="border-b border-line">
+                <tr class="border-b border-line bg-surface/60">
                   @for (h of headers; track h) {
                     <th class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted">
                       {{ h }}
@@ -166,6 +171,7 @@ const PAGE_SIZE = 10;
           </div>
 
           <app-admin-pagination
+            [inCard]="true"
             [page]="page()"
             [pages]="pages()"
             [total]="total()"
@@ -173,6 +179,7 @@ const PAGE_SIZE = 10;
           />
         }
       }
+      </section>
     </div>
   `,
 })
@@ -240,12 +247,13 @@ export class ReportsListPage {
     return REPORT_STATUS_LABELS[code] ?? code;
   }
 
+  /** Mismas clases que `app-users-tabs`: el back-office subraya, no apastilla. */
   protected tabClass(value: string): string {
     const base =
-      'flex flex-1 min-w-fit items-center justify-center whitespace-nowrap rounded-xl px-4 ' +
-      'py-2.5 text-[13.5px] font-bold transition-colors';
+      'flex flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 pb-3 pt-2.5 ' +
+      '-mb-px text-[13.5px] font-bold transition-colors';
     return this.status() === value
-      ? `${base} bg-brand text-white`
-      : `${base} text-body hover:bg-surface`;
+      ? `${base} border-brand text-brand-strong`
+      : `${base} border-transparent text-muted hover:text-ink-900`;
   }
 }

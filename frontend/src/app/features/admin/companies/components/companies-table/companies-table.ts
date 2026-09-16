@@ -44,6 +44,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
         [data]="companies()"
         [columns]="columns"
         sortMode="server"
+        [bare]="true"
         [rowId]="rowId"
         [(sort)]="sort"
       >

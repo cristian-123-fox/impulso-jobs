@@ -40,6 +40,7 @@ export interface RoleActionEvent {
         [data]="roles()"
         [columns]="columns"
         sortMode="client"
+        [bare]="true"
         [rowId]="rowId"
         [(sort)]="sort"
       >

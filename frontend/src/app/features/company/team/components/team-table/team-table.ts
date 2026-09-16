@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { IjIcon } from '@/shared/ui';
+import { IjAvatar, IjIcon } from '@/shared/ui';
 import {
   COMPANY_MEMBER_ROLE_LABELS,
   CompanyMember,
@@ -8,9 +8,10 @@ import {
 } from '@/features/company/team/models/team.models';
 
 const ROLE_BADGE: Record<CompanyMemberRole, string> = {
-  [CompanyMemberRole.OWNER]: 'bg-brand-50 text-brand',
-  [CompanyMemberRole.ADMIN]: 'bg-accent-blue-soft text-accent-blue',
-  [CompanyMemberRole.RECRUITER]: 'bg-accent-green-soft text-accent-green',
+  [CompanyMemberRole.OWNER]: 'bg-brand-50 text-brand-strong',
+  [CompanyMemberRole.ADMIN]: 'bg-accent-blue-soft text-accent-blue-strong',
+  [CompanyMemberRole.RECRUITER]:
+    'bg-accent-green-soft text-accent-green-strong',
   [CompanyMemberRole.MEMBER]: 'bg-surface text-muted',
 };
 
@@ -25,7 +26,7 @@ export interface TeamActionEvent {
 @Component({
   selector: 'app-team-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, IjIcon],
+  imports: [DatePipe, IjAvatar, IjIcon],
   template: `
     <div class="overflow-x-auto rounded-2xl bg-white shadow-card">
       <table class="w-full min-w-[760px] border-collapse text-left">
@@ -43,18 +44,27 @@ export interface TeamActionEvent {
             <tr class="border-b border-line/70 transition-colors hover:bg-surface">
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
-                  <span
-                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] text-[13px] font-bold"
+                  <ij-avatar
+                    class="h-9 w-9 rounded-xl text-[13px] font-bold"
                     [class]="roleBadge(member.companyRole)"
-                  >
-                    {{ initials(member.email) }}
-                  </span>
+                    [src]="member.photoUrl"
+                    [name]="member.displayName || member.email"
+                  />
                   <div class="min-w-0">
-                    <div class="truncate text-sm font-semibold text-ink-900">
-                      {{ member.email }}
+                    <div class="flex items-center gap-2">
+                      <span class="truncate text-sm font-semibold text-ink-900">
+                        {{ member.displayName || member.email }}
+                      </span>
+                      @if (member.userId === currentUserId()) {
+                        <span
+                          class="flex-none rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-muted"
+                        >
+                          Tú
+                        </span>
+                      }
                     </div>
-                    @if (member.userId === currentUserId()) {
-                      <div class="text-[12px] text-muted">Tu cuenta</div>
+                    @if (secondary(member); as line) {
+                      <div class="truncate text-[12.5px] text-muted">{{ line }}</div>
                     }
                   </div>
                 </div>
@@ -154,8 +164,11 @@ export class TeamTable {
     return ROLE_BADGE[role] ?? ROLE_BADGE[CompanyMemberRole.MEMBER];
   }
 
-  protected initials(email: string): string {
-    return email.slice(0, 2).toUpperCase();
+  /** Correo y puesto bajo el nombre; sin nombre, el correo ya está arriba. */
+  protected secondary(member: CompanyMember): string {
+    return [member.displayName ? member.email : '', member.jobTitle ?? '']
+      .filter(Boolean)
+      .join(' · ');
   }
 
   protected emit(action: TeamAction, member: CompanyMember): void {

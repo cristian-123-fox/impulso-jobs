@@ -65,6 +65,7 @@ const ACTION_NAMES: Record<string, string> = {
   'status.update': 'Actualizar estado',
   'cv.read': 'Leer hoja de vida',
   data_export: 'Exportar datos',
+  profile_manage: 'Administrar perfil',
   status: 'Cambiar estado',
   checkout: 'Pagar',
   search: 'Buscar',
@@ -120,6 +121,7 @@ const PERMISSION_CODES: readonly string[] = [
   'subscriptions.read',
   'account.delete',
   'account.data_export',
+  'account.profile_manage',
   'notifications.read',
 ];
 
@@ -175,6 +177,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'subscriptions.read',
     'account.delete',
     'account.data_export',
+    'account.profile_manage',
     'notifications.read',
   ],
   EMPLOYER: [
@@ -200,6 +203,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'subscriptions.read',
     'account.delete',
     'account.data_export',
+    'account.profile_manage',
     'notifications.read',
   ],
   CANDIDATE: [
@@ -220,6 +224,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'plans.read',
     'account.delete',
     'account.data_export',
+    'account.profile_manage',
     'notifications.read',
   ],
 };

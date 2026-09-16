@@ -82,6 +82,18 @@ export class AuthService {
   }
 
   /**
+   * Vuelve a pedir `GET /auth/me` descartando la caché de la carga actual.
+   *
+   * `loadIdentity()` se cachea a propósito —una llamada por arranque de la
+   * app—, pero al editar el propio nombre o la propia foto esa caché es justo
+   * lo que deja la cabecera enseñando lo viejo hasta recargar la página.
+   */
+  reloadIdentity(): Observable<AuthUser | null> {
+    this.identity$ = undefined;
+    return this.loadIdentity();
+  }
+
+  /**
    * El rol manda sobre lo guardado: si cambió en servidor, la sesión en curso
    * debe reflejarlo (de ahí que se sobrescriba y no se mezcle a la inversa).
    */

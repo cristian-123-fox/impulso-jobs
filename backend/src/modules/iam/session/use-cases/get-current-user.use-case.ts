@@ -2,6 +2,7 @@ import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
+import { User } from '@/modules/iam/users/entities/user.entity';
 import {
   type ICandidateProfileRepository,
   CANDIDATE_PROFILE_REPOSITORY,
@@ -23,10 +24,25 @@ import {
 /**
  * T27: identidad completa de la sesión activa.
  *
- * El nombre y la imagen viven en el perfil del dominio correspondiente, no en
- * `users`, así que se resuelven por rol. Se lee del repositorio y no del JWT a
- * propósito: el token se emitió al iniciar sesión y no refleja un cambio de
- * foto o de nombre comercial posterior.
+ * Se lee del repositorio y no del JWT a propósito: el token se emitió al
+ * iniciar sesión y no refleja un cambio de foto o de nombre posterior.
+ *
+ * **Precedencia del nombre.** Manda el perfil del dominio —
+ * `candidate_profiles` para un candidato, `companies.business_name` para una
+ * empresa — y `users` es el respaldo. Es la misma regla que fija
+ * `toUserResponse` en el back-office, y el motivo es que esos perfiles son el
+ * origen único de ese dato para su rol.
+ *
+ * **La foto va al contrario**: manda `users.photo_url`. Un nombre comercial
+ * responde a "en representación de quién actúo"; un avatar responde a "quién
+ * soy", y si alguien se ha molestado en subir su foto en «Mi cuenta» espera
+ * verla. El dominio queda de respaldo, así que quien no suba nada conserva
+ * exactamente lo que veía.
+ *
+ * El respaldo **no existía** hasta ahora: cuando se añadieron `first_name`,
+ * `last_name` y `photo_url` a `users`, este caso de uso siguió devolviendo
+ * vacío para un ADMIN, así que el back-office podía ponerle nombre a una
+ * cuenta administrativa y su propia cabecera seguía enseñando el correo.
  */
 @Injectable()
 export class GetCurrentUserUseCase {
@@ -49,7 +65,8 @@ export class GetCurrentUserUseCase {
       );
     }
 
-    const identity = await this.resolveIdentity(user.id, user.role);
+    const identity = await this.resolveIdentity(user);
+    const fallback = ownIdentity(user);
 
     return {
       id: user.id,
@@ -57,17 +74,21 @@ export class GetCurrentUserUseCase {
       role: user.role,
       // El correo es el último recurso: un perfil a medio completar no puede
       // dejar el navbar sin nada que pintar.
-      displayName: identity.displayName || user.email,
-      avatarUrl: identity.avatarUrl,
+      displayName: identity.displayName || fallback.displayName || user.email,
+      // La foto va al revés que el nombre: manda la que el titular subió en
+      // «Mi cuenta». Es la única que ha elegido *como persona*, y la cabecera
+      // de sesión muestra a quien está usando la aplicación. Quien no suba
+      // ninguna sigue viendo la de su dominio (logo de la empresa, foto del
+      // perfil de aspirante), así que nadie pierde lo que ya veía.
+      avatarUrl: fallback.avatarUrl ?? identity.avatarUrl,
     };
   }
 
   private async resolveIdentity(
-    userId: string,
-    role: Role,
+    user: User,
   ): Promise<{ displayName: string; avatarUrl: string | null }> {
-    if (role === Role.CANDIDATE) {
-      const profile = await this.candidates.findByUserId(userId);
+    if (user.role === Role.CANDIDATE) {
+      const profile = await this.candidates.findByUserId(user.id);
       return {
         displayName:
           `${profile?.firstName ?? ''} ${profile?.lastName ?? ''}`.trim(),
@@ -75,8 +96,8 @@ export class GetCurrentUserUseCase {
       };
     }
 
-    if (role === Role.EMPLOYER) {
-      const membership = await this.companyUsers.findByUserId(userId);
+    if (user.role === Role.EMPLOYER) {
+      const membership = await this.companyUsers.findByUserId(user.id);
       const company = membership
         ? await this.companies.findById(membership.companyId)
         : null;
@@ -86,7 +107,18 @@ export class GetCurrentUserUseCase {
       };
     }
 
-    // ADMIN: `users` no tiene columna de nombre, así que se muestra el correo.
+    // ADMIN no tiene perfil de dominio: su identidad es la de `users`.
     return { displayName: '', avatarUrl: null };
   }
+}
+
+/** Identidad guardada en `users`: la única de un ADMIN, respaldo del resto. */
+function ownIdentity(user: User): {
+  displayName: string;
+  avatarUrl: string | null;
+} {
+  return {
+    displayName: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+    avatarUrl: user.photoUrl ?? null,
+  };
 }

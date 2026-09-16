@@ -1,5 +1,7 @@
 import { Role } from '@/core/models/role.enum';
 
+export { ROLE_LABELS } from '@/core/models/role.enum';
+
 /** Estado de la cuenta (espeja `UserStatus` del backend). */
 export enum UserStatus {
   ACTIVE = 'ACTIVE',
@@ -153,12 +155,6 @@ export interface UpdateUserPayload {
   companyId?: string;
   companyRole?: CompanyMemberRole;
 }
-
-export const ROLE_LABELS: Record<Role, string> = {
-  [Role.ADMIN]: 'Administrador',
-  [Role.EMPLOYER]: 'Empresa / Reclutador',
-  [Role.CANDIDATE]: 'Aspirante',
-};
 
 export const STATUS_LABELS: Record<UserStatus, string> = {
   [UserStatus.ACTIVE]: 'Activo',

@@ -19,7 +19,7 @@ import {
 import { catchError, filter, map, of } from 'rxjs';
 import { AuthService } from '@/core/auth/auth.service';
 import { NotificationBell } from '@/shared/notifications/notification-bell';
-import { IconName, IjIcon, IjLogo } from '@/shared/ui';
+import { IconName, IjAvatar, IjIcon, IjLogo } from '@/shared/ui';
 import { ReportsApi } from '@/features/admin/reports/data/reports.api';
 
 interface AdminNavItem {
@@ -46,6 +46,7 @@ const SIDEBAR_KEY = 'ij-admin-sidebar';
     RouterLink,
     RouterLinkActive,
     RouterOutlet,
+    IjAvatar,
     IjLogo,
     IjIcon,
     NotificationBell,
@@ -146,11 +147,12 @@ const SIDEBAR_KEY = 'ij-admin-sidebar';
                 aria-haspopup="menu"
                 (click)="menuOpen.set(!menuOpen())"
               >
-                <span
-                  class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-[12px] font-extrabold text-brand-strong"
-                >
-                  {{ initials() }}
-                </span>
+                <ij-avatar
+                  class="h-9 w-9 rounded-xl bg-brand-50 text-[12px] font-extrabold text-brand-strong"
+                  [src]="avatarUrl()"
+                  [name]="displayName()"
+                  fallback="A"
+                />
                 <span class="hidden min-w-0 flex-1 sm:block">
                   <span class="block truncate text-[13px] font-bold text-ink-900">
                     {{ displayName() }}
@@ -192,9 +194,18 @@ const SIDEBAR_KEY = 'ij-admin-sidebar';
                     }
                   </div>
                   <a
-                    routerLink="/admin/notificaciones"
+                    routerLink="/admin/mi-cuenta"
                     role="menuitem"
                     class="mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold text-body transition-colors hover:bg-surface hover:text-ink-900"
+                    (click)="menuOpen.set(false)"
+                  >
+                    <ij-icon name="user" [size]="18" [strokeWidth]="1.9" />
+                    Mi cuenta
+                  </a>
+                  <a
+                    routerLink="/admin/notificaciones"
+                    role="menuitem"
+                    class="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold text-body transition-colors hover:bg-surface hover:text-ink-900"
                     (click)="menuOpen.set(false)"
                   >
                     <ij-icon name="bell" [size]="18" [strokeWidth]="1.9" />
@@ -272,7 +283,9 @@ export class AdminLayout {
     const url = this.url();
     const item = this.navItems.find((nav) => url.startsWith(nav.path));
     if (item) return item.label;
-    return url.startsWith('/admin/notificaciones') ? 'Notificaciones' : 'Panel';
+    if (url.startsWith('/admin/notificaciones')) return 'Notificaciones';
+    if (url.startsWith('/admin/mi-cuenta')) return 'Mi cuenta';
+    return 'Panel';
   });
 
   protected readonly displayName = computed(() => {
@@ -285,10 +298,10 @@ export class AdminLayout {
     () => this.displayName() !== this.auth.currentUser()?.email,
   );
 
-  protected readonly initials = computed(() => {
-    const parts = this.displayName().split(/[\s@._-]+/).filter(Boolean);
-    return ((parts[0]?.[0] ?? 'A') + (parts[1]?.[0] ?? '')).toUpperCase();
-  });
+  /** Foto de la cuenta, la que el titular subió en «Mi cuenta». */
+  protected readonly avatarUrl = computed(
+    () => this.auth.currentUser()?.avatarUrl ?? null,
+  );
 
   constructor() {
     // Una sola petición por carga del área: sólo interesa el total, no las

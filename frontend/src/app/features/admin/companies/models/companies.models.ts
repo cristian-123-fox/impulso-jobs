@@ -125,6 +125,10 @@ export const COMPANY_MEMBER_ROLE_HINTS: Record<CompanyMemberRole, string> = {
 export interface CompanyMember {
   userId: string;
   email: string;
+  /** Nombre de la persona, o `null` si no lo ha puesto en «Mi cuenta». */
+  displayName: string | null;
+  jobTitle: string | null;
+  photoUrl: string | null;
   companyRole: CompanyMemberRole;
   /** Estado de la cuenta de plataforma (ACTIVE/INACTIVE/SUSPENDED). */
   status: string;
