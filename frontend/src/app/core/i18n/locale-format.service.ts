@@ -5,6 +5,21 @@ import { LanguageService } from '@/core/i18n/language.service';
 const CURRENCY = 'MXN';
 
 /**
+ * Unidades de la distancia temporal, de mayor a menor, con su tamaño en
+ * segundos. Se recorre en orden y gana la primera que dé un valor >= 1: así
+ * sale "hace 6 semanas" y no "hace 42 días", que es como lo lee una persona.
+ * El mes y el año son aproximados a propósito — es una etiqueta, no un cálculo.
+ */
+const RELATIVE_UNITS: readonly (readonly [Intl.RelativeTimeFormatUnit, number])[] = [
+  ['year', 365 * 24 * 3600],
+  ['month', 30 * 24 * 3600],
+  ['week', 7 * 24 * 3600],
+  ['day', 24 * 3600],
+  ['hour', 3600],
+  ['minute', 60],
+];
+
+/**
  * Fechas e importes en el idioma activo (T26 §6).
  *
  * Existe porque el portal formateaba con `Intl.*('es-MX')` escrito a mano en
@@ -43,6 +58,10 @@ export class LocaleFormatService {
         month: 'short',
         year: 'numeric',
       }),
+  );
+
+  private readonly relativeFormatter = computed(
+    () => new Intl.RelativeTimeFormat(this.locale(), { numeric: 'auto' }),
   );
 
   private readonly dateOnlyFormatter = computed(
@@ -89,6 +108,24 @@ export class LocaleFormatService {
    */
   dateOnly(value: string): string {
     return this.dateOnlyFormatter().format(new Date(`${value}T00:00:00Z`));
+  }
+
+  /**
+   * Distancia hasta hoy: "hace 6 semanas" / "6 weeks ago". Acompaña a una
+   * fecha exacta, no la sustituye — dice de un vistazo si algo es reciente.
+   *
+   * `now` es parámetro para poder fijarlo en las pruebas; en uso normal se
+   * omite.
+   */
+  relativeDate(value: string | Date, now: Date = new Date()): string {
+    const seconds = (toDate(value).getTime() - now.getTime()) / 1000;
+    const distance = Math.abs(seconds);
+    for (const [unit, size] of RELATIVE_UNITS) {
+      if (distance >= size) {
+        return this.relativeFormatter().format(Math.round(seconds / size), unit);
+      }
+    }
+    return this.relativeFormatter().format(Math.round(seconds), 'second');
   }
 
   /** 1240 → "1,240" / "1,240", con el separador del idioma activo. */

@@ -14,6 +14,10 @@ interface UserTab {
 /**
  * Separa el listado por tipo de cuenta. La pestaña activa es el filtro de rol,
  * por eso la barra de filtros ya no lo repite.
+ *
+ * Son pestañas subrayadas y no botones en pastilla: van pegadas sobre la
+ * tarjeta del listado, así que el subrayado las une visualmente a la tabla que
+ * filtran en lugar de leerse como un grupo de acciones suelto.
  */
 @Component({
   selector: 'app-users-tabs',
@@ -21,10 +25,13 @@ interface UserTab {
   imports: [IjIcon],
   host: { class: 'block' },
   template: `
-    <div
-      role="tablist"
-      class="flex gap-2 overflow-x-auto rounded-2xl bg-white p-1.5 shadow-card"
-    >
+    <!--
+      overflow-y-hidden es obligatorio junto a overflow-x-auto: CSS fuerza
+      overflow-y:auto cuando el otro eje no es visible, y el -mb-px del
+      subrayado deja el contenido 1px más alto que la caja, así que Chrome
+      sacaba una barra de desplazamiento vertical al lado de las pestañas.
+    -->
+    <div role="tablist" class="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line">
       @for (tab of tabs; track tab.role) {
         <button
           type="button"
@@ -68,18 +75,20 @@ export class UsersTabs {
   ];
 
   protected tabClass(role: Role): string {
+    // `-mb-px` monta el subrayado sobre el borde del contenedor, para que la
+    // pestaña activa lo tape en vez de dibujar dos líneas de 1px pegadas.
     const base =
-      'flex flex-1 min-w-fit items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 ' +
-      'text-[13.5px] font-bold transition-colors';
+      'flex flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 pb-3 pt-2.5 ' +
+      '-mb-px text-[13.5px] font-bold transition-colors';
     return role === this.active()
-      ? `${base} bg-brand text-white`
-      : `${base} text-body hover:bg-surface`;
+      ? `${base} border-brand text-brand-strong`
+      : `${base} border-transparent text-muted hover:text-ink-900`;
   }
 
   protected badgeClass(role: Role): string {
-    const base = 'rounded-full px-2 py-0.5 text-[11.5px] font-bold';
+    const base = 'rounded-full px-2 py-0.5 text-[11.5px] font-extrabold';
     return role === this.active()
-      ? `${base} bg-white/25 text-white`
+      ? `${base} bg-brand-50 text-brand-strong`
       : `${base} bg-surface text-muted`;
   }
 }

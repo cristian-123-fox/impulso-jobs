@@ -57,11 +57,13 @@ const CREATE_TITLE: Record<Role, string> = {
     IjModal,
   ],
   template: `
-    <div class="mx-auto max-w-[1180px]">
-      <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div class="mx-auto flex max-w-[1240px] flex-col gap-5">
+      <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">Usuarios</h1>
-          <p class="mt-1.5 text-[13.5px] text-muted">
+          <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
+            Usuarios
+          </h1>
+          <p class="mt-1.5 text-[14px] font-medium text-muted">
             Cuentas separadas por tipo: empresas, aspirantes y personal administrativo.
           </p>
         </div>
@@ -70,16 +72,15 @@ const CREATE_TITLE: Record<Role, string> = {
           type="button"
           variant="primary"
           shape="rounded"
-          size="md"
+          size="sm"
           (click)="openCreate()"
         >
-          <ij-icon name="plus" [size]="16" />
+          <ij-icon name="plus" [size]="16" [strokeWidth]="2.5" />
           {{ createLabel() }}
         </button>
       </div>
 
       <app-users-tabs
-        class="mb-4"
         [active]="facade.role()"
         [stats]="facade.stats()"
         (select)="facade.selectRole($event)"
@@ -88,88 +89,97 @@ const CREATE_TITLE: Record<Role, string> = {
       @if (actionError(); as message) {
         <p
           role="alert"
-          class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
+          class="rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
         >
           {{ message }}
         </p>
       }
 
-      <app-users-filters
-        class="mb-4 block"
-        [(search)]="facade.search"
-        [(status)]="facade.status"
-        (apply)="facade.applyFilters()"
-        (clear)="facade.clearFilters()"
-      />
+      <!--
+        Una sola caja para filtros, tabla y paginación: los tres operan sobre el
+        mismo listado, así que separarlos en tarjetas sueltas los hacía leer
+        como bloques sin relación.
+      -->
+      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+        <app-users-filters
+          class="border-b border-line"
+          [(search)]="facade.search"
+          [(status)]="facade.status"
+          (apply)="facade.applyFilters()"
+          (clear)="facade.clearFilters()"
+        />
 
-      @if (selection().length > 0) {
-        <div
-          class="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3"
-        >
-          <span class="text-[13.5px] font-semibold text-brand-strong">
-            {{ selection().length }}
-            {{ selection().length === 1 ? 'cuenta seleccionada' : 'cuentas seleccionadas' }}
-          </span>
-          <div class="ml-auto flex flex-wrap gap-2">
-            <button
-              type="button"
-              class="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-bold text-body transition-colors hover:bg-surface active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
-              [disabled]="bulkRunning()"
-              (click)="onBulkStatus(active)"
-            >
-              Reactivar
-            </button>
-            <button
-              type="button"
-              class="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-bold text-body transition-colors hover:bg-surface hover:text-red-600 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
-              [disabled]="bulkRunning()"
-              (click)="onBulkStatus(inactive)"
-            >
-              Desactivar
-            </button>
+        @if (selection().length > 0) {
+          <div class="flex flex-wrap items-center gap-3 border-b border-line bg-brand-50 px-4 py-3">
+            <span class="text-[13.5px] font-bold text-brand-strong">
+              {{ selection().length }}
+              {{ selection().length === 1 ? 'cuenta seleccionada' : 'cuentas seleccionadas' }}
+            </span>
+            <div class="ml-auto flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-bold text-body transition-colors hover:bg-surface active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40"
+                [disabled]="bulkRunning()"
+                (click)="onBulkStatus(active)"
+              >
+                Reactivar
+              </button>
+              <button
+                type="button"
+                class="rounded-lg border border-line bg-white px-3 py-1.5 text-[13px] font-bold text-body transition-colors hover:bg-surface hover:text-red-600 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40"
+                [disabled]="bulkRunning()"
+                (click)="onBulkStatus(inactive)"
+              >
+                Desactivar
+              </button>
+            </div>
           </div>
-        </div>
-      }
+        }
 
-      @switch (facade.state()) {
-        @case ('loading') {
-          <app-admin-table-skeleton label="Cargando usuarios…" />
+        @switch (facade.state()) {
+          @case ('loading') {
+            <app-admin-table-skeleton [bare]="true" label="Cargando usuarios…" />
+          }
+          @case ('error') {
+            <app-admin-error
+              [bare]="true"
+              message="No se pudieron cargar los usuarios."
+              (retry)="facade.load(facade.page())"
+            />
+          }
+          @default {
+            <app-users-table
+              [users]="facade.users()"
+              [role]="facade.role()"
+              [currentUserId]="currentUserId()"
+              [sort]="facade.sort()"
+              (sortChange)="facade.applySort($event)"
+              (selectionChange)="selection.set($event)"
+              (edit)="onEdit($event)"
+              (activate)="onStatus($event, active)"
+              (deactivate)="onStatus($event, inactive)"
+              (remove)="onRemove($event)"
+            />
+            <app-admin-pagination
+              [inCard]="true"
+              [page]="facade.page()"
+              [pages]="facade.pages()"
+              [total]="facade.total()"
+              [pageSize]="facade.pageSize()"
+              (pageChange)="facade.load($event)"
+              (pageSizeChange)="facade.applyPageSize($event)"
+            />
+          }
         }
-        @case ('error') {
-          <app-admin-error
-            message="No se pudieron cargar los usuarios."
-            (retry)="facade.load(facade.page())"
-          />
-        }
-        @default {
-          <app-users-table
-            [users]="facade.users()"
-            [role]="facade.role()"
-            [currentUserId]="currentUserId()"
-            [sort]="facade.sort()"
-            (sortChange)="facade.applySort($event)"
-            (selectionChange)="selection.set($event)"
-            (edit)="onEdit($event)"
-            (activate)="onStatus($event, active)"
-            (deactivate)="onStatus($event, inactive)"
-            (remove)="onRemove($event)"
-          />
-          <app-admin-pagination
-            [page]="facade.page()"
-            [pages]="facade.pages()"
-            [total]="facade.total()"
-            [pageSize]="facade.pageSize()"
-            (pageChange)="facade.load($event)"
-            (pageSizeChange)="facade.applyPageSize($event)"
-          />
-        }
-      }
+      </section>
     </div>
 
     @if (showCreate()) {
       <ij-modal
+        size="lg"
+        [scrollable]="true"
         [title]="createLabel()"
-        subtitle="Podrá iniciar sesión en cuanto se cree."
+        subtitle="Se crea verificada y activa. Podrá iniciar sesión en cuanto la guardes."
         (close)="closeForms()"
       >
         <app-user-create-form
@@ -184,6 +194,8 @@ const CREATE_TITLE: Record<Role, string> = {
 
     @if (editing(); as user) {
       <ij-modal
+        size="lg"
+        [scrollable]="true"
         title="Editar usuario"
         [subtitle]="user.displayName || user.email"
         (close)="closeForms()"

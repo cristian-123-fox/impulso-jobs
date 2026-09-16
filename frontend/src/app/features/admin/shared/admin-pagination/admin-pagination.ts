@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  output,
+} from '@angular/core';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { IjIcon } from '@/shared/ui';
 
@@ -15,7 +21,7 @@ import { IjIcon } from '@/shared/ui';
   imports: [IjIcon, TranslocoDirective],
   template: `
     @if (pages() > 1 || total() > 0) {
-      <div *transloco="let t" class="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div *transloco="let t" [class]="rootClass()">
         <span class="text-[13px] text-muted">
           {{
             total() === 1
@@ -75,10 +81,22 @@ export class AdminPagination {
   readonly total = input.required<number>();
   /** Filas por página. `0` oculta el selector (listados sin esa opción). */
   readonly pageSize = input(0);
+  /**
+   * Empotra la paginación como pie de una tarjeta —la comparte con la barra de
+   * filtros y la tabla— en vez de dejarla flotando debajo con un margen.
+   */
+  readonly inCard = input(false);
   readonly pageChange = output<number>();
   readonly pageSizeChange = output<number>();
 
   protected readonly pageSizes = [10, 25, 50, 100] as const;
+
+  protected readonly rootClass = computed(() => {
+    const base = 'flex flex-wrap items-center justify-between gap-3';
+    return this.inCard()
+      ? `${base} border-t border-line px-4 py-3`
+      : `${base} mt-4`;
+  });
 
   protected onPageSize(event: Event): void {
     const value = Number((event.target as HTMLSelectElement).value);

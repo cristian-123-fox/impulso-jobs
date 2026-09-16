@@ -17,7 +17,7 @@ import {
     <div
       role="status"
       [attr.aria-label]="label()"
-      class="animate-pulse overflow-hidden rounded-2xl bg-white shadow-card motion-reduce:animate-none"
+      [class]="rootClass()"
     >
       <div class="flex items-center gap-6 border-b border-line px-5 py-4">
         <span class="h-3 w-28 rounded bg-surface"></span>
@@ -43,6 +43,13 @@ import {
 export class AdminTableSkeleton {
   readonly rows = input(6);
   readonly label = input('Cargando…');
+  /** Sin marco propio, para cuando ya lo pone la tarjeta que lo contiene. */
+  readonly bare = input(false);
+
+  protected readonly rootClass = computed(() => {
+    const base = 'animate-pulse overflow-hidden motion-reduce:animate-none';
+    return this.bare() ? base : `${base} rounded-2xl bg-white shadow-card`;
+  });
 
   protected readonly rowsArray = computed(() =>
     Array.from({ length: this.rows() }),

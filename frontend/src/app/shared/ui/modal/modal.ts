@@ -68,7 +68,7 @@ const SIZES: Record<ModalSize, string> = {
           </button>
         </header>
 
-        <div class="px-5 py-5 sm:px-6">
+        <div [class]="bodyClass()">
           <ng-content />
         </div>
       </div>
@@ -79,6 +79,13 @@ export class IjModal {
   readonly title = input.required<string>();
   readonly subtitle = input<string>('');
   readonly size = input<ModalSize>('md');
+  /**
+   * Acota el alto del panel al de la ventana y desplaza sólo su cuerpo, en vez
+   * de desplazar la página entera. Sirve para formularios largos: la cabecera
+   * queda a la vista y el pie del formulario puede fijarse con `sticky bottom-0`
+   * dentro del contenido, que es donde vive el contenedor de desplazamiento.
+   */
+  readonly scrollable = input(false);
   readonly close = output<void>();
 
   private readonly document = inject(DOCUMENT);
@@ -105,6 +112,16 @@ export class IjModal {
   }
 
   protected panelClass(): string {
-    return SIZES[this.size()];
+    const size = SIZES[this.size()];
+    return this.scrollable()
+      ? `${size} flex max-h-[calc(100vh-2rem)] flex-col sm:max-h-[calc(100vh-3rem)]`
+      : size;
+  }
+
+  protected bodyClass(): string {
+    const base = 'px-5 py-5 sm:px-6';
+    return this.scrollable()
+      ? `${base} min-h-0 flex-1 overflow-y-auto overscroll-contain`
+      : base;
   }
 }

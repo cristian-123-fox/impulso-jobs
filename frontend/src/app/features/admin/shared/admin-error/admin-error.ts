@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  output,
+} from '@angular/core';
 import { IjIcon } from '@/shared/ui';
 
 /**
@@ -12,7 +18,7 @@ import { IjIcon } from '@/shared/ui';
   template: `
     <div
       role="alert"
-      class="flex flex-col items-center gap-3 rounded-2xl bg-white px-6 py-12 text-center shadow-card"
+      [class]="rootClass()"
     >
       <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600">
         <ij-icon name="alert-triangle" [size]="22" [strokeWidth]="1.9" />
@@ -30,5 +36,12 @@ import { IjIcon } from '@/shared/ui';
 })
 export class AdminError {
   readonly message = input.required<string>();
+  /** Sin marco propio, para cuando ya lo pone la tarjeta que lo contiene. */
+  readonly bare = input(false);
   readonly retry = output<void>();
+
+  protected readonly rootClass = computed(() => {
+    const base = 'flex flex-col items-center gap-3 px-6 py-12 text-center';
+    return this.bare() ? base : `${base} rounded-2xl bg-white shadow-card`;
+  });
 }

@@ -68,7 +68,7 @@ const HIDE_BELOW_CLASS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet, IjIcon],
   template: `
-    <div class="overflow-x-auto rounded-2xl border border-line bg-white">
+    <div [class]="wrapperClass()">
       <table class="w-full border-collapse text-left">
         <thead>
           <tr class="border-b border-line bg-surface/60">
@@ -161,6 +161,12 @@ export class IjTable<T extends RowData> {
   readonly sortMode = input<'client' | 'server'>('client');
   readonly selectable = input(false);
   /**
+   * Quita el marco propio de la tabla (borde, radio y fondo) para empotrarla
+   * dentro de una tarjeta que ya lo aporta — el listado de usuarios mete en la
+   * misma caja la barra de filtros, la tabla y la paginación.
+   */
+  readonly bare = input(false);
+  /**
    * Clave estable de la fila. Sin ella la selección se pierde al reordenar o
    * al recargar, porque TanStack cae al índice de la fila.
    */
@@ -228,6 +234,12 @@ export class IjTable<T extends RowData> {
       this.selectionChange.emit(selected);
     });
   }
+
+  protected readonly wrapperClass = computed(() =>
+    this.bare()
+      ? 'overflow-x-auto'
+      : 'overflow-x-auto rounded-2xl border border-line bg-white',
+  );
 
   protected rowKey(row: T, index: number): string {
     const id = this.rowId();

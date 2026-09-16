@@ -1,12 +1,13 @@
-import { DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
   model,
   output,
 } from '@angular/core';
+import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { Role } from '@/core/models/role.enum';
 import { IjCell, IjColumn, IjIcon, IjSortState, IjTable } from '@/shared/ui';
 import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
@@ -23,9 +24,13 @@ const AVATAR_TONE: Record<Role, string> = {
   [Role.CANDIDATE]: 'bg-accent-green-soft text-accent-green-strong',
 };
 
+/**
+ * Colores del estado. El punto delante toma el mismo color del texto, así que
+ * cada entrada lleva el fondo y el color de texto y nada más.
+ */
 const STATUS_BADGE: Record<UserStatus, string> = {
   [UserStatus.ACTIVE]: 'bg-accent-green-soft text-accent-green-strong',
-  [UserStatus.INACTIVE]: 'bg-surface text-muted',
+  [UserStatus.INACTIVE]: 'bg-accent-amber-soft text-accent-amber-strong',
   [UserStatus.SUSPENDED]: 'bg-red-50 text-red-700',
 };
 
@@ -48,6 +53,9 @@ const EMPTY_MESSAGE: Record<Role, string> = {
  * Las columnas dependen del tipo — la empresa y el rol interno sólo aplican a
  * las cuentas de empresa.
  *
+ * Va `bare` dentro de la tarjeta del listado, que ya aporta borde y radio: la
+ * barra de filtros, la tabla y la paginación comparten una sola caja.
+ *
  * El orden es **de servidor**: el listado está paginado, así que ordenar en
  * cliente reordenaría sólo las 10 filas visibles. Los ids de columna
  * ordenable son los de `USER_SORT_COLUMNS` en el backend; cambiarlos aquí sin
@@ -56,7 +64,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
 @Component({
   selector: 'app-users-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, IjIcon, IjTable, IjCell, AdminEmpty],
+  imports: [IjIcon, IjTable, IjCell, AdminEmpty],
   template: `
     @if (users().length === 0) {
       <app-admin-empty
@@ -70,6 +78,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
         [columns]="columns()"
         sortMode="server"
         [selectable]="true"
+        [bare]="true"
         [rowId]="rowId"
         [(sort)]="sort"
         (selectionChange)="selectionChange.emit($event)"
@@ -77,19 +86,23 @@ const EMPTY_MESSAGE: Record<Role, string> = {
         <ng-template ijCell="email" [ijCellOf]="users()" let-user>
           <div class="flex items-center gap-3">
             <span
-              class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl text-[13px] font-bold"
+              class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold"
               [class]="avatarTone()"
             >
               {{ initials(user) }}
             </span>
             <div class="min-w-0">
-              <div class="truncate text-sm font-semibold text-ink-900">
+              <div class="truncate text-[14.5px] font-bold text-ink-900">
                 {{ user.displayName || user.email }}
               </div>
               @if (user.displayName) {
-                <div class="truncate text-[12.5px] text-muted">
+                <!-- Sin nombre, la línea de arriba ya es el correo: no se repite. -->
+                <a
+                  [href]="'mailto:' + user.email"
+                  class="block truncate text-[12.5px] text-muted transition-colors hover:text-brand-strong"
+                >
                   {{ user.email }}
-                </div>
+                </a>
               }
             </div>
           </div>
@@ -112,7 +125,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
 
         <ng-template ijCell="companyName" [ijCellOf]="users()" let-user>
           @if (user.companyName) {
-            <span class="text-[13.5px] text-body">{{ user.companyName }}</span>
+            <span class="text-[13.5px] font-semibold text-body">{{ user.companyName }}</span>
           } @else {
             <span class="text-[13.5px] text-muted">Sin empresa</span>
           }
@@ -121,7 +134,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
         <ng-template ijCell="companyRole" [ijCellOf]="users()" let-user>
           @if (user.companyRole) {
             <span
-              class="inline-block rounded-md bg-accent-blue-soft px-2 py-1 text-[11.5px] font-bold text-accent-blue-strong"
+              class="inline-block rounded-full bg-accent-blue-soft px-2.5 py-1 text-[12px] font-bold text-accent-blue-strong"
             >
               {{ companyRoleLabel(user.companyRole) }}
             </span>
@@ -143,14 +156,15 @@ const EMPTY_MESSAGE: Record<Role, string> = {
         <ng-template ijCell="status" [ijCellOf]="users()" let-user>
           <div class="flex flex-wrap items-center gap-1.5">
             <span
-              class="inline-block rounded-md px-2 py-1 text-[11.5px] font-bold"
+              class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold"
               [class]="statusBadge(user.status)"
             >
+              <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
               {{ statusLabel(user.status) }}
             </span>
             @if (!user.emailVerified) {
               <span
-                class="inline-block rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-accent-amber-strong"
+                class="inline-block rounded-full bg-accent-amber-soft px-2.5 py-1 text-[12px] font-bold text-accent-amber-strong"
                 title="El correo no ha sido verificado: no puede iniciar sesión."
               >
                 Sin verificar
@@ -158,7 +172,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
             }
             @if (user.temporarilyBlocked) {
               <span
-                class="inline-block rounded-md bg-red-50 px-2 py-1 text-[11.5px] font-bold text-red-700"
+                class="inline-block rounded-full bg-red-50 px-2.5 py-1 text-[12px] font-bold text-red-700"
                 title="Bloqueo temporal por intentos fallidos de inicio de sesión."
               >
                 Bloqueado
@@ -168,26 +182,29 @@ const EMPTY_MESSAGE: Record<Role, string> = {
         </ng-template>
 
         <ng-template ijCell="createdAt" [ijCellOf]="users()" let-user>
-          <span class="text-[13px] text-muted">
-            {{ user.createdAt | date: 'dd MMM yyyy' }}
-          </span>
+          <div class="text-[13px] font-semibold text-body">
+            {{ formatDate(user.createdAt) }}
+            <div class="text-[11.5px] font-medium text-muted">
+              {{ formatAgo(user.createdAt) }}
+            </div>
+          </div>
         </ng-template>
 
         <ng-template ijCell="actions" [ijCellOf]="users()" let-user>
           <div class="flex items-center justify-end gap-1.5">
             <button
               type="button"
-              class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px]"
+              class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-ink-900 transition-colors hover:border-line hover:bg-surface hover:text-brand-strong active:translate-y-px"
               title="Editar"
-              aria-label="Editar usuario"
               (click)="edit.emit(user)"
             >
-              <ij-icon name="pen" [size]="15" />
+              <ij-icon name="pen" [size]="14" />
+              Editar
             </button>
             @if (user.status === active) {
               <button
                 type="button"
-                class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-red-600 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
+                class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-brand-50 hover:text-brand-strong active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40"
                 title="Desactivar"
                 aria-label="Desactivar usuario"
                 [disabled]="user.id === currentUserId()"
@@ -198,17 +215,17 @@ const EMPTY_MESSAGE: Record<Role, string> = {
             } @else {
               <button
                 type="button"
-                class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-surface hover:text-accent-green-strong active:translate-y-[1px]"
+                class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-accent-green-soft hover:text-accent-green-strong active:translate-y-px"
                 title="Reactivar"
                 aria-label="Reactivar usuario"
                 (click)="activate.emit(user)"
               >
-                <ij-icon name="check" [size]="15" />
+                <ij-icon name="play" [size]="15" />
               </button>
             }
             <button
               type="button"
-              class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-40"
+              class="flex h-8 w-8 items-center justify-center rounded-lg border border-line text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-40"
               title="Eliminar"
               aria-label="Eliminar usuario"
               [disabled]="user.id === currentUserId()"
@@ -234,6 +251,8 @@ export class UsersTable {
   readonly deactivate = output<AdminUser>();
   readonly remove = output<AdminUser>();
   readonly selectionChange = output<readonly AdminUser[]>();
+
+  private readonly locale = inject(LocaleFormatService);
 
   protected readonly active = UserStatus.ACTIVE;
   protected readonly rowId = (user: AdminUser) => user.id;
@@ -284,6 +303,14 @@ export class UsersTable {
 
   protected avatarTone(): string {
     return AVATAR_TONE[this.role()];
+  }
+
+  protected formatDate(value: string): string {
+    return this.locale.shortDate(value);
+  }
+
+  protected formatAgo(value: string): string {
+    return this.locale.relativeDate(value);
   }
 
   protected statusLabel(status: UserStatus): string {

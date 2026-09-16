@@ -29,6 +29,7 @@ export type IconName =
   | 'arrow-up'
   | 'calendar'
   | 'user'
+  | 'user-plus'
   | 'image'
   | 'menu'
   | 'close'
@@ -56,6 +57,7 @@ export type IconName =
   | 'award'
   | 'clock'
   | 'pause'
+  | 'play'
   | 'list'
   | 'history'
   | 'bell'
@@ -210,6 +212,12 @@ const ICONS: Record<IconName, readonly IconShape[]> = {
     p('M16 17l5-5-5-5'),
     p('M21 12H9'),
   ],
+  'user-plus': [
+    c(10, 8, 4),
+    p('M2 21c0-4 3.5-6 8-6 1.2 0 2.3.2 3.3.5'),
+    p('M19 8v6M22 11h-6'),
+  ],
+  play: [p('M7 4.5 19 12 7 19.5z')],
   trash: [
     p('M4 7h16'),
     p('M9 7V4h6v3'),
