@@ -1,1 +1,8 @@
+<!-- Barra de progreso de navegación -->
+@if (navigating()) {
+  <div class="fixed left-0 top-0 z-[9999] h-0.5 w-full overflow-hidden bg-brand/20">
+    <div class="h-full w-full animate-progress bg-brand"></div>
+  </div>
+}
+
 <router-outlet />

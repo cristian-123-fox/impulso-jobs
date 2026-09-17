@@ -859,3 +859,27 @@ SELECT u.id, u.email, u.role FROM users u
 **Fix:** nuevo input `disableLink` en `VacancyCard` — cuando es `true`, la tarjeta se renderiza como `<div>` en vez de `<a [routerLink]>`. La página de guardadas pasa `[disableLink]="true"` y controla la apertura del modal con su propio handler.
 
 **Archivos modificados (2):** `vacancy-card.ts` (nuevo input + rendering condicional), `candidate-saved-vacancies-page.ts` (pasa `disableLink`).
+
+---
+
+### B2 · Spinner global de navegación y loading ✅
+
+**Hecho (2026-09-16).** Se creó el componente `IjSpinner` y se integró como indicador de carga global y en todas las áreas del proyecto.
+
+**Cambios:**
+
+1. **`shared/ui/spinner/spinner.ts`** — nuevo componente `IjSpinner`: 8 puntos en círculo con opacidad decreciente y animación de rotación CSS (1.2s). Inputs: `size` (`sm`/`md`/`lg`), `color` (`brand`/`white`/`muted`, default `brand` = naranja). Exportado desde `@/shared/ui`.
+
+2. **Barra de progreso global** — `app.ts` escucha `NavigationStart`/`NavigationEnd` y muestra una barra naranja animada fija arriba de todo (`z-[9999]`) durante cualquier navegación. Keyframe `progress` en `styles.scss`.
+
+3. **Loading states reemplazados** (de `animate-pulse` a `ij-spinner`):
+   - `admin-table-skeleton.ts` — spinner centrado + texto sobre filas skeleton (cascada a 7 páginas admin)
+   - `candidate-applications-page.ts` — "Cargando postulaciones…"
+   - `candidate-saved-vacancies-page.ts` — "Cargando vacantes guardadas…"
+   - `vacancy-detail-modal.ts` — "Cargando vacante…"
+   - `company-profile.ts` — "Cargando perfil…"
+   - `plans-page.ts` — "Cargando planes…" (size lg)
+
+**Archivos modificados (9):** `spinner.ts` (nuevo), `index.ts`, `app.ts`, `app.html`, `styles.scss`, `admin-table-skeleton.ts`, `candidate-applications-page.ts`, `candidate-saved-vacancies-page.ts`, `vacancy-detail-modal.ts`, `company-profile.ts`, `plans-page.ts`.
+
+**Criterios de aceptación:** al navegar entre páginas aparece una barra naranja animada arriba; cada área de carga muestra el spinner naranja con texto descriptivo; el spinner se puede reutilizar con `<ij-spinner>`, `<ij-spinner size="lg" />`, etc.

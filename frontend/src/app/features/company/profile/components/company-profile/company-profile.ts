@@ -31,6 +31,7 @@ import {
   IjInput,
   IjOption,
   IjSelect,
+  IjSpinner,
   IjTextarea,
 } from '@/shared/ui';
 
@@ -51,17 +52,15 @@ const LOGO_MAX_BYTES = 5 * 1024 * 1024;
     IjIcon,
     IjInput,
     IjSelect,
+    IjSpinner,
     IjTextarea,
   ],
   host: { class: 'block' },
   template: `
     @if (facade.loading() && !profile()) {
-      <div class="rounded-3xl bg-white p-8 shadow-card">
-        <div class="animate-pulse space-y-4">
-          <div class="h-7 w-56 rounded bg-surface"></div>
-          <div class="h-4 w-80 rounded bg-surface"></div>
-          <div class="h-40 rounded-2xl bg-surface"></div>
-        </div>
+      <div class="flex flex-col items-center gap-3 rounded-3xl bg-white py-10 shadow-card">
+        <ij-spinner />
+        <span class="text-[13px] font-medium text-muted">Cargando perfil…</span>
       </div>
     } @else if (facade.error() && !profile()) {
       <div class="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700 shadow-card">

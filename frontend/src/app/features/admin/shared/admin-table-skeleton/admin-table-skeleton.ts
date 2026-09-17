@@ -4,6 +4,7 @@ import {
   computed,
   input,
 } from '@angular/core';
+import { IjSpinner } from '@/shared/ui';
 
 /**
  * Skeleton de carga de los listados del back-office. Replica la silueta de las
@@ -13,12 +14,17 @@ import {
 @Component({
   selector: 'app-admin-table-skeleton',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [IjSpinner],
   template: `
     <div
       role="status"
       [attr.aria-label]="label()"
       [class]="rootClass()"
     >
+      <div class="flex flex-col items-center gap-3 py-10">
+        <ij-spinner />
+        <span class="text-[13px] font-medium text-muted">{{ label() }}</span>
+      </div>
       <div class="flex items-center gap-6 border-b border-line px-5 py-4">
         <span class="h-3 w-28 rounded bg-surface"></span>
         <span class="hidden h-3 w-20 rounded bg-surface sm:block"></span>

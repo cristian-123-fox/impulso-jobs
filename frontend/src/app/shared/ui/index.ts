@@ -3,6 +3,7 @@ export { IjButton } from '@/shared/ui/button/button';
 export { IjAvatar } from '@/shared/ui/avatar/avatar';
 export { IjBadge } from '@/shared/ui/badge/badge';
 export { IjLogo } from '@/shared/ui/logo/logo';
+export { IjSpinner } from '@/shared/ui/spinner/spinner';
 export { IjModal } from '@/shared/ui/modal/modal';
 // Render del texto de la vacante: HTML del editor o texto plano antiguo (T32).
 export { IjRichText } from '@/shared/ui/rich-text/rich-text';

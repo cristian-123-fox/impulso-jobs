@@ -12,13 +12,13 @@ import { BillingToggle } from '@/features/public/plans/components/billing-toggle
 import { PlansGrid } from '@/features/public/plans/components/plans-grid/plans-grid';
 import { PlansFacade } from '@/features/public/plans/data/plans.facade';
 import { BillingCycle } from '@/features/public/plans/models/plans.models';
-import { IjPageHeader } from '@/shared/ui';
+import { IjPageHeader, IjSpinner } from '@/shared/ui';
 import { SeoService } from '@/core/services/seo.service';
 
 @Component({
   selector: 'app-plans-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjPageHeader, BillingToggle, PlansGrid, TranslocoDirective],
+  imports: [IjPageHeader, IjSpinner, BillingToggle, PlansGrid, TranslocoDirective],
   template: `
     <ng-container *transloco="let t">
       <ij-page-header
@@ -30,10 +30,9 @@ import { SeoService } from '@/core/services/seo.service';
       <section class="bg-white px-6 py-20 lg:px-[60px] lg:py-[80px]">
         <div class="mx-auto max-w-[1180px]">
           @if (facade.loading()) {
-            <div class="grid gap-6 lg:grid-cols-3 lg:gap-[26px]">
-              @for (i of [1, 2, 3]; track i) {
-                <div class="h-[420px] animate-pulse rounded-[12px] bg-surface"></div>
-              }
+            <div class="flex flex-col items-center gap-3 py-20">
+              <ij-spinner size="lg" />
+              <span class="text-[13px] font-medium text-muted">Cargando planes…</span>
             </div>
           } @else if (facade.hasError()) {
             <div class="rounded-2xl border border-red-100 bg-red-50 p-10 text-center text-red-700">

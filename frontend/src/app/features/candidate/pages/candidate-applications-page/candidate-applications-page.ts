@@ -14,7 +14,7 @@ import {
   ApplicationStatus,
   CandidateApplication,
 } from '@/features/candidate/models/candidate-applications.models';
-import { IjAvatar, IjBadge, IjButton, IjIcon, Tone } from '@/shared/ui';
+import { IjAvatar, IjBadge, IjButton, IjIcon, IjSpinner, Tone } from '@/shared/ui';
 import { VacancyDetailModal } from '@/features/candidate/components/vacancy-detail-modal/vacancy-detail-modal';
 
 const PAGE_SIZE = 10;
@@ -23,7 +23,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-candidate-applications-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjAvatar, DatePipe, RouterLink, AdminPagination, IjBadge, IjButton, IjIcon, VacancyDetailModal],
+  imports: [IjAvatar, DatePipe, RouterLink, AdminPagination, IjBadge, IjButton, IjIcon, IjSpinner, VacancyDetailModal],
   template: `
     <div class="mx-auto max-w-[1240px]">
       <div class="mb-6">
@@ -34,12 +34,9 @@ const PAGE_SIZE = 10;
       </div>
 
       @if (loading()) {
-        <div class="rounded-2xl border border-line bg-white p-8 shadow-card">
-          <div class="animate-pulse space-y-4">
-            @for (i of [1, 2, 3]; track i) {
-              <div class="h-20 rounded-2xl bg-surface"></div>
-            }
-          </div>
+        <div class="flex flex-col items-center gap-3 rounded-2xl border border-line bg-white py-10 shadow-card">
+          <ij-spinner />
+          <span class="text-[13px] font-medium text-muted">Cargando postulaciones…</span>
         </div>
       } @else if (error()) {
         <div class="rounded-2xl border border-red-100 bg-red-50 p-8 text-center text-red-700">

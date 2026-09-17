@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { IjButton, IjIcon } from '@/shared/ui';
+import { IjButton, IjIcon, IjSpinner } from '@/shared/ui';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
 import { CandidateSavedVacanciesApi } from '@/features/candidate/data/candidate-saved-vacancies.api';
 import { SavedVacancyItem } from '@/features/candidate/models/candidate-saved-vacancies.models';
@@ -20,7 +20,7 @@ const PAGE_SIZE = 10;
 @Component({
   selector: 'app-candidate-saved-vacancies-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, AdminPagination, VacancyCard, IjButton, IjIcon, VacancyDetailModal],
+  imports: [RouterLink, AdminPagination, VacancyCard, IjButton, IjIcon, IjSpinner, VacancyDetailModal],
   template: `
     <div class="mx-auto max-w-[1240px]">
       <h1 class="text-[28px] font-extrabold leading-tight tracking-tight text-ink-900">
@@ -32,10 +32,9 @@ const PAGE_SIZE = 10;
 
       <div class="mt-6">
         @if (loading()) {
-          <div class="flex flex-col gap-4">
-            @for (i of [1, 2, 3]; track i) {
-              <div class="h-28 animate-pulse rounded-2xl bg-surface"></div>
-            }
+          <div class="flex flex-col items-center gap-3 py-10">
+            <ij-spinner />
+            <span class="text-[13px] font-medium text-muted">Cargando vacantes guardadas…</span>
           </div>
         } @else if (error()) {
           <div
