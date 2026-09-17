@@ -68,6 +68,7 @@ export class UserProfileResolver {
         state: profile.state,
         municipality: profile.municipality,
         phone: profile.phone,
+        profilePhotoUrl: profile.profilePhotoUrl ?? null,
       };
       result.set(profile.userId, {
         displayName: `${profile.firstName} ${profile.lastName}`.trim(),

@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { Role } from '@/core/models/role.enum';
-import { IjCell, IjColumn, IjIcon, IjSortState, IjTable } from '@/shared/ui';
+import { IjAvatar, IjCell, IjColumn, IjIcon, IjSortState, IjTable } from '@/shared/ui';
 import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import {
   AdminUser,
@@ -64,7 +64,7 @@ const EMPTY_MESSAGE: Record<Role, string> = {
 @Component({
   selector: 'app-users-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [IjIcon, IjTable, IjCell, AdminEmpty],
+  imports: [IjAvatar, IjIcon, IjTable, IjCell, AdminEmpty],
   template: `
     @if (users().length === 0) {
       <app-admin-empty
@@ -85,12 +85,12 @@ const EMPTY_MESSAGE: Record<Role, string> = {
       >
         <ng-template ijCell="email" [ijCellOf]="users()" let-user>
           <div class="flex items-center gap-3">
-            <span
-              class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-[13px] font-extrabold"
+            <ij-avatar
+              class="h-10 w-10 rounded-xl text-[13px] font-extrabold"
               [class]="avatarTone()"
-            >
-              {{ initials(user) }}
-            </span>
+              [src]="user.photoUrl"
+              [name]="user.displayName || user.email"
+            />
             <div class="min-w-0">
               <div class="truncate text-[14.5px] font-bold text-ink-900">
                 {{ user.displayName || user.email }}
@@ -323,11 +323,5 @@ export class UsersTable {
 
   protected companyRoleLabel(role: string): string {
     return COMPANY_ROLE_LABELS[role] ?? role;
-  }
-
-  protected initials(user: AdminUser): string {
-    const source = user.displayName?.trim() || user.email;
-    const parts = source.split(/[\s@.]+/).filter(Boolean);
-    return (parts[0]?.[0] ?? '?').concat(parts[1]?.[0] ?? '').toUpperCase();
   }
 }

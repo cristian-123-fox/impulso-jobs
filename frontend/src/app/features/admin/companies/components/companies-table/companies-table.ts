@@ -8,7 +8,7 @@ import {
   output,
 } from '@angular/core';
 import { LocaleFormatService } from '@/core/i18n/locale-format.service';
-import { IjCell, IjColumn, IjIcon, IjSortState, IjTable } from '@/shared/ui';
+import { IjAvatar, IjCell, IjColumn, IjIcon, IjSortState, IjTable } from '@/shared/ui';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import {
@@ -31,7 +31,7 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
 @Component({
   selector: 'app-companies-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, IjIcon, IjTable, IjCell, AdminEmpty],
+  imports: [DatePipe, IjAvatar, IjIcon, IjTable, IjCell, AdminEmpty],
   template: `
     @if (companies().length === 0) {
       <app-admin-empty
@@ -50,11 +50,11 @@ const STATE_NAMES = new Map(MX_STATES.map((s) => [s.code, s.name]));
       >
         <ng-template ijCell="businessName" [ijCellOf]="companies()" let-company>
           <div class="flex items-center gap-3">
-            <span
-              class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-[13px] font-bold text-brand-strong"
-            >
-              {{ initials(company.businessName) }}
-            </span>
+            <ij-avatar
+              class="h-9 w-9 rounded-xl bg-brand-50 text-[13px] font-bold text-brand-strong"
+              [src]="company.logoUrl"
+              [name]="company.businessName"
+            />
             <div class="min-w-0">
               <div class="truncate text-sm font-semibold text-ink-900">
                 {{ company.businessName }}
@@ -194,10 +194,5 @@ export class CompaniesTable {
     const state = SUBSCRIPTION_STATUS_LABELS[plan.status] ?? plan.status;
     if (!plan.currentPeriodEnd) return state;
     return `${state} · hasta ${this.format.shortDate(plan.currentPeriodEnd)}`;
-  }
-
-  protected initials(name: string): string {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    return (parts[0]?.[0] ?? '?').concat(parts[1]?.[0] ?? '').toUpperCase();
   }
 }

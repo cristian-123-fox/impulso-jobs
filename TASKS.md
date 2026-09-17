@@ -899,3 +899,33 @@ SELECT u.id, u.email, u.role FROM users u
 3. **`company/applications/components/applications-table/applications-table.ts`** — tabla de postulaciones (con `@let` + `$any()` para manejar la nullabilidad de `candidate`).
 
 **Archivos modificados (3):** `candidates-page.ts`, `candidate-detail.ts`, `applications-table.ts`.
+
+---
+
+### B4 · Foto de perfil no se muestra en tablas de admin (usuarios y empresas) ✅
+
+**Bug:** en `/admin/usuarios` y `/admin/empresas`, las tablas de listado no mostraban la foto de perfil ni el logo de empresa — siempre aparecían iniciales en un círculo de color.
+
+**Causa:** los componentes `users-table` y `companies-table` usaban un `<span>` manual con iniciales (método `initials()`) e ignoraban los campos `photoUrl` (usuarios) y `logoUrl` (empresas) que la API sí devuelve. El componente reutilizable `ij-avatar` ya existía y maneja foto + fallback a iniciales, pero no se usaba en estas tablas.
+
+**Fix:** se reemplazó el `<span>` manual por `<ij-avatar>` en ambos componentes, siguiendo el mismo patrón que ya usaba `company-members-table`:
+
+1. **`admin/users/components/users-table/users-table.ts`** — import de `IjAvatar`, reemplazo del `<span>` por `<ij-avatar [src]="user.photoUrl" [name]="user.displayName || user.email">`, eliminación del método `initials()`.
+2. **`admin/companies/components/companies-table/companies-table.ts`** — import de `IjAvatar`, reemplazo del `<span>` por `<ij-avatar [src]="company.logoUrl" [name]="company.businessName">`, eliminación del método `initials()`.
+
+**Archivos modificados (2):** `users-table.ts`, `companies-table.ts`. Sin migración, sin permisos nuevos.
+
+---
+
+### B5 · Foto de aspirantes no se visualiza en tabla de admin (pestaña "Aspirantes") ✅
+
+**Bug:** en `/admin/usuarios` con la pestaña "Aspirantes", la foto de perfil no se mostraba — siempre aparecían iniciales, aunque el candidato tenía foto subida.
+
+**Causa:** los candidatos suben su foto a `candidate_profiles.profile_photo_url` (vía `POST /candidate/profile/photo`), pero el mapper `toUserResponse()` solo leía `users.photo_url` (que es `null` salvo que un admin haya subido foto vía back-office). El `UserProfileResolver` traía el perfil del candidato pero descartaba `profilePhotoUrl`.
+
+**Fix (backend, 3 archivos):**
+
+1. **`iam/users/dto/user-response.dto.ts`** — se agregó `profilePhotoUrl?: string | null` a la interfaz `CandidateProfileSummary`, y `toUserResponse()` ahora hace fallback: `user.photoUrl ?? profile.candidateProfile?.profilePhotoUrl ?? null`.
+2. **`iam/users/services/user-profile-resolver.service.ts`** — el `candidateSummary` ahora incluye `profilePhotoUrl: profile.profilePhotoUrl ?? null`.
+
+**Archivos modificados (2):** `user-response.dto.ts`, `user-profile-resolver.service.ts`. Sin migración, sin permisos nuevos.

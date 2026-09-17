@@ -24,6 +24,7 @@ export interface CandidateProfileSummary {
   state?: string;
   municipality?: string;
   phone?: string | null;
+  profilePhotoUrl?: string | null;
 }
 
 /** Datos del perfil asociados a la cuenta, resueltos por el caso de uso. */
@@ -147,7 +148,7 @@ export function toUserResponse(
     lastName: user.lastName ?? null,
     phone: user.phone ?? null,
     jobTitle: user.jobTitle ?? null,
-    photoUrl: user.photoUrl ?? null,
+    photoUrl: user.photoUrl ?? profile.candidateProfile?.profilePhotoUrl ?? null,
     companyId: profile.companyId ?? null,
     companyName: profile.companyName ?? null,
     companyRole: profile.companyRole ?? null,
