@@ -125,6 +125,8 @@ import {
           [submitting]="saving()"
           [error]="formError()"
           (create)="onCreate($event)"
+          (logoSelected)="logoFile.set($event)"
+          (logoRemoved)="logoFile.set(null)"
           (cancel)="closeCreate()"
         />
       </ij-modal>
@@ -142,6 +144,8 @@ import {
           [submitting]="saving()"
           [error]="formError()"
           (save)="onUpdate(company, $event)"
+          (logoSelected)="logoFile.set($event)"
+          (logoRemoved)="logoFile.set(null)"
           (cancel)="closeCreate()"
         />
       </ij-modal>
@@ -158,6 +162,7 @@ export class CompaniesListPage {
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly created = signal<string | null>(null);
+  protected readonly logoFile = signal<File | null>(null);
 
   constructor() {
     this.facade.load(1);
@@ -167,6 +172,7 @@ export class CompaniesListPage {
     this.editing.set(null);
     this.formError.set(null);
     this.created.set(null);
+    this.logoFile.set(null);
     this.showCreate.set(true);
   }
 
@@ -174,6 +180,7 @@ export class CompaniesListPage {
     this.showCreate.set(false);
     this.formError.set(null);
     this.created.set(null);
+    this.logoFile.set(null);
     this.editing.set(company);
   }
 
@@ -190,13 +197,30 @@ export class CompaniesListPage {
   ): void {
     this.saving.set(true);
     this.formError.set(null);
+    const logo = this.logoFile();
     this.facade
       .update(company.id, payload)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          this.saving.set(false);
-          this.closeCreate();
+          if (logo) {
+            this.facade
+              .uploadLogo(company.id, logo)
+              .pipe(takeUntilDestroyed(this.destroyRef))
+              .subscribe({
+                next: () => {
+                  this.saving.set(false);
+                  this.closeCreate();
+                },
+                error: () => {
+                  this.saving.set(false);
+                  this.closeCreate();
+                },
+              });
+          } else {
+            this.saving.set(false);
+            this.closeCreate();
+          }
         },
         error: (error: unknown) => {
           this.saving.set(false);
@@ -208,19 +232,48 @@ export class CompaniesListPage {
   protected onCreate(payload: CreateCompanyPayload): void {
     this.saving.set(true);
     this.formError.set(null);
+    const logo = this.logoFile();
     this.facade
       .create(payload)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
-          this.saving.set(false);
-          this.closeCreate();
-          this.created.set(
-            result.ownerUserId
-              ? `Empresa "${result.company.businessName}" creada con la cuenta ${result.company.ownerEmail}, lista para iniciar sesión.`
-              : `Empresa "${result.company.businessName}" creada. Crea un usuario empleador para poder usarla.`,
-          );
-          this.facade.load(1);
+          if (logo) {
+            this.facade
+              .uploadLogo(result.company.id, logo)
+              .pipe(takeUntilDestroyed(this.destroyRef))
+              .subscribe({
+                next: () => {
+                  this.saving.set(false);
+                  this.closeCreate();
+                  this.created.set(
+                    result.ownerUserId
+                      ? `Empresa "${result.company.businessName}" creada con la cuenta ${result.company.ownerEmail}, lista para iniciar sesión.`
+                      : `Empresa "${result.company.businessName}" creada. Crea un usuario empleador para poder usarla.`,
+                  );
+                  this.facade.load(1);
+                },
+                error: () => {
+                  this.saving.set(false);
+                  this.closeCreate();
+                  this.created.set(
+                    result.ownerUserId
+                      ? `Empresa "${result.company.businessName}" creada con la cuenta ${result.company.ownerEmail}, lista para iniciar sesión.`
+                      : `Empresa "${result.company.businessName}" creada. Crea un usuario empleador para poder usarla.`,
+                  );
+                  this.facade.load(1);
+                },
+              });
+          } else {
+            this.saving.set(false);
+            this.closeCreate();
+            this.created.set(
+              result.ownerUserId
+                ? `Empresa "${result.company.businessName}" creada con la cuenta ${result.company.ownerEmail}, lista para iniciar sesión.`
+                : `Empresa "${result.company.businessName}" creada. Crea un usuario empleador para poder usarla.`,
+            );
+            this.facade.load(1);
+          }
         },
         error: (error: unknown) => {
           this.saving.set(false);

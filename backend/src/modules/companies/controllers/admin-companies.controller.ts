@@ -10,9 +10,16 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  IMAGE_MULTER_LIMIT_BYTES,
+  type UploadedImageFile,
+} from '@/common/storage/image-upload';
 import {
   ClientInfo,
   type ClientInfoPayload,
@@ -177,5 +184,38 @@ export class AdminCompaniesController {
       ip: client.ip,
       userAgent: client.userAgent,
     });
+  }
+
+  // ----------------------------------------------------------------- logo
+  @Post(':id/logo')
+  @RequirePermissions('companies.update')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: IMAGE_MULTER_LIMIT_BYTES } }),
+  )
+  @ResponseMessage('Logo de la empresa actualizado.')
+  async uploadLogo(
+    @Param('id') id: string,
+    @UploadedFile() file: UploadedImageFile | undefined,
+    @CurrentUser() actor: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<{ logoUrl: string | null }> {
+    const company = await this.useCase.uploadLogo({
+      companyId: id,
+      file,
+      actorUserId: actor.userId,
+      ip: client.ip,
+      userAgent: client.userAgent,
+    });
+    return { logoUrl: company.logoUrl ?? null };
   }
 }

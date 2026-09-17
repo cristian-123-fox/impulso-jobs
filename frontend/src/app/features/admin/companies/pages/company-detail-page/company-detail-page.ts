@@ -86,9 +86,13 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
             <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
               <div class="flex items-center gap-4">
                 <span
-                  class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-lg font-bold text-brand-strong"
+                  class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-50 text-lg font-bold text-brand-strong"
                 >
-                  {{ initials(data.businessName) }}
+                  @if (data.logoUrl) {
+                    <img [src]="data.logoUrl" [alt]="data.businessName" class="h-full w-full object-cover" />
+                  } @else {
+                    {{ initials(data.businessName) }}
+                  }
                 </span>
                 <div>
                   <h1 class="text-2xl font-extrabold tracking-tight text-ink-900">
@@ -253,6 +257,8 @@ const TAX_REGIME_NAMES = new Map(SAT_TAX_REGIMES.map((r) => [r.code, r.name]));
           [submitting]="saving()"
           [error]="formError()"
           (save)="onUpdateCompany($event)"
+          (logoSelected)="logoFile.set($event)"
+          (logoRemoved)="logoFile.set(null)"
           (cancel)="closeForms()"
         />
       </ij-modal>
@@ -382,6 +388,7 @@ export class CompanyDetailPage {
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
+  protected readonly logoFile = signal<File | null>(null);
 
   /** El plan llega dentro de la empresa, así que no hace falta otra petición. */
   protected readonly subscription = computed<AdminCompanySubscription | null>(
@@ -424,6 +431,7 @@ export class CompanyDetailPage {
     this.showAdd.set(false);
     this.editing.set(null);
     this.formError.set(null);
+    this.logoFile.set(null);
     this.editingCompany.set(company);
   }
 
@@ -449,19 +457,39 @@ export class CompanyDetailPage {
     this.editingPeriod.set(null);
     this.revokingPlan.set(null);
     this.formError.set(null);
+    this.logoFile.set(null);
   }
 
   protected onUpdateCompany(payload: UpdateCompanyPayload): void {
     this.saving.set(true);
     this.formError.set(null);
+    const logo = this.logoFile();
     this.api
       .update(this.companyId, payload)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (updated) => {
-          this.saving.set(false);
-          this.closeForms();
-          this.company.set(updated);
+          if (logo) {
+            this.api
+              .uploadLogo(this.companyId, logo)
+              .pipe(takeUntilDestroyed(this.destroyRef))
+              .subscribe({
+                next: ({ logoUrl }) => {
+                  this.saving.set(false);
+                  this.closeForms();
+                  this.company.set({ ...updated, logoUrl });
+                },
+                error: () => {
+                  this.saving.set(false);
+                  this.closeForms();
+                  this.company.set(updated);
+                },
+              });
+          } else {
+            this.saving.set(false);
+            this.closeForms();
+            this.company.set(updated);
+          }
         },
         error: (error: unknown) => {
           this.saving.set(false);

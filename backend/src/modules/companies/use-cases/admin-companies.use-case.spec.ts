@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role as PlatformRole } from '@/common/types/role.enum';
+import { PublicFileStoragePort } from '@/common/storage/public-file-storage.port';
 import { AuditService } from '@/modules/audit/audit.service';
 import { Company } from '@/modules/companies/entities/company.entity';
 import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
@@ -52,6 +53,7 @@ describe('AdminCompaniesUseCase', () => {
   let userRoles: jest.Mocked<IUserRoleRepository>;
   let roles: jest.Mocked<IRoleRepository>;
   let hasher: jest.Mocked<PasswordHasherService>;
+  let storage: jest.Mocked<PublicFileStoragePort>;
   let audit: jest.Mocked<AuditService>;
   let dataSource: DataSource;
   let useCase: AdminCompaniesUseCase;
@@ -102,6 +104,11 @@ describe('AdminCompaniesUseCase', () => {
     hasher = {
       hash: jest.fn().mockResolvedValue('hashed'),
     } as unknown as jest.Mocked<PasswordHasherService>;
+    storage = {
+      save: jest.fn(),
+      delete: jest.fn(),
+      publicUrl: jest.fn((key: string) => `http://localhost/uploads/${key}`),
+    } as unknown as jest.Mocked<PublicFileStoragePort>;
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
     dataSource = {
       transaction: jest.fn((work: (m: unknown) => Promise<unknown>) =>
@@ -116,6 +123,7 @@ describe('AdminCompaniesUseCase', () => {
       users,
       userRoles,
       roles,
+      storage,
       hasher,
       audit,
       dataSource,

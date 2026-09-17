@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -9,6 +10,15 @@ import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role as PlatformRole } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
+import {
+  requireValidImage,
+  storageKeyFromUrl,
+  type UploadedImageFile,
+} from '@/common/storage/image-upload';
+import {
+  PUBLIC_FILE_STORAGE,
+  type PublicFileStoragePort,
+} from '@/common/storage/public-file-storage.port';
 import { runInTransaction } from '@/common/utils/transaction.util';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
@@ -87,6 +97,14 @@ export interface UpdateCompanyCommand {
   userAgent: string;
 }
 
+export interface UploadCompanyLogoCommand {
+  companyId: string;
+  file?: UploadedImageFile;
+  actorUserId: string;
+  ip: string;
+  userAgent: string;
+}
+
 export interface CreateCompanyResult {
   company: AdminCompanyResponseDto;
   /** Id del usuario dueño, si se creó junto con la empresa. */
@@ -110,6 +128,8 @@ export class AdminCompaniesUseCase {
     @Inject(USER_ROLE_REPOSITORY)
     private readonly userRoles: IUserRoleRepository,
     @Inject(ROLE_REPOSITORY) private readonly roles: IRoleRepository,
+    @Inject(PUBLIC_FILE_STORAGE)
+    private readonly storage: PublicFileStoragePort,
     private readonly hasher: PasswordHasherService,
     private readonly audit: AuditService,
     @InjectDataSource() private readonly dataSource: DataSource,
@@ -266,6 +286,39 @@ export class AdminCompaniesUseCase {
     // Se vuelve a decorar para no perder dueño ni número de miembros.
     const [item] = await this.decorate([saved]);
     return item;
+  }
+
+  async uploadLogo(command: UploadCompanyLogoCommand): Promise<Company> {
+    const company = await this.companies.findById(command.companyId);
+    if (!company) throw this.notFound();
+
+    const { file, extension } = requireValidImage(command.file, {
+      invalidType: ErrorCode.COMPANY_LOGO_INVALID_TYPE,
+      tooLarge: ErrorCode.COMPANY_LOGO_TOO_LARGE,
+    });
+
+    const key = `company-logos/${randomUUID()}.${extension}`;
+    await this.storage.save({ key, buffer: file.buffer });
+
+    const previousUrl = company.logoUrl;
+    company.logoUrl = this.storage.publicUrl(key);
+    const saved = await this.companies.save(company);
+
+    const previousKey = storageKeyFromUrl(previousUrl);
+    if (previousKey && previousUrl !== saved.logoUrl) {
+      await this.storage.delete(previousKey).catch(() => undefined);
+    }
+
+    await this.audit.record({
+      action: 'companies.logo.upload',
+      actorUserId: command.actorUserId,
+      entity: 'company',
+      entityId: saved.id,
+      ip: command.ip,
+      userAgent: command.userAgent,
+    });
+
+    return saved;
   }
 
   /**

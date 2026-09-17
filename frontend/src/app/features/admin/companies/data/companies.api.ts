@@ -147,4 +147,18 @@ export class CompaniesApi {
       >(`${this.base}/${companyId}/subscription`, { body: { reason } })
       .pipe(map(() => undefined));
   }
+
+  // ----------------------------------------------------------------- logo
+  uploadLogo(
+    companyId: string,
+    file: File,
+  ): Observable<{ logoUrl: string | null }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http
+      .post<
+        ApiSuccessResponse<{ logoUrl: string | null }>
+      >(`${this.base}/${companyId}/logo`, formData)
+      .pipe(map((r) => r.content));
+  }
 }

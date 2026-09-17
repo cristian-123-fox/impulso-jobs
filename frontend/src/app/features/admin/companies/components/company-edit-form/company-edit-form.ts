@@ -5,6 +5,7 @@ import {
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import {
   AbstractControl,
@@ -16,6 +17,7 @@ import { COMPANY_TYPE_OPTIONS } from '@/features/company/profile/models/company-
 import { MX_STATES, SAT_TAX_REGIMES } from '@/shared/catalogs/mx.catalogs';
 import { IjButton, IjInput, IjOption, IjSelect } from '@/shared/ui';
 import { postalCodeValidator } from '@/shared/validators/mx-identifiers.validator';
+import { CompanyLogoPicker } from '@/features/admin/companies/components/company-logo-picker/company-logo-picker';
 import {
   AdminCompany,
   UpdateCompanyPayload,
@@ -29,7 +31,7 @@ import {
 @Component({
   selector: 'app-company-edit-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjInput, IjSelect],
+  imports: [ReactiveFormsModule, IjButton, IjInput, IjSelect, CompanyLogoPicker],
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
       @if (error()) {
@@ -40,6 +42,17 @@ import {
           {{ error() }}
         </p>
       }
+
+      <div class="mb-5 rounded-xl border border-dashed border-line bg-surface/40 p-4">
+        <p class="mb-3 text-[13px] font-semibold text-ink-900">Logo de la empresa</p>
+        <app-company-logo-picker
+          [logoUrl]="logoUrl()"
+          [companyName]="form.controls.businessName.value ?? ''"
+          [uploading]="uploadingLogo()"
+          (fileSelected)="onLogoSelected($event)"
+          (remove)="onLogoRemove()"
+        />
+      </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <ij-input
@@ -147,9 +160,14 @@ export class CompanyEditForm implements OnInit {
   readonly submitting = input(false);
   readonly error = input<string | null>(null);
   readonly save = output<UpdateCompanyPayload>();
+  readonly logoSelected = output<File>();
+  readonly logoRemoved = output<void>();
   readonly cancel = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
+
+  protected readonly logoUrl = signal<string | null>(null);
+  protected readonly uploadingLogo = signal(false);
 
   protected readonly taxRegimeOptions: readonly IjOption[] =
     SAT_TAX_REGIMES.map((r) => ({ value: r.code, label: r.name }));
@@ -179,6 +197,7 @@ export class CompanyEditForm implements OnInit {
 
   ngOnInit(): void {
     const company = this.company();
+    this.logoUrl.set(company.logoUrl);
     this.form.setValue({
       businessName: company.businessName,
       legalName: company.legalName,
@@ -193,6 +212,14 @@ export class CompanyEditForm implements OnInit {
       phoneNumber: company.phoneNumber ?? '',
       website: company.website ?? '',
     });
+  }
+
+  protected onLogoSelected(file: File): void {
+    this.logoSelected.emit(file);
+  }
+
+  protected onLogoRemove(): void {
+    this.logoRemoved.emit();
   }
 
   protected invalid(name: string): boolean {

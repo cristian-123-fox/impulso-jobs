@@ -27,6 +27,7 @@ import {
   PASSWORD_POLICY_HINT,
   passwordPolicyValidator,
 } from '@/shared/validators/password.validator';
+import { CompanyLogoPicker } from '@/features/admin/companies/components/company-logo-picker/company-logo-picker';
 import { CreateCompanyPayload } from '@/features/admin/companies/models/companies.models';
 
 /**
@@ -37,7 +38,7 @@ import { CreateCompanyPayload } from '@/features/admin/companies/models/companie
 @Component({
   selector: 'app-company-create-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjIcon, IjInput, IjSelect],
+  imports: [ReactiveFormsModule, IjButton, IjIcon, IjInput, IjSelect, CompanyLogoPicker],
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
       @if (error()) {
@@ -48,6 +49,17 @@ import { CreateCompanyPayload } from '@/features/admin/companies/models/companie
           {{ error() }}
         </p>
       }
+
+      <div class="mb-5 rounded-xl border border-dashed border-line bg-surface/40 p-4">
+        <p class="mb-3 text-[13px] font-semibold text-ink-900">Logo de la empresa</p>
+        <app-company-logo-picker
+          [logoUrl]="logoPreview()"
+          [companyName]="form.controls.businessName.value ?? ''"
+          [uploading]="uploadingLogo()"
+          (fileSelected)="onLogoSelected($event)"
+          (remove)="onLogoRemove()"
+        />
+      </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <ij-input
@@ -196,6 +208,8 @@ export class CompanyCreateForm {
   readonly submitting = input(false);
   readonly error = input<string | null>(null);
   readonly create = output<CreateCompanyPayload>();
+  readonly logoSelected = output<File>();
+  readonly logoRemoved = output<void>();
   readonly cancel = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
@@ -204,6 +218,8 @@ export class CompanyCreateForm {
   protected readonly passwordHint = PASSWORD_POLICY_HINT;
   protected readonly showPassword = signal(false);
   protected readonly withOwner = signal(true);
+  protected readonly logoPreview = signal<string | null>(null);
+  protected readonly uploadingLogo = signal(false);
 
   protected readonly taxRegimeOptions: readonly IjOption[] =
     SAT_TAX_REGIMES.map((r) => ({ value: r.code, label: r.name }));
@@ -260,6 +276,16 @@ export class CompanyCreateForm {
     }
     ownerEmail.updateValueAndValidity();
     ownerPassword.updateValueAndValidity();
+  }
+
+  protected onLogoSelected(file: File): void {
+    this.logoPreview.set(URL.createObjectURL(file));
+    this.logoSelected.emit(file);
+  }
+
+  protected onLogoRemove(): void {
+    this.logoPreview.set(null);
+    this.logoRemoved.emit();
   }
 
   protected invalid(name: string): boolean {

@@ -929,3 +929,37 @@ SELECT u.id, u.email, u.role FROM users u
 2. **`iam/users/services/user-profile-resolver.service.ts`** — el `candidateSummary` ahora incluye `profilePhotoUrl: profile.profilePhotoUrl ?? null`.
 
 **Archivos modificados (2):** `user-response.dto.ts`, `user-profile-resolver.service.ts`. Sin migración, sin permisos nuevos.
+
+---
+
+### B6 · Logo de empresa no se puede subir desde el back-office ✅
+
+**Bug:** en `/admin/empresas`, tanto al crear como al editar una empresa, no existía opción para subir el logo. El campo `logo_url` existía en la entidad y el backend ya tenía infraestructura de almacenamiento (T9), pero no había endpoint admin ni componente de UI para gestionarlo.
+
+**Causa:** el endpoint de subida de logo (`POST /company/profile/logo`) vive en el controlador de autoservicio de la empresa (`CompanyProfileController`) y está acotado al rol `EMPLOYER`. El back-office (`AdminCompaniesController`) no tenía endpoint equivalente. En el frontend, los formularios `CompanyCreateForm` y `CompanyEditForm` no incluían ningún componente de selección de imagen.
+
+**Fix:**
+
+1. **Backend — `admin-companies.controller.ts`:** nuevo endpoint `POST /admin/companies/:id/logo` con `FileInterceptor` (límite 6 MB), permiso `companies.update`. Reutiliza la misma lógica de validación de magic bytes, almacenamiento y auditoría que el autoservicio.
+
+2. **Backend — `admin-companies.use-case.ts`:** nuevo método `uploadLogo(command)` que valida la imagen, genera clave `company-logos/<uuid>.<ext>`, guarda vía `PublicFileStoragePort`, borra el archivo anterior si existía, y audita `companies.logo.upload`. Se inyectó `PUBLIC_FILE_STORAGE` como dependencia nueva del use-case.
+
+3. **Backend — `admin-companies.use-case.spec.ts`:** mock de `PublicFileStoragePort` agregado al `beforeEach` y constructor actualizado para incluir la nueva dependencia.
+
+4. **Frontend — `companies.api.ts`:** nuevo método `uploadLogo(companyId, file)` que envía `FormData` a `POST /admin/companies/:id/logo`.
+
+5. **Frontend — `companies.facade.ts`:** nuevo método `uploadLogo()` que llama a la API y actualiza el signal `companies` con el nuevo `logoUrl`.
+
+6. **Frontend — `company-logo-picker.ts` (nuevo):** componente standalone con avatar de preview, botones "Subir logo" y "Quitar", validación client-side (JPG/PNG/WebP, 5 MB max), y outputs `fileSelected`/`remove`.
+
+7. **Frontend — `company-create-form.ts`:** integra `CompanyLogoPicker` arriba del formulario, emite `logoSelected`/`logoRemoved` al componente padre.
+
+8. **Frontend — `company-edit-form.ts`:** integra `CompanyLogoPicker` con el logo actual de la empresa, emite eventos de cambio.
+
+9. **Frontend — `companies-list-page.ts`:** orquesta la subida del logo después de crear o editar la empresa. Señal `logoFile` que se pasa a los formularios y se sube en el `next` del create/update.
+
+10. **Frontend — `company-detail-page.ts`:** integra logo picker en el modal de edición, muestra el logo real de la empresa en la cabecera (en vez de sólo iniciales).
+
+**Archivos modificados (9):** `admin-companies.controller.ts`, `admin-companies.use-case.ts`, `admin-companies.use-case.spec.ts`, `companies.api.ts`, `companies.facade.ts`, `company-create-form.ts`, `company-edit-form.ts`, `companies-list-page.ts`, `company-detail-page.ts`. **Archivo nuevo (1):** `company-logo-picker.ts`.
+
+**Criterios de aceptación:** al crear una empresa se puede seleccionar un logo que se sube después del alta; al editar, se muestra el logo actual y se puede reemplazar o quitar; el logo aparece en el listado de empresas y en la cabecera del detalle; una empresa sin logo sigue mostrando iniciales; archivos inválidos (tipo o tamaño) muestran error antes de intentar subir.

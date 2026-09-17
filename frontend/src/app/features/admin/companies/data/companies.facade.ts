@@ -100,4 +100,19 @@ export class CompaniesFacade {
       ),
     );
   }
+
+  uploadLogo(
+    companyId: string,
+    file: File,
+  ): Observable<{ logoUrl: string | null }> {
+    return this.api.uploadLogo(companyId, file).pipe(
+      tap(({ logoUrl }) =>
+        this.companies.update((list) =>
+          list.map((company) =>
+            company.id === companyId ? { ...company, logoUrl } : company,
+          ),
+        ),
+      ),
+    );
+  }
 }
