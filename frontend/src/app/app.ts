@@ -15,10 +15,11 @@ import {
   Router,
   RouterOutlet,
 } from '@angular/router';
+import { IjSpinner } from './shared/ui/spinner/spinner';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, IjSpinner],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
@@ -28,7 +29,6 @@ export class App {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   protected readonly navigating = signal(false);
-  protected readonly progress = signal(0);
 
   constructor() {
     if (!this.isBrowser) return;
@@ -40,33 +40,16 @@ export class App {
       .subscribe((e) => {
         if (e instanceof NavigationStart) {
           this.navigating.set(true);
-          this.progress.set(0);
-          this.simulateProgress();
         } else if (
           e instanceof NavigationEnd ||
           e instanceof NavigationCancel ||
           e instanceof NavigationError
         ) {
-          this.progress.set(100);
           clearTimeout(timer);
           timer = setTimeout(() => {
             this.navigating.set(false);
-            this.progress.set(0);
           }, 300);
         }
       });
-  }
-
-  private simulateProgress(): void {
-    const step = () => {
-      if (!this.navigating()) return;
-      this.progress.update((p) => {
-        if (p >= 90) return p;
-        const increment = p < 50 ? 10 : p < 70 ? 5 : 2;
-        return Math.min(p + increment, 90);
-      });
-      setTimeout(step, 200);
-    };
-    step();
   }
 }
