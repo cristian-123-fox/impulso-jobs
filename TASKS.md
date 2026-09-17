@@ -883,3 +883,19 @@ SELECT u.id, u.email, u.role FROM users u
 **Archivos modificados (9):** `spinner.ts` (nuevo), `index.ts`, `app.ts`, `app.html`, `styles.scss`, `admin-table-skeleton.ts`, `candidate-applications-page.ts`, `candidate-saved-vacancies-page.ts`, `vacancy-detail-modal.ts`, `company-profile.ts`, `plans-page.ts`.
 
 **Criterios de aceptación:** al navegar entre páginas aparece un overlay semitransparente con spinner centrado; cada área de carga muestra el spinner naranja con texto descriptivo; el spinner se puede reutilizar con `<ij-spinner>`, `<ij-spinner size="lg" />`, etc.
+
+---
+
+### B3 · Foto de perfil no se muestra en el área de empresa ✅
+
+**Bug:** en `/empresa/candidatos` (banco de talento), al abrir el perfil de un candidato no se mostraba su foto de perfil — siempre aparecían las iniciales.
+
+**Causa:** los 3 componentes del área de empresa (`candidates-page`, `candidate-detail`, `applications-table`) ignoraban el campo `profilePhotoUrl` que la API sí devuelve, y siempre renderizaban un avatar con iniciales. La foto solo se mostraba en el perfil del propio candidato y en su sidebar.
+
+**Fix:** se modificaron los 3 componentes para renderizar condicionalmente la foto cuando `profilePhotoUrl` existe, manteniendo el fallback a iniciales cuando no hay foto:
+
+1. **`company/candidates/pages/candidates-page/candidates-page.ts`** — tarjetas de búsqueda del banco de talento.
+2. **`company/candidates/components/candidate-detail/candidate-detail.ts`** — modal de detalle del candidato.
+3. **`company/applications/components/applications-table/applications-table.ts`** — tabla de postulaciones (con `@let` + `$any()` para manejar la nullabilidad de `candidate`).
+
+**Archivos modificados (3):** `candidates-page.ts`, `candidate-detail.ts`, `applications-table.ts`.

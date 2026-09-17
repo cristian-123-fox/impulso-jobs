@@ -160,11 +160,19 @@ import {
             @for (candidate of facade.candidates(); track candidate.id) {
               <article class="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-card">
                 <div class="flex items-start gap-3">
-                  <span
-                    class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-[14px] font-bold text-brand"
+                  <div
+                    class="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-50 text-[14px] font-bold text-brand"
                   >
-                    {{ initials(candidate) }}
-                  </span>
+                    @if (candidate.profilePhotoUrl) {
+                      <img
+                        [src]="candidate.profilePhotoUrl"
+                        [alt]="'Foto de ' + candidate.firstName"
+                        class="h-full w-full object-cover"
+                      />
+                    } @else {
+                      {{ initials(candidate) }}
+                    }
+                  </div>
                   <div class="min-w-0">
                     <h3 class="truncate text-[14.5px] font-bold text-ink-900">
                       {{ candidate.firstName }} {{ candidate.lastName }}

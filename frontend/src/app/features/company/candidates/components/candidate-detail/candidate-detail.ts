@@ -16,11 +16,19 @@ import {
 
     <div class="flex flex-col gap-5">
       <div class="flex flex-wrap items-start gap-4">
-        <span
-          class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-lg font-bold text-brand"
+        <div
+          class="flex h-14 w-14 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-50 text-lg font-bold text-brand"
         >
-          {{ initials(data) }}
-        </span>
+          @if (data.profilePhotoUrl) {
+            <img
+              [src]="data.profilePhotoUrl"
+              [alt]="'Foto de ' + data.firstName"
+              class="h-full w-full object-cover"
+            />
+          } @else {
+            {{ initials(data) }}
+          }
+        </div>
         <div class="min-w-0 flex-1">
           <h3 class="text-lg font-bold text-ink-900">
             {{ data.firstName }} {{ data.lastName }}

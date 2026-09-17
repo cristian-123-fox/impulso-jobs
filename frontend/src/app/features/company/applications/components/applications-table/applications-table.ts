@@ -32,11 +32,20 @@ export interface ApplicationActionEvent {
             <tr class="border-b border-line/70 transition-colors hover:bg-surface">
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-3">
-                  <span
-                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[10px] bg-brand-50 text-[13px] font-bold text-brand"
+                  @let cand = item.candidate;
+                  <div
+                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-brand-50 text-[13px] font-bold text-brand"
                   >
-                    {{ initials(item) }}
-                  </span>
+                    @if (cand?.profilePhotoUrl) {
+                      <img
+                        [src]="$any(cand).profilePhotoUrl"
+                        [alt]="'Foto de ' + $any(cand).firstName"
+                        class="h-full w-full object-cover"
+                      />
+                    } @else {
+                      {{ initials(item) }}
+                    }
+                  </div>
                   <div class="min-w-0">
                     <div class="flex items-center gap-1.5">
                       @if (!item.readAt) {
