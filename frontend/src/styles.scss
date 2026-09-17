@@ -57,14 +57,3 @@
     --tw-ring-color: theme('colors.brand.DEFAULT');
   }
 }
-
-/* Barra de progreso de navegación global */
-@keyframes progress {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(100%); }
-}
-
-.animate-progress {
-  animation: progress 1.4s ease-in-out infinite;
-}

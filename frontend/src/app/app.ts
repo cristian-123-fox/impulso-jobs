@@ -7,8 +7,14 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/router';
-import { filter, map } from 'rxjs';
+import {
+  NavigationCancel,
+  NavigationEnd,
+  NavigationError,
+  NavigationStart,
+  Router,
+  RouterOutlet,
+} from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -21,17 +27,46 @@ export class App {
   private readonly destroyRef = inject(DestroyRef);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  /** Barra de progreso de navegación global. */
   protected readonly navigating = signal(false);
+  protected readonly progress = signal(0);
 
   constructor() {
     if (!this.isBrowser) return;
 
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
     this.router.events
-      .pipe(
-        filter((e): e is NavigationStart | NavigationEnd => e instanceof NavigationStart || e instanceof NavigationEnd),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe((e) => this.navigating.set(e instanceof NavigationStart));
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((e) => {
+        if (e instanceof NavigationStart) {
+          this.navigating.set(true);
+          this.progress.set(0);
+          this.simulateProgress();
+        } else if (
+          e instanceof NavigationEnd ||
+          e instanceof NavigationCancel ||
+          e instanceof NavigationError
+        ) {
+          this.progress.set(100);
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+            this.navigating.set(false);
+            this.progress.set(0);
+          }, 300);
+        }
+      });
+  }
+
+  private simulateProgress(): void {
+    const step = () => {
+      if (!this.navigating()) return;
+      this.progress.update((p) => {
+        if (p >= 90) return p;
+        const increment = p < 50 ? 10 : p < 70 ? 5 : 2;
+        return Math.min(p + increment, 90);
+      });
+      setTimeout(step, 200);
+    };
+    step();
   }
 }
