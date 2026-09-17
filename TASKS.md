@@ -849,3 +849,13 @@ SELECT u.id, u.email, u.role FROM users u
 ---
 
 ## bugs o ajustes 
+
+### B1 · Click en tarjeta de "Guardadas" redirigía a la web ✅
+
+**Bug:** en `/candidato/guardadas`, al hacer clic en la tarjeta de una vacante, se abría la página pública de la vacante en vez del modal de detalle.
+
+**Causa:** `<app-vacancy-card>` renderiza internamente un `<a [routerLink]>` que naviga a `/vacantes/<id>-<slug>`. El click en la tarjeta propagaba el evento al `<a>` y Angular Router interceptaba la navegación antes de que el `(click)="openDetail()"` del padre pudiera abrir el modal.
+
+**Fix:** nuevo input `disableLink` en `VacancyCard` — cuando es `true`, la tarjeta se renderiza como `<div>` en vez de `<a [routerLink]>`. La página de guardadas pasa `[disableLink]="true"` y controla la apertura del modal con su propio handler.
+
+**Archivos modificados (2):** `vacancy-card.ts` (nuevo input + rendering condicional), `candidate-saved-vacancies-page.ts` (pasa `disableLink`).

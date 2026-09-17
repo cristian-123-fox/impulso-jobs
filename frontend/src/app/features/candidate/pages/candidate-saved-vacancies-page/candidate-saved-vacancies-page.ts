@@ -94,7 +94,7 @@ const PAGE_SIZE = 10;
                     (click)="openDetail(vacancy.id)"
                     (keydown.enter)="openDetail(vacancy.id)"
                   >
-                    <app-vacancy-card [vacancy]="vacancy" />
+                    <app-vacancy-card [vacancy]="vacancy" [disableLink]="true" />
                   </div>
                 } @else {
                   <div
