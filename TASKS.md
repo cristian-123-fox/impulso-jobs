@@ -5,7 +5,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
 - **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21–T27 hechas**; lo que T26 dejó fuera a propósito (áreas privadas y correos) está levantado como **T28**, pendiente de la decisión N10.
-- **Parte D — Backlog solicitado (lista del 2026-09-12):** segunda tanda de apuntes del equipo (T29–T34), verificada igual contra el código. **T29 es un bug de producción** (403 al postularse) y va primero; el resto son mejoras de back-office y del área del candidato. Decisiones abiertas: N11, N12, N13.
+- **Parte D — Backlog solicitado (lista del 2026-09-12):** segunda tanda de apuntes del equipo (T29–T35), verificada igual contra el código. **T29 es un bug de producción** (403 al postularse) y va primero; el resto son mejoras de back-office y del área del candidato. Decisiones abiertas: N11, N12, N13.
 
 ---
 
@@ -581,6 +581,7 @@ Dos notas antes de empezar, porque cambian el tamaño de las tarjetas:
 | T32 | Vacante: responsabilidades, skills, editor de texto y alta en wizard | Feature | Alta | L (5–8 d) | T25 ✅ · N12 ✅ | ✅ **Hecha** (CKEditor 5, wizard en `/empresa/vacantes/nueva` y `/:id/editar`) |
 | T33 | Ver la vacante en modal desde "Mis postulaciones" y "Guardadas" | Mejora UX | Media | S (1 d) | — | ✅ **Hecha** |
 | T34 | El admin asigna, cambia y quita el plan de una empresa | Feature | Alta | M (3–5 d) | N13 ✅ | ✅ **Hecha** (`/admin/companies/:id/subscription` + sección «Plan» en `/admin/empresas/:id`) |
+| T35 | Botón "Ver sitio" en sidebar de admin y empresa | Mejora UX | Baja | XS (1 h) | — | ✅ **Hecha** |
 
 Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
@@ -828,3 +829,23 @@ SELECT u.id, u.email, u.role FROM users u
 5. ~~**T34**~~ ✅ hecha — era el hueco funcional más grande de los seis. Sin pasos de despliegue: ni migración, ni permiso nuevo, ni semilla.
 6. ~~**T31**~~ ✅ **Parcial** — asimetría alta/edición cerrada, contexto de empresa en ambos formularios. Campos nuevos pendientes de N11.
 7. ~~**T32 fases 2 y 3**~~ ✅ hecha — era la más cara del lote. Único paso de despliegue: `migration:run` para la columna `responsibilities`.
+
+---
+
+### T35 · Botón "Ver sitio" en el sidebar del admin y empresa ✅
+
+**Hecho (2026-09-16).** Se añadió un botón "Ver sitio" que abre el portal público en una nueva pestaña, posicionado **al fondo del riel** (separado del resto de items por un borde superior) en las áreas de administración y empresa.
+
+**Cambios:**
+
+1. **`app-shell.ts`** — nueva propiedad `external?: boolean` en `ShellNavItem` + nuevo input `footerNavItems` para items que se renderizan al fondo del riel (separados con `border-t`). Cubre el riel de escritorio y la nav móvil.
+2. **`admin-layout.ts`** — `footerNavItems` con `{ path: environment.siteUrl, label: 'Ver sitio', icon: 'globe', external: true }`.
+3. **`company-layout.ts`** — mismo `footerNavItems`.
+
+**Archivos modificados (3):** `app-shell.ts`, `admin-layout.ts`, `company-layout.ts`. Sin migración, sin permisos nuevos.
+
+**Criterios de aceptación:** el botón "Ver sitio" aparece al fondo del riel (separado por una línea), abre el portal público en nueva pestaña, y funciona tanto con el riel expandido como contraído. Presente en `/admin` y `/empresa/`.
+
+---
+
+## bugs o ajustes 

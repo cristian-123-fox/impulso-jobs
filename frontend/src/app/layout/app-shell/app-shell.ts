@@ -28,6 +28,8 @@ export interface ShellNavItem {
   readonly icon: IconName;
   /** Contador en el riel. Sólo se pinta si es > 0. */
   readonly badge?: number;
+  /** Enlace externo (abre en nueva pestaña) en vez de routerLink interno. */
+  readonly external?: boolean;
 }
 
 /** Entrada del menú de sesión, encima de «Cerrar sesión». */
@@ -100,32 +102,83 @@ export interface ShellMenuItem {
             </span>
           }
           @for (item of navItems(); track item.path) {
-            <a
-              [routerLink]="item.path"
-              routerLinkActive="!bg-brand-50 !text-brand-strong"
-              [title]="item.label"
-              class="relative flex items-center gap-3 rounded-xl text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
-              [class]="expanded() ? 'px-3 py-2.5' : 'justify-center py-2.5'"
-            >
-              <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
-              @if (expanded()) {
-                <span class="flex-1 whitespace-nowrap">{{ item.label }}</span>
-                @if (item.badge) {
-                  <span
-                    class="rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-extrabold text-red-700"
-                  >
-                    {{ item.badge }}
-                  </span>
+            @if (item.external) {
+              <a
+                [href]="item.path"
+                target="_blank"
+                rel="noopener"
+                [title]="item.label"
+                class="relative flex items-center gap-3 rounded-xl text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+                [class]="expanded() ? 'px-3 py-2.5' : 'justify-center py-2.5'"
+              >
+                <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
+                @if (expanded()) {
+                  <span class="flex-1 whitespace-nowrap">{{ item.label }}</span>
                 }
-              } @else if (item.badge) {
-                <span
-                  class="absolute right-4 top-1.5 h-2 w-2 rounded-full border-2 border-white bg-red-600"
-                  [attr.aria-label]="item.badge + ' pendientes'"
-                ></span>
-              }
-            </a>
+              </a>
+            } @else {
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="!bg-brand-50 !text-brand-strong"
+                [title]="item.label"
+                class="relative flex items-center gap-3 rounded-xl text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+                [class]="expanded() ? 'px-3 py-2.5' : 'justify-center py-2.5'"
+              >
+                <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
+                @if (expanded()) {
+                  <span class="flex-1 whitespace-nowrap">{{ item.label }}</span>
+                  @if (item.badge) {
+                    <span
+                      class="rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-extrabold text-red-700"
+                    >
+                      {{ item.badge }}
+                    </span>
+                  }
+                } @else if (item.badge) {
+                  <span
+                    class="absolute right-4 top-1.5 h-2 w-2 rounded-full border-2 border-white bg-red-600"
+                    [attr.aria-label]="item.badge + ' pendientes'"
+                  ></span>
+                }
+              </a>
+            }
           }
         </nav>
+
+        @if (footerNavItems().length) {
+          <nav class="flex flex-col gap-1 border-t border-line pt-3">
+            @for (item of footerNavItems(); track item.path) {
+              @if (item.external) {
+                <a
+                  [href]="item.path"
+                  target="_blank"
+                  rel="noopener"
+                  [title]="item.label"
+                  class="relative flex items-center gap-3 rounded-xl text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+                  [class]="expanded() ? 'px-3 py-2.5' : 'justify-center py-2.5'"
+                >
+                  <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
+                  @if (expanded()) {
+                    <span class="flex-1 whitespace-nowrap">{{ item.label }}</span>
+                  }
+                </a>
+              } @else {
+                <a
+                  [routerLink]="item.path"
+                  routerLinkActive="!bg-brand-50 !text-brand-strong"
+                  [title]="item.label"
+                  class="relative flex items-center gap-3 rounded-xl text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
+                  [class]="expanded() ? 'px-3 py-2.5' : 'justify-center py-2.5'"
+                >
+                  <ij-icon [name]="item.icon" [size]="19" [strokeWidth]="1.9" />
+                  @if (expanded()) {
+                    <span class="flex-1 whitespace-nowrap">{{ item.label }}</span>
+                  }
+                </a>
+              }
+            }
+          </nav>
+        }
 
         <!-- Pie del riel: el candidato vuelve al portal desde aquí. -->
         <ng-content select="[shellRailFooter]" />
@@ -233,14 +286,48 @@ export interface ShellMenuItem {
         <!-- Navegación en móvil: el riel sólo existe desde lg. -->
         <nav class="flex gap-2 overflow-x-auto border-b border-line bg-white px-4 py-2.5 lg:hidden">
           @for (item of navItems(); track item.path) {
-            <a
-              [routerLink]="item.path"
-              routerLinkActive="!bg-brand-50 !text-brand-strong"
-              class="flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-bold text-body transition-colors hover:bg-surface"
-            >
-              <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
-              {{ item.label }}
-            </a>
+            @if (item.external) {
+              <a
+                [href]="item.path"
+                target="_blank"
+                rel="noopener"
+                class="flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-bold text-body transition-colors hover:bg-surface"
+              >
+                <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
+                {{ item.label }}
+              </a>
+            } @else {
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="!bg-brand-50 !text-brand-strong"
+                class="flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-bold text-body transition-colors hover:bg-surface"
+              >
+                <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
+                {{ item.label }}
+              </a>
+            }
+          }
+          @for (item of footerNavItems(); track item.path) {
+            @if (item.external) {
+              <a
+                [href]="item.path"
+                target="_blank"
+                rel="noopener"
+                class="flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-bold text-body transition-colors hover:bg-surface"
+              >
+                <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
+                {{ item.label }}
+              </a>
+            } @else {
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="!bg-brand-50 !text-brand-strong"
+                class="flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-bold text-body transition-colors hover:bg-surface"
+              >
+                <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
+                {{ item.label }}
+              </a>
+            }
           }
         </nav>
 
@@ -253,6 +340,8 @@ export interface ShellMenuItem {
 })
 export class AppShell {
   readonly navItems = input.required<readonly ShellNavItem[]>();
+  /** Items que aparecen separados al fondo del riel (p. enl. externos). */
+  readonly footerNavItems = input<readonly ShellNavItem[]>([]);
   readonly menuItems = input<readonly ShellMenuItem[]>([]);
   /** Rótulo del grupo del riel: ADMINISTRACIÓN, RECLUTAMIENTO, MI CUENTA. */
   readonly sectionLabel = input.required<string>();

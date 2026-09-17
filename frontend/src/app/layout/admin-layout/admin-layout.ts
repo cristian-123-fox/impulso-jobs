@@ -17,6 +17,7 @@ import {
   ShellNavItem,
 } from '@/layout/app-shell/app-shell';
 import { ReportsApi } from '@/features/admin/reports/data/reports.api';
+import { environment } from '@env';
 
 /**
  * Área de administración. Todo el armazón —riel plegable, miga de pan, menú de
@@ -30,6 +31,7 @@ import { ReportsApi } from '@/features/admin/reports/data/reports.api';
   template: `
     <app-shell
       [navItems]="navItems()"
+      [footerNavItems]="footerNavItems"
       [menuItems]="menuItems"
       sectionLabel="ADMINISTRACIÓN"
       breadcrumbRoot="Administración"
@@ -62,6 +64,10 @@ export class AdminLayout {
       badge: this.pendingReports(),
     },
   ]);
+
+  protected readonly footerNavItems: readonly ShellNavItem[] = [
+    { path: environment.siteUrl, label: 'Ver sitio', icon: 'globe', external: true },
+  ];
 
   protected readonly menuItems: readonly ShellMenuItem[] = [
     { path: '/admin/mi-cuenta', label: 'Mi cuenta', icon: 'user' },

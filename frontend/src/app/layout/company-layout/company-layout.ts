@@ -5,6 +5,7 @@ import {
   ShellMenuItem,
   ShellNavItem,
 } from '@/layout/app-shell/app-shell';
+import { environment } from '@env';
 
 /**
  * Área de empresa. El armazón es `app-shell`, el mismo que admin y candidato.
@@ -20,6 +21,7 @@ import {
   template: `
     <app-shell
       [navItems]="navItems"
+      [footerNavItems]="footerNavItems"
       [menuItems]="menuItems"
       sectionLabel="RECLUTAMIENTO"
       breadcrumbRoot="Empresa"
@@ -40,6 +42,10 @@ export class CompanyLayout {
     { path: '/empresa/promociones', label: 'Promociona tu vacante', icon: 'award' },
     { path: '/empresa/usuarios', label: 'Usuarios de la empresa', icon: 'users' },
     { path: '/empresa/perfil', label: 'Perfil de empresa', icon: 'building' },
+  ];
+
+  protected readonly footerNavItems: readonly ShellNavItem[] = [
+    { path: environment.siteUrl, label: 'Ver sitio', icon: 'globe', external: true },
   ];
 
   protected readonly menuItems: readonly ShellMenuItem[] = [
