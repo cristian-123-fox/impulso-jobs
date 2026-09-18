@@ -22,15 +22,50 @@ interface Repair {
  */
 const REPAIRS: readonly Repair[] = [
   // Rol personalizado creado a mano desde /admin/roles.
-  { table: 'roles', column: 'description', broken: `cat${BROKEN}logos`, fixed: 'catálogos' },
+  {
+    table: 'roles',
+    column: 'description',
+    broken: `cat${BROKEN}logos`,
+    fixed: 'catálogos',
+  },
   // Nombre del plan, capturado en /admin/planes…
-  { table: 'plans', column: 'name', broken: `Suscripci${BROKEN}n`, fixed: 'Suscripción' },
+  {
+    table: 'plans',
+    column: 'name',
+    broken: `Suscripci${BROKEN}n`,
+    fixed: 'Suscripción',
+  },
   // …y copiado tal cual dentro del texto de los avisos de vencimiento (T22).
-  { table: 'notifications', column: 'body', broken: `Suscripci${BROKEN}n`, fixed: 'Suscripción' },
-  { table: 'companies', column: 'economic_sector', broken: `Tecnolog${BROKEN}a`, fixed: 'Tecnología' },
-  { table: 'companies', column: 'company_description', broken: `tecnolog${BROKEN}a`, fixed: 'tecnología' },
-  { table: 'vacancies', column: 'requirements', broken: `a${BROKEN}os`, fixed: 'años' },
-  { table: 'vacancies', column: 'municipality', broken: `Cuauht${BROKEN}moc`, fixed: 'Cuauhtémoc' },
+  {
+    table: 'notifications',
+    column: 'body',
+    broken: `Suscripci${BROKEN}n`,
+    fixed: 'Suscripción',
+  },
+  {
+    table: 'companies',
+    column: 'economic_sector',
+    broken: `Tecnolog${BROKEN}a`,
+    fixed: 'Tecnología',
+  },
+  {
+    table: 'companies',
+    column: 'company_description',
+    broken: `tecnolog${BROKEN}a`,
+    fixed: 'tecnología',
+  },
+  {
+    table: 'vacancies',
+    column: 'requirements',
+    broken: `a${BROKEN}os`,
+    fixed: 'años',
+  },
+  {
+    table: 'vacancies',
+    column: 'municipality',
+    broken: `Cuauht${BROKEN}moc`,
+    fixed: 'Cuauhtémoc',
+  },
 ];
 
 /**

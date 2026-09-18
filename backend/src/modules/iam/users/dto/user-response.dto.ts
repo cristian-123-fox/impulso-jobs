@@ -148,7 +148,8 @@ export function toUserResponse(
     lastName: user.lastName ?? null,
     phone: user.phone ?? null,
     jobTitle: user.jobTitle ?? null,
-    photoUrl: user.photoUrl ?? profile.candidateProfile?.profilePhotoUrl ?? null,
+    photoUrl:
+      user.photoUrl ?? profile.candidateProfile?.profilePhotoUrl ?? null,
     companyId: profile.companyId ?? null,
     companyName: profile.companyName ?? null,
     companyRole: profile.companyRole ?? null,

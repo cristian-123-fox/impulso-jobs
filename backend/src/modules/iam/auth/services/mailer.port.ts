@@ -14,7 +14,7 @@ export interface EmailVerificationEmail {
 
 /**
  * Puerto de envío de correos. Adaptadores intercambiables (consola en dev,
- * SMTP/Resend en prod) implementan esta interfaz.
+ * SMTP en prod) implementan esta interfaz.
  */
 export interface MailerPort {
   sendPasswordReset(email: PasswordResetEmail): Promise<void>;

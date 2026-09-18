@@ -22,9 +22,7 @@ const ROLE_CODES = ['ADMIN', 'EMPLOYER', 'CANDIDATE'] as const;
  * ⚠️ Tras aplicarla sobre un servidor en marcha hay que **reiniciar el
  * proceso**: `PermissionsService` cachea el mapa rol→permisos en memoria.
  */
-export class AddAccountProfilePermission1720000029000
-  implements MigrationInterface
-{
+export class AddAccountProfilePermission1720000029000 implements MigrationInterface {
   name = 'AddAccountProfilePermission1720000029000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

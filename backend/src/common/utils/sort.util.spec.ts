@@ -19,9 +19,9 @@ describe('buildOrder', () => {
   it('ignora una columna que no está en la lista blanca', () => {
     // El caso que importa: lo que llega por query string no puede acabar
     // en el ORDER BY sólo por venir bien escrito.
-    expect(
-      buildOrder('passwordHash', 'ASC', ALLOWED, FALLBACK),
-    ).toEqual(FALLBACK);
+    expect(buildOrder('passwordHash', 'ASC', ALLOWED, FALLBACK)).toEqual(
+      FALLBACK,
+    );
     expect(
       buildOrder('email; DROP TABLE users', 'ASC', ALLOWED, FALLBACK),
     ).toEqual(FALLBACK);

@@ -2,30 +2,24 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MAILER_PORT, MailerPort } from '@/common/mailer/mailer.port';
 import { ConsoleMailerAdapter } from '@/common/mailer/console-mailer.adapter';
-import { ResendMailerAdapter } from '@/common/mailer/resend-mailer.adapter';
 import { SmtpMailerAdapter } from '@/common/mailer/smtp-mailer.adapter';
 
 /**
  * Elige el adaptador de correo por configuración, en este orden:
- *   1. RESEND_API_KEY → Resend (el proveedor de producción).
- *   2. SMTP_HOST      → SMTP con nodemailer (cuenta de cPanel, legado).
- *   3. nada           → consola (desarrollo): el correo se escribe en el log.
+ *   1. SMTP_HOST → SMTP con nodemailer (Gmail u otro proveedor).
+ *   2. nada      → consola (desarrollo): el correo se escribe en el log.
  *
  * Está fuera del decorador para poder probar la elección sin levantar Nest.
  */
 export function createMailerAdapter(config: ConfigService): MailerPort {
   const logger = new Logger('MailerModule');
 
-  if (config.get<string>('RESEND_API_KEY')) {
-    logger.log('Correo: Resend');
-    return new ResendMailerAdapter(config);
-  }
   if (config.get<string>('SMTP_HOST')) {
     logger.log('Correo: SMTP');
     return new SmtpMailerAdapter(config);
   }
   logger.warn(
-    'Correo: consola — sin RESEND_API_KEY ni SMTP_HOST no se envía nada, sólo se registra en el log',
+    'Correo: consola — sin SMTP_HOST no se envía nada, sólo se registra en el log',
   );
   return new ConsoleMailerAdapter();
 }

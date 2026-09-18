@@ -11,7 +11,7 @@ export interface SendMailOptions {
  * específicos (password-reset, email-verification); ahora es transversal:
  * notificaciones (T21), verificación de correo y reset de contraseña lo usan.
  *
- * Adaptadores intercambiables (consola en dev, SMTP/Resend en prod)
+ * Adaptadores intercambiables (consola en dev, SMTP en prod)
  * implementan esta interfaz.
  */
 export interface MailerPort {

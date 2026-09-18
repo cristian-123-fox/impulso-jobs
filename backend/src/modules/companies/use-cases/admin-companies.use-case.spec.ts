@@ -108,7 +108,7 @@ describe('AdminCompaniesUseCase', () => {
       save: jest.fn(),
       delete: jest.fn(),
       publicUrl: jest.fn((key: string) => `http://localhost/uploads/${key}`),
-    } as unknown as jest.Mocked<PublicFileStoragePort>;
+    };
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
     dataSource = {
       transaction: jest.fn((work: (m: unknown) => Promise<unknown>) =>
