@@ -39,6 +39,8 @@ export class SmtpMailerAdapter implements MailerPort {
         to: options.to,
         subject: options.subject,
         html: options.html,
+        // Con `text` presente, nodemailer arma un `multipart/alternative`.
+        ...(options.text && { text: options.text }),
       });
       this.logger.log(`Correo enviado a ${options.to}: ${options.subject}`);
     } catch (error) {

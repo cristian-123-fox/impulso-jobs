@@ -75,11 +75,7 @@ export class NotificationService {
   ): Promise<void> {
     try {
       const template = notificationTemplate(title, body, link);
-      await this.mailer.send({
-        to: toEmail,
-        subject: template.subject,
-        html: template.html,
-      });
+      await this.mailer.send({ to: toEmail, ...template });
     } catch (error) {
       // Best-effort: un fallo de SMTP no tumba la operación de negocio.
       this.logger.error(

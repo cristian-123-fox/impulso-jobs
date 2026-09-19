@@ -103,11 +103,8 @@ export class RequestEmailVerificationUseCase {
       link,
       VERIFICATION_EXPIRES_MINUTES,
     );
-    await this.mailer.send({
-      to: user.email,
-      subject: template.subject,
-      html: template.html,
-    });
+    // `...template` lleva asunto, HTML y la alternativa en texto plano.
+    await this.mailer.send({ to: user.email, ...template });
 
     await this.audit.record({
       action: 'email_verification.resend.sent',

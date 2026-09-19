@@ -4,6 +4,13 @@ export interface SendMailOptions {
   to: string;
   subject: string;
   html: string;
+  /**
+   * Alternativa en texto plano del mismo contenido. Opcional por compatibilidad,
+   * pero **conviene mandarla siempre**: un correo sólo-HTML pierde puntos en
+   * varios filtros de spam, y hay clientes (y relojes) que no pintan HTML. Las
+   * plantillas de `mailer.templates.ts` ya la devuelven hecha.
+   */
+  text?: string;
 }
 
 /**

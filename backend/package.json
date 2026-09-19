@@ -36,6 +36,7 @@
     "billing:expire": "ts-node -r tsconfig-paths/register src/database/expire-promotions.ts",
     "vacancies:expire": "ts-node -r tsconfig-paths/register src/database/expire-vacancies.ts",
     "views:consolidate": "ts-node -r tsconfig-paths/register src/database/consolidate-vacancy-views.ts",
+    "mail:preview": "ts-node -r tsconfig-paths/register src/common/mailer/preview-emails.ts",
     "migration:run:prod": "node dist/database/run-migrations run",
     "migration:revert:prod": "node dist/database/run-migrations revert",
     "seed:prod": "node dist/database/seed",
