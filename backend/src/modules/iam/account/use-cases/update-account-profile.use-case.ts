@@ -1,6 +1,8 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { DEFAULT_COUNTRY } from '@/common/catalogs/countries';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
+import { resolvePhonePair } from '@/common/validators/candidate-identity.validator';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
   AccountProfileDto,
@@ -16,6 +18,7 @@ export interface UpdateAccountProfileCommand {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  phoneCountry?: string;
   jobTitle?: string;
   ip: string;
   userAgent: string;
@@ -59,8 +62,16 @@ export class UpdateAccountProfileUseCase {
     if (command.lastName !== undefined) {
       user.lastName = command.lastName.trim() || null;
     }
-    if (command.phone !== undefined) {
-      user.phone = command.phone.trim() || null;
+    if (command.phone !== undefined || command.phoneCountry !== undefined) {
+      // Normalizado a E.164 con su país (T36). Un campo en blanco lo borra, y
+      // entonces el país también se va: sin teléfono, sobra.
+      const pair = resolvePhonePair(
+        command.phoneCountry ?? user.phoneCountry ?? DEFAULT_COUNTRY,
+        command.phone !== undefined ? command.phone : user.phone,
+        DEFAULT_COUNTRY,
+      );
+      user.phone = pair.phone;
+      user.phoneCountry = pair.phoneCountry;
     }
     if (command.jobTitle !== undefined) {
       user.jobTitle = command.jobTitle.trim() || null;

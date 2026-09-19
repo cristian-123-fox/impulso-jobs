@@ -30,10 +30,17 @@ import {
   IjIcon,
   IjInput,
   IjOption,
+  IjPhoneInput,
   IjSelect,
   IjSpinner,
   IjTextarea,
 } from '@/shared/ui';
+import { phoneValidator } from '@/shared/validators/phone.validator';
+import {
+  emptyPhoneValue,
+  fromPhonePayload,
+  toPhonePayload,
+} from '@/shared/utils/phone';
 
 const catalog = (items: readonly { code: string; name: string }[]): IjOption[] =>
   items.map((i) => ({ value: i.code, label: i.name }));
@@ -52,6 +59,7 @@ const LOGO_MAX_BYTES = 5 * 1024 * 1024;
     IjIcon,
     IjInput,
     IjSelect,
+    IjPhoneInput,
     IjSpinner,
     IjTextarea,
   ],
@@ -165,7 +173,9 @@ const LOGO_MAX_BYTES = 5 * 1024 * 1024;
           <h3 class="mb-4 text-base font-bold text-ink-900">Contacto</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <ij-input label="Correo corporativo" type="email" formControlName="corporateEmail" />
-            <ij-input label="Teléfono (+52)" type="tel" placeholder="33 1234 5678" formControlName="phoneNumber" />
+            <!-- La empresa sigue siendo mexicana (T36 · D-10): mismo control que
+                 el aspirante, con el país fijo. -->
+            <ij-phone-input label="Teléfono" [lockCountry]="true" formControlName="phoneNumber" />
             <div class="sm:col-span-2">
               <ij-input label="Sitio web" type="url" placeholder="https://empresa.com" formControlName="website" />
             </div>
@@ -238,7 +248,8 @@ export class CompanyProfileComponent {
     economicSector: ['', [Validators.maxLength(120)]],
     companyType: [''],
     corporateEmail: ['', [Validators.email, Validators.maxLength(255)]],
-    phoneNumber: ['', [Validators.maxLength(20)]],
+    // Valor de objeto del control nuevo, con el país fijado a MX (D-10).
+    phoneNumber: [emptyPhoneValue('MX'), [phoneValidator('MX')]],
     website: ['', [Validators.maxLength(255)]],
     country: ['MX', [Validators.maxLength(60)]],
     state: ['', [Validators.required]],
@@ -267,7 +278,7 @@ export class CompanyProfileComponent {
         economicSector: profile.economicSector ?? '',
         companyType: profile.companyType ?? '',
         corporateEmail: profile.corporateEmail ?? '',
-        phoneNumber: profile.phoneNumber ?? '',
+        phoneNumber: fromPhonePayload(profile.phoneNumber, 'MX', 'MX'),
         website: profile.website ?? '',
         country: profile.country,
         state: profile.state,
@@ -375,7 +386,7 @@ export class CompanyProfileComponent {
       economicSector: orNull(v.economicSector),
       companyType: orNull(v.companyType),
       corporateEmail: orNull(v.corporateEmail),
-      phoneNumber: orNull(v.phoneNumber),
+      phoneNumber: toPhonePayload(v.phoneNumber).phone,
       website: orNull(v.website),
       country: orNull(v.country) ?? 'MX',
       state: v.state,

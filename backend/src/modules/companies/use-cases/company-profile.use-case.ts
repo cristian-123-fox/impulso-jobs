@@ -12,7 +12,8 @@ import {
   PUBLIC_FILE_STORAGE,
   type PublicFileStoragePort,
 } from '@/common/storage/public-file-storage.port';
-import { normalizeMxPhone, normalizeRfc } from '@/common/utils/mx-identifiers';
+import { normalizeRfc } from '@/common/utils/mx-identifiers';
+import { normalizePhone } from '@/common/utils/phone.util';
 import { AuditService } from '@/modules/audit/audit.service';
 import { Company } from '@/modules/companies/entities/company.entity';
 import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
@@ -216,10 +217,17 @@ export class CompanyProfileUseCase {
     }
   }
 
+  /**
+   * La empresa **sigue siendo mexicana** (T36 § 11): pasa por el normalizador
+   * nuevo con el país fijado a `MX`, para que haya un solo camino de teléfono
+   * en todo el producto, y el formulario usa `ij-phone-input` con el selector
+   * de país deshabilitado (decisión D-10). El `errorCode` no cambia: el
+   * frontend de empresa ya conmuta sobre `COMPANY_INVALID_PHONE`.
+   */
   private resolvePhone(phone: string | undefined): string | null {
     const value = phone?.trim();
     if (!value) return null;
-    const normalized = normalizeMxPhone(value);
+    const normalized = normalizePhone('MX', value);
     if (!normalized) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,

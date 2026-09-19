@@ -6,6 +6,7 @@ import {
   IsDefined,
   IsEmail,
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
@@ -14,6 +15,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { COUNTRY_CODES } from '@/common/catalogs/countries';
 import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import {
@@ -25,6 +27,9 @@ import { RegisterCandidateDto } from '@/modules/iam/registration/dto/register-ca
 
 const toLower = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
+
+const toUpper = ({ value }: { value: unknown }): unknown =>
+  typeof value === 'string' ? value.trim().toUpperCase() : value;
 
 /**
  * Alta de usuario desde el back-office. A diferencia del registro público
@@ -66,11 +71,20 @@ export class CreateUserDto {
   @MaxLength(80)
   lastName?: string;
 
+  /** Se normaliza a E.164 con `phoneCountry` (T36). */
   @ApiPropertyOptional({ example: '3312345678' })
   @IsOptional()
   @IsString()
-  @MaxLength(20)
+  @MaxLength(25)
   phone?: string;
+
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES], default: 'MX' })
+  @IsOptional()
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], {
+    message: 'El país del teléfono no está disponible.',
+  })
+  phoneCountry?: string;
 
   @ApiPropertyOptional({ example: 'Coordinador de soporte' })
   @IsOptional()

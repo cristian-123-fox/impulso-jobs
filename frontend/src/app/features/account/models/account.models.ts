@@ -14,7 +14,9 @@ export interface AccountProfile {
   lastLogin: string | null;
   firstName: string | null;
   lastName: string | null;
+  /** E.164. Se pinta con su país, que `+1` no distingue (T36). */
   phone: string | null;
+  phoneCountry: string | null;
   jobTitle: string | null;
   photoUrl: string | null;
 }
@@ -23,7 +25,8 @@ export interface AccountProfile {
 export interface UpdateAccountProfilePayload {
   firstName?: string;
   lastName?: string;
-  phone?: string;
+  phone?: string | null;
+  phoneCountry?: string | null;
   jobTitle?: string;
 }
 

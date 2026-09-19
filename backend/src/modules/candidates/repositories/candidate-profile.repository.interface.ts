@@ -18,7 +18,14 @@ export interface ICandidateProfileRepository {
     ids: string[],
     manager?: EntityManager,
   ): Promise<CandidateProfile[]>;
-  existsByDocumentNumber(
+  /**
+   * ¿Hay ya un perfil con ese documento? La unicidad es por
+   * `(document_country, document_type, document_number)` desde T36: un
+   * pasaporte `AB123456` mexicano y uno colombiano son personas distintas.
+   */
+  existsByDocument(
+    documentCountry: string,
+    documentType: string,
     documentNumber: string,
     manager?: EntityManager,
   ): Promise<boolean>;

@@ -382,6 +382,35 @@
     "annual": "Annual"
   },
   "enums": {
+    "country": {
+      "MX": "Mexico",
+      "CO": "Colombia",
+      "US": "United States",
+      "CA": "Canada"
+    },
+    "documentType": {
+      "MX_CURP": "CURP",
+      "MX_RFC": "RFC",
+      "MX_INE": "Voter ID (INE)",
+      "CO_CC": "Citizenship ID (cédula)",
+      "CO_CE": "Foreigner ID (cédula de extranjería)",
+      "CO_PPT": "Temporary Protection Permit (PPT)",
+      "US_DL": "Driver's License / State ID",
+      "CA_DL": "Driver's Licence / Provincial ID",
+      "PASSPORT": "Passport"
+    },
+    "subdivisionLabel": {
+      "MX": "State",
+      "CO": "Department",
+      "US": "State",
+      "CA": "Province or territory"
+    },
+    "localityLabel": {
+      "MX": "Municipality",
+      "CO": "Municipality",
+      "US": "City",
+      "CA": "City"
+    },
     "employmentType": {
       "FULL_TIME": "Full time",
       "PART_TIME": "Part time",
@@ -595,7 +624,11 @@
   },
   "ui": {
     "search": "Search…",
-    "noResults": "No results"
+    "noResults": "No results",
+    "phone": {
+      "countryLabel": "Phone country",
+      "search": "Search country…"
+    }
   },
   "validation": {
     "required": "This field is required.",
@@ -606,6 +639,10 @@
     "max": "The maximum value is {{value}}.",
     "pattern": "The format is not valid.",
     "invalid": "The value is not valid.",
+    "phone": "That phone number is not valid for the selected country.",
+    "documentNumber": "The document number does not have the expected format.",
+    "documentCountry": "That document type does not apply to the selected country.",
+    "subdivision": "Pick an option from the selected country.",
     "passwordPolicy": "At least 8 characters, with an uppercase letter, a lowercase letter, a number and a special character."
   },
   "auth": {
@@ -717,6 +754,12 @@
         "lastName": "Last name(s)",
         "lastNamePlaceholder": "García",
         "lastNameError": "The last name is required.",
+        "country": "Country",
+        "countryError": "Select your country.",
+        "countryHint": "It sets the ID type and the list of states.",
+        "documentCountry": "Issuing country",
+        "phone": "Phone (optional)",
+        "phoneError": "Check the phone number for the selected country.",
         "documentType": "ID type",
         "documentTypeError": "Select the ID type.",
         "documentNumber": "ID number",

@@ -4,6 +4,8 @@ export interface CandidateProfile {
   email: string;
   firstName: string;
   lastName: string;
+  /** País emisor del documento (T36). El documento es de sólo lectura aquí. */
+  documentCountry: string;
   documentType: string;
   documentNumber: string;
   birthDate: string;
@@ -11,9 +13,13 @@ export interface CandidateProfile {
   summary: string | null;
   address: string | null;
   profilePhotoUrl: string | null;
+  /** ISO 3166-1 alpha-2 (`MX`, `CO`, `US`, `CA`). */
   country: string;
   state: string;
   municipality: string;
+  /** E.164. Editable por el propio aspirante desde T36. */
+  phone: string | null;
+  phoneCountry: string | null;
   completion: number;
 }
 
@@ -70,6 +76,8 @@ export interface CandidateProfilePayload {
   state: string;
   municipality: string;
   birthDate: string;
+  phone?: string | null;
+  phoneCountry?: string | null;
 }
 
 export interface CandidatePhotoPayload {

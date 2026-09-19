@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsEmail,
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
@@ -20,12 +21,15 @@ import {
   PASSWORD_POLICY_REGEX,
 } from '@/common/utils/password-policy';
 import { CompanyMemberRole } from '@/modules/companies/enums/company-member-role.enum';
-import { MX_STATE_CODES } from '@/common/catalogs/mx-states';
+import { COUNTRY_CODES } from '@/common/catalogs/countries';
 import { CURP_REGEX } from '@/common/utils/mx-identifiers';
 import { DOCUMENT_TYPES } from '@/modules/candidates/enums/document-type.enum';
 
 const toLower = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim().toLowerCase() : value;
+
+const toUpper = ({ value }: { value: unknown }): unknown =>
+  typeof value === 'string' ? value.trim().toUpperCase() : value;
 
 /** Datos del perfil del candidato editables desde el back-office. */
 export class UpdateCandidateProfileDto {
@@ -41,9 +45,19 @@ export class UpdateCandidateProfileDto {
   @MaxLength(80)
   lastName?: string;
 
-  @ApiPropertyOptional({ enum: DOCUMENT_TYPES })
+  /** País emisor del documento. Si no viene, el de residencia del perfil. */
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES] })
   @IsOptional()
-  @IsString()
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], {
+    message: 'El país del documento no está disponible.',
+  })
+  documentCountry?: string;
+
+  @ApiPropertyOptional({ enum: [...DOCUMENT_TYPES] })
+  @IsOptional()
+  @Transform(toUpper)
+  @IsIn([...DOCUMENT_TYPES], { message: 'El tipo de documento no es válido.' })
   documentType?: string;
 
   @ApiPropertyOptional({ example: '1234567890' })
@@ -73,9 +87,25 @@ export class UpdateCandidateProfileDto {
   @MaxLength(120)
   professionalTitle?: string;
 
-  @ApiPropertyOptional({ enum: MX_STATE_CODES })
+  /** País de residencia. Manda sobre `state`: la lista depende de él. */
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES] })
   @IsOptional()
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], { message: 'El país no está disponible.' })
+  country?: string;
+
+  /**
+   * Código de la subdivisión. **Hasta T36 esto prometía en Swagger una lista
+   * cerrada de estados mexicanos y el validador era `@IsString()` a secas**: la
+   * documentación decía una cosa y el código no comprobaba nada. Ahora la
+   * comprobación real la hace el caso de uso contra el país del perfil
+   * (`isValidSubdivision`), porque la lista válida depende de otro campo.
+   */
+  @ApiPropertyOptional({ example: 'JAL' })
+  @IsOptional()
+  @Transform(toUpper)
   @IsString()
+  @MaxLength(10)
   state?: string;
 
   @ApiPropertyOptional({ example: 'Zapopan' })
@@ -87,8 +117,16 @@ export class UpdateCandidateProfileDto {
   @ApiPropertyOptional({ example: '3312345678' })
   @IsOptional()
   @IsString()
-  @MaxLength(20)
+  @MaxLength(25)
   phone?: string;
+
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES] })
+  @IsOptional()
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], {
+    message: 'El país del teléfono no está disponible.',
+  })
+  phoneCountry?: string;
 }
 
 /** Edición administrativa de una cuenta. Todo es opcional (patch parcial). */
@@ -141,8 +179,16 @@ export class UpdateUserDto {
   @ApiPropertyOptional({ example: '3312345678' })
   @IsOptional()
   @IsString()
-  @MaxLength(20)
+  @MaxLength(25)
   phone?: string;
+
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES], default: 'MX' })
+  @IsOptional()
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], {
+    message: 'El país del teléfono no está disponible.',
+  })
+  phoneCountry?: string;
 
   @ApiPropertyOptional({ example: 'Coordinador de soporte' })
   @IsOptional()

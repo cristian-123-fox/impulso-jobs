@@ -27,6 +27,8 @@ export class CandidatesFacade {
   readonly pages = signal(1);
 
   readonly search = signal('');
+  /** Filtro de país (T36). Sin él, el de subdivisión mezclaría países. */
+  readonly countryCode = signal('');
   readonly stateCode = signal('');
   readonly skill = signal('');
   readonly onlyAvailable = signal(false);
@@ -40,6 +42,7 @@ export class CandidatesFacade {
         page,
         limit: PAGE_SIZE,
         search: this.search().trim() || undefined,
+        country: this.countryCode() || undefined,
         state: this.stateCode() || undefined,
         skill: this.skill().trim() || undefined,
         immediatelyAvailable: this.onlyAvailable() || undefined,
@@ -63,6 +66,7 @@ export class CandidatesFacade {
 
   clearFilters(): void {
     this.search.set('');
+    this.countryCode.set('');
     this.stateCode.set('');
     this.skill.set('');
     this.onlyAvailable.set(false);

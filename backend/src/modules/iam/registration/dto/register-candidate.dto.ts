@@ -9,7 +9,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { MX_STATE_CODES } from '@/common/catalogs/mx-states';
+import { COUNTRY_CODES } from '@/common/catalogs/countries';
 import { CURP_REGEX } from '@/common/utils/mx-identifiers';
 import {
   DOCUMENT_TYPES,
@@ -19,6 +19,15 @@ import {
 const toUpper = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim().toUpperCase() : value;
 
+/**
+ * Datos del aspirante en el registro. Desde T36 admite **MX, CO, US y CA**.
+ *
+ * Aquí se valida la **forma** de cada campo por separado. Las reglas cruzadas
+ * —que la subdivisión sea de ese país y que el tipo de documento lo emita ese
+ * país— viven en `common/validators/candidate-identity.validator.ts` y las
+ * aplica el caso de uso, porque cada una tiene que llegar al frontend con su
+ * propio `errorCode` (`INVALID_SUBDIVISION`, `INVALID_DOCUMENT_NUMBER`).
+ */
 export class RegisterCandidateDto {
   @ApiProperty({ example: 'Ana' })
   @IsString()
@@ -32,7 +41,30 @@ export class RegisterCandidateDto {
   @MaxLength(80)
   lastName!: string;
 
+  /**
+   * País de residencia. Obligatorio: es lo que condiciona la subdivisión y la
+   * lista de documentos, así que ya no puede venir quemado como `'MX'`.
+   */
+  @ApiProperty({ enum: [...COUNTRY_CODES], example: 'MX' })
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], { message: 'El país no está disponible.' })
+  country!: string;
+
+  /**
+   * País emisor del documento. Si no viene, se toma el de residencia — que es
+   * el caso normal; se separa porque un residente en Estados Unidos puede
+   * identificarse con su pasaporte mexicano.
+   */
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES], example: 'MX' })
+  @IsOptional()
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], {
+    message: 'El país del documento no está disponible.',
+  })
+  documentCountry?: string;
+
   @ApiProperty({ enum: [...DOCUMENT_TYPES] })
+  @Transform(toUpper)
   @IsIn([...DOCUMENT_TYPES], { message: 'El tipo de documento no es válido.' })
   documentType!: DocumentType;
 
@@ -42,6 +74,7 @@ export class RegisterCandidateDto {
   @MaxLength(40)
   documentNumber!: string;
 
+  /** Sólo tiene sentido para México; el resto de países la ignoran. */
   @ApiPropertyOptional({ example: 'GARA900520HDFXXX01' })
   @IsOptional()
   @Transform(toUpper)
@@ -61,28 +94,44 @@ export class RegisterCandidateDto {
   @MaxLength(120)
   professionalTitle?: string;
 
-  @ApiPropertyOptional({ example: 'MX' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(60)
-  country?: string;
-
+  /**
+   * Código de la subdivisión de primer nivel: estado (MX/US), departamento (CO)
+   * o provincia/territorio (CA). **No se valida contra una lista fija aquí**:
+   * la lista depende del país (`isValidSubdivision`), y los códigos colisionan
+   * entre países (`GUA`, `DC`).
+   */
   @ApiProperty({
     example: 'JAL',
-    description: 'Código de estado (ISO 3166-2:MX).',
+    description: 'Código de la subdivisión, dentro del país indicado.',
   })
-  @IsIn([...MX_STATE_CODES], { message: 'El estado no es válido.' })
+  @Transform(toUpper)
+  @IsString()
+  @IsNotEmpty({ message: 'La subdivisión es obligatoria.' })
+  @MaxLength(10)
   state!: string;
 
   @ApiProperty({ example: 'Zapopan' })
   @IsString()
-  @IsNotEmpty({ message: 'El municipio es obligatorio.' })
+  @IsNotEmpty({ message: 'El municipio o la ciudad es obligatorio.' })
   @MaxLength(120)
   municipality!: string;
 
+  /** Se normaliza a E.164 con `phoneCountry` antes de guardar. */
   @ApiPropertyOptional({ example: '3312345678' })
   @IsOptional()
   @IsString()
-  @MaxLength(20)
+  @MaxLength(25)
   phone?: string;
+
+  /**
+   * País del teléfono. Si no viene, se toma el de residencia. Es columna aparte
+   * porque `+1` es Estados Unidos **y** Canadá (D-1).
+   */
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES], example: 'MX' })
+  @IsOptional()
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], {
+    message: 'El país del teléfono no está disponible.',
+  })
+  phoneCountry?: string;
 }

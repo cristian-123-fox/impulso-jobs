@@ -13,23 +13,39 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { CandidateProfileFacade } from '@/features/candidate/data/candidate-profile.facade';
 import {
   CandidateEducation,
   CandidateExperience,
   CandidateLanguage,
+  CandidateProfile,
   CandidateSkill,
   EDUCATION_LEVEL_OPTIONS,
   LANGUAGE_LEVEL_OPTIONS,
   SKILL_LEVEL_OPTIONS,
 } from '@/features/candidate/models/candidate-profile.models';
-import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import {
+  type CountryCode,
+  DEFAULT_COUNTRY,
+  countryByCode,
+  countryOptions,
+  subdivisionOptions,
+} from '@/shared/catalogs/countries.catalogs';
+import { subdivisionValidator } from '@/shared/validators/identity-document.validator';
+import { phoneValidator } from '@/shared/validators/phone.validator';
+import {
+  emptyPhoneValue,
+  fromPhonePayload,
+  toPhonePayload,
+} from '@/shared/utils/phone';
 import {
   IjButton,
   IjDatepicker,
   IjIcon,
   IjInput,
   IjOption,
+  IjPhoneInput,
   IjSelect,
   IjTextarea,
 } from '@/shared/ui';
@@ -56,6 +72,7 @@ const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
     IjTextarea,
     IjSelect,
     IjDatepicker,
+    IjPhoneInput,
   ],
   host: { class: 'block' },
   template: `
@@ -191,7 +208,7 @@ const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
                 </div>
                 <div>
                   <label class="{{ labelClass }}">Documento</label>
-                  <input [value]="profile.documentType + ' · ' + profile.documentNumber" [class]="inputClass" readonly />
+                  <input [value]="documentLabel(profile)" [class]="inputClass" readonly />
                 </div>
                 <ij-input label="Título profesional" formControlName="professionalTitle" />
                 <ij-datepicker label="Fecha de nacimiento" [required]="true" [max]="today" formControlName="birthDate" />
@@ -201,11 +218,10 @@ const PHOTO_MAX_BYTES = 5 * 1024 * 1024;
                 <div class="md:col-span-2">
                   <ij-input label="Dirección" formControlName="address" />
                 </div>
-                <ij-input label="País" formControlName="country" />
-                <ij-select label="Estado" [required]="true" [options]="stateOptions" formControlName="state" />
-                <div class="md:col-span-2">
-                  <ij-input label="Municipio" [required]="true" formControlName="municipality" />
-                </div>
+                <ij-select label="País" [required]="true" [options]="countryList()" formControlName="country" />
+                <ij-select [label]="subdivisionLabel()" [required]="true" [options]="stateOptions()" formControlName="state" />
+                <ij-input [label]="localityLabel()" [required]="true" formControlName="municipality" />
+                <ij-phone-input label="Teléfono" [defaultCountry]="country()" formControlName="phone" />
                 <div class="md:col-span-2 flex justify-end">
                   <button ij-button type="submit" shape="rounded" [disabled]="profileForm.invalid || submitting()">
                     {{ submitting() ? 'Guardando...' : 'Guardar información' }}
@@ -538,6 +554,7 @@ export class CandidateProfileComponent {
   protected readonly facade = inject(CandidateProfileFacade);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(AppTranslateService);
 
   protected readonly labelClass = LABEL;
   protected readonly inputClass = INPUT;
@@ -545,10 +562,21 @@ export class CandidateProfileComponent {
   protected readonly languageOptions = LANGUAGE_LEVEL_OPTIONS;
   protected readonly skillOptions = SKILL_LEVEL_OPTIONS;
   protected readonly today = new Date().toISOString().slice(0, 10);
-  protected readonly stateOptions: IjOption[] = MX_STATES.map((s) => ({
-    value: s.code,
-    label: s.name,
-  }));
+  /** País del perfil. Espeja el control para que los `computed` reaccionen. */
+  protected readonly country = signal<CountryCode>(DEFAULT_COUNTRY);
+  protected readonly countryList = computed(() =>
+    countryOptions((code) => this.i18n.enumLabel('country', code)),
+  );
+  /** Las subdivisiones no se traducen: van en su idioma oficial (T36 · D-9). */
+  protected readonly stateOptions = computed(() =>
+    subdivisionOptions(this.country()),
+  );
+  protected readonly subdivisionLabel = computed(() =>
+    this.i18n.enumLabel('subdivisionLabel', this.country()),
+  );
+  protected readonly localityLabel = computed(() =>
+    this.i18n.enumLabel('localityLabel', this.country()),
+  );
   protected readonly skillSelectOptions: IjOption[] = [
     { value: '', label: 'Sin especificar' },
     ...SKILL_LEVEL_OPTIONS,
@@ -586,10 +614,13 @@ export class CandidateProfileComponent {
     professionalTitle: ['', [Validators.maxLength(120)]],
     summary: ['', [Validators.maxLength(1000)]],
     address: ['', [Validators.maxLength(255)]],
-    country: ['MX', [Validators.required, Validators.maxLength(2)]],
-    state: ['', [Validators.required, Validators.maxLength(10)]],
+    // ISO 3166-1 alpha-2 y lista cerrada: era un campo de texto libre con
+    // `maxLength(2)`, así que cualquier par de letras pasaba (T36 · D3).
+    country: [DEFAULT_COUNTRY as string, [Validators.required]],
+    state: ['', [Validators.required, subdivisionValidator(DEFAULT_COUNTRY)]],
     municipality: ['', [Validators.required, Validators.maxLength(120)]],
     birthDate: ['', [Validators.required]],
+    phone: [emptyPhoneValue(DEFAULT_COUNTRY), [phoneValidator()]],
   });
 
   protected readonly experienceForm = this.fb.group({
@@ -641,8 +672,30 @@ export class CandidateProfileComponent {
         state: profile.state,
         municipality: profile.municipality,
         birthDate: profile.birthDate,
+        phone: fromPhonePayload(
+          profile.phone,
+          profile.phoneCountry,
+          (profile.country as CountryCode) ?? DEFAULT_COUNTRY,
+        ),
       });
+      this.syncCountry(profile.country);
     });
+
+    // Cambiar de país rehace la lista de subdivisiones y **limpia la elegida**:
+    // los códigos colisionan entre países, así que dejarla sería guardar una
+    // ubicación que no existe.
+    this.profileForm.controls.country.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        this.syncCountry(value);
+        const state = this.profileForm.controls.state;
+        state.setValue('', { emitEvent: false });
+        state.setValidators([
+          Validators.required,
+          subdivisionValidator(this.country()),
+        ]);
+        state.updateValueAndValidity({ emitEvent: false });
+      });
 
     this.experienceForm.controls.isCurrent.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -808,10 +861,24 @@ export class CandidateProfileComponent {
     this.submitting.set(false);
   }
 
+  /** Mantiene la señal de país al día; es de quien cuelgan las listas. */
+  private syncCountry(value: string | null | undefined): void {
+    this.country.set(
+      (countryByCode(value)?.code ?? DEFAULT_COUNTRY) as CountryCode,
+    );
+  }
+
+  /** «CURP · GARA900520…», con la etiqueta traducida del tipo de documento. */
+  protected documentLabel(profile: CandidateProfile): string {
+    const type = this.i18n.enumLabel('documentType', profile.documentType);
+    return `${type} · ${profile.documentNumber}`;
+  }
+
   protected saveProfile(): void {
     if (this.profileForm.invalid) return;
+    const { phone, ...rest } = this.profileForm.getRawValue();
     this.runMutation(
-      this.facade.saveProfile(this.profileForm.getRawValue()),
+      this.facade.saveProfile({ ...rest, ...toPhonePayload(phone) }),
       'Información actualizada.',
       () => this.reload(),
     );

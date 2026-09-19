@@ -6,6 +6,7 @@ import {
 } from '@/common/dto/paginated-response.dto';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
+import { requireSubdivision } from '@/common/validators/candidate-identity.validator';
 import { AuditService } from '@/modules/audit/audit.service';
 import { CandidateProfileSettings } from '@/modules/candidates/entities/candidate-profile-settings.entity';
 import { InformationVisibility } from '@/modules/candidates/enums/candidate-settings.enum';
@@ -70,6 +71,8 @@ export interface TalentActor {
 
 export interface SearchCandidatesCommand extends TalentActor {
   search?: string;
+  /** País del aspirante (T36). Da sentido a `state`, cuyos códigos colisionan. */
+  country?: string;
   state?: string;
   municipality?: string;
   educationLevel?: string;
@@ -129,9 +132,17 @@ export class CandidateSearchUseCase {
   ): Promise<SearchCandidatesResult> {
     const company = await this.companyOwnership.requireCompany(command.userId);
 
+    // Filtrar por subdivisión sin país devolvería mezcla: `GUA` es Guanajuato
+    // y Guainía a la vez. Si se pide una subdivisión que no es del país, no hay
+    // nada que devolver y se dice con un 400, no con una lista vacía.
+    if (command.state && command.country) {
+      requireSubdivision(command.country, command.state);
+    }
+
     const [rows, total] = await this.candidates.search({
       companyId: company.id,
       search: command.search,
+      country: command.country,
       state: command.state,
       municipality: command.municipality,
       educationLevel: command.educationLevel,

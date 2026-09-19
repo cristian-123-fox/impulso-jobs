@@ -1,5 +1,13 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  output,
+} from '@angular/core';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
+import { subdivisionName } from '@/shared/catalogs/countries.catalogs';
 import { IjIcon } from '@/shared/ui';
 import {
   CandidateDetail,
@@ -35,7 +43,7 @@ import {
           </h3>
           <p class="text-[13.5px] text-muted">
             {{ data.professionalTitle || 'Sin título profesional' }} ·
-            {{ data.municipality }}, {{ data.state }}
+            {{ location(data) }}
           </p>
           <div class="mt-2 flex flex-wrap gap-1.5">
             @if (data.isImmediatelyAvailable) {
@@ -191,6 +199,22 @@ export class CandidateDetailView {
   /** CV que se está descargando, para bloquear su fila mientras tanto. */
   readonly busyResumeId = input<string | null>(null);
   readonly openResume = output<CandidateResumeSummary>();
+
+  private readonly i18n = inject(AppTranslateService);
+
+  /**
+   * «Medellín, Antioquia · Colombia». El nombre sale de `subdivisionName(país,
+   * código)`: `GUA` es Guanajuato en México y Guainía en Colombia, así que sin
+   * el país la ficha diría el sitio equivocado (T36 · R2).
+   */
+  protected location(candidate: CandidateDetail): string {
+    const state = subdivisionName(candidate.country, candidate.state);
+    const country = this.i18n.enumLabel('country', candidate.country);
+    const place = [candidate.municipality, state ?? candidate.state]
+      .filter(Boolean)
+      .join(', ');
+    return country ? `${place} · ${country}` : place;
+  }
 
   protected initials(candidate: CandidateDetail): string {
     return (candidate.firstName[0] ?? '?')

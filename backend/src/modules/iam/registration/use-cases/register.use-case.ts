@@ -6,6 +6,10 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role as PlatformRole } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { runInTransaction } from '@/common/utils/transaction.util';
+import {
+  type CheckedCandidateIdentity,
+  checkCandidateIdentity,
+} from '@/common/validators/candidate-identity.validator';
 import { AuditService } from '@/modules/audit/audit.service';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import {
@@ -59,13 +63,22 @@ export interface RegisterCandidateData {
   lastName: string;
   documentType: DocumentType;
   documentNumber: string;
+  /** País emisor del documento. Si falta, el de residencia. */
+  documentCountry?: string;
   curp?: string;
   birthDate: string;
   professionalTitle?: string;
-  country?: string;
+  /**
+   * ISO 3166-1 alpha-2 del país de residencia (MX, CO, US, CA). **Obligatorio**
+   * desde T36: es lo que decide qué subdivisiones y qué documentos valen, y
+   * dejarlo opcional invitaba a volver al `'MX'` por omisión.
+   */
+  country: string;
   state: string;
   municipality: string;
   phone?: string;
+  /** País del teléfono. Si falta, el de residencia. */
+  phoneCountry?: string;
 }
 
 export interface RegisterCommand {
@@ -147,6 +160,7 @@ export class RegisterUseCase {
 
     // Validaciones/duplicados específicos por tipo (antes de la transacción).
     let companyRfc = '';
+    let identity: CheckedCandidateIdentity | null = null;
     if (command.accountType === 'company') {
       const data = command.company;
       if (!data) throw this.missingProfile('empresa');
@@ -161,8 +175,15 @@ export class RegisterUseCase {
     } else {
       const data = command.candidate;
       if (!data) throw this.missingProfile('candidato');
+      // País, subdivisión, documento y teléfono en un solo sitio (T36 § 5.3):
+      // el país llega del formulario y ya no se da por supuesto que es MX.
+      identity = checkCandidateIdentity(data);
       if (
-        await this.candidates.existsByDocumentNumber(data.documentNumber.trim())
+        await this.candidates.existsByDocument(
+          identity.documentCountry,
+          identity.documentType,
+          identity.documentNumber,
+        )
       ) {
         throw new AppException(
           HttpStatus.CONFLICT,
@@ -217,18 +238,25 @@ export class RegisterUseCase {
         await this.companyUsers.save(member, manager);
       } else {
         const data = command.candidate!;
+        const checked = identity!;
         const profile = new CandidateProfile();
         profile.userId = saved.id;
         profile.firstName = data.firstName.trim();
         profile.lastName = data.lastName.trim();
-        profile.documentType = data.documentType;
-        profile.documentNumber = data.documentNumber.trim();
+        profile.documentCountry = checked.documentCountry;
+        profile.documentType = checked.documentType as DocumentType;
+        profile.documentNumber = checked.documentNumber;
         profile.curp = data.curp?.trim().toUpperCase() || null;
         profile.birthDate = data.birthDate;
         profile.professionalTitle = data.professionalTitle?.trim() || null;
-        profile.country = data.country?.trim() || 'MX';
-        profile.state = data.state;
+        profile.country = checked.country;
+        profile.state = checked.state;
         profile.municipality = data.municipality.trim();
+        // ⚠️ El teléfono del registro **no se guardaba** hasta T36: el DTO lo
+        // aceptaba y esta construcción lo ignoraba, así que el campo se
+        // rellenaba y se perdía. Hay un test que lo cubre.
+        profile.phone = checked.phone;
+        profile.phoneCountry = checked.phoneCountry;
         await this.candidates.save(profile, manager);
       }
 

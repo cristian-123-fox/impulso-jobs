@@ -50,12 +50,14 @@ const candidateCommand = (): RegisterCommand => ({
   candidate: {
     firstName: 'Ana',
     lastName: 'García',
-    documentType: DocumentType.CURP,
+    country: 'MX',
+    documentType: DocumentType.MX_CURP,
     documentNumber: 'GARA900520MJCXXX09',
     curp: 'GARA900520MJCXXX09',
     birthDate: '1990-05-20',
     state: 'JAL',
     municipality: 'Zapopan',
+    phone: '33 1234 5678',
   },
   ip: '127.0.0.1',
   userAgent: 'jest',
@@ -102,7 +104,7 @@ describe('RegisterUseCase', () => {
     };
     companyUsers = { save: jest.fn((m) => Promise.resolve(m)) };
     candidates = {
-      existsByDocumentNumber: jest.fn().mockResolvedValue(false),
+      existsByDocument: jest.fn().mockResolvedValue(false),
       save: jest.fn((p) => Promise.resolve(p)),
     };
     hasher = {
@@ -168,6 +170,100 @@ describe('RegisterUseCase', () => {
     expect(requestVerification.execute).toHaveBeenCalledTimes(1);
   });
 
+  it('persiste el teléfono del registro, normalizado a E.164', async () => {
+    // Hasta T36 el DTO aceptaba `phone` y esta construcción del perfil no lo
+    // asignaba: el campo se rellenaba y se perdía sin avisar. Sin este test la
+    // regresión vuelve a la primera refactorización.
+    await useCase.execute(candidateCommand());
+
+    expect(candidates.save).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: '+523312345678', phoneCountry: 'MX' }),
+      expect.anything(),
+    );
+  });
+
+  it('guarda el país del documento y la subdivisión en mayúsculas', async () => {
+    const command = candidateCommand();
+    command.candidate!.state = 'jal';
+    await useCase.execute(command);
+
+    expect(candidates.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        country: 'MX',
+        documentCountry: 'MX',
+        state: 'JAL',
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('registra un aspirante colombiano con cédula de ciudadanía', async () => {
+    const command = candidateCommand();
+    command.candidate = {
+      ...command.candidate!,
+      country: 'CO',
+      state: 'ANT',
+      municipality: 'Medellín',
+      documentType: 'CO_CC' as DocumentType,
+      documentNumber: '1.020.123.456',
+      curp: undefined,
+      phone: '3101234567',
+    };
+    await useCase.execute(command);
+
+    expect(candidates.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        country: 'CO',
+        documentCountry: 'CO',
+        documentType: 'CO_CC',
+        // El número se normaliza: los puntos de la cédula no se guardan.
+        documentNumber: '1020123456',
+        phone: '+573101234567',
+        phoneCountry: 'CO',
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('rechaza un documento que no aplica al país (CURP con país Colombia)', async () => {
+    const command = candidateCommand();
+    command.candidate = { ...command.candidate!, country: 'CO', state: 'ANT' };
+    const thrown = await useCase.execute(command).catch((e: unknown) => e);
+
+    expect(errorCodeOf(thrown)).toBe(ErrorCode.INVALID_DOCUMENT_NUMBER);
+    expect(users.save).not.toHaveBeenCalled();
+  });
+
+  it('rechaza una subdivisión que no es del país', async () => {
+    const command = candidateCommand();
+    // JAL es de México; con país Colombia no existe.
+    command.candidate = { ...command.candidate!, country: 'CO' };
+    const thrown = await useCase.execute(command).catch((e: unknown) => e);
+
+    expect(errorCodeOf(thrown)).toBe(ErrorCode.INVALID_SUBDIVISION);
+    expect(users.save).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un país fuera del alcance', async () => {
+    const command = candidateCommand();
+    command.candidate = { ...command.candidate!, country: 'AR' };
+    const thrown = await useCase.execute(command).catch((e: unknown) => e);
+
+    expect(errorCodeOf(thrown)).toBe(ErrorCode.UNSUPPORTED_COUNTRY);
+    expect(users.save).not.toHaveBeenCalled();
+  });
+
+  it('busca el duplicado por país, tipo y número de documento', async () => {
+    // El mismo número en países distintos son personas distintas (D-3).
+    await useCase.execute(candidateCommand());
+
+    expect(candidates.existsByDocument).toHaveBeenCalledWith(
+      'MX',
+      'MX_CURP',
+      'GARA900520MJCXXX09',
+    );
+  });
+
   it('normaliza el RFC a mayúsculas al verificar duplicados y guardar', async () => {
     const command = companyCommand();
     command.company!.rfc = 'ita160101ab2';
@@ -199,7 +295,7 @@ describe('RegisterUseCase', () => {
   });
 
   it('rechaza document_number duplicado', async () => {
-    candidates.existsByDocumentNumber.mockResolvedValue(true);
+    candidates.existsByDocument.mockResolvedValue(true);
     const thrown = await useCase
       .execute(candidateCommand())
       .catch((e: unknown) => e);

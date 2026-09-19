@@ -15,8 +15,10 @@ import {
   ContactFormValue,
   ContactInfoCard,
 } from '@/features/public/contact/models/contact.models';
-import { IjButton, IjIcon, IjInput, IjTextarea } from '@/shared/ui';
+import { IjButton, IjIcon, IjInput, IjPhoneInput, IjTextarea } from '@/shared/ui';
 import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
+import { phoneRequiredValidator } from '@/shared/validators/phone.validator';
+import { emptyPhoneValue, toPhonePayload } from '@/shared/utils/phone';
 
 /**
  * Sección principal de contacto: formulario reactivo tipado + canales de apoyo.
@@ -30,6 +32,7 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
     IjButton,
     IjIcon,
     IjInput,
+    IjPhoneInput,
     IjTextarea,
     TranslocoDirective,
   ],
@@ -69,7 +72,9 @@ import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
                 [error]="fieldInvalid('name') ? t('contact.form.nameError') : null" formControlName="name" />
               <ij-input [label]="t('contact.form.email')" type="email" [placeholder]="t('contact.form.emailPlaceholder')" [required]="true"
                 [error]="fieldInvalid('email') ? t('contact.form.emailError') : null" formControlName="email" />
-              <ij-input [label]="t('contact.form.phone')" type="tel" [placeholder]="t('contact.form.phonePlaceholder')" [required]="true"
+              <!-- Aquí sí los cuatro países: quien escribe puede ser un
+                   aspirante de Bogotá o de Toronto (T36 § 7.2). -->
+              <ij-phone-input [label]="t('contact.form.phone')" [required]="true"
                 [error]="fieldInvalid('phone') ? t('contact.form.phoneError') : null" formControlName="phone" />
               <ij-input [label]="t('contact.form.subject')" [placeholder]="t('contact.form.subjectPlaceholder')" [required]="true"
                 [error]="fieldInvalid('subject') ? t('contact.form.subjectError') : null" formControlName="subject" />
@@ -168,7 +173,9 @@ export class ContactFormSection {
   protected readonly form = this.fb.group({
     name: this.fb.control('', [Validators.required, Validators.minLength(2)]),
     email: this.fb.control('', [Validators.required, Validators.email]),
-    phone: this.fb.control('', [Validators.required, Validators.minLength(7)]),
+    // `Validators.required` no sirve con el valor de objeto del control: vería
+    // siempre un objeto no nulo. De eso se encarga `phoneRequiredValidator`.
+    phone: this.fb.control(emptyPhoneValue(), [phoneRequiredValidator()]),
     subject: this.fb.control('', [Validators.required, Validators.minLength(4)]),
     message: this.fb.control('', [Validators.required, Validators.minLength(20)]),
   });
@@ -186,11 +193,17 @@ export class ContactFormSection {
       return;
     }
 
-    this.formSubmitted.emit(this.form.getRawValue());
+    const value = this.form.getRawValue();
+    // El correo que se abre lleva el teléfono ya en E.164, con su indicativo:
+    // es lo que hace falta para devolver la llamada a Bogotá o a Toronto.
+    this.formSubmitted.emit({
+      ...value,
+      phone: toPhonePayload(value.phone).phone ?? '',
+    });
     this.form.reset({
       name: '',
       email: '',
-      phone: '',
+      phone: emptyPhoneValue(),
       subject: '',
       message: '',
     });

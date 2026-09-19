@@ -22,7 +22,13 @@ import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import { RegisterStatus } from '@/features/public/auth/models/auth.models';
 import { AuthStepper } from '@/features/public/auth/components/auth-stepper/auth-stepper';
-import { DOCUMENT_TYPES, MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import {
+  type CountryCode,
+  DEFAULT_COUNTRY,
+  countryOptions,
+  documentOptions,
+  subdivisionOptions,
+} from '@/shared/catalogs/countries.catalogs';
 import { passwordPolicyValidator } from '@/shared/validators/password.validator';
 import { passwordsMatchValidator } from '@/shared/validators/passwords-match.validator';
 import {
@@ -30,21 +36,48 @@ import {
   notFutureDateValidator,
 } from '@/shared/validators/mx-identifiers.validator';
 import {
+  documentNumberValidator,
+  subdivisionValidator,
+} from '@/shared/validators/identity-document.validator';
+import { phoneValidator } from '@/shared/validators/phone.validator';
+import { emptyPhoneValue, toPhonePayload } from '@/shared/utils/phone';
+import {
   IjButton,
   IjDatepicker,
   IjIcon,
   IjInput,
-  IjOption,
+  IjPhoneInput,
   IjSelect,
 } from '@/shared/ui';
 
+/**
+ * Controles que valida cada paso del asistente.
+ *
+ * ⚠️ **Si se añade un campo y no se apunta aquí, el paso valida de menos** y el
+ * asistente deja avanzar con el campo vacío: es un fallo silencioso. `country`
+ * va en el paso 2 y **antes del documento**, porque es lo que decide qué
+ * documentos y qué subdivisiones son válidos (T36 § 7.3).
+ */
 const STEP_CONTROLS: string[][] = [
   ['email', 'password', 'confirmPassword'],
-  ['firstName', 'lastName', 'documentType', 'documentNumber', 'curp', 'birthDate'],
-  ['state', 'municipality'],
+  [
+    'country',
+    'firstName',
+    'lastName',
+    'documentCountry',
+    'documentType',
+    'documentNumber',
+    'curp',
+    'birthDate',
+  ],
+  ['state', 'municipality', 'phone'],
 ];
 
-/** Registro de candidato (HU-006) en 3 pasos, localizado a México. */
+/**
+ * Registro de aspirante (HU-006) en 3 pasos. Desde T36 admite **México,
+ * Colombia, Estados Unidos y Canadá**: el país se elige en el paso 2 y de él
+ * dependen el tipo de documento, la lista de subdivisiones y las etiquetas.
+ */
 @Component({
   selector: 'app-register-candidate-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +91,7 @@ const STEP_CONTROLS: string[][] = [
     IjInput,
     IjSelect,
     IjDatepicker,
+    IjPhoneInput,
     TranslocoDirective,
   ],
   template: `
@@ -154,9 +188,13 @@ const STEP_CONTROLS: string[][] = [
             </div>
           }
 
-          <!-- Paso 2: Datos personales -->
+          <!-- Paso 2: Datos personales. El país va primero: de él dependen el
+               documento y, en el paso siguiente, la subdivisión. -->
           @if (step() === 1) {
             <div class="space-y-4">
+              <ij-select [label]="t('auth.register.candidate.country')" [required]="true" [options]="countryList()"
+                [hint]="t('auth.register.candidate.countryHint')"
+                [error]="invalid('country') ? t('auth.register.candidate.countryError') : null" formControlName="country" />
               <div class="grid grid-cols-2 gap-3">
                 <ij-input [label]="t('auth.register.candidate.firstName')" [placeholder]="t('auth.register.candidate.firstNamePlaceholder')" [required]="true"
                   [error]="invalid('firstName') ? t('auth.register.candidate.firstNameError') : null" formControlName="firstName" />
@@ -164,13 +202,17 @@ const STEP_CONTROLS: string[][] = [
                   [error]="invalid('lastName') ? t('auth.register.candidate.lastNameError') : null" formControlName="lastName" />
               </div>
               <div class="grid grid-cols-2 gap-3">
-                <ij-select [label]="t('auth.register.candidate.documentType')" [required]="true" [options]="documentTypeOptions"
+                <ij-select [label]="t('auth.register.candidate.documentType')" [required]="true" [options]="documentTypeOptions()"
                   [error]="invalid('documentType') ? t('auth.register.candidate.documentTypeError') : null" formControlName="documentType" />
                 <ij-input [label]="t('auth.register.candidate.documentNumber')" [placeholder]="t('auth.register.candidate.documentNumberPlaceholder')" [required]="true"
                   [error]="invalid('documentNumber') ? t('auth.register.candidate.documentNumberError') : null" formControlName="documentNumber" />
               </div>
-              <ij-input [label]="t('auth.register.candidate.curp')" [placeholder]="t('auth.register.candidate.curpPlaceholder')" [maxLength]="18"
-                [error]="invalid('curp') ? t('auth.register.candidate.curpError') : null" formControlName="curp" />
+              <!-- La CURP sólo existe en México, y sólo aporta cuando el
+                   documento elegido no es ya la propia CURP. -->
+              @if (showCurp()) {
+                <ij-input [label]="t('auth.register.candidate.curp')" [placeholder]="t('auth.register.candidate.curpPlaceholder')" [maxLength]="18"
+                  [error]="invalid('curp') ? t('auth.register.candidate.curpError') : null" formControlName="curp" />
+              }
               <ij-datepicker [label]="t('auth.register.candidate.birthDate')" [required]="true" [max]="today"
                 [error]="invalid('birthDate') ? t('auth.register.candidate.birthDateError') : null" formControlName="birthDate" />
             </div>
@@ -181,11 +223,13 @@ const STEP_CONTROLS: string[][] = [
             <div class="space-y-4">
               <ij-input [label]="t('auth.register.candidate.professionalTitle')" [placeholder]="t('auth.register.candidate.professionalTitlePlaceholder')" formControlName="professionalTitle" />
               <div class="grid grid-cols-2 gap-3">
-                <ij-select [label]="t('auth.register.candidate.state')" [required]="true" [options]="stateOptions"
+                <ij-select [label]="subdivisionLabel()" [required]="true" [options]="stateOptions()"
                   [error]="invalid('state') ? t('auth.register.candidate.stateError') : null" formControlName="state" />
-                <ij-input [label]="t('auth.register.candidate.municipality')" [placeholder]="t('auth.register.candidate.municipalityPlaceholder')" [required]="true"
+                <ij-input [label]="localityLabel()" [placeholder]="t('auth.register.candidate.municipalityPlaceholder')" [required]="true"
                   [error]="invalid('municipality') ? t('auth.register.candidate.municipalityError') : null" formControlName="municipality" />
               </div>
+              <ij-phone-input [label]="t('auth.register.candidate.phone')" [defaultCountry]="country()"
+                [error]="invalid('phone') ? t('auth.register.candidate.phoneError') : null" formControlName="phone" />
             </div>
           }
 
@@ -238,14 +282,33 @@ export class RegisterCandidatePage {
     this.i18n.t('auth.register.steps.personal'),
     this.i18n.t('auth.register.steps.location'),
   ]);
-  protected readonly documentTypeOptions: IjOption[] = DOCUMENT_TYPES.map((d) => ({
-    value: d.value,
-    label: d.label,
-  }));
-  protected readonly stateOptions: IjOption[] = MX_STATES.map((s) => ({
-    value: s.code,
-    label: s.name,
-  }));
+  /** País elegido. Espeja el control para que los `computed` reaccionen. */
+  protected readonly country = signal<CountryCode>(DEFAULT_COUNTRY);
+
+  protected readonly countryList = computed(() =>
+    countryOptions((code) => this.i18n.enumLabel('country', code)),
+  );
+  protected readonly documentTypeOptions = computed(() =>
+    documentOptions(this.country(), (code) =>
+      this.i18n.enumLabel('documentType', code),
+    ),
+  );
+  /** Las subdivisiones **no** se traducen: van en su idioma oficial (D-9). */
+  protected readonly stateOptions = computed(() =>
+    subdivisionOptions(this.country()),
+  );
+  /** «Estado» / «Departamento» / «Provincia o territorio» según el país. */
+  protected readonly subdivisionLabel = computed(() =>
+    this.i18n.enumLabel('subdivisionLabel', this.country()),
+  );
+  /** «Municipio o alcaldía» / «Ciudad»… El segundo nivel no se llama igual. */
+  protected readonly localityLabel = computed(() =>
+    this.i18n.enumLabel('localityLabel', this.country()),
+  );
+  protected readonly showCurp = computed(
+    () => this.country() === 'MX' && this.documentType() !== 'MX_CURP',
+  );
+  private readonly documentType = signal('');
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly passwordHint = computed(() =>
     this.i18n.t('validation.passwordPolicy'),
@@ -264,18 +327,99 @@ export class RegisterCandidatePage {
         passwordPolicyValidator,
       ]),
       confirmPassword: this.fb.control('', [Validators.required]),
+      country: this.fb.control<CountryCode>(DEFAULT_COUNTRY, [
+        Validators.required,
+      ]),
       firstName: this.fb.control('', [Validators.required, Validators.maxLength(80)]),
       lastName: this.fb.control('', [Validators.required, Validators.maxLength(80)]),
+      // País emisor del documento. Hoy siempre sigue al de residencia; existe
+      // como control propio para que el payload y el validador cruzado del
+      // backend hablen el mismo idioma sin adivinar.
+      documentCountry: this.fb.control<CountryCode>(DEFAULT_COUNTRY, [
+        Validators.required,
+      ]),
       documentType: this.fb.control('', [Validators.required]),
-      documentNumber: this.fb.control('', [Validators.required, Validators.maxLength(40)]),
+      documentNumber: this.fb.control('', [
+        Validators.required,
+        Validators.maxLength(40),
+        documentNumberValidator(DEFAULT_COUNTRY, ''),
+      ]),
       curp: this.fb.control('', [curpValidator]),
       birthDate: this.fb.control('', [Validators.required, notFutureDateValidator]),
       professionalTitle: this.fb.control(''),
-      state: this.fb.control('', [Validators.required]),
+      state: this.fb.control('', [
+        Validators.required,
+        subdivisionValidator(DEFAULT_COUNTRY),
+      ]),
       municipality: this.fb.control('', [Validators.required, Validators.maxLength(120)]),
+      phone: this.fb.control(emptyPhoneValue(DEFAULT_COUNTRY), [
+        phoneValidator(),
+      ]),
     },
     { validators: passwordsMatchValidator('password', 'confirmPassword') },
   );
+
+  constructor() {
+    // Cambiar de país rehace las dos listas dependientes y **limpia los dos
+    // controles**: si no se limpian, queda seleccionado un `MX_CURP` con país
+    // `CO` y el backend devuelve un 400 que el usuario no entiende (§ 7.3.3).
+    this.form.controls.country.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => this.onCountryChange(value));
+
+    // El validador de formato depende del tipo elegido, así que se reaplica.
+    this.form.controls.documentType.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        this.documentType.set(value);
+        this.applyDocumentValidator();
+      });
+  }
+
+  private onCountryChange(value: string): void {
+    const country = (value || DEFAULT_COUNTRY) as CountryCode;
+    this.country.set(country);
+    this.form.controls.documentCountry.setValue(country, { emitEvent: false });
+
+    const documentType = this.form.controls.documentType;
+    documentType.setValue('', { emitEvent: false });
+    this.documentType.set('');
+    documentType.markAsUntouched();
+    documentType.updateValueAndValidity({ emitEvent: false });
+
+    const documentNumber = this.form.controls.documentNumber;
+    documentNumber.setValue('', { emitEvent: false });
+    documentNumber.markAsUntouched();
+
+    const state = this.form.controls.state;
+    state.setValue('', { emitEvent: false });
+    state.markAsUntouched();
+    state.setValidators([Validators.required, subdivisionValidator(country)]);
+    state.updateValueAndValidity({ emitEvent: false });
+
+    // El teléfono conserva el número, pero estrena indicativo: quien cambia de
+    // país casi siempre estaba en el país equivocado, no en el número.
+    const phone = this.form.controls.phone;
+    phone.setValue(emptyPhoneValue(country), { emitEvent: false });
+    phone.updateValueAndValidity({ emitEvent: false });
+
+    // La CURP sólo aplica a México; al salir de MX se va con el país.
+    if (country !== 'MX') {
+      this.form.controls.curp.setValue('', { emitEvent: false });
+    }
+
+    this.applyDocumentValidator();
+  }
+
+  private applyDocumentValidator(): void {
+    const control = this.form.controls.documentNumber;
+    control.setValidators([
+      Validators.required,
+      Validators.maxLength(40),
+      documentNumberValidator(this.country(), this.documentType()),
+    ]);
+    control.updateValueAndValidity({ emitEvent: false });
+  }
 
   protected invalid(name: string): boolean {
     const c = this.form.get(name) as AbstractControl;
@@ -339,14 +483,21 @@ export class RegisterCandidatePage {
         candidate: {
           firstName: v.firstName,
           lastName: v.lastName,
+          // Antes de T36 esto era `country: 'MX'` quemado, y era la línea que
+          // hacía inútil todo lo demás: el país del formulario no viajaba.
+          country: v.country,
+          documentCountry: v.documentCountry,
           documentType: v.documentType,
           documentNumber: v.documentNumber,
-          curp: v.curp ? v.curp.trim().toUpperCase() : undefined,
+          curp:
+            v.country === 'MX' && v.curp
+              ? v.curp.trim().toUpperCase()
+              : undefined,
           birthDate: v.birthDate,
           professionalTitle: v.professionalTitle || undefined,
-          country: 'MX',
           state: v.state,
           municipality: v.municipality,
+          ...toPhonePayload(v.phone),
         },
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -377,6 +528,30 @@ export class RegisterCandidatePage {
         this.errorMessage.set(
           this.i18n.t('auth.register.candidate.birthDateInvalid'),
         );
+        break;
+      // Validador cruzado del backend (T36 § 5.3): cada código salta al paso
+      // donde está el campo y lo marca, como ya hacía el documento duplicado.
+      case AuthErrorCode.INVALID_DOCUMENT_NUMBER:
+        this.step.set(1);
+        this.form.controls.documentNumber.setErrors({ documentNumber: true });
+        this.errorMessage.set(this.i18n.t('validation.documentNumber'));
+        break;
+      case AuthErrorCode.UNSUPPORTED_COUNTRY:
+        this.step.set(1);
+        this.form.controls.country.setErrors({ invalid: true });
+        this.errorMessage.set(
+          this.i18n.t('auth.register.candidate.countryError'),
+        );
+        break;
+      case AuthErrorCode.INVALID_SUBDIVISION:
+        this.step.set(2);
+        this.form.controls.state.setErrors({ subdivision: true });
+        this.errorMessage.set(this.i18n.t('validation.subdivision'));
+        break;
+      case AuthErrorCode.INVALID_PHONE:
+        this.step.set(2);
+        this.form.controls.phone.setErrors({ phone: true });
+        this.errorMessage.set(this.i18n.t('validation.phone'));
         break;
       default:
         this.errorMessage.set(this.i18n.t('auth.register.genericError'));

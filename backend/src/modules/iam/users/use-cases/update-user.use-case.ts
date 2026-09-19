@@ -5,9 +5,17 @@ import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
+import { DEFAULT_COUNTRY } from '@/common/catalogs/countries';
 import { runInTransaction } from '@/common/utils/transaction.util';
+import {
+  requireIdentityDocument,
+  requireSubdivision,
+  requireSupportedCountry,
+  resolvePhonePair,
+} from '@/common/validators/candidate-identity.validator';
 import { AuditService } from '@/modules/audit/audit.service';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
+import { DocumentType } from '@/modules/candidates/enums/document-type.enum';
 import {
   type ICandidateProfileRepository,
   CANDIDATE_PROFILE_REPOSITORY,
@@ -48,6 +56,7 @@ export interface UpdateUserCommand {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  phoneCountry?: string;
   jobTitle?: string;
   adminNotes?: string;
   candidateProfile?: UpdateCandidateProfileDto;
@@ -168,8 +177,17 @@ export class UpdateUserUseCase {
     if (command.lastName !== undefined) {
       user.lastName = command.lastName.trim() || null;
     }
-    if (command.phone !== undefined) {
-      user.phone = command.phone.trim() || null;
+    if (command.phone !== undefined || command.phoneCountry !== undefined) {
+      // El país por defecto es el que ya tenía la cuenta; si nunca tuvo, MX.
+      const country =
+        command.phoneCountry ?? user.phoneCountry ?? DEFAULT_COUNTRY;
+      const pair = resolvePhonePair(
+        country,
+        command.phone !== undefined ? command.phone : user.phone,
+        DEFAULT_COUNTRY,
+      );
+      user.phone = pair.phone;
+      user.phoneCountry = pair.phoneCountry;
     }
     if (command.jobTitle !== undefined) {
       user.jobTitle = command.jobTitle.trim() || null;
@@ -234,12 +252,19 @@ export class UpdateUserUseCase {
     return toUserResponse(saved, await this.profiles.resolveOne(saved));
   }
 
+  /**
+   * Perfil del aspirante desde el back-office. Desde T36 el país manda: la
+   * subdivisión se valida contra él (antes `state` sólo prometía una lista
+   * cerrada en Swagger y no comprobaba nada) y el tipo de documento tiene que
+   * ser de los que emite el país del documento.
+   */
   private async updateCandidateProfile(
     userId: string,
     data: UpdateCandidateProfileDto,
     manager: import('typeorm').EntityManager,
   ): Promise<void> {
     let profile = await this.candidates.findByUserId(userId, manager);
+    const isNew = !profile;
 
     if (!profile) {
       // Crear perfil si no existe (puede ocurrir si el rol se cambió a CANDIDATE).
@@ -247,31 +272,65 @@ export class UpdateUserUseCase {
       profile.userId = userId;
       profile.firstName = data.firstName?.trim() ?? '';
       profile.lastName = data.lastName?.trim() ?? '';
-      profile.documentType = (data.documentType as any) ?? 'INE';
+      profile.documentType =
+        (data.documentType as DocumentType) ?? DocumentType.MX_INE;
       profile.documentNumber = data.documentNumber?.trim() ?? '';
       profile.birthDate =
         data.birthDate ?? new Date().toISOString().slice(0, 10);
+      profile.country = data.country ?? DEFAULT_COUNTRY;
+      profile.documentCountry = data.documentCountry ?? profile.country;
       profile.state = data.state ?? 'JAL';
       profile.municipality = data.municipality?.trim() ?? '';
     } else {
       if (data.firstName !== undefined)
         profile.firstName = data.firstName.trim();
       if (data.lastName !== undefined) profile.lastName = data.lastName.trim();
-      if (data.documentType !== undefined)
-        profile.documentType = data.documentType as any;
-      if (data.documentNumber !== undefined)
-        profile.documentNumber = data.documentNumber.trim();
       if (data.birthDate !== undefined) profile.birthDate = data.birthDate;
-      if (data.state !== undefined) profile.state = data.state;
       if (data.municipality !== undefined)
         profile.municipality = data.municipality.trim();
+    }
+
+    // País de residencia y subdivisión: la segunda depende del primero.
+    const country = requireSupportedCountry(
+      data.country ?? profile.country ?? DEFAULT_COUNTRY,
+    );
+    profile.country = country;
+    if (data.state !== undefined || data.country !== undefined || isNew) {
+      profile.state = requireSubdivision(country, data.state ?? profile.state);
+    }
+
+    // Documento: sólo se revalida si toca alguna de sus tres piezas. Un perfil
+    // creado por un cambio de rol puede no traer número todavía, y ése es el
+    // único caso en que se deja pasar sin comprobar el formato.
+    const touchesDocument =
+      data.documentCountry !== undefined ||
+      data.documentType !== undefined ||
+      data.documentNumber !== undefined;
+    const documentNumber = data.documentNumber ?? profile.documentNumber;
+    if (touchesDocument && documentNumber?.trim()) {
+      const document = requireIdentityDocument(
+        data.documentCountry ?? profile.documentCountry ?? country,
+        data.documentType ?? profile.documentType,
+        documentNumber,
+      );
+      profile.documentCountry = document.documentCountry;
+      profile.documentType = document.documentType as DocumentType;
+      profile.documentNumber = document.documentNumber;
     }
 
     if (data.curp !== undefined)
       profile.curp = data.curp?.trim().toUpperCase() || null;
     if (data.professionalTitle !== undefined)
       profile.professionalTitle = data.professionalTitle?.trim() || null;
-    if (data.phone !== undefined) profile.phone = data.phone?.trim() || null;
+    if (data.phone !== undefined || data.phoneCountry !== undefined) {
+      const pair = resolvePhonePair(
+        data.phoneCountry ?? profile.phoneCountry ?? country,
+        data.phone !== undefined ? data.phone : profile.phone,
+        country,
+      );
+      profile.phone = pair.phone;
+      profile.phoneCountry = pair.phoneCountry;
+    }
 
     await this.candidates.save(profile, manager);
   }

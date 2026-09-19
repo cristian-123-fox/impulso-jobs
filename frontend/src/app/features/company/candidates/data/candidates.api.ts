@@ -23,6 +23,7 @@ export class CandidatesApi {
       .set('page', filters.page)
       .set('limit', filters.limit);
     if (filters.search) params = params.set('search', filters.search);
+    if (filters.country) params = params.set('country', filters.country);
     if (filters.state) params = params.set('state', filters.state);
     if (filters.municipality) {
       params = params.set('municipality', filters.municipality);

@@ -87,8 +87,13 @@ export class User extends BaseEntity {
   @Column({ name: 'last_name', type: 'varchar', length: 80, nullable: true })
   lastName?: string | null;
 
+  /** E.164, normalizado con `phoneCountry` (T36). */
   @Column({ type: 'varchar', length: 20, nullable: true })
   phone?: string | null;
+
+  /** País del teléfono (ISO 3166-1 alpha-2). `+1` es US y CA a la vez. */
+  @Column({ name: 'phone_country', type: 'varchar', length: 2, nullable: true })
+  phoneCountry?: string | null;
 
   /** Puesto o cargo. Columna `job_title`: `position` es reservada en SQL. */
   @Column({ name: 'job_title', type: 'varchar', length: 120, nullable: true })

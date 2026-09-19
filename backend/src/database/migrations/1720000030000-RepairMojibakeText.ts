@@ -103,10 +103,10 @@ export class RepairMojibakeText1720000030000 implements MigrationInterface {
       const p = (index: number): string =>
         queryRunner.connection.driver.createParameter(`p${index}`, index);
 
-      const affected: { n: string | number }[] = await queryRunner.query(
+      const affected = (await queryRunner.query(
         `SELECT count(*) AS n FROM ${t} WHERE ${c} LIKE ${p(0)}`,
         [`%${broken}%`],
-      );
+      )) as { n: string | number }[];
       const count = Number(affected[0]?.n ?? 0);
       if (count === 0) continue;
 

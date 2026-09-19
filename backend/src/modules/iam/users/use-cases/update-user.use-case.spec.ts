@@ -142,7 +142,9 @@ describe('UpdateUserUseCase', () => {
       expect.objectContaining({
         firstName: 'Oscar',
         lastName: 'Ruiz',
-        phone: '3312345678',
+        // El teléfono se guarda normalizado a E.164 con su país (T36).
+        phone: '+523312345678',
+        phoneCountry: 'MX',
         jobTitle: 'Coordinador de soporte',
       }),
       expect.anything(),
@@ -150,6 +152,38 @@ describe('UpdateUserUseCase', () => {
     // Sin perfil que resuelva un nombre —el caso de un ADMIN— el nombre para
     // mostrar sale de lo guardado en `users`.
     expect(result.displayName).toBe('Oscar Ruiz');
+  });
+
+  it('el teléfono canadiense conserva su país, que el +1 no distingue', async () => {
+    // Es R1: guardar sólo el E.164 haría imposible repintar «Canadá» en el
+    // formulario, porque `+1` es Estados Unidos y Canadá a la vez.
+    await useCase.execute({
+      ...command,
+      phone: '604 555 0123',
+      phoneCountry: 'CA',
+    });
+
+    expect(users.save).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: '+16045550123', phoneCountry: 'CA' }),
+      expect.anything(),
+    );
+  });
+
+  it('vaciar el teléfono se lleva también su país', async () => {
+    await useCase.execute({ ...command, phone: '  ' });
+
+    expect(users.save).toHaveBeenCalledWith(
+      expect.objectContaining({ phone: null, phoneCountry: null }),
+      expect.anything(),
+    );
+  });
+
+  it('rechaza un teléfono que no encaja con su país', async () => {
+    const thrown = await useCase
+      .execute({ ...command, phone: '12345', phoneCountry: 'MX' })
+      .catch((e: unknown) => e);
+
+    expect(errorCodeOf(thrown)).toBe(ErrorCode.INVALID_PHONE);
   });
 
   it('vaciar el nombre lo deja en null, no en cadena vacía', async () => {

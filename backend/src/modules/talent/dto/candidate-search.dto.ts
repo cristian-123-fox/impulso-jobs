@@ -11,11 +11,14 @@ import {
   Min,
 } from 'class-validator';
 import { PaginationQueryDto } from '@/common/dto/pagination-query.dto';
-import { MX_STATE_CODES } from '@/common/catalogs/mx-states';
+import { COUNTRY_CODES } from '@/common/catalogs/countries';
 import { EDUCATION_LEVELS } from '@/modules/candidates/dto/candidate-profile.dto';
 
 /** Tope razonable para el filtro de experiencia; evita fechas absurdas. */
 const MAX_EXPERIENCE_YEARS = 50;
+
+const toUpper = ({ value }: { value: unknown }): unknown =>
+  typeof value === 'string' ? value.trim().toUpperCase() : value;
 
 export class SearchCandidatesQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
@@ -26,9 +29,29 @@ export class SearchCandidatesQueryDto extends PaginationQueryDto {
   @Length(1, 120)
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Código ISO 3166-2:MX del estado.' })
+  /**
+   * País del aspirante (T36). Sin filtrar, salen los de los cuatro países.
+   * **Es lo que da sentido a `state`**: los códigos de subdivisión colisionan
+   * entre países (`GUA` es Guanajuato y Guainía; `DC`, District of Columbia y
+   * Bogotá D.C.), así que filtrar por estado sin país devolvería mezcla.
+   */
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES] })
   @IsOptional()
-  @IsIn([...MX_STATE_CODES], { message: 'El estado no es válido.' })
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], { message: 'El país no está disponible.' })
+  country?: string;
+
+  /**
+   * Código de la subdivisión, dentro del país indicado. La lista válida depende
+   * de `country`, así que la comprueba el caso de uso.
+   */
+  @ApiPropertyOptional({
+    description: 'Código de la subdivisión (estado, departamento o provincia).',
+  })
+  @IsOptional()
+  @Transform(toUpper)
+  @IsString()
+  @Length(1, 10)
   state?: string;
 
   @ApiPropertyOptional()

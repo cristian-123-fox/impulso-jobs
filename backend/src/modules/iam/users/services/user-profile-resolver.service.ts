@@ -60,14 +60,17 @@ export class UserProfileResolver {
       const candidateSummary: CandidateProfileSummary = {
         firstName: profile.firstName,
         lastName: profile.lastName,
+        documentCountry: profile.documentCountry,
         documentType: profile.documentType,
         documentNumber: profile.documentNumber,
         curp: profile.curp,
         birthDate: profile.birthDate,
         professionalTitle: profile.professionalTitle,
+        country: profile.country,
         state: profile.state,
         municipality: profile.municipality,
         phone: profile.phone,
+        phoneCountry: profile.phoneCountry ?? null,
         profilePhotoUrl: profile.profilePhotoUrl ?? null,
       };
       result.set(profile.userId, {

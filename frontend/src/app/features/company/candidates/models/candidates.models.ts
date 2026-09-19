@@ -20,6 +20,8 @@ export interface CandidateSearchItem {
   firstName: string;
   lastName: string;
   professionalTitle: string | null;
+  /** País del aspirante (T36): sin él, `GUA` o `DC` son ambiguos. */
+  country: string;
   state: string;
   municipality: string;
   profilePhotoUrl: string | null;
@@ -81,6 +83,8 @@ export interface CandidateDetail {
   lastName: string;
   professionalTitle: string | null;
   summary: string | null;
+  /** País del aspirante (T36): sin él, `GUA` o `DC` son ambiguos. */
+  country: string;
   state: string;
   municipality: string;
   profilePhotoUrl: string | null;
@@ -107,6 +111,7 @@ export interface CandidatesPage {
 
 export interface CandidatesFilters {
   search?: string;
+  country?: string;
   state?: string;
   municipality?: string;
   skill?: string;

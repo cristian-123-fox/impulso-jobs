@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
+import { COUNTRY_CODES } from '@/common/catalogs/countries';
 import { Role } from '@/common/types/role.enum';
 import {
   PASSWORD_POLICY_MESSAGE,
@@ -24,6 +32,8 @@ export interface AccountProfileDto {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
+  /** País del teléfono: sin él no se puede repintar `+1` como US o CA. */
+  phoneCountry: string | null;
   jobTitle: string | null;
   photoUrl: string | null;
 }
@@ -39,6 +49,7 @@ export function toAccountProfile(user: User): AccountProfileDto {
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
     phone: user.phone ?? null,
+    phoneCountry: user.phoneCountry ?? null,
     jobTitle: user.jobTitle ?? null,
     photoUrl: user.photoUrl ?? null,
   };
@@ -67,8 +78,19 @@ export class UpdateAccountProfileDto {
   @ApiPropertyOptional({ example: '3312345678' })
   @IsOptional()
   @IsString()
-  @MaxLength(20)
+  @MaxLength(25)
   phone?: string;
+
+  /** País del teléfono. Si no viene, se conserva el que ya tenía la cuenta. */
+  @ApiPropertyOptional({ enum: [...COUNTRY_CODES], example: 'MX' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toUpperCase() : value,
+  )
+  @IsIn([...COUNTRY_CODES], {
+    message: 'El país del teléfono no está disponible.',
+  })
+  phoneCountry?: string;
 
   @ApiPropertyOptional({ example: 'Coordinador de soporte' })
   @IsOptional()

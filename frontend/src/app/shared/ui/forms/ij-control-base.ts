@@ -43,6 +43,13 @@ export function ijFirstErrorKey(
     return { key: 'validation.max', params: { value: errors['max'].max } };
   }
   if (errors['pattern']) return { key: 'validation.pattern' };
+  // Localización del aspirante (T36): teléfono, documento y subdivisión tienen
+  // mensaje propio. Sin estas entradas caerían en «no es válido», que no dice
+  // qué hay que corregir.
+  if (errors['phone']) return { key: 'validation.phone' };
+  if (errors['documentNumber']) return { key: 'validation.documentNumber' };
+  if (errors['documentCountry']) return { key: 'validation.documentCountry' };
+  if (errors['subdivision']) return { key: 'validation.subdivision' };
   return { key: 'validation.invalid' };
 }
 

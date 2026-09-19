@@ -39,11 +39,20 @@ export class CandidateProfileRepository
     return this.repo(manager).find({ where: { id: In(ids) } });
   }
 
-  async existsByDocumentNumber(
+  async existsByDocument(
+    documentCountry: string,
+    documentType: string,
     documentNumber: string,
     manager?: EntityManager,
   ): Promise<boolean> {
-    return (await this.repo(manager).count({ where: { documentNumber } })) > 0;
+    const count = await this.repo(manager).count({
+      where: {
+        documentCountry,
+        documentType: documentType as CandidateProfile['documentType'],
+        documentNumber,
+      },
+    });
+    return count > 0;
   }
 
   save(

@@ -16,16 +16,31 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { Role } from '@/core/models/role.enum';
-import { DOCUMENT_TYPES, MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import {
+  type CountryCode,
+  DEFAULT_COUNTRY,
+  countryByCode,
+  countryOptions,
+  documentOptions,
+  subdivisionOptions,
+} from '@/shared/catalogs/countries.catalogs';
 import {
   IjButton,
   IjDatepicker,
   IjIcon,
   IjInput,
   IjOption,
+  IjPhoneInput,
   IjSelect,
 } from '@/shared/ui';
+import { phoneValidator } from '@/shared/validators/phone.validator';
+import {
+  emptyPhoneValue,
+  fromPhonePayload,
+  toPhonePayload,
+} from '@/shared/utils/phone';
 import { notFutureDateValidator } from '@/shared/validators/mx-identifiers.validator';
 import {
   PASSWORD_POLICY_HINT,
@@ -66,6 +81,7 @@ export interface UserEditResult {
     IjInput,
     IjSelect,
     IjDatepicker,
+    IjPhoneInput,
   ],
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
@@ -216,11 +232,7 @@ export interface UserEditResult {
             [error]="invalid('lastName') ? 'Los apellidos son obligatorios.' : null"
             formControlName="lastName"
           />
-          <ij-input
-            label="Teléfono"
-            placeholder="3312345678"
-            formControlName="phone"
-          />
+          <ij-phone-input label="Teléfono" formControlName="phone" />
           <ij-input
             label="Puesto o cargo"
             placeholder="Coordinador de soporte"
@@ -248,27 +260,34 @@ export interface UserEditResult {
             formControlName="cpLastName"
           />
           <ij-select
+            label="País"
+            [options]="countryList()"
+            formControlName="cpCountry"
+          />
+          <ij-select
             label="Tipo de documento"
-            [options]="documentTypeOptions"
+            [options]="documentTypeOptions()"
             formControlName="cpDocumentType"
           />
           <ij-input
             label="Número de documento"
             formControlName="cpDocumentNumber"
           />
-          <ij-input
-            label="CURP"
-            placeholder="GARC850101MVZRRL04"
-            formControlName="cpCurp"
-          />
+          @if (country() === 'MX') {
+            <ij-input
+              label="CURP"
+              placeholder="GARC850101MVZRRL04"
+              formControlName="cpCurp"
+            />
+          }
           <ij-datepicker
             label="Fecha de nacimiento"
             [max]="today"
             formControlName="cpBirthDate"
           />
-          <ij-input
+          <ij-phone-input
             label="Teléfono"
-            placeholder="3312345678"
+            [defaultCountry]="country()"
             formControlName="cpPhone"
           />
           <ij-input
@@ -277,12 +296,12 @@ export interface UserEditResult {
             formControlName="cpProfessionalTitle"
           />
           <ij-select
-            label="Estado"
-            [options]="stateOptions"
+            [label]="subdivisionLabel()"
+            [options]="stateOptions()"
             formControlName="cpState"
           />
           <ij-input
-            label="Municipio"
+            [label]="localityLabel()"
             placeholder="Zapopan"
             formControlName="cpMunicipality"
           />
@@ -388,6 +407,7 @@ export class UserEditForm {
   private readonly companiesApi = inject(CompaniesApi);
   private readonly usersApi = inject(UsersApi);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(AppTranslateService);
 
   /**
    * La foto no viaja con el resto del formulario: la cuenta ya existe, así
@@ -430,12 +450,25 @@ export class UserEditForm {
     { value: CompanyMemberRole.RECRUITER, label: 'Reclutador' },
     { value: CompanyMemberRole.MEMBER, label: 'Miembro' },
   ];
-  protected readonly documentTypeOptions: readonly IjOption[] =
-    DOCUMENT_TYPES.map((d) => ({ value: d.value, label: d.label }));
-  protected readonly stateOptions: readonly IjOption[] = MX_STATES.map((s) => ({
-    value: s.code,
-    label: s.name,
-  }));
+  /** País del perfil del aspirante (T36). De él cuelgan las dos listas. */
+  protected readonly country = signal<CountryCode>(DEFAULT_COUNTRY);
+  protected readonly countryList = computed(() =>
+    countryOptions((code) => this.i18n.enumLabel('country', code)),
+  );
+  protected readonly documentTypeOptions = computed(() =>
+    documentOptions(this.country(), (code) =>
+      this.i18n.enumLabel('documentType', code),
+    ),
+  );
+  protected readonly stateOptions = computed(() =>
+    subdivisionOptions(this.country()),
+  );
+  protected readonly subdivisionLabel = computed(() =>
+    this.i18n.enumLabel('subdivisionLabel', this.country()),
+  );
+  protected readonly localityLabel = computed(() =>
+    this.i18n.enumLabel('localityLabel', this.country()),
+  );
 
   protected readonly form = this.fb.group({
     // Cuenta
@@ -447,16 +480,17 @@ export class UserEditForm {
     // Identidad (en `users`; para ADMIN es su único nombre)
     firstName: this.fb.control(''),
     lastName: this.fb.control(''),
-    phone: this.fb.control(''),
+    phone: this.fb.control(emptyPhoneValue(), [phoneValidator()]),
     jobTitle: this.fb.control(''),
     // Perfil candidato
     cpFirstName: this.fb.control(''),
     cpLastName: this.fb.control(''),
+    cpCountry: this.fb.control<CountryCode>(DEFAULT_COUNTRY),
     cpDocumentType: this.fb.control(''),
     cpDocumentNumber: this.fb.control(''),
     cpCurp: this.fb.control(''),
     cpBirthDate: this.fb.control(''),
-    cpPhone: this.fb.control(''),
+    cpPhone: this.fb.control(emptyPhoneValue(), [phoneValidator()]),
     cpProfessionalTitle: this.fb.control(''),
     cpState: this.fb.control(''),
     cpMunicipality: this.fb.control(''),
@@ -494,6 +528,23 @@ export class UserEditForm {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((role) => this.syncNameValidators(role));
 
+    // Cambiar el país del aspirante rehace documento y subdivisión, y los
+    // limpia: los códigos de subdivisión colisionan entre países y un CURP con
+    // país Colombia lo rechaza el backend (T36 § 7.3.3).
+    this.form.controls.cpCountry.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        const country = (countryByCode(value)?.code ??
+          DEFAULT_COUNTRY) as CountryCode;
+        this.country.set(country);
+        this.form.controls.cpDocumentType.setValue('', { emitEvent: false });
+        this.form.controls.cpDocumentNumber.setValue('', { emitEvent: false });
+        this.form.controls.cpState.setValue('', { emitEvent: false });
+        if (country !== 'MX') {
+          this.form.controls.cpCurp.setValue('', { emitEvent: false });
+        }
+      });
+
     effect(() => {
       const user = this.user();
       const cp = user.candidateProfile;
@@ -506,15 +557,21 @@ export class UserEditForm {
         emailVerified: user.emailVerified,
         firstName: user.firstName ?? '',
         lastName: user.lastName ?? '',
-        phone: user.phone ?? '',
+        phone: fromPhonePayload(user.phone, user.phoneCountry),
         jobTitle: user.jobTitle ?? '',
         cpFirstName: cp?.firstName ?? '',
         cpLastName: cp?.lastName ?? '',
+        cpCountry: (countryByCode(cp?.country)?.code ??
+          DEFAULT_COUNTRY) as CountryCode,
         cpDocumentType: cp?.documentType ?? '',
         cpDocumentNumber: cp?.documentNumber ?? '',
         cpCurp: cp?.curp ?? '',
         cpBirthDate: cp?.birthDate ?? '',
-        cpPhone: cp?.phone ?? '',
+        cpPhone: fromPhonePayload(
+          cp?.phone,
+          cp?.phoneCountry,
+          (countryByCode(cp?.country)?.code ?? DEFAULT_COUNTRY) as CountryCode,
+        ),
         cpProfessionalTitle: cp?.professionalTitle ?? '',
         cpState: cp?.state ?? '',
         cpMunicipality: cp?.municipality ?? '',
@@ -525,6 +582,9 @@ export class UserEditForm {
 
       this.photoUrl.set(user.photoUrl ?? null);
       this.photoError.set(null);
+      this.country.set(
+        (countryByCode(cp?.country)?.code ?? DEFAULT_COUNTRY) as CountryCode,
+      );
       this.syncNameValidators(user.role);
 
       const extra = (user.roles ?? [])
@@ -641,8 +701,15 @@ export class UserEditForm {
       if (value.lastName.trim() !== (user.lastName ?? '')) {
         payload.lastName = value.lastName.trim();
       }
-      if (value.phone.trim() !== (user.phone ?? '')) {
-        payload.phone = value.phone.trim();
+      // Se compara ya en E.164, que es lo que guarda el backend: comparar lo
+      // teclado mandaría una escritura cada vez que se reabre el modal.
+      const phone = toPhonePayload(value.phone);
+      if (
+        phone.phone !== (user.phone ?? null) ||
+        phone.phoneCountry !== (user.phoneCountry ?? null)
+      ) {
+        payload.phone = phone.phone ?? '';
+        if (phone.phoneCountry) payload.phoneCountry = phone.phoneCountry;
       }
       if (value.jobTitle.trim() !== (user.jobTitle ?? '')) {
         payload.jobTitle = value.jobTitle.trim();
@@ -660,8 +727,15 @@ export class UserEditForm {
       if (value.cpLastName.trim() !== (cp?.lastName ?? '')) {
         cpPayload.lastName = value.cpLastName.trim();
       }
+      if (value.cpCountry !== (cp?.country ?? '')) {
+        // El país manda: si cambia, el documento y la subdivisión ya se
+        // limpiaron, y el backend revalida los tres juntos.
+        cpPayload.country = value.cpCountry;
+        cpPayload.documentCountry = value.cpCountry;
+      }
       if (value.cpDocumentType !== (cp?.documentType ?? '')) {
         cpPayload.documentType = value.cpDocumentType;
+        cpPayload.documentCountry = value.cpCountry;
       }
       if (value.cpDocumentNumber.trim() !== (cp?.documentNumber ?? '')) {
         cpPayload.documentNumber = value.cpDocumentNumber.trim();
@@ -672,8 +746,13 @@ export class UserEditForm {
       if (value.cpBirthDate !== (cp?.birthDate ?? '')) {
         cpPayload.birthDate = value.cpBirthDate;
       }
-      if (value.cpPhone.trim() !== (cp?.phone ?? '')) {
-        cpPayload.phone = value.cpPhone.trim();
+      const cpPhone = toPhonePayload(value.cpPhone);
+      if (
+        cpPhone.phone !== (cp?.phone ?? null) ||
+        cpPhone.phoneCountry !== (cp?.phoneCountry ?? null)
+      ) {
+        cpPayload.phone = cpPhone.phone ?? '';
+        cpPayload.phoneCountry = cpPhone.phoneCountry;
       }
       if (value.cpProfessionalTitle.trim() !== (cp?.professionalTitle ?? '')) {
         cpPayload.professionalTitle = value.cpProfessionalTitle.trim();

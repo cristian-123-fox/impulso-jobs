@@ -12,6 +12,11 @@ import {
   PUBLIC_FILE_STORAGE,
   type PublicFileStoragePort,
 } from '@/common/storage/public-file-storage.port';
+import {
+  requireSubdivision,
+  requireSupportedCountry,
+  resolvePhonePair,
+} from '@/common/validators/candidate-identity.validator';
 import { AuditService } from '@/modules/audit/audit.service';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
 import { Language } from '@/modules/candidates/entities/language.entity';
@@ -65,6 +70,8 @@ export interface UpdateCandidateProfileCommand extends CandidateActor {
   state: string;
   municipality: string;
   birthDate: string;
+  phone?: string;
+  phoneCountry?: string;
 }
 
 export interface UpdateCandidatePhotoCommand extends CandidateActor {
@@ -137,15 +144,31 @@ export class CandidateProfileUseCase {
       'La fecha de nacimiento no puede ser futura.',
     );
 
+    // País y subdivisión: la subdivisión tiene que ser de ese país, y los
+    // códigos colisionan entre países (`GUA`, `DC`), así que no vale validarla
+    // suelta (T36 · D-4).
+    const country = requireSupportedCountry(command.country);
     profile.firstName = command.firstName.trim();
     profile.lastName = command.lastName.trim();
     profile.professionalTitle = command.professionalTitle?.trim() || null;
     profile.summary = command.summary?.trim() || null;
     profile.address = command.address?.trim() || null;
-    profile.country = command.country.trim().toUpperCase();
-    profile.state = command.state.trim().toUpperCase();
+    profile.country = country;
+    profile.state = requireSubdivision(country, command.state);
     profile.municipality = command.municipality.trim();
     profile.birthDate = command.birthDate;
+
+    // El aspirante ya puede editar su propio teléfono: hasta T36 el DTO no lo
+    // traía y el único que podía tocarlo era el administrador.
+    if (command.phone !== undefined || command.phoneCountry !== undefined) {
+      const pair = resolvePhonePair(
+        command.phoneCountry ?? profile.phoneCountry ?? country,
+        command.phone !== undefined ? command.phone : profile.phone,
+        country,
+      );
+      profile.phone = pair.phone;
+      profile.phoneCountry = pair.phoneCountry;
+    }
 
     const saved = await this.profiles.save(profile);
     const user = await this.users.findById(command.userId);

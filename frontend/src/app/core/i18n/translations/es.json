@@ -382,6 +382,35 @@
     "annual": "Anual"
   },
   "enums": {
+    "country": {
+      "MX": "México",
+      "CO": "Colombia",
+      "US": "Estados Unidos",
+      "CA": "Canadá"
+    },
+    "documentType": {
+      "MX_CURP": "CURP",
+      "MX_RFC": "RFC",
+      "MX_INE": "Clave de elector (INE)",
+      "CO_CC": "Cédula de ciudadanía",
+      "CO_CE": "Cédula de extranjería",
+      "CO_PPT": "Permiso por Protección Temporal",
+      "US_DL": "Licencia de conducir / ID estatal",
+      "CA_DL": "Licencia de conducir / ID provincial",
+      "PASSPORT": "Pasaporte"
+    },
+    "subdivisionLabel": {
+      "MX": "Estado",
+      "CO": "Departamento",
+      "US": "Estado",
+      "CA": "Provincia o territorio"
+    },
+    "localityLabel": {
+      "MX": "Municipio o alcaldía",
+      "CO": "Municipio",
+      "US": "Ciudad",
+      "CA": "Ciudad"
+    },
     "employmentType": {
       "FULL_TIME": "Tiempo completo",
       "PART_TIME": "Medio tiempo",
@@ -595,7 +624,11 @@
   },
   "ui": {
     "search": "Buscar…",
-    "noResults": "Sin resultados"
+    "noResults": "Sin resultados",
+    "phone": {
+      "countryLabel": "País del teléfono",
+      "search": "Buscar país…"
+    }
   },
   "validation": {
     "required": "Este campo es obligatorio.",
@@ -606,6 +639,10 @@
     "max": "El valor máximo es {{value}}.",
     "pattern": "El formato no es válido.",
     "invalid": "El valor no es válido.",
+    "phone": "El teléfono no es válido para el país seleccionado.",
+    "documentNumber": "El número de documento no tiene el formato esperado.",
+    "documentCountry": "Ese tipo de documento no aplica al país seleccionado.",
+    "subdivision": "Selecciona una opción del país elegido.",
     "passwordPolicy": "Mínimo 8 caracteres, con mayúscula, minúscula, número y un carácter especial."
   },
   "auth": {
@@ -717,6 +754,12 @@
         "lastName": "Apellidos",
         "lastNamePlaceholder": "García",
         "lastNameError": "El apellido es obligatorio.",
+        "country": "País",
+        "countryError": "Selecciona tu país.",
+        "countryHint": "Define el tipo de documento y la lista de estados.",
+        "documentCountry": "País del documento",
+        "phone": "Teléfono (opcional)",
+        "phoneError": "Revisa el teléfono para el país elegido.",
         "documentType": "Tipo de documento",
         "documentTypeError": "Selecciona el tipo.",
         "documentNumber": "Número de documento",

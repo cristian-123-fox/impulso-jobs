@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsIn,
@@ -7,11 +8,11 @@ import {
   IsString,
   IsUrl,
   IsUUID,
-  Length,
   Max,
   MaxLength,
   Min,
 } from 'class-validator';
+import { COUNTRY_CODES } from '@/common/catalogs/countries';
 import { CandidateEducation } from '@/modules/candidates/entities/candidate-education.entity';
 import { CandidateExperience } from '@/modules/candidates/entities/candidate-experience.entity';
 import { CandidateLanguage } from '@/modules/candidates/entities/candidate-language.entity';
@@ -45,6 +46,9 @@ export const SKILL_LEVELS = [
   'EXPERT',
 ] as const;
 
+const toUpper = ({ value }: { value: unknown }): unknown =>
+  typeof value === 'string' ? value.trim().toUpperCase() : value;
+
 export class UpdateCandidateProfileDto {
   @IsString()
   @IsNotEmpty()
@@ -71,11 +75,23 @@ export class UpdateCandidateProfileDto {
   @MaxLength(255)
   address?: string;
 
-  @IsString()
-  @IsNotEmpty()
-  @Length(2, 2)
+  /**
+   * ISO 3166-1 alpha-2 (`MX`, `CO`, `US`, `CA`).
+   *
+   * ⚠️ Hasta T36 esto era `@Length(2, 2)` mientras el **registro** aceptaba
+   * `@MaxLength(60)`: quien se registraba con `"Colombia"` no podía volver a
+   * guardar su perfil nunca más, y el campo que fallaba no lo veía. Los dos
+   * sitios validan ahora la misma lista cerrada.
+   */
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], { message: 'El país no está disponible.' })
   country!: string;
 
+  /**
+   * Código de la subdivisión. La lista válida depende del país, así que la
+   * comprobación real la hace el caso de uso (`isValidSubdivision`).
+   */
+  @Transform(toUpper)
   @IsString()
   @IsNotEmpty()
   @MaxLength(10)
@@ -89,6 +105,23 @@ export class UpdateCandidateProfileDto {
   @IsString()
   @IsNotEmpty()
   birthDate!: string;
+
+  /**
+   * Teléfono del aspirante. **No existía**: hasta T36 el único que podía tocar
+   * `candidate_profiles.phone` era el administrador desde `/admin/usuarios`.
+   * Se normaliza a E.164 con `phoneCountry`.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(25)
+  phone?: string;
+
+  @IsOptional()
+  @Transform(toUpper)
+  @IsIn([...COUNTRY_CODES], {
+    message: 'El país del teléfono no está disponible.',
+  })
+  phoneCountry?: string;
 }
 
 export class UpdateCandidatePhotoDto {
@@ -222,6 +255,8 @@ export interface CandidateProfileResponseDto {
   email: string;
   firstName: string;
   lastName: string;
+  /** País emisor del documento (ISO 3166-1 alpha-2). */
+  documentCountry: string;
   documentType: string;
   documentNumber: string;
   birthDate: string;
@@ -232,6 +267,9 @@ export interface CandidateProfileResponseDto {
   country: string;
   state: string;
   municipality: string;
+  phone: string | null;
+  /** País del teléfono: `+1` es Estados Unidos y Canadá a la vez. */
+  phoneCountry: string | null;
   completion: number;
 }
 
@@ -289,6 +327,7 @@ export function toCandidateProfileResponse(
     email,
     firstName: profile.firstName,
     lastName: profile.lastName,
+    documentCountry: profile.documentCountry,
     documentType: profile.documentType,
     documentNumber: profile.documentNumber,
     birthDate: profile.birthDate,
@@ -299,6 +338,8 @@ export function toCandidateProfileResponse(
     country: profile.country,
     state: profile.state,
     municipality: profile.municipality,
+    phone: profile.phone ?? null,
+    phoneCountry: profile.phoneCountry ?? null,
     completion,
   };
 }

@@ -14,6 +14,12 @@ export interface CandidateSearchItemDto {
   firstName: string;
   lastName: string;
   professionalTitle: string | null;
+  /**
+   * País del aspirante (T36). Viaja junto a `state` **porque hace falta para
+   * poder leerlo**: `GUA` es Guanajuato (MX) y Guainía (CO), y `DC` es District
+   * of Columbia (US) y Bogotá D.C. (CO).
+   */
+  country: string;
   state: string;
   municipality: string;
   profilePhotoUrl: string | null;
@@ -78,6 +84,8 @@ export interface CandidateDetailDto {
   lastName: string;
   professionalTitle: string | null;
   summary: string | null;
+  /** País del aspirante: sin él, el código de subdivisión es ambiguo. */
+  country: string;
   state: string;
   municipality: string;
   profilePhotoUrl: string | null;
@@ -110,6 +118,7 @@ export function toCandidateSearchItem(
     firstName: profile.firstName,
     lastName: profile.lastName,
     professionalTitle: profile.professionalTitle ?? null,
+    country: profile.country,
     state: profile.state,
     municipality: profile.municipality,
     profilePhotoUrl: profile.profilePhotoUrl ?? null,
@@ -144,6 +153,7 @@ export function toCandidateDetail(
     lastName: profile.lastName,
     professionalTitle: profile.professionalTitle ?? null,
     summary: profile.summary ?? null,
+    country: profile.country,
     state: profile.state,
     municipality: profile.municipality,
     profilePhotoUrl: profile.profilePhotoUrl ?? null,

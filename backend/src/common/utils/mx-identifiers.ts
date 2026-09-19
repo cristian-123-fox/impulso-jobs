@@ -1,6 +1,13 @@
 /**
  * Validadores de identificadores fiscales mexicanos (formato, no dígito
  * verificador). Se normaliza a mayúsculas antes de validar/almacenar.
+ *
+ * ⚠️ **El teléfono ya no vive aquí.** Desde T36 la normalización es por país y
+ * está en `common/utils/phone.util.ts` (`normalizePhone(country, raw)`);
+ * `MX_PHONE_REGEX` y `normalizeMxPhone` se **borraron** en vez de marcarse como
+ * obsoletos, para que nadie los reutilice. Lo que queda aquí —RFC, CURP y
+ * código postal— sigue siendo mexicano de verdad: lo usan la empresa y la
+ * vacante, que no salen de México.
  */
 
 /** RFC: 3 letras (moral) o 4 (física) + 6 dígitos de fecha + 3 de homoclave. */
@@ -11,19 +18,6 @@ export const CURP_REGEX = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z\d]\d$/;
 
 /** Código postal mexicano: 5 dígitos. */
 export const MX_POSTAL_CODE_REGEX = /^\d{5}$/;
-
-/** Teléfono mexicano: opcional lada país +52 y 10 dígitos nacionales. */
-export const MX_PHONE_REGEX = /^\+52\d{10}$/;
-
-/**
- * Normaliza un teléfono a formato `+52` + 10 dígitos. Ignora espacios, guiones,
- * paréntesis y un prefijo `+52`/`52` de lada país. Devuelve null si no quedan
- * exactamente 10 dígitos nacionales.
- */
-export function normalizeMxPhone(phone: string): string | null {
-  const digits = phone.replace(/[\s().-]/g, '').replace(/^\+?52/, '');
-  return /^\d{10}$/.test(digits) ? `+52${digits}` : null;
-}
 
 export function normalizeRfc(rfc: string): string {
   return rfc.trim().toUpperCase();

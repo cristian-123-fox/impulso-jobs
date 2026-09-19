@@ -6,8 +6,14 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { runInTransaction } from '@/common/utils/transaction.util';
+import {
+  type CheckedCandidateIdentity,
+  checkCandidateIdentity,
+  normalizePhoneOrFail,
+} from '@/common/validators/candidate-identity.validator';
 import { AuditService } from '@/modules/audit/audit.service';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
+import { DocumentType } from '@/modules/candidates/enums/document-type.enum';
 import {
   type ICandidateProfileRepository,
   CANDIDATE_PROFILE_REPOSITORY,
@@ -53,6 +59,8 @@ export interface CreateUserCommand {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  /** País del teléfono de la cuenta. Por defecto `MX`. */
+  phoneCountry?: string;
   jobTitle?: string;
   companyId?: string;
   companyRole?: CompanyMemberRole;
@@ -112,8 +120,9 @@ export class CreateUserUseCase {
     if (command.role === Role.EMPLOYER) {
       company = await this.findCompanyOrFail(command.companyId);
     }
+    let identity: CheckedCandidateIdentity | null = null;
     if (command.role === Role.CANDIDATE) {
-      await this.assertCandidateData(command.candidate);
+      identity = await this.assertCandidateData(command.candidate);
     }
 
     const companyRole = command.companyRole ?? CompanyMemberRole.ADMIN;
@@ -131,7 +140,15 @@ export class CreateUserUseCase {
       command.firstName?.trim() || command.candidate?.firstName?.trim() || null;
     user.lastName =
       command.lastName?.trim() || command.candidate?.lastName?.trim() || null;
-    user.phone = command.phone?.trim() || null;
+    // El teléfono de la cuenta se normaliza a E.164 con su país; si el alta no
+    // lo trae, se hereda el del aspirante, que sí pasó por el validador.
+    const accountPhone = command.phone?.trim()
+      ? normalizePhoneOrFail(command.phoneCountry ?? 'MX', command.phone)
+      : null;
+    user.phone = accountPhone ?? identity?.phone ?? null;
+    user.phoneCountry = accountPhone
+      ? (command.phoneCountry ?? 'MX')
+      : (identity?.phoneCountry ?? null);
     user.jobTitle = command.jobTitle?.trim() || null;
 
     let created!: User;
@@ -152,19 +169,22 @@ export class CreateUserUseCase {
 
       if (command.role === Role.CANDIDATE) {
         const data = command.candidate!;
+        const checked = identity!;
         const profile = new CandidateProfile();
         profile.userId = created.id;
         profile.firstName = data.firstName.trim();
         profile.lastName = data.lastName.trim();
-        profile.documentType = data.documentType;
-        profile.documentNumber = data.documentNumber.trim();
+        profile.documentCountry = checked.documentCountry;
+        profile.documentType = checked.documentType as DocumentType;
+        profile.documentNumber = checked.documentNumber;
         profile.curp = data.curp?.trim().toUpperCase() || null;
         profile.birthDate = data.birthDate;
         profile.professionalTitle = data.professionalTitle?.trim() || null;
-        profile.country = data.country?.trim() || 'MX';
-        profile.state = data.state;
+        profile.country = checked.country;
+        profile.state = checked.state;
         profile.municipality = data.municipality.trim();
-        profile.phone = data.phone?.trim() || null;
+        profile.phone = checked.phone;
+        profile.phoneCountry = checked.phoneCountry;
         await this.candidates.save(profile, manager);
       }
 
@@ -240,9 +260,15 @@ export class CreateUserUseCase {
     return company;
   }
 
+  /**
+   * Valida los datos del aspirante y devuelve la identidad ya normalizada. Usa
+   * el mismo validador que el registro público (T36): así el alta desde el
+   * back-office no puede colar una combinación país/documento que el registro
+   * rechazaría.
+   */
   private async assertCandidateData(
     data?: RegisterCandidateData,
-  ): Promise<void> {
+  ): Promise<CheckedCandidateIdentity> {
     if (!data) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
@@ -250,8 +276,13 @@ export class CreateUserUseCase {
         'Faltan los datos del candidato.',
       );
     }
+    const identity = checkCandidateIdentity(data);
     if (
-      await this.candidates.existsByDocumentNumber(data.documentNumber.trim())
+      await this.candidates.existsByDocument(
+        identity.documentCountry,
+        identity.documentType,
+        identity.documentNumber,
+      )
     ) {
       throw new AppException(
         HttpStatus.CONFLICT,
@@ -267,5 +298,6 @@ export class CreateUserUseCase {
         'La fecha de nacimiento no es válida o es futura.',
       );
     }
+    return identity;
   }
 }

@@ -848,6 +848,40 @@ SELECT u.id, u.email, u.role FROM users u
 
 ---
 
+### T36 · Aspirantes de México, Colombia, Estados Unidos y Canadá ✅
+
+**Hecho (2026-09-18).** Plan completo en [Impulso_Jobs_Multipais_Candidatos.md](Impulso_Jobs_Multipais_Candidatos.md) — decisiones D-1…D-10, riesgos R1…R12 y la lista de QA manual. Un aspirante de **MX, CO, US o CA** puede registrarse y mantener su perfil con **su indicativo telefónico** y **su tipo de documento**. **La empresa y la vacante siguen siendo mexicanas** (RFC, C.P., régimen SAT, CFDI, landings `/trabajo/<área>-en-<estado>`, MXN, IVA 16 %): lo que se internacionaliza es **quién puede postularse**, no dónde opera el negocio.
+
+**Lo que había debajo (y era más que el indicativo):**
+
+- El bloqueo real no era el teléfono sino la **ubicación**: `state` estaba validado con `@IsIn(MX_STATE_CODES)`, así que un colombiano no podía registrarse aunque todo lo demás funcionara.
+- El documento era un enum plano mexicano (`CURP`/`RFC`/`INE`/`Pasaporte`) con **índice único global** sobre el número. Con cuatro países, un pasaporte `AB123456` mexicano y otro colombiano son personas distintas.
+- Tres defectos previos que la tarea destapó y cerró: **D1** el teléfono del registro **no se guardaba nunca** (el DTO lo aceptaba y el use-case no lo asignaba); **D2** el aspirante no podía editar su propio teléfono; **D3** `country` se validaba como `@MaxLength(60)` en el registro y `@Length(2,2)` en el perfil, así que quien se registraba con `"Colombia"` no podía volver a guardar su perfil. **D3 bis**: el `state` del back-office prometía una lista cerrada en Swagger y el validador era `@IsString()` a secas.
+
+**Decisiones que conviene no reabrir sin leer el plan:**
+
+- **El teléfono se guarda en E.164 *y* con su país en columna aparte** (`phone_country`): `+1` es Estados Unidos **y** Canadá, y distinguirlos por el número exigiría la tabla de códigos de área del NANP. Por lo mismo el valor de `ij-phone-input` es un **objeto**, no la cadena E.164.
+- **Códigos de documento con prefijo de país salvo el pasaporte**, y **ni SSN ni SIN** para US/CA (PIPEDA desaconseja pedir el SIN antes de contratar; el SSN obliga a controles que la plataforma no tiene). **No se revierte sin pasar por el negocio y por una revisión de seguridad.**
+- **Los códigos de subdivisión colisionan entre países**: `GUA` es Guanajuato (MX) y Guainía (CO); `DC` es District of Columbia (US) y Bogotá D.C. (CO). Toda traducción código → nombre pide el país, y el banco de talento expone `country` junto a `state`.
+- **Nada de banderas emoji** (Chrome sobre Windows pinta las dos letras) ni **detección de país por IP o `navigator.language`** (rompería el SSR del registro).
+- **Catálogos embebidos, sin `libphonenumber-js`** (~145 KB en un portal con SSR). Si el alcance pasa de ~10 países, se revisa.
+
+**Backend — nuevos (8):** `common/catalogs/{countries,country-subdivisions,identity-documents}.ts`, `common/utils/{phone.util,identity-document.util}.ts` (+ sus dos specs), `common/validators/candidate-identity.validator.ts`, migración `1720000031000-InitMultiCountryCandidate.ts`.
+
+**Backend — modificados (21):** `mx-identifiers.ts` (se **borran** `MX_PHONE_REGEX` y `normalizeMxPhone`, no se marcan obsoletos), `error-code.enum.ts` (+`UNSUPPORTED_COUNTRY`, `INVALID_SUBDIVISION`, `INVALID_PHONE`, `INVALID_DOCUMENT_NUMBER`), `document-type.enum.ts` (9 códigos), entidades `candidate-profile`/`user`/`company`, repositorio del perfil (`existsByDocumentNumber` → `existsByDocument(country, type, number)`), DTOs y use-cases de `registration`, `users`, `account`, `candidates`, `companies` y `talent`, `user-profile-resolver`, `seed-candidate.ts`.
+
+**Frontend — nuevos (5):** `shared/catalogs/countries.catalogs.ts`, `shared/utils/phone.ts` (+ spec), `shared/validators/{phone,identity-document}.validator.ts`, `shared/ui/phone-input/phone-input.ts` (+ spec).
+
+**Frontend — modificados (17):** registro de aspirante (país en el paso 2, documento y subdivisión dependientes, CURP condicional, `country: 'MX'` quemado eliminado, `handleError` con los códigos nuevos), perfil del aspirante (país como `ij-select`, **teléfono editable**), «Mi cuenta», alta y edición de usuario del back-office, tabla de usuarios (`formatPhone`), perfil de empresa y su gemelo del back-office (`ij-phone-input` con país fijo), contacto público (los cuatro países), banco de talento (filtro de país + ubicación con `subdivisionName`), `ij-control-base` (mensajes nuevos), `es.json`/`en.json`, `error-code.enum.ts`, y `mx.catalogs.ts` (los tipos de documento se van a `countries.catalogs.ts`).
+
+**Paso de despliegue:** `migration:run`. La migración añade `candidate_profiles.document_country`/`phone_country`, `users.phone_country` y `companies.phone_country`; **remapea** `document_type` (`CURP`→`MX_CURP`, `RFC`→`MX_RFC`, `INE`→`MX_INE`, `Pasaporte`→`PASSPORT`); rellena `phone_country='MX'` sólo donde hay teléfono; **normaliza a E.164 los teléfonos que nunca pasaron por un normalizador** (`candidate_profiles.phone`, `users.phone`), saltándose y registrando en el log lo que no encaje en vez de abortar; y cambia el índice único del documento a `(document_country, document_type, document_number)`. Sin semillas ni permisos nuevos. Ida y vuelta verificada sobre datos reales en PostgreSQL; **en MySQL no se ha podido probar aquí** (no hay instancia en el entorno) — conviene correrla en el entorno cPanel antes de dar por cerrado el despliegue.
+
+**Criterios de aceptación:** el camino mexicano no cambia (registro con CURP y Jalisco, perfil de empresa que guarda `3312345678` como `+523312345678`); un colombiano ve CC/CE/PPT/Pasaporte y sus 33 departamentos; un aspirante de Canadá guarda `604 555 0123` como `+16045550123` y al reabrir el formulario **sigue diciendo Canadá**; dos aspirantes de países distintos pueden tener el mismo número de pasaporte; un `POST` a mano con `country: 'CO'` y `documentType: 'MX_CURP'` responde **400**; la ficha del banco de talento dice «Guainía, Colombia» y no «Guanajuato»; con `?lang=en` los nombres de país salen en inglés y la etiqueta dice «State» o «Province or territory».
+
+**Fuera de alcance, y sigue estándolo:** empresas y vacantes no mexicanas, moneda y facturación, zona horaria, verificación de teléfono por SMS y dígito verificador de la cédula. **T28 (traducir el área privada) deja de ser opcional**: un aspirante de Toronto entra a `/candidato` y lo ve en español.
+
+---
+
 ## bugs o ajustes 
 
 ### B1 · Click en tarjeta de "Guardadas" redirigía a la web ✅

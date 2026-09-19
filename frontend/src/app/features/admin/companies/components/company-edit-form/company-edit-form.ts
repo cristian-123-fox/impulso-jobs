@@ -15,8 +15,14 @@ import {
 } from '@angular/forms';
 import { COMPANY_TYPE_OPTIONS } from '@/features/company/profile/models/company-profile.models';
 import { MX_STATES, SAT_TAX_REGIMES } from '@/shared/catalogs/mx.catalogs';
-import { IjButton, IjInput, IjOption, IjSelect } from '@/shared/ui';
+import { IjButton, IjInput, IjOption, IjPhoneInput, IjSelect } from '@/shared/ui';
 import { postalCodeValidator } from '@/shared/validators/mx-identifiers.validator';
+import { phoneValidator } from '@/shared/validators/phone.validator';
+import {
+  emptyPhoneValue,
+  fromPhonePayload,
+  toPhonePayload,
+} from '@/shared/utils/phone';
 import { CompanyLogoPicker } from '@/features/admin/companies/components/company-logo-picker/company-logo-picker';
 import {
   AdminCompany,
@@ -31,7 +37,14 @@ import {
 @Component({
   selector: 'app-company-edit-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjInput, IjSelect, CompanyLogoPicker],
+  imports: [
+    ReactiveFormsModule,
+    IjButton,
+    IjInput,
+    IjSelect,
+    IjPhoneInput,
+    CompanyLogoPicker,
+  ],
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
       @if (error()) {
@@ -117,10 +130,10 @@ import {
           [error]="invalid('corporateEmail') ? 'Ingresa un correo válido.' : null"
           formControlName="corporateEmail"
         />
-        <ij-input
+        <!-- Empresa mexicana (T36 · D-10): el selector de país va bloqueado. -->
+        <ij-phone-input
           label="Teléfono (opcional)"
-          placeholder="3312345678"
-          [maxLength]="20"
+          [lockCountry]="true"
           formControlName="phoneNumber"
         />
         <ij-input
@@ -191,7 +204,8 @@ export class CompanyEditForm implements OnInit {
     companyType: this.fb.control(''),
     economicSector: this.fb.control(''),
     corporateEmail: this.fb.control('', [Validators.email]),
-    phoneNumber: this.fb.control(''),
+    // Valor de objeto del control nuevo, con el país fijado a MX (T36 · D-10).
+    phoneNumber: this.fb.control(emptyPhoneValue('MX'), [phoneValidator('MX')]),
     website: this.fb.control(''),
   });
 
@@ -209,7 +223,7 @@ export class CompanyEditForm implements OnInit {
       companyType: company.companyType ?? '',
       economicSector: company.economicSector ?? '',
       corporateEmail: company.corporateEmail ?? '',
-      phoneNumber: company.phoneNumber ?? '',
+      phoneNumber: fromPhonePayload(company.phoneNumber, 'MX', 'MX'),
       website: company.website ?? '',
     });
   }
@@ -251,7 +265,8 @@ export class CompanyEditForm implements OnInit {
     if (value.corporateEmail.trim()) {
       payload.corporateEmail = value.corporateEmail.trim().toLowerCase();
     }
-    if (value.phoneNumber.trim()) payload.phoneNumber = value.phoneNumber.trim();
+    const phone = toPhonePayload(value.phoneNumber).phone;
+    if (phone) payload.phoneNumber = phone;
     if (value.website.trim()) payload.website = value.website.trim();
 
     this.save.emit(payload);

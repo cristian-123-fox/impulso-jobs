@@ -16,14 +16,19 @@ export interface AssignedRoleDto {
 export interface CandidateProfileSummary {
   firstName?: string;
   lastName?: string;
+  /** País emisor del documento (ISO 3166-1 alpha-2). */
+  documentCountry?: string;
   documentType?: string;
   documentNumber?: string;
   curp?: string | null;
   birthDate?: string;
   professionalTitle?: string | null;
+  /** País de residencia. Sin él, `state` es ambiguo (`GUA`, `DC`). */
+  country?: string;
   state?: string;
   municipality?: string;
   phone?: string | null;
+  phoneCountry?: string | null;
   profilePhotoUrl?: string | null;
 }
 
@@ -88,6 +93,10 @@ export class UserResponseDto {
   @ApiPropertyOptional({ nullable: true })
   phone?: string | null;
 
+  /** País del teléfono (ISO 3166-1 alpha-2): `+1` es US y CA a la vez. */
+  @ApiPropertyOptional({ nullable: true })
+  phoneCountry?: string | null;
+
   @ApiPropertyOptional({ nullable: true })
   jobTitle?: string | null;
 
@@ -146,7 +155,13 @@ export function toUserResponse(
     displayName: profile.displayName ?? fullName(user),
     firstName: user.firstName ?? null,
     lastName: user.lastName ?? null,
-    phone: user.phone ?? null,
+    // El teléfono del aspirante vive en su perfil (es lo que rellena el
+    // registro); `users.phone` es el de la cuenta. Se cae al del perfil igual
+    // que ya hacía la foto, para que el listado del back-office no salga vacío
+    // en una cuenta cuyo teléfono sí existe.
+    phone: user.phone ?? profile.candidateProfile?.phone ?? null,
+    phoneCountry:
+      user.phoneCountry ?? profile.candidateProfile?.phoneCountry ?? null,
     jobTitle: user.jobTitle ?? null,
     photoUrl:
       user.photoUrl ?? profile.candidateProfile?.profilePhotoUrl ?? null,

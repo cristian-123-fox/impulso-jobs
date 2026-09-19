@@ -15,4 +15,13 @@ export enum AuthErrorCode {
   CANDIDATE_DOCUMENT_ALREADY_EXISTS = 'CANDIDATE_DOCUMENT_ALREADY_EXISTS',
   INVALID_BIRTH_DATE = 'INVALID_BIRTH_DATE',
   VALIDATION_ERROR = 'VALIDATION_ERROR',
+  /**
+   * Localización del aspirante (T36). El formulario **conmuta sobre estos** para
+   * saltar al paso donde está el campo y marcarlo; sin ellos, un 400 del
+   * validador cruzado sólo pintaría el mensaje genérico.
+   */
+  UNSUPPORTED_COUNTRY = 'UNSUPPORTED_COUNTRY',
+  INVALID_SUBDIVISION = 'INVALID_SUBDIVISION',
+  INVALID_PHONE = 'INVALID_PHONE',
+  INVALID_DOCUMENT_NUMBER = 'INVALID_DOCUMENT_NUMBER',
 }

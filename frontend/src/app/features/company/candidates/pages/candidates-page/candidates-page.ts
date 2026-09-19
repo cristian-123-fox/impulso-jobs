@@ -10,7 +10,12 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
-import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
+import {
+  countryOptions,
+  subdivisionName,
+  subdivisionOptions,
+} from '@/shared/catalogs/countries.catalogs';
 import {
   IjIcon,
   IjModal,
@@ -85,7 +90,7 @@ import {
       }
 
       <form
-        class="mb-5 grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-card lg:grid-cols-[1fr_200px_200px_auto]"
+        class="mb-5 grid gap-3 rounded-2xl border border-line bg-white p-4 shadow-card lg:grid-cols-[1fr_170px_200px_170px_auto]"
         (ngSubmit)="facade.applyFilters()"
       >
         <label class="relative block">
@@ -103,9 +108,17 @@ import {
           />
         </label>
         <ij-select
+          name="country"
+          placeholder="Todos los países"
+          [options]="countryFilterOptions()"
+          [searchable]="false"
+          [ngModel]="facade.countryCode()"
+          (ngModelChange)="onCountryFilter($event)"
+        />
+        <ij-select
           name="state"
-          placeholder="Todos los estados"
-          [options]="stateOptions"
+          [placeholder]="statePlaceholder()"
+          [options]="stateOptions()"
           [ngModel]="facade.stateCode()"
           (ngModelChange)="facade.stateCode.set($event)"
         />
@@ -185,7 +198,7 @@ import {
 
                 <p class="mt-3 flex items-center gap-1.5 text-[12.5px] text-muted">
                   <ij-icon name="map-pin" [size]="14" />
-                  {{ candidate.municipality }}, {{ candidate.state }}
+                  {{ location(candidate) }}
                 </p>
 
                 <div class="mt-2.5 flex flex-wrap gap-1.5">
@@ -271,6 +284,7 @@ import {
 export class CandidatesPage {
   protected readonly facade = inject(CandidatesFacade);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(AppTranslateService);
 
   protected readonly applicant = CandidateAccessSource.APPLICANT;
   protected readonly detail = signal<CandidateDetail | null>(null);
@@ -283,10 +297,31 @@ export class CandidatesPage {
   protected readonly resumeError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
 
-  protected readonly stateOptions: readonly IjOption[] = [
-    { value: '', label: 'Todos los estados' },
-    ...MX_STATES.map((s) => ({ value: s.code, label: s.name })),
-  ];
+  /**
+   * Filtro de país (T36). **Da sentido al de subdivisión**: sin país, `GUA`
+   * devolvería a la vez gente de Guanajuato y de Guainía, y el backend lo
+   * rechaza con un 400 si la combinación no existe.
+   */
+  protected readonly countryFilterOptions = computed<IjOption[]>(() => [
+    { value: '', label: 'Todos los países' },
+    ...countryOptions((code) => this.i18n.enumLabel('country', code)),
+  ]);
+
+  /** Sin país elegido no hay lista que ofrecer: la subdivisión queda vacía. */
+  protected readonly stateOptions = computed<IjOption[]>(() => {
+    const country = this.facade.countryCode();
+    if (!country) return [{ value: '', label: 'Elige un país primero' }];
+    return [
+      { value: '', label: 'Todas las opciones' },
+      ...subdivisionOptions(country),
+    ];
+  });
+
+  protected readonly statePlaceholder = computed(() =>
+    this.facade.countryCode()
+      ? this.i18n.enumLabel('subdivisionLabel', this.facade.countryCode())
+      : 'Elige un país primero',
+  );
 
   /** Cupo agotado: abrir una ficha del banco fallará en el backend. */
   private readonly outOfQuota = computed(() => {
@@ -296,6 +331,31 @@ export class CandidatesPage {
 
   constructor() {
     this.facade.load(1);
+  }
+
+  /**
+   * «Zapopan, Jalisco · México». El nombre de la subdivisión **se resuelve con
+   * el país**: `GUA` es Guanajuato en México y Guainía en Colombia, así que
+   * pintar el código a secas (o buscarlo sólo en los estados mexicanos) daría
+   * el sitio equivocado. Es R2 del plan.
+   */
+  protected location(candidate: {
+    country: string;
+    state: string;
+    municipality: string;
+  }): string {
+    const state = subdivisionName(candidate.country, candidate.state);
+    const country = this.i18n.enumLabel('country', candidate.country);
+    const place = [candidate.municipality, state ?? candidate.state]
+      .filter(Boolean)
+      .join(', ');
+    return country ? `${place} · ${country}` : place;
+  }
+
+  /** Cambiar el país invalida la subdivisión elegida: eran de otra lista. */
+  protected onCountryFilter(value: string): void {
+    this.facade.countryCode.set(value);
+    this.facade.stateCode.set('');
   }
 
   protected initials(candidate: CandidateSearchItem): string {

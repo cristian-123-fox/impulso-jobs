@@ -10,6 +10,7 @@ import {
 import { LocaleFormatService } from '@/core/i18n/locale-format.service';
 import { Role } from '@/core/models/role.enum';
 import { IjAvatar, IjCell, IjColumn, IjIcon, IjSortState, IjTable } from '@/shared/ui';
+import { formatPhone } from '@/shared/utils/phone';
 import { AdminEmpty } from '@/features/admin/shared/admin-empty/admin-empty';
 import {
   AdminUser,
@@ -144,10 +145,8 @@ const EMPTY_MESSAGE: Record<Role, string> = {
         </ng-template>
 
         <ng-template ijCell="phone" [ijCellOf]="users()" let-user>
-          @if (user.candidateProfile?.phone) {
-            <span class="text-[13.5px] text-body">
-              {{ user.candidateProfile?.phone }}
-            </span>
+          @if (phoneOf(user); as phone) {
+            <span class="text-[13.5px] text-body">{{ phone }}</span>
           } @else {
             <span class="text-[13.5px] text-muted">Sin teléfono</span>
           }
@@ -297,6 +296,20 @@ export class UsersTable {
   });
 
   /** El rol base ya lo indica la pestaña; aquí sólo los personalizados. */
+  /**
+   * Teléfono con su indicativo (`+52 33 1234 5678`). El de la cuenta manda y el
+   * del perfil del aspirante es el respaldo, que es la precedencia que ya usa
+   * el backend en `toUserResponse`. Un número que no encaje con su país se
+   * pinta tal cual: es lo que hay guardado (T36).
+   */
+  protected phoneOf(user: AdminUser): string {
+    const phone = user.phone ?? user.candidateProfile?.phone ?? null;
+    if (!phone) return '';
+    const country =
+      user.phoneCountry ?? user.candidateProfile?.phoneCountry ?? null;
+    return formatPhone(country, phone);
+  }
+
   protected extraRoles(user: AdminUser): readonly AssignedRole[] {
     return (user.roles ?? []).filter((role) => !role.isSystem);
   }

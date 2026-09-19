@@ -50,18 +50,28 @@ export interface RegisterCompanyData {
   municipality: string;
 }
 
-/** Datos de candidato para el registro (México). */
+/**
+ * Datos de aspirante para el registro. Desde T36 admite **MX, CO, US y CA**:
+ * `country` es obligatorio (decide la subdivisión y el tipo de documento) y el
+ * teléfono viaja con su propio país, porque `+1` es Estados Unidos y Canadá.
+ */
 export interface RegisterCandidateData {
   firstName: string;
   lastName: string;
+  /** ISO 3166-1 alpha-2 de residencia. Ya no se manda `'MX'` quemado. */
+  country: string;
+  /** País emisor del documento. Si falta, el backend usa `country`. */
+  documentCountry?: string;
   documentType: string;
   documentNumber: string;
   curp?: string;
   birthDate: string;
   professionalTitle?: string;
-  country?: string;
   state: string;
   municipality: string;
+  /** E.164; el backend lo vuelve a normalizar. */
+  phone?: string | null;
+  phoneCountry?: string | null;
 }
 
 export interface RegisterCompanyPayload {

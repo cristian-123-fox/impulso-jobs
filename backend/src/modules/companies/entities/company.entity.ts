@@ -50,6 +50,14 @@ export class Company extends BaseEntity {
   @Column({ name: 'phone_number', type: 'varchar', length: 20, nullable: true })
   phoneNumber?: string | null;
 
+  /**
+   * País del teléfono, por uniformidad con el aspirante (T36 · D-10). Para una
+   * empresa es siempre `MX`: los datos fiscales (RFC, C.P., régimen SAT, CFDI)
+   * son mexicanos y abrir el país arrastraría otro modelo fiscal completo.
+   */
+  @Column({ name: 'phone_country', type: 'varchar', length: 2, nullable: true })
+  phoneCountry?: string | null;
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   website?: string | null;
 

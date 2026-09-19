@@ -30,14 +30,19 @@ export interface AssignedRole {
 export interface CandidateProfileData {
   firstName?: string;
   lastName?: string;
+  /** País emisor del documento (T36). */
+  documentCountry?: string;
   documentType?: string;
   documentNumber?: string;
   curp?: string | null;
   birthDate?: string;
   professionalTitle?: string | null;
+  /** País de residencia. Sin él, `state` es ambiguo (`GUA`, `DC`). */
+  country?: string;
   state?: string;
   municipality?: string;
   phone?: string | null;
+  phoneCountry?: string | null;
 }
 
 export interface AdminUser {
@@ -55,7 +60,9 @@ export interface AdminUser {
   /** Identidad de la persona, guardada en `users` (única fuente para ADMIN). */
   firstName: string | null;
   lastName: string | null;
+  /** E.164; se pinta con `formatPhone(phoneCountry, phone)` (T36). */
   phone: string | null;
+  phoneCountry: string | null;
   jobTitle: string | null;
   photoUrl: string | null;
   companyId: string | null;
@@ -100,13 +107,17 @@ export interface UsersFilters {
 export interface CandidatePayload {
   firstName: string;
   lastName: string;
+  /** ISO 3166-1 alpha-2. Obligatorio desde T36: decide documento y estado. */
+  country: string;
+  documentCountry?: string;
   documentType: string;
   documentNumber: string;
   birthDate: string;
   state: string;
   municipality: string;
   professionalTitle?: string;
-  phone?: string;
+  phone?: string | null;
+  phoneCountry?: string | null;
 }
 
 export interface CreateUserPayload {
@@ -117,6 +128,7 @@ export interface CreateUserPayload {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  phoneCountry?: string;
   jobTitle?: string;
   status?: UserStatus;
   emailVerified?: boolean;
@@ -130,6 +142,8 @@ export interface CreateUserPayload {
 export interface UpdateCandidateProfilePayload {
   firstName?: string;
   lastName?: string;
+  country?: string;
+  documentCountry?: string;
   documentType?: string;
   documentNumber?: string;
   curp?: string;
@@ -137,7 +151,8 @@ export interface UpdateCandidateProfilePayload {
   professionalTitle?: string;
   state?: string;
   municipality?: string;
-  phone?: string;
+  phone?: string | null;
+  phoneCountry?: string | null;
 }
 
 export interface UpdateUserPayload {
@@ -149,6 +164,7 @@ export interface UpdateUserPayload {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  phoneCountry?: string;
   jobTitle?: string;
   adminNotes?: string;
   candidateProfile?: UpdateCandidateProfilePayload;

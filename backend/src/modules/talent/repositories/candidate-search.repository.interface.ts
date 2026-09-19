@@ -13,7 +13,9 @@ export interface CandidateSearchCriteria {
   companyId: string;
   /** Coincidencia parcial sobre nombre, apellido o título profesional. */
   search?: string;
-  /** Código ISO 3166-2:MX. */
+  /** País del aspirante (ISO 3166-1 alpha-2). */
+  country?: string;
+  /** Código de la subdivisión, **dentro de `country`** (los códigos colisionan). */
   state?: string;
   municipality?: string;
   educationLevel?: string;

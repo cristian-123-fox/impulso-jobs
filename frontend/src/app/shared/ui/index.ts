@@ -22,6 +22,12 @@ export { IjTextarea } from '@/shared/ui/textarea/textarea';
 export { IjEditor } from '@/shared/ui/editor/editor';
 export { IjPasswordStrength } from '@/shared/ui/password-strength/password-strength';
 export { IjSelect } from '@/shared/ui/select/select';
+// Teléfono con indicativo de país (T36). El valor es un objeto, no la cadena
+// E.164: `+1` es Estados Unidos y Canadá a la vez.
+export {
+  IjPhoneInput,
+  type IjPhoneValue,
+} from '@/shared/ui/phone-input/phone-input';
 export { IjMultiselect } from '@/shared/ui/multiselect/multiselect';
 export { IjAutocomplete } from '@/shared/ui/autocomplete/autocomplete';
 export { IjDatepicker } from '@/shared/ui/datepicker/datepicker';

@@ -84,10 +84,7 @@ export const SAT_CFDI_USES: readonly CatalogItem[] = [
   { code: 'CP01', name: 'CP01 · Pagos' },
 ];
 
-/** Tipo de documento de identidad. */
-export const DOCUMENT_TYPES: readonly { value: string; label: string }[] = [
-  { value: 'CURP', label: 'CURP' },
-  { value: 'RFC', label: 'RFC' },
-  { value: 'INE', label: 'INE' },
-  { value: 'Pasaporte', label: 'Pasaporte' },
-];
+// Los tipos de documento **se fueron a `countries.catalogs.ts`** (T36): ahora
+// dependen del país del aspirante y sus códigos llevan prefijo (`MX_CURP`,
+// `CO_CC`…). Aquí se quedan los estados, el régimen SAT y el uso de CFDI, que
+// siguen siendo mexicanos porque la empresa y la vacante no salen de México.

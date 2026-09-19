@@ -139,6 +139,10 @@ export class CandidateSearchRepository
       );
     }
 
+    if (criteria.country) {
+      qb.andWhere('profile.country = :country', { country: criteria.country });
+    }
+
     if (criteria.state) {
       qb.andWhere('profile.state = :state', { state: criteria.state });
     }

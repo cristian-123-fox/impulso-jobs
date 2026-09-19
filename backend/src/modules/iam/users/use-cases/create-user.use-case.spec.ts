@@ -52,7 +52,8 @@ const candidateCommand = (): CreateUserCommand => ({
   candidate: {
     firstName: 'Ana',
     lastName: 'García',
-    documentType: DocumentType.CURP,
+    country: 'MX',
+    documentType: DocumentType.MX_CURP,
     documentNumber: 'GARA900520MJCXXX09',
     birthDate: '1990-05-20',
     state: 'JAL',
@@ -106,7 +107,7 @@ describe('CreateUserUseCase', () => {
       save: jest.fn((m) => Promise.resolve(m)),
     } as unknown as jest.Mocked<ICompanyUserRepository>;
     candidates = {
-      existsByDocumentNumber: jest.fn().mockResolvedValue(false),
+      existsByDocument: jest.fn().mockResolvedValue(false),
       save: jest.fn((p) => Promise.resolve(p)),
     } as unknown as jest.Mocked<ICandidateProfileRepository>;
     hasher = {
@@ -199,7 +200,7 @@ describe('CreateUserUseCase', () => {
   });
 
   it('rechaza documento de candidato duplicado', async () => {
-    candidates.existsByDocumentNumber.mockResolvedValue(true);
+    candidates.existsByDocument.mockResolvedValue(true);
 
     const thrown = await useCase
       .execute(candidateCommand())

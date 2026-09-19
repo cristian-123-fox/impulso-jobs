@@ -85,13 +85,18 @@ export async function seedCandidate(dataSource: DataSource): Promise<string> {
         userId: user.id,
         firstName: 'María',
         lastName: 'Ferreira',
-        documentType: DocumentType.CURP,
-        documentNumber: 'SEED-CANDIDATE-0001',
+        documentCountry: 'MX',
+        documentType: DocumentType.MX_CURP,
+        // El número no es una CURP real a propósito: es una cuenta de prueba y
+        // así no colisiona con nada. No pasa por el validador de formato.
+        documentNumber: 'SEEDCANDIDATE0001',
         birthDate: '1995-05-20',
         professionalTitle: 'Frontend Engineer',
         country: 'MX',
         state: 'CMX',
         municipality: 'Cuauhtémoc',
+        phone: '+525512345678',
+        phoneCountry: 'MX',
       }),
     );
     console.log('Perfil de candidato creado (candidate_profile).');

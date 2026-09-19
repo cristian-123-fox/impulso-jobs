@@ -16,8 +16,16 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { Role } from '@/core/models/role.enum';
-import { DOCUMENT_TYPES, MX_STATES } from '@/shared/catalogs/mx.catalogs';
+import {
+  type CountryCode,
+  DEFAULT_COUNTRY,
+  countryByCode,
+  countryOptions,
+  documentOptions,
+  subdivisionOptions,
+} from '@/shared/catalogs/countries.catalogs';
 import {
   IjButton,
   IjDatepicker,
@@ -25,8 +33,11 @@ import {
   IjInput,
   IjOption,
   IjPasswordStrength,
+  IjPhoneInput,
   IjSelect,
 } from '@/shared/ui';
+import { phoneValidator } from '@/shared/validators/phone.validator';
+import { emptyPhoneValue, toPhonePayload } from '@/shared/utils/phone';
 import { notFutureDateValidator } from '@/shared/validators/mx-identifiers.validator';
 import { passwordPolicyValidator } from '@/shared/validators/password.validator';
 import { CompaniesApi } from '@/features/admin/companies/data/companies.api';
@@ -41,6 +52,7 @@ import {
 const CANDIDATE_CONTROLS = [
   'firstName',
   'lastName',
+  'country',
   'documentType',
   'documentNumber',
   'birthDate',
@@ -59,11 +71,12 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   companyId: 'empresa',
   firstName: 'nombre',
   lastName: 'apellidos',
+  country: 'país',
   documentType: 'tipo de documento',
   documentNumber: 'número de documento',
   birthDate: 'fecha de nacimiento',
-  state: 'estado',
-  municipality: 'municipio',
+  state: 'estado o departamento',
+  municipality: 'municipio o ciudad',
 };
 
 /**
@@ -120,6 +133,7 @@ const COMPANY_ROLE_CARDS: readonly {
     IjInput,
     IjSelect,
     IjDatepicker,
+    IjPhoneInput,
   ],
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
@@ -274,7 +288,7 @@ const COMPANY_ROLE_CARDS: readonly {
                 [error]="invalid('lastName') ? 'Los apellidos son obligatorios.' : null"
                 formControlName="lastName"
               />
-              <ij-input label="Teléfono" placeholder="3312345678" formControlName="phone" />
+              <ij-phone-input label="Teléfono" formControlName="phone" />
               <ij-input
                 label="Puesto o cargo"
                 placeholder="Coordinador de soporte"
@@ -298,9 +312,16 @@ const COMPANY_ROLE_CARDS: readonly {
                 formControlName="lastName"
               />
               <ij-select
+                label="País"
+                [required]="true"
+                [options]="countryList()"
+                [error]="invalid('country') ? 'Selecciona el país.' : null"
+                formControlName="country"
+              />
+              <ij-select
                 label="Tipo de documento"
                 [required]="true"
-                [options]="documentTypeOptions"
+                [options]="documentTypeOptions()"
                 [error]="invalid('documentType') ? 'Selecciona el tipo.' : null"
                 formControlName="documentType"
               />
@@ -319,20 +340,25 @@ const COMPANY_ROLE_CARDS: readonly {
                 formControlName="birthDate"
               />
               <ij-select
-                label="Estado"
+                [label]="subdivisionLabel()"
                 [required]="true"
-                [options]="stateOptions"
-                [error]="invalid('state') ? 'Selecciona el estado.' : null"
+                [options]="stateOptions()"
+                [error]="invalid('state') ? 'Selecciona una opción del país elegido.' : null"
                 formControlName="state"
               />
               <ij-input
-                label="Municipio"
+                [label]="localityLabel()"
                 placeholder="Zapopan"
                 [required]="true"
                 [error]="invalid('municipality') ? 'El municipio es obligatorio.' : null"
                 formControlName="municipality"
               />
-              <ij-input label="Teléfono" placeholder="3312345678" formControlName="phone" />
+              <ij-phone-input
+                label="Teléfono"
+                [defaultCountry]="country()"
+                [error]="invalid('phone') ? 'Revisa el teléfono para el país elegido.' : null"
+                formControlName="phone"
+              />
             </div>
           }
         </section>
@@ -401,6 +427,7 @@ export class UserCreateForm implements OnInit {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly companiesApi = inject(CompaniesApi);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly i18n = inject(AppTranslateService);
 
   protected readonly employer = Role.EMPLOYER;
   protected readonly candidate = Role.CANDIDATE;
@@ -418,12 +445,25 @@ export class UserCreateForm implements OnInit {
   protected readonly roleOptions: readonly IjOption[] = Object.values(Role).map(
     (role) => ({ value: role, label: ROLE_LABELS[role] }),
   );
-  protected readonly documentTypeOptions: readonly IjOption[] =
-    DOCUMENT_TYPES.map((d) => ({ value: d.value, label: d.label }));
-  protected readonly stateOptions: readonly IjOption[] = MX_STATES.map((s) => ({
-    value: s.code,
-    label: s.name,
-  }));
+  /** País del aspirante. De él dependen documento, subdivisión y etiquetas. */
+  protected readonly country = signal<CountryCode>(DEFAULT_COUNTRY);
+  protected readonly countryList = computed(() =>
+    countryOptions((code) => this.i18n.enumLabel('country', code)),
+  );
+  protected readonly documentTypeOptions = computed(() =>
+    documentOptions(this.country(), (code) =>
+      this.i18n.enumLabel('documentType', code),
+    ),
+  );
+  protected readonly stateOptions = computed(() =>
+    subdivisionOptions(this.country()),
+  );
+  protected readonly subdivisionLabel = computed(() =>
+    this.i18n.enumLabel('subdivisionLabel', this.country()),
+  );
+  protected readonly localityLabel = computed(() =>
+    this.i18n.enumLabel('localityLabel', this.country()),
+  );
 
   protected readonly form = this.fb.group({
     email: this.fb.control('', [Validators.required, Validators.email]),
@@ -436,12 +476,13 @@ export class UserCreateForm implements OnInit {
     companyRole: this.fb.control<CompanyMemberRole>(CompanyMemberRole.ADMIN),
     firstName: this.fb.control(''),
     lastName: this.fb.control(''),
+    country: this.fb.control<CountryCode>(DEFAULT_COUNTRY),
     documentType: this.fb.control(''),
     documentNumber: this.fb.control(''),
     birthDate: this.fb.control(''),
     state: this.fb.control(''),
     municipality: this.fb.control(''),
-    phone: this.fb.control(''),
+    phone: this.fb.control(emptyPhoneValue(), [phoneValidator()]),
     jobTitle: this.fb.control(''),
   });
 
@@ -503,6 +544,23 @@ export class UserCreateForm implements OnInit {
     this.form.controls.role.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((role) => this.syncRoleValidators(role));
+
+    // Cambiar de país rehace documento y subdivisión, y los limpia: una
+    // combinación imposible (CURP con país Colombia) la rechaza el backend con
+    // un 400 que aquí no se puede explicar (T36 § 7.3.3).
+    this.form.controls.country.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => {
+        this.country.set(
+          (countryByCode(value)?.code ?? DEFAULT_COUNTRY) as CountryCode,
+        );
+        this.form.controls.documentType.setValue('', { emitEvent: false });
+        this.form.controls.documentNumber.setValue('', { emitEvent: false });
+        this.form.controls.state.setValue('', { emitEvent: false });
+        this.form.controls.phone.setValue(emptyPhoneValue(this.country()), {
+          emitEvent: false,
+        });
+      });
 
     this.companiesApi
       .list({ page: 1, limit: 100 })
@@ -598,9 +656,11 @@ export class UserCreateForm implements OnInit {
     // copia a `users` al crearla); el resto la manda en la raíz, que es su
     // único sitio.
     if (value.role !== Role.CANDIDATE) {
+      const phone = toPhonePayload(value.phone);
       payload.firstName = value.firstName.trim() || undefined;
       payload.lastName = value.lastName.trim() || undefined;
-      payload.phone = value.phone.trim() || undefined;
+      payload.phone = phone.phone ?? undefined;
+      payload.phoneCountry = phone.phoneCountry ?? undefined;
       payload.jobTitle = value.jobTitle.trim() || undefined;
     }
 
@@ -612,12 +672,14 @@ export class UserCreateForm implements OnInit {
       payload.candidate = {
         firstName: value.firstName.trim(),
         lastName: value.lastName.trim(),
+        country: value.country,
+        documentCountry: value.country,
         documentType: value.documentType,
         documentNumber: value.documentNumber.trim(),
         birthDate: value.birthDate,
         state: value.state,
         municipality: value.municipality.trim(),
-        phone: value.phone.trim() || undefined,
+        ...toPhonePayload(value.phone),
       };
     }
 

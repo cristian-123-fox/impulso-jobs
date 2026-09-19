@@ -7,11 +7,17 @@ import {
   output,
 } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { IjButton, IjInput } from '@/shared/ui';
+import { IjButton, IjInput, IjPhoneInput } from '@/shared/ui';
 import {
   AccountProfile,
   UpdateAccountProfilePayload,
 } from '@/features/account/models/account.models';
+import { phoneValidator } from '@/shared/validators/phone.validator';
+import {
+  emptyPhoneValue,
+  fromPhonePayload,
+  toPhonePayload,
+} from '@/shared/utils/phone';
 
 /**
  * Identidad de la cuenta: lo que vive en `users`. Todos los campos son
@@ -24,19 +30,14 @@ import {
 @Component({
   selector: 'app-account-identity-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjInput],
+  imports: [ReactiveFormsModule, IjButton, IjInput, IjPhoneInput],
   host: { class: 'block' },
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
       <div class="grid gap-4 sm:grid-cols-2">
         <ij-input label="Nombre(s)" placeholder="Oscar" formControlName="firstName" />
         <ij-input label="Apellidos" placeholder="Ruiz" formControlName="lastName" />
-        <ij-input
-          label="Teléfono"
-          type="tel"
-          placeholder="3312345678"
-          formControlName="phone"
-        />
+        <ij-phone-input label="Teléfono" formControlName="phone" />
         <ij-input
           label="Puesto o cargo"
           placeholder="Coordinador de soporte"
@@ -85,7 +86,7 @@ export class AccountIdentityForm {
   protected readonly form = this.fb.group({
     firstName: this.fb.control(''),
     lastName: this.fb.control(''),
-    phone: this.fb.control(''),
+    phone: this.fb.control(emptyPhoneValue(), [phoneValidator()]),
     jobTitle: this.fb.control(''),
   });
 
@@ -98,7 +99,7 @@ export class AccountIdentityForm {
       this.form.reset({
         firstName: profile.firstName ?? '',
         lastName: profile.lastName ?? '',
-        phone: profile.phone ?? '',
+        phone: fromPhonePayload(profile.phone, profile.phoneCountry),
         jobTitle: profile.jobTitle ?? '',
       });
     });
@@ -115,8 +116,15 @@ export class AccountIdentityForm {
     if (value.lastName.trim() !== (profile.lastName ?? '')) {
       payload.lastName = value.lastName.trim();
     }
-    if (value.phone.trim() !== (profile.phone ?? '')) {
-      payload.phone = value.phone.trim();
+    // El teléfono se compara ya en E.164 (lo que guarda el backend), no como
+    // lo teclearon: si no, reabrir y guardar mandaría una escritura inútil.
+    const phone = toPhonePayload(value.phone);
+    if (
+      phone.phone !== (profile.phone ?? null) ||
+      phone.phoneCountry !== (profile.phoneCountry ?? null)
+    ) {
+      payload.phone = phone.phone ?? '';
+      if (phone.phoneCountry) payload.phoneCountry = phone.phoneCountry;
     }
     if (value.jobTitle.trim() !== (profile.jobTitle ?? '')) {
       payload.jobTitle = value.jobTitle.trim();
