@@ -6,7 +6,7 @@ Guía para publicar el proyecto en cPanel con **Node.js (Passenger) + SSH**.
 
 | Parte | Qué es | Dónde va |
 |---|---|---|
-| **Frontend** | Angular compilado como **SPA estática** | Subdominio → `demo.impulsojobs.com` |
+| **Frontend** | Angular compilado como **app Node con SSR** (§6.2-A) | Subdominio → `demo.impulsojobs.com` |
 | **Backend** | NestJS como **app Node.js** | Subdominio → `api.impulsojobs.com` |
 | **Base de datos** | **MySQL** de cPanel | — |
 
@@ -19,6 +19,21 @@ Guía para publicar el proyecto en cPanel con **Node.js (Passenger) + SSH**.
 | `apiBaseUrl` (frontend) | `https://api.impulsojobs.com/api/v1` — ya fijado en `environment.production.ts` |
 | `APP_WEB_URL` (.env API) | `https://demo.impulsojobs.com` |
 | `CORS_ORIGIN` (.env API) | `https://demo.impulsojobs.com` |
+
+## Qué cambia en este despliegue
+
+Lo que hay que mirar al subir esta versión sobre una anterior. El procedimiento
+normal (§ "Redeploy") lo cubre todo; esto es lo que conviene saber **por qué**:
+
+| Cambio | Qué implica al desplegar |
+|---|---|
+| **Migración nueva `1720000032000-AddRoleScope`** | Añade `roles.scope`. `migration:run:prod` la aplica sola. **Sin ella la API responde 500 en todo endpoint autenticado**: la autorización lee esa columna en cada comprobación de permisos. |
+| **Paneles de inicio en las tres áreas** | `/admin`, `/empresa` y `/candidato` ya no abren en un listado. No hay configuración nueva; sólo recordar que la primera pantalla cambió para los usuarios. |
+| **ApexCharts en el frontend** | Dependencia nueva: hace falta `pnpm install` antes de `pnpm run build`. Viaja en su propio fichero (~950 KB, 224 KB comprimido) y **no** engorda el bundle inicial, que sigue en 468 KB. |
+| **El rol del aspirante ya no se administra** | Sus permisos están fijados en código. `seed:prod` los sigue sembrando por coherencia, pero ya no dependen de que se ejecute. |
+| **Correo por SMTP** | Si tu `.env` todavía tiene `RESEND_API_KEY`, **no hace nada**: el adaptador de Resend se retiró. Configura `SMTP_*` o los correos sólo irán al log. |
+
+---
 
 ## Requisitos previos
 
@@ -113,9 +128,12 @@ CORS_ORIGIN=https://demo.impulsojobs.com
 # APP_PUBLIC_URL es la base de las URLs de imagen que se guardan en BD.
 APP_PUBLIC_URL=https://api.impulsojobs.com
 
-# Correo saliente (Resend). Sin RESEND_API_KEY los correos sólo van al log.
-RESEND_API_KEY=re_<clave de https://resend.com/api-keys>
-MAIL_FROM="Impulso Jobs <no-reply@impulsojobs.com>"
+# Correo saliente (SMTP). Sin SMTP_HOST los correos sólo se escriben en el log.
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASS=xxxx-xxxx-xxxx-xxxx
+SMTP_FROM="Impulso Jobs <no-reply@impulsojobs.com>"
 ```
 
 > ⚠️ **Entrecomilla todo valor con espacios o `<` `>`.** El wrapper de `node` del
@@ -229,6 +247,7 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 ## 7) Verificación final
 
 - `https://demo.impulsojobs.com` carga y **recargar en rutas internas** (`/vacantes`, `/nosotros`, `/planes`) **no da 404 ni entra en bucle de redirecciones**.
+- **Las tres áreas privadas abren en su panel** y las gráficas se pintan: `/admin`, `/empresa` y `/candidato`. Si los indicadores salen pero el hueco de la gráfica se queda vacío, el chunk de ApexCharts no se está sirviendo — revisa que `browser/` se subió completo (son ~950 KB en su propio fichero, no van en el bundle inicial).
 - Comprueba el modo desde tu máquina: `curl -sI https://demo.impulsojobs.com/vacantes` debe responder `200`, y `curl -s https://demo.impulsojobs.com/vacantes | head -c 200` **no** debe contener `http-equiv="refresh"`. Si lo contiene, el fallback del `.htaccess` está mal (§6.2-B).
 - En SSR (opción A), `curl -s https://demo.impulsojobs.com/vacantes` debe traer las vacantes ya renderizadas (busca `app-vacancy-card`). Si sólo ves el cascarón, el SSR no está activo: revisa que el *startup file* sea `server/server.mjs` y que el hostname esté en `security.allowedHosts` de `angular.json`.
 - Inicia sesión con el usuario admin sembrado.
@@ -238,11 +257,12 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 
 ## Notas importantes
 
-- ✉️ **Correos (verificación / recuperación / notificaciones):** el proveedor es **Resend** y se activa **sólo con variables de entorno**, sin tocar código. `MailerModule` elige adaptador en este orden: `RESEND_API_KEY` → Resend · `SMTP_HOST` → SMTP con nodemailer (legado) · ninguna de las dos → consola, que **escribe el enlace en el log y no envía nada**. Al arrancar, el log dice cuál quedó activo (`[MailerModule] Correo: Resend`).
-  1. Crea la clave en <https://resend.com/api-keys> (basta permiso *Sending access*) y ponla en `RESEND_API_KEY`.
-  2. **Verifica el dominio** en Resend (añade los registros SPF y DKIM en el DNS del dominio en cPanel) y pon el remitente en `MAIL_FROM`. Si el dominio no está verificado, la API rechaza el envío: el correo **no sale** y el fallo queda en el log (es best-effort, no rompe el registro ni el reset).
-  3. Ventaja sobre SMTP en cPanel: es HTTPS saliente, así que **no depende de que el hosting deje abierto el puerto 587**.
+- ✉️ **Correos (verificación / recuperación / notificaciones):** el proveedor es **SMTP** (nodemailer) y se activa **sólo con variables de entorno**, sin tocar código. `MailerModule` elige adaptador así: `SMTP_HOST` → SMTP · sin ella → consola, que **escribe el enlace en el log y no envía nada**. Al arrancar, el log dice cuál quedó activo (`[MailerModule] Correo: SMTP`).
+  1. Con Gmail: genera una **clave de aplicación** en <https://myaccount.google.com/apppasswords> (exige verificación en 2 pasos) y ponla en `SMTP_PASS`. `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`.
+  2. Con el correo del propio cPanel: usa el host de correo del hosting y una cuenta creada en *Email Accounts*. ⚠️ **Depende de que el hosting deje abierto el puerto 587 de salida**; si lo bloquea, no hay forma de enviar por SMTP y toca un proveedor HTTPS.
+  3. El **dominio del remitente necesita SPF y DKIM** en el DNS. Sin ellos el correo sale pero acaba en spam, o el proveedor lo rechaza; el fallo queda en el log y **no rompe** el registro ni el reset (el envío es best-effort).
   4. Sin correo configurado, usa las **semillas** para cuentas ya verificadas: `pnpm run seed:prod` (admin) y `pnpm run seed:prod -- --demo --force` (candidato y empresa de prueba).
+  5. Para ver cómo quedan los cinco correos sin enviar nada: `pnpm run mail:preview` (escribe HTML y texto en `backend/.tmp/mail-preview/`).
 - 🧪 **El entorno virtual se activa por sesión:** cada Terminal nueva de la API requiere `source ~/nodevenv/api/.../bin/activate`.
 - 🔁 **Redeploy del backend:** activar venv → `git pull` (o subir cambios) → `pnpm install` → `pnpm run build` → `pnpm run migration:run:prod` → `pnpm run seed:prod` → **Restart** en la Node.js App.
   > `seed:prod` es idempotente y hay que ejecutarlo **siempre**: si la versión nueva añadió permisos (p. ej. `users.create`, `companies.create`), sin él los endpoints responden `403 PERMISSION_DENIED` aunque el código esté desplegado.
