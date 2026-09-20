@@ -29,10 +29,10 @@ export interface RoleActionEvent {
   imports: [IjIcon, IjTable, IjCell, AdminEmpty],
   template: `
     @if (roles().length === 0) {
-      <app-admin-empty icon="shield" message="No hay roles.">
+      <app-admin-empty icon="shield" [message]="emptyMessage()">
         <p class="max-w-[420px] text-[12.5px] text-muted">
-          Ejecuta <code>pnpm run seed:rbac</code> o crea el primero con el botón
-          de arriba.
+          Crea el primero con el botón de arriba. Si esperabas ver los roles
+          base, ejecuta <code>pnpm seed</code>.
         </p>
       </app-admin-empty>
     } @else {
@@ -66,6 +66,21 @@ export interface RoleActionEvent {
           <span class="text-[13.5px] text-muted">
             {{ role.description || 'Sin descripción' }}
           </span>
+        </ng-template>
+
+        <!--
+          El contador no incluye los permisos base del ámbito: esos los concede
+          el backend por código y no son una decisión de quien administra.
+        -->
+        <ng-template ijCell="permissionCount" [ijCellOf]="roles()" let-role>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[13px] font-semibold text-body transition-colors hover:bg-surface hover:text-brand-strong"
+            (click)="emit('open', role)"
+          >
+            <ij-icon name="shield" [size]="14" />
+            {{ role.permissionCount ?? 0 }}
+          </button>
         </ng-template>
 
         <ng-template ijCell="isSystem" [ijCellOf]="roles()" let-role>
@@ -126,6 +141,7 @@ export interface RoleActionEvent {
 })
 export class RolesTable {
   readonly roles = input.required<readonly RoleSummary[]>();
+  readonly emptyMessage = input('No hay roles.');
   readonly sort = model<IjSortState | null>(null);
   readonly action = output<RoleActionEvent>();
 
@@ -141,6 +157,13 @@ export class RolesTable {
       hideBelow: 'sm',
     },
     { id: 'description', header: 'Descripción', hideBelow: 'lg' },
+    {
+      id: 'permissionCount',
+      header: 'Permisos',
+      sortable: true,
+      value: (r) => r.permissionCount ?? 0,
+      hideBelow: 'sm',
+    },
     {
       id: 'isSystem',
       header: 'Tipo',

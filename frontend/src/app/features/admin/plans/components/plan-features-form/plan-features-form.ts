@@ -52,7 +52,7 @@ interface FeatureRow {
     @if (rows().length === 0) {
       <p class="rounded-xl bg-surface px-4 py-6 text-center text-[13.5px] text-muted">
         No hay beneficios en el catálogo. Si acabas de instalar, ejecuta
-        <code>pnpm run seed:plan-features</code>; si no, crea el primero desde
+        <code>pnpm seed</code>; si no, crea el primero desde
         “Nuevo beneficio”.
       </p>
     } @else {

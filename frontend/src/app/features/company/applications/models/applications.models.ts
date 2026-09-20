@@ -1,4 +1,4 @@
-/** Estado del catálogo (`application_statuses`, sembrado por `seed:applications`). */
+/** Estado del catálogo (`application_statuses`, sembrado por `pnpm seed`). */
 export interface ApplicationStatus {
   code: string;
   name: string;

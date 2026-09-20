@@ -156,7 +156,7 @@ pnpm run migration:run:prod   # crea las tablas y siembra los catálogos que van
 SEED_ADMIN_EMAIL=tu@correo.com SEED_ADMIN_PASSWORD='TuPass#123' pnpm run seed:prod
 ```
 
-> `seed:prod` **no** crea las cuentas de prueba (candidato/empresa): con `NODE_ENV=production` las bloquea a propósito. Si las necesitas en un entorno de pruebas, `pnpm run seed:demo:prod`.
+> `seed:prod` **no** crea las cuentas de prueba (candidato/empresa): con `NODE_ENV=production` las bloquea a propósito. Si las necesitas en un entorno de pruebas, `pnpm run seed:prod -- --demo --force`.
 
 > **Alternativa sin pnpm:** puedes usar `npm` directamente — `npm install` → `npm run build` → `npm run migration:run:prod`, etc. Los scripts son `node dist/...` y funcionan igual.
 
@@ -242,7 +242,7 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
   1. Crea la clave en <https://resend.com/api-keys> (basta permiso *Sending access*) y ponla en `RESEND_API_KEY`.
   2. **Verifica el dominio** en Resend (añade los registros SPF y DKIM en el DNS del dominio en cPanel) y pon el remitente en `MAIL_FROM`. Si el dominio no está verificado, la API rechaza el envío: el correo **no sale** y el fallo queda en el log (es best-effort, no rompe el registro ni el reset).
   3. Ventaja sobre SMTP en cPanel: es HTTPS saliente, así que **no depende de que el hosting deje abierto el puerto 587**.
-  4. Sin correo configurado, usa los **seeders** para cuentas ya verificadas (`seed:admin:prod`, `seed:candidate:prod`, `seed:company:prod`).
+  4. Sin correo configurado, usa las **semillas** para cuentas ya verificadas: `pnpm run seed:prod` (admin) y `pnpm run seed:prod -- --demo --force` (candidato y empresa de prueba).
 - 🧪 **El entorno virtual se activa por sesión:** cada Terminal nueva de la API requiere `source ~/nodevenv/api/.../bin/activate`.
 - 🔁 **Redeploy del backend:** activar venv → `git pull` (o subir cambios) → `pnpm install` → `pnpm run build` → `pnpm run migration:run:prod` → `pnpm run seed:prod` → **Restart** en la Node.js App.
   > `seed:prod` es idempotente y hay que ejecutarlo **siempre**: si la versión nueva añadió permisos (p. ej. `users.create`, `companies.create`), sin él los endpoints responden `403 PERMISSION_DENIED` aunque el código esté desplegado.
@@ -260,10 +260,8 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 | `pnpm run start:prod` | Arranca `node dist/main` (Passenger lo hace por ti) |
 | `pnpm run migration:run:prod` | Ejecuta migraciones (JS compilado, sin ts-node) |
 | `pnpm run seed:prod` | **Todas las semillas de un tirón**: roles/permisos, catálogos y admin. Idempotente |
-| `pnpm run seed:demo:prod` | Lo anterior + cuentas de prueba. Con `NODE_ENV=production` exige `-- --force` |
-| `pnpm run seed:rbac:prod` | Sólo roles/permisos (sigue existiendo; `seed:prod` ya lo incluye) |
-| `pnpm run seed:admin:prod` | Sólo el admin |
-| `pnpm run seed:candidate:prod` / `seed:company:prod` | Sólo las cuentas de prueba verificadas |
+| `pnpm run seed:prod -- --demo --force` | Lo anterior + cuentas de prueba (con `NODE_ENV=production` exige `--force`) |
+| `pnpm run seed:prod -- --only=rbac` | Sólo roles/permisos. Claves: `rbac`, `applications`, `plan-features`, `admin`, `candidate`, `company` (`-- --list` las enumera) |
 | `pnpm run billing:expire:prod` | Caduca promociones vencidas y revierte los distintivos |
 | `pnpm run vacancies:expire:prod` | Cierra vacantes cuya vigencia (`VACANCY_LIFETIME_DAYS`, 60 por defecto) venció |
 | `pnpm run views:consolidate:prod` | Suma los eventos de vista al contador `views_count` de cada vacante |

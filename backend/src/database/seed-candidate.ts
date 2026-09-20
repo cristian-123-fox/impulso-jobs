@@ -1,5 +1,4 @@
 import type { DataSource } from 'typeorm';
-import { runSeedScript } from './seed-script';
 import { hashPassword } from '@/common/utils/password.util';
 import { Role as PlatformRole } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
@@ -14,8 +13,8 @@ import { DocumentType } from '@/modules/candidates/enums/document-type.enum';
  * (verificado, activo, sin bloqueo), le asigna el rol CANDIDATE en `user_roles`
  * y garantiza su `candidate_profile` (necesario para el panel del candidato,
  * perfil, hojas de vida y configuración M8).
- * Requiere que el rol CANDIDATE exista (ejecuta antes `pnpm seed:rbac`).
- * Ejecutar: `pnpm seed:demo` (todas) o `pnpm seed:candidate` (sólo esta).
+ * Requiere que el rol CANDIDATE exista; `pnpm seed:demo` siembra el RBAC antes.
+ * Ejecutar: `pnpm seed:demo` (todas) o `pnpm seed -- --only=candidate`.
  * Sobrescribible con SEED_CANDIDATE_EMAIL / SEED_CANDIDATE_PASSWORD.
  */
 const CANDIDATE_EMAIL =
@@ -60,7 +59,7 @@ export async function seedCandidate(dataSource: DataSource): Promise<string> {
   });
   if (!candidateRole) {
     console.warn(
-      '⚠ El rol CANDIDATE no existe. Ejecuta primero: pnpm seed:rbac',
+      '⚠ El rol CANDIDATE no existe. Ejecuta primero: pnpm seed -- --only=rbac',
     );
   } else {
     const exists = await userRoleRepo.findOne({
@@ -103,9 +102,4 @@ export async function seedCandidate(dataSource: DataSource): Promise<string> {
   }
 
   return `Candidato de prueba · ${email} / ${CANDIDATE_PASSWORD} (rol CANDIDATE).`;
-}
-
-// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
-if (require.main === module) {
-  void runSeedScript(seedCandidate);
 }

@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   OnInit,
+  computed,
   inject,
   input,
   output,
@@ -11,9 +12,11 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { IjButton, IjInput } from '@/shared/ui';
+import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 import {
   CreateRolePayload,
+  ROLE_SCOPE_META,
+  RoleScope,
   RoleSummary,
 } from '@/features/admin/roles/models/roles.models';
 
@@ -22,12 +25,16 @@ import {
  * matriz de permisos y el backend no lo acepta en el `PUT`, así que al editar
  * se muestra deshabilitado.
  *
- * Los permisos se asignan en el detalle: son una matriz larga, no cabe aquí.
+ * El **ámbito** tampoco se edita, y ni siquiera se elige aquí: lo fija la
+ * pestaña desde la que se abrió el formulario. Cambiarlo después dejaría al rol
+ * con permisos que ya no aplican a quien lo usa.
+ *
+ * Los permisos se asignan en el detalle: son un árbol largo, no cabe aquí.
  */
 @Component({
   selector: 'app-role-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, IjButton, IjInput],
+  imports: [ReactiveFormsModule, IjButton, IjIcon, IjInput],
   template: `
     <form novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
       @if (error()) {
@@ -38,6 +45,20 @@ import {
           {{ error() }}
         </p>
       }
+
+      <div
+        class="mb-4 flex items-center gap-2.5 rounded-xl border border-line bg-surface/60 px-3.5 py-3"
+      >
+        <ij-icon [name]="scopeMeta().icon" [size]="18" class="text-brand-strong" />
+        <span class="min-w-0">
+          <span class="block text-[13px] font-bold text-ink-900">
+            Rol de {{ scopeMeta().label.toLowerCase() }}
+          </span>
+          <span class="block text-[12.5px] leading-snug text-muted">
+            {{ scopeMeta().hint }}
+          </span>
+        </span>
+      </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <ij-input
@@ -91,12 +112,18 @@ import {
 export class RoleForm implements OnInit {
   /** `null` en el alta; el rol a editar en caso contrario. */
   readonly role = input<RoleSummary | null>(null);
+  /** Ámbito del rol a crear. Al editar manda el del propio rol. */
+  readonly scope = input<RoleScope>('PLATFORM');
   readonly submitting = input(false);
   readonly error = input<string | null>(null);
   readonly save = output<CreateRolePayload>();
   readonly cancel = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
+
+  protected readonly scopeMeta = computed(
+    () => ROLE_SCOPE_META[this.role()?.scope ?? this.scope()],
+  );
 
   protected readonly form = this.fb.group({
     code: this.fb.control('', [
@@ -133,6 +160,7 @@ export class RoleForm implements OnInit {
     this.save.emit({
       code: value.code.toUpperCase(),
       name: value.name.trim(),
+      scope: this.role()?.scope ?? this.scope(),
       description: value.description.trim() || undefined,
     });
   }

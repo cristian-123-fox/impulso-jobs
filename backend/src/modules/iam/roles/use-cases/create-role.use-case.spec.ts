@@ -1,5 +1,6 @@
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
+import { RoleScope } from '@/common/types/role-scope.enum';
 import { AuditService } from '@/modules/audit/audit.service';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
 import { IRoleRepository } from '@/modules/iam/roles/repositories/role.repository.interface';
@@ -29,6 +30,7 @@ describe('CreateRoleUseCase', () => {
   const command = {
     code: 'content_manager',
     name: 'Gestor de contenidos',
+    scope: RoleScope.PLATFORM,
     actorUserId: 'admin-1',
     ip: '127.0.0.1',
     userAgent: 'jest',
@@ -41,6 +43,7 @@ describe('CreateRoleUseCase', () => {
 
     expect(role.code).toBe('CONTENT_MANAGER');
     expect(role.isSystem).toBe(false);
+    expect(role.scope).toBe(RoleScope.PLATFORM);
     expect(roles.save).toHaveBeenCalledTimes(1);
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'roles.create' }),
@@ -58,6 +61,19 @@ describe('CreateRoleUseCase', () => {
     expect((thrown as AppException).getResponse()).toMatchObject({
       errorCode: ErrorCode.ROLE_ALREADY_EXISTS,
     });
+    expect(roles.save).not.toHaveBeenCalled();
+  });
+
+  /** El aspirante no tiene roles administrables: sus permisos van en código. */
+  it('rechaza crear un rol de ámbito CANDIDATE', async () => {
+    roles.existsByCode.mockResolvedValue(false);
+
+    const thrown = await useCase
+      .execute({ ...command, scope: RoleScope.CANDIDATE })
+      .catch((e: unknown) => e);
+
+    expect(thrown).toBeInstanceOf(AppException);
+    expect((thrown as AppException).getStatus()).toBe(400);
     expect(roles.save).not.toHaveBeenCalled();
   });
 });

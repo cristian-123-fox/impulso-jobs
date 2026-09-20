@@ -70,7 +70,7 @@ export class AddAccountProfilePermission1720000029000 implements MigrationInterf
 
     for (const roleCode of ROLE_CODES) {
       const roleId = await this.idOf(queryRunner, 'roles', roleCode);
-      // Una instalación sin roles base todavía no ha corrido `seed:rbac`; la
+      // Una instalación sin roles base todavía no ha corrido `pnpm seed`; la
       // concesión la hará él con su MATRIX, así que aquí no hay nada que hacer.
       if (!roleId) continue;
       await upsertSeedRows(queryRunner, {

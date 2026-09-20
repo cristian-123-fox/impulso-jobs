@@ -1,5 +1,4 @@
 import type { DataSource } from 'typeorm';
-import { runSeedScript } from './seed-script';
 import { hashPassword } from '@/common/utils/password.util';
 import { Role as PlatformRole } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
@@ -15,8 +14,8 @@ import { CompanyMemberRole } from '@/modules/companies/enums/company-member-role
  * (verificado, activo, sin bloqueo), le asigna el rol EMPLOYER en `user_roles`,
  * y garantiza la empresa + su membresía OWNER en `company_users` (necesario para
  * el perfil corporativo M9).
- * Requiere que el rol EMPLOYER exista (ejecuta antes `pnpm seed:rbac`).
- * Ejecutar: `pnpm seed:demo` (todas) o `pnpm seed:company` (sólo esta).
+ * Requiere que el rol EMPLOYER exista; `pnpm seed:demo` siembra el RBAC antes.
+ * Ejecutar: `pnpm seed:demo` (todas) o `pnpm seed -- --only=company`.
  * Sobrescribible con SEED_COMPANY_EMAIL / SEED_COMPANY_PASSWORD.
  */
 const COMPANY_EMAIL = process.env.SEED_COMPANY_EMAIL ?? 'empresa@impulso.test';
@@ -60,7 +59,7 @@ export async function seedCompany(dataSource: DataSource): Promise<string> {
   });
   if (!employerRole) {
     console.warn(
-      '⚠ El rol EMPLOYER no existe. Ejecuta primero: pnpm seed:rbac',
+      '⚠ El rol EMPLOYER no existe. Ejecuta primero: pnpm seed -- --only=rbac',
     );
   } else {
     const exists = await userRoleRepo.findOne({
@@ -105,9 +104,4 @@ export async function seedCompany(dataSource: DataSource): Promise<string> {
   }
 
   return `Empresa de prueba · ${email} / ${COMPANY_PASSWORD} (rol EMPLOYER).`;
-}
-
-// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
-if (require.main === module) {
-  void runSeedScript(seedCompany);
 }

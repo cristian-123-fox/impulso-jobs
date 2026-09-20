@@ -25,7 +25,7 @@ El diagrama es el **objetivo**. Esto es lo que existe hoy en `backend/src/databa
 | `vacancies` | — | `closed_at`, `can_edit_title_on_reactivate` | Añadidos por el flujo pausar/reactivar/cerrar. |
 | `candidate_profiles` | `profile_visibility` | *(no existe aquí)* | La visibilidad vive **solo** en `candidate_profile_settings` (`profile_visibility` + `information_visibility`). |
 | `companies` | `is_active` | *(no existe)* | La empresa no se desactiva; se gestiona por el estado de sus usuarios. |
-| `application_status` | `id smallint PK`, `name`, `description` | `code varchar(30) PK`, `name`, `description`, `sort_order`, `is_final` | Catálogo con **código legible como PK**, igual que `languages`: el historial y las postulaciones se leen sin resolver ids. Se llena con `pnpm seed:applications`. |
+| `application_status` | `id smallint PK`, `name`, `description` | `code varchar(30) PK`, `name`, `description`, `sort_order`, `is_final` | Catálogo con **código legible como PK**, igual que `languages`: el historial y las postulaciones se leen sin resolver ids. Se llena con `pnpm seed`. |
 | `candidate_applications` | `application_status_id smallint FK` | `status_code varchar(30)` | Consecuencia de lo anterior. |
 | `candidate_applications` | — | `company_id` | Empresa de la vacante, copiada al postular: permite listar y contar por empresa sin join y conserva el vínculo al cerrarse la vacante. |
 | `application_status_history` | `previous_status_id`, `current_status_id` | `previous_status_code`, `current_status_code` | Íd. `previous` es nulo sólo en la línea inicial. |
@@ -461,7 +461,7 @@ erDiagram
 ## Catálogos (valores semilla)
 
 - **roles.code:** `ADMIN` · `EMPLOYER` · `CANDIDATE`.
-- **application_status:** `IN_REVIEW` En revisión · `IN_PROGRESS` En proceso · `INTERVIEW` Entrevista · `TECHNICAL_TEST` Prueba técnica · `SELECTED` Seleccionado\* · `REJECTED` Rechazado\* · `FINISHED` Finalizado\*. (\* = `is_final`.) Sembrados por `pnpm seed:applications`; toda postulación nace en `IN_REVIEW`. `is_final` es **metadato** (lo usará M16 para avisar a los no seleccionados), no bloquea transiciones.
+- **application_status:** `IN_REVIEW` En revisión · `IN_PROGRESS` En proceso · `INTERVIEW` Entrevista · `TECHNICAL_TEST` Prueba técnica · `SELECTED` Seleccionado\* · `REJECTED` Rechazado\* · `FINISHED` Finalizado\*. (\* = `is_final`.) Sembrados por `pnpm seed`; toda postulación nace en `IN_REVIEW`. `is_final` es **metadato** (lo usará M16 para avisar a los no seleccionados), no bloquea transiciones.
 - **vacancies.status:** `Activa` · `Pausada` · `Cerrada` — implementado como **enum** en `modules/vacancies/enums/vacancy.enums.ts`, no como tabla.
 - **document_type (MX):** `CURP` · `RFC` · `INE` · `Pasaporte` — **enum** en `modules/candidates/enums/document-type.enum.ts`.
 - **company_users.company_role:** `OWNER` · `ADMIN` · `RECRUITER` · `MEMBER` — **enum** en `modules/companies/enums/company-member-role.enum.ts`.

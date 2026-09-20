@@ -3,13 +3,23 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, tap } from 'rxjs';
 import { RolesApi } from '@/features/admin/roles/data/roles.api';
 import {
+  ADMINISTRABLE_SCOPES,
   CreateRolePayload,
   Permission,
+  PermissionCatalog,
+  PermissionGroup,
+  RoleScope,
   RoleSummary,
   UpdateRolePayload,
 } from '@/features/admin/roles/models/roles.models';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
+
+/** Grupo del árbol con los permisos que aplican al ámbito pedido. */
+export interface PermissionTreeGroup {
+  group: PermissionGroup;
+  items: Permission[];
+}
 
 /** Fachada del feature admin/roles: estado con Signals + acciones sobre la API. */
 @Injectable()
@@ -18,21 +28,42 @@ export class RolesFacade {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly roles = signal<RoleSummary[]>([]);
-  readonly permissions = signal<Permission[]>([]);
+  readonly catalog = signal<PermissionCatalog | null>(null);
   readonly rolesState = signal<LoadState>('idle');
 
-  /** Permisos agrupados por componente para la matriz. */
-  readonly permissionGroups = computed(() => {
-    const groups = new Map<string, Permission[]>();
-    for (const permission of this.permissions()) {
-      const list = groups.get(permission.component) ?? [];
-      list.push(permission);
-      groups.set(permission.component, list);
-    }
-    return [...groups.entries()]
-      .map(([component, items]) => ({ component, items }))
-      .sort((a, b) => a.component.localeCompare(b.component));
-  });
+  /**
+   * Sólo los roles que se administran. El del aspirante existe en la API pero
+   * sus permisos son fijos, así que enseñarlo sería ofrecer algo que no se
+   * puede hacer.
+   */
+  readonly administrableRoles = computed(() =>
+    this.roles().filter((role) => ADMINISTRABLE_SCOPES.includes(role.scope)),
+  );
+
+  rolesOfScope(scope: RoleScope): RoleSummary[] {
+    return this.administrableRoles().filter((role) => role.scope === scope);
+  }
+
+  /**
+   * Árbol de permisos de un ámbito: los grupos del catálogo, en su orden, con
+   * los permisos que aplican a ese ámbito. Un grupo sin permisos aplicables no
+   * aparece — un rol de empresa no tiene por qué ver «Usuarios y cuentas».
+   */
+  permissionTree(scope: RoleScope): PermissionTreeGroup[] {
+    const catalog = this.catalog();
+    if (!catalog) return [];
+    return catalog.groups
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((group) => ({
+        group,
+        items: catalog.permissions.filter(
+          (permission) =>
+            permission.group === group.key && permission.scopes.includes(scope),
+        ),
+      }))
+      .filter((node) => node.items.length > 0);
+  }
 
   loadRoles(): void {
     this.rolesState.set('loading');
@@ -49,11 +80,11 @@ export class RolesFacade {
   }
 
   loadPermissions(): void {
-    if (this.permissions().length > 0) return;
+    if (this.catalog()) return;
     this.api
       .listPermissions()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((permissions) => this.permissions.set(permissions));
+      .subscribe((catalog) => this.catalog.set(catalog));
   }
 
   getRole(id: string): Observable<RoleSummary> {
@@ -70,7 +101,8 @@ export class RolesFacade {
     return this.api.updateRole(id, payload).pipe(
       tap((updated) =>
         this.roles.update((list) =>
-          // El `PUT` no devuelve `isSystem`: se conserva lo que ya teníamos.
+          // El `PUT` no devuelve el contador de permisos: se conserva el que
+          // ya teníamos del listado.
           list.map((role) =>
             role.id === updated.id ? { ...role, ...updated } : role,
           ),
@@ -89,11 +121,21 @@ export class RolesFacade {
       );
   }
 
-  assignPermission(roleId: string, permissionId: string): Observable<void> {
-    return this.api.assignPermission(roleId, permissionId);
-  }
-
-  removePermission(roleId: string, permissionId: string): Observable<void> {
-    return this.api.removePermission(roleId, permissionId);
+  /** Guarda el árbol completo y refresca el contador del listado. */
+  replacePermissions(
+    roleId: string,
+    permissionIds: string[],
+  ): Observable<string[]> {
+    return this.api.replacePermissions(roleId, permissionIds).pipe(
+      tap((saved) =>
+        this.roles.update((list) =>
+          list.map((role) =>
+            role.id === roleId
+              ? { ...role, permissionCount: saved.length }
+              : role,
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -1,5 +1,4 @@
 import type { DataSource } from 'typeorm';
-import { runSeedScript } from './seed-script';
 import { ApplicationStatus } from '@/modules/applications/entities/application-status.entity';
 import { ApplicationStatusCode } from '@/modules/applications/enums/application-status.enum';
 
@@ -8,7 +7,7 @@ import { ApplicationStatusCode } from '@/modules/applications/enums/application-
  * falta y actualiza nombre/orden de lo existente, sin tocar los estados que un
  * administrador haya añadido por su cuenta.
  *
- * Ejecutar: `pnpm seed` (todas) o `pnpm seed:applications` (sólo esta).
+ * Ejecutar: `pnpm seed` (todas) o `pnpm seed -- --only=applications`.
  */
 
 interface StatusSeed {
@@ -96,9 +95,4 @@ export async function seedApplicationStatuses(
   }
 
   return `Estados de postulación · ${created} creados, ${updated} actualizados.`;
-}
-
-// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
-if (require.main === module) {
-  void runSeedScript(seedApplicationStatuses);
 }

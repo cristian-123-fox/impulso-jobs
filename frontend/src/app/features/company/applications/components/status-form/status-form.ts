@@ -16,7 +16,7 @@ import {
 
 /**
  * Cambio de estado de una postulación. Los estados vienen del catálogo del
- * backend (`seed:applications`), no de una lista fija: si se añade uno nuevo,
+ * backend (`application_status`), no de una lista fija: si se añade uno nuevo,
  * aparece aquí solo.
  */
 @Component({

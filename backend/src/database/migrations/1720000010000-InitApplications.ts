@@ -4,7 +4,7 @@ import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
  * M11: postulaciones, catálogo de estados e historial de transiciones.
  * Portable a PostgreSQL/MySQL (uuid como varchar(36)).
  *
- * El catálogo `application_status` se llena con `pnpm seed:applications`; las
+ * El catálogo `application_status` se llena con `pnpm seed`; las
  * migraciones de este repo sólo crean esquema.
  *
  * `application_answers` (respuestas a las preguntas de filtrado) llegará con

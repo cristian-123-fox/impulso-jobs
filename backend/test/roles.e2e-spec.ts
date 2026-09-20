@@ -120,26 +120,36 @@ describe('Roles / RBAC (e2e)', () => {
     const res = await request(server())
       .post('/api/v1/roles')
       .set(auth(adminToken))
-      .send({ code: createdRoleCode, name: 'Rol e2e' })
+      .send({ code: createdRoleCode, name: 'Rol e2e', scope: 'PLATFORM' })
       .expect(201);
     expect(res.body.content.code).toBe(createdRoleCode);
     expect(res.body.content.isSystem).toBe(false);
+    expect(res.body.content.scope).toBe('PLATFORM');
   });
 
   it('rechaza un código de rol duplicado (409)', async () => {
     const res = await request(server())
       .post('/api/v1/roles')
       .set(auth(adminToken))
-      .send({ code: 'ADMIN', name: 'Duplicado' })
+      .send({ code: 'ADMIN', name: 'Duplicado', scope: 'PLATFORM' })
       .expect(409);
     expect(res.body.errorCode).toBe(ErrorCode.ROLE_ALREADY_EXISTS);
+  });
+
+  /** El aspirante no tiene roles administrables: sus permisos van en código. */
+  it('rechaza crear un rol de ámbito CANDIDATE (400)', async () => {
+    await request(server())
+      .post('/api/v1/roles')
+      .set(auth(adminToken))
+      .send({ code: `${createdRoleCode}_C`, name: 'No', scope: 'CANDIDATE' })
+      .expect(400);
   });
 
   it('EMPLOYER sin permiso NO puede crear roles (403) — prueba negativa del guard', async () => {
     const res = await request(server())
       .post('/api/v1/roles')
       .set(auth(employerToken))
-      .send({ code: 'X_ROLE', name: 'X' })
+      .send({ code: 'X_ROLE', name: 'X', scope: 'PLATFORM' })
       .expect(403);
     expect(res.body.errorCode).toBe(ErrorCode.PERMISSION_DENIED);
   });

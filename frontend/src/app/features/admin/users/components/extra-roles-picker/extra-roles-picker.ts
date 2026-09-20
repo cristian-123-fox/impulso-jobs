@@ -3,19 +3,27 @@ import {
   Component,
   DestroyRef,
   inject,
+  input,
   model,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { RolesApi } from '@/features/admin/roles/data/roles.api';
-import { RoleSummary } from '@/features/admin/roles/models/roles.models';
+import {
+  RoleScope,
+  RoleSummary,
+} from '@/features/admin/roles/models/roles.models';
 
 /**
  * Selección de roles *adicionales* (los personalizados creados en
  * `/admin/roles`). El rol base va aparte: aquí sólo se acumulan permisos
  * extra sobre él, que es como el back-office diferencia, por ejemplo, a un
  * administrador de soporte de uno de contenidos.
+ *
+ * Se filtran por **ámbito**: sumarle a una cuenta administrativa un rol de
+ * empresa no le daría nada útil — sus permisos son de `/empresa` — y sí
+ * ensuciaría la lista de quien administra.
  */
 @Component({
   selector: 'app-extra-roles-picker',
@@ -79,6 +87,8 @@ import { RoleSummary } from '@/features/admin/roles/models/roles.models';
 export class ExtraRolesPicker {
   /** Ids seleccionados (enlace bidireccional con el formulario anfitrión). */
   readonly selected = model<string[]>([]);
+  /** Ámbito de los roles que se ofrecen. Hoy sólo se usa para cuentas ADMIN. */
+  readonly scope = input<RoleScope>('PLATFORM');
 
   private readonly api = inject(RolesApi);
   private readonly destroyRef = inject(DestroyRef);
@@ -90,7 +100,11 @@ export class ExtraRolesPicker {
       .listRoles()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((roles) =>
-        this.roles.set(roles.filter((role) => !role.isSystem)),
+        this.roles.set(
+          roles.filter(
+            (role) => !role.isSystem && role.scope === this.scope(),
+          ),
+        ),
       );
   }
 

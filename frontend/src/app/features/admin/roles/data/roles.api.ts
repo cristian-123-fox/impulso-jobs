@@ -6,7 +6,7 @@ import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
   CreateRolePayload,
-  Permission,
+  PermissionCatalog,
   RoleSummary,
   UpdateRolePayload,
 } from '@/features/admin/roles/models/roles.models';
@@ -48,25 +48,27 @@ export class RolesApi {
       .pipe(map(() => undefined));
   }
 
-  listPermissions(): Observable<Permission[]> {
+  /** Catálogo completo: permisos con etiqueta y grupo, grupos y base por ámbito. */
+  listPermissions(): Observable<PermissionCatalog> {
     return this.http
-      .get<ApiSuccessResponse<Permission[]>>(`${this.base}/permissions`)
+      .get<ApiSuccessResponse<PermissionCatalog>>(`${this.base}/permissions`)
       .pipe(map((r) => r.content));
   }
 
-  assignPermission(roleId: string, permissionId: string): Observable<void> {
+  /**
+   * Guarda el árbol entero: viaja el conjunto que queda marcado y el backend
+   * calcula altas y bajas. Devuelve los permisos resultantes para resincronizar
+   * — los de la base del ámbito nunca se guardan, así que no vuelven aquí.
+   */
+  replacePermissions(
+    roleId: string,
+    permissionIds: string[],
+  ): Observable<string[]> {
     return this.http
-      .post<ApiSuccessResponse<unknown>>(`${this.base}/roles/${roleId}/permissions`, {
-        permissionId,
-      })
-      .pipe(map(() => undefined));
-  }
-
-  removePermission(roleId: string, permissionId: string): Observable<void> {
-    return this.http
-      .delete<ApiSuccessResponse<unknown>>(
-        `${this.base}/roles/${roleId}/permissions/${permissionId}`,
+      .put<ApiSuccessResponse<string[]>>(
+        `${this.base}/roles/${roleId}/permissions`,
+        { permissionIds },
       )
-      .pipe(map(() => undefined));
+      .pipe(map((r) => r.content));
   }
 }

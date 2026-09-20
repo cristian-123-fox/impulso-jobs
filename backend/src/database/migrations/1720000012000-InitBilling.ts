@@ -12,7 +12,7 @@ import {
  *
  * Los **planes no se siembran**: los precios en MXN y el alcance de la Anual
  * son decisiones de negocio abiertas, así que un administrador los da de alta
- * desde `/admin/plans`. `pnpm seed:plan-features` sí crea el catálogo de
+ * desde `/admin/plans`. `pnpm seed` sí crea el catálogo de
  * beneficios, cuyos códigos sí están definidos.
  */
 export class InitBilling1720000012000 implements MigrationInterface {

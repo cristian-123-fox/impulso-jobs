@@ -1,5 +1,5 @@
 import type { DataSource } from 'typeorm';
-import { runSeedScript } from './seed-script';
+import { RoleScope } from '@/common/types/role-scope.enum';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
 import { Component } from '@/modules/iam/permissions/entities/component.entity';
 import { Action } from '@/modules/iam/permissions/entities/action.entity';
@@ -20,7 +20,13 @@ import { User } from '@/modules/iam/users/entities/user.entity';
  * que un administrador haya concedido a mano desde `/admin/roles`. Para revocar,
  * quítalo desde el back-office o con una migración de datos.
  *
- * Ejecutar: `pnpm seed:rbac` (o `pnpm seed`, que lo corre junto a los demás).
+ * Desde que existe `SCOPE_BASELINE` (ver `permission-catalog.ts`), la fila de
+ * `MATRIX` para CANDIDATE y los permisos comunes de los otros dos roles son
+ * **redundantes**: el guard los concede por código, mire o no la BD. Se siguen
+ * sembrando a propósito, para que `/admin/roles` y un `SELECT` sobre
+ * `role_permissions` cuenten la misma historia que el código.
+ *
+ * Ejecutar: `pnpm seed` (con las demás) o `pnpm seed -- --only=rbac`.
  *
  * ⚠️ La app cachea el mapa rol→permisos en memoria (`PermissionsService`), así
  * que tras sembrar en un servidor **hay que reiniciar el proceso** o los
@@ -125,18 +131,24 @@ const PERMISSION_CODES: readonly string[] = [
   'notifications.read',
 ];
 
-const ROLE_META: Record<string, { name: string; description: string }> = {
+const ROLE_META: Record<
+  string,
+  { name: string; description: string; scope: RoleScope }
+> = {
   ADMIN: {
     name: 'Administrador',
     description: 'Gobierna y configura la plataforma.',
+    scope: RoleScope.PLATFORM,
   },
   EMPLOYER: {
     name: 'Empresa / Reclutador',
     description: 'Gestiona su empresa y sus procesos.',
+    scope: RoleScope.COMPANY,
   },
   CANDIDATE: {
     name: 'Aspirante',
     description: 'Gestiona su perfil y sus postulaciones.',
+    scope: RoleScope.CANDIDATE,
   },
 };
 
@@ -302,8 +314,8 @@ export async function seedRbac(dataSource: DataSource): Promise<string> {
     permissionIds.set(code, row.id);
   }
 
-  // Roles base. `isSystem` se reafirma: un rol base no debe quedar borrable
-  // porque alguien lo desmarcara desde el back-office.
+  // Roles base. `isSystem` y `scope` se reafirman: un rol base no debe quedar
+  // borrable ni cambiar de ámbito porque alguien lo tocara desde el back-office.
   const roleIds = new Map<string, string>();
   for (const [code, meta] of Object.entries(ROLE_META)) {
     let row = await roleRepo.findOne({ where: { code } });
@@ -314,16 +326,19 @@ export async function seedRbac(dataSource: DataSource): Promise<string> {
           name: meta.name,
           description: meta.description,
           isSystem: true,
+          scope: meta.scope,
         }),
       );
     } else if (
       row.name !== meta.name ||
       row.description !== meta.description ||
+      row.scope !== meta.scope ||
       !row.isSystem
     ) {
       row.name = meta.name;
       row.description = meta.description;
       row.isSystem = true;
+      row.scope = meta.scope;
       row = await roleRepo.save(row);
     }
     roleIds.set(code, row.id);
@@ -368,9 +383,4 @@ export async function seedRbac(dataSource: DataSource): Promise<string> {
     `permisos:${permissionIds.size} roles:${roleIds.size} ` +
     `role_permissions+${assigned} user_roles+${backfilled}`
   );
-}
-
-// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
-if (require.main === module) {
-  void runSeedScript(seedRbac);
 }

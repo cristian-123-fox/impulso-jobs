@@ -11,9 +11,23 @@ export interface IRolePermissionRepository {
   /** (roleId, permissionCode) de todas las asignaciones — para el guard. */
   findRolePermissionCodes(): Promise<RolePermissionCode[]>;
   findPermissionIdsByRoleId(roleId: string): Promise<string[]>;
+  /** `roleId → nº de permisos asignados`, en una sola consulta (listado). */
+  countByRole(): Promise<Map<string, number>>;
   exists(roleId: string, permissionId: string): Promise<boolean>;
   add(roleId: string, permissionId: string): Promise<void>;
+  /** Alta en lote para el guardado del árbol de permisos. */
+  addMany(
+    roleId: string,
+    permissionIds: readonly string[],
+    manager?: EntityManager,
+  ): Promise<void>;
   remove(roleId: string, permissionId: string): Promise<void>;
+  /** Baja en lote para el guardado del árbol de permisos. */
+  removeMany(
+    roleId: string,
+    permissionIds: readonly string[],
+    manager?: EntityManager,
+  ): Promise<void>;
   /** Limpia la matriz del rol antes de borrarlo. */
   removeByRoleId(roleId: string, manager?: EntityManager): Promise<void>;
 }

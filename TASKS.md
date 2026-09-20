@@ -616,7 +616,7 @@ SELECT r.code FROM user_roles ur
 
 **Fix según lo que devuelvan:**
 
-- **(1) vacío** → la matriz nunca se sembró en producción, o se sembró con una versión vieja. `cd backend && pnpm run seed:rbac:prod` **y reiniciar la app Node** (sin reinicio, la caché en memoria sigue sirviendo el mapa viejo y el 403 persiste; es el fallo que más tiempo hace perder aquí).
+- **(1) vacío** → la matriz nunca se sembró en producción, o se sembró con una versión vieja. `cd backend && pnpm run seed:prod -- --only=rbac` **y reiniciar la app Node** (sin reinicio, la caché en memoria sigue sirviendo el mapa viejo y el 403 persiste; es el fallo que más tiempo hace perder aquí).
 - **(2) vacío** → la cuenta quedó huérfana de rol: `roleIds` llega como `[]` y `hasPermissions` niega todo, para cualquier endpoint. Ojo con la reparación: **no hay ruta de API que la arregle**. `PUT /admin/users/:id/roles` sólo toca los roles *adicionales* (rechaza los base) y `PATCH /admin/users/:id` sólo sincroniza `user_roles` **si el rol cambia** (`update-user.use-case.ts:72`), así que reenviar `role: 'CANDIDATE'` sobre una cuenta que ya lo tiene es un no-op. Hay que insertar la fila en `user_roles` a mano, y de paso **buscar si hay más cuentas afectadas**:
 
 ```sql

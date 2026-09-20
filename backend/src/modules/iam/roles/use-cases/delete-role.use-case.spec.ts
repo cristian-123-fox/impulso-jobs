@@ -48,9 +48,12 @@ describe('DeleteRoleUseCase', () => {
     rolePermissions = {
       findRolePermissionCodes: jest.fn(),
       findPermissionIdsByRoleId: jest.fn(),
+      countByRole: jest.fn(),
       exists: jest.fn(),
       add: jest.fn(),
+      addMany: jest.fn(),
       remove: jest.fn(),
+      removeMany: jest.fn(),
       removeByRoleId: jest.fn(),
     };
     userRoles = {

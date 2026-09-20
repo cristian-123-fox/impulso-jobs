@@ -74,7 +74,7 @@ backend/src/
 │  ├─ typeorm.config.ts         # config del DataSource (CLI y app)
 │  ├─ run-migrations.ts         # runner (`migration:run` / `migration:revert`)
 │  ├─ seed.ts                   # orquestador: `pnpm seed` corre todas en orden
-│  └─ seed-{rbac,admin,candidate,company,...}.ts  # cada una exporta su función
+│  └─ seed-{rbac,admin,candidate,company,...}.ts  # sólo exportan su función; se invocan desde seed.ts
 │
 ├─ modules/
 │  ├─ iam/                      # GRUPO Identity & Access Management
@@ -140,7 +140,7 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 | Verificación de correo | `modules/iam/auth/` | `GET auth/email-verification/confirm` · `POST …/resend` | ✅ |
 | Registro (empresa \| candidato) | `modules/iam/registration/` | `POST auth/register` | ✅ |
 | Baja de cuenta y derechos ARCO | `modules/iam/account/` | `DELETE account` · `GET account/data-export` · `POST account/:id/restore` | ✅ |
-| Roles, permisos (RBAC) | `modules/iam/roles/`, `modules/iam/permissions/` | `GET permissions` · `roles` CRUD · `roles/:id/permissions` · `users/:id/roles` | ✅ |
+| Roles, permisos (RBAC) | `modules/iam/roles/`, `modules/iam/permissions/` | `GET permissions` (catálogo: permisos + grupos + base por ámbito) · `roles` CRUD · `GET`/`PUT roles/:id/permissions` (guardado en lote) · `users/:id/roles` | ✅ |
 | Back-office de usuarios | `modules/iam/users/` | `admin/users` CRUD + `:id/roles`, `:id/status` | ✅ |
 | Perfil de empresa (fiscal/CFDI) | `modules/companies/` | `GET/PUT company/profile` · `PATCH company/profile/logo` | ✅ |
 | Back-office de empresas y equipo | `modules/companies/` | `admin/companies` CRUD + `:id/members` | ✅ |
@@ -175,14 +175,15 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 
 - **JWT** access corto + refresh largo (persistido en `tokens_users`). Revocados/expirados → `blacklist_tokens`. Tokens de un solo uso (reset/verificación) → JWT 30 min, a blacklist tras uso.
 - **RBAC:** rol de plataforma (`ADMIN`/`EMPLOYER`/`CANDIDATE`) en `user_roles`, fuente del `PermissionsGuard`. El rol *dentro* de la empresa vive en `company_users.role` (`OWNER`/`ADMIN`/`RECRUITER`/`MEMBER`): es pertenencia, no permiso, y no lo lee el guard. Gestionarlo exige `company_users.manage`, y toda empresa conserva al menos un `OWNER`.
+- **Ámbito del rol (`roles.scope`):** `PLATFORM` (back-office), `COMPANY` (autoservicio de la empresa) o `CANDIDATE`. Decide qué permisos se le pueden ofrecer y separa las dos pestañas de `/admin/roles`. **Los permisos efectivos son la unión de `role_permissions` y `SCOPE_BASELINE`** (`iam/permissions/catalogs/permission-catalog.ts`), que concede por código lo que no es una decisión: lo común a toda cuenta (`catalogs.read`, `plans.read`, `vacancies.read.public`, `notifications.read`, `account.profile_manage`) y **el aspirante entero** — su rol no se administra, así que postular o subir un CV no puede depender de una fila en la BD. El mismo catálogo blinda en el ADMIN de sistema los permisos que abren el back-office, para que nadie se quede fuera con un clic.
 - **Ownership** validado en el use-case (candidato solo lo suyo; empresa solo sus vacantes/postulaciones), con al menos una prueba negativa.
 - **Auditoría** de crear/actualizar/eliminar vía `AuditService` → `audit_logs` (actor, acción, entidad, entity_id, ip, user_agent, diff?).
 - **Transacciones** (registro, cambios de estado con historial) con `runInTransaction`/QueryRunner y rollback ante error.
 - **Contraseña:** mínimo 8, 1 mayúscula, 1 minúscula, 1 número, 1 especial (`common/utils/password-policy.ts`). **bcryptjs**. Nunca texto plano.
 - **Migraciones:** toda entidad/cambio de esquema requiere migración en `database/migrations/`. Sin `synchronize`. IDs = UUID v4 generados en la app y guardados como `varchar(36)` (portable Postgres/MySQL, ver `common/entities/base.entity.ts`).
 - **Datos nuevos → migración, no seeder.** Añadir filas a un catálogo (un estado, un beneficio, **un permiso**) se hace con una migración de datos usando `database/migrations/helpers/seed-data.helper.ts` (`upsertSeedRows` / `deleteSeedRows`), que es idempotente y portable Postgres/MySQL. Motivo: la migración corre sola en el despliegue y queda registrada; un seeder depende de que alguien lo ejecute, y cuando no se ejecuta la app falla en silencio. **Dentro de una migración, nunca entidades ni repositorios** — una migración es inmutable y una entidad futura la rompería.
-- **Seeds existentes:** `pnpm seed` corre las seis de un tirón (`database/seed.ts`), en orden y con una sola conexión; `pnpm seed:demo` añade las cuentas de prueba, bloqueadas con `NODE_ENV=production`. Todas son idempotentes y actualizadoras. Los scripts individuales siguen disponibles.
-- **Seed de RBAC:** el `PermissionsGuard` lee los permisos **de la base de datos**. Todo permiso nuevo se agrega a `database/seed-rbac.ts` (`PERMISSION_CODES` + `MATRIX`) **y se siembra también por migración** para que llegue solo a producción. Tras sembrar contra un servidor en marcha hay que **reiniciar el proceso**: `PermissionsService` cachea el mapa rol→permisos en memoria y si no, el endpoint sigue respondiendo 403.
+- **Seeds existentes:** `pnpm seed` corre las seis de un tirón (`database/seed.ts`), en orden y con una sola conexión; `pnpm seed:demo` añade las cuentas de prueba, bloqueadas con `NODE_ENV=production`. Todas son idempotentes y actualizadoras. **No hay un script por semilla**: para una sola, `pnpm seed -- --only=rbac`.
+- **Seed de RBAC:** el `PermissionsGuard` lee los permisos **de la base de datos** (salvo la base por ámbito, que va en código). Todo permiso nuevo se agrega a `database/seed-rbac.ts` (`PERMISSION_CODES` + `MATRIX`), **se describe en `permission-catalog.ts`** (etiqueta, grupo y ámbitos: sin eso no aparece en el árbol de `/admin/roles` con nombre propio) **y se siembra también por migración** para que llegue solo a producción. Tras sembrar contra un servidor en marcha hay que **reiniciar el proceso**: `PermissionsService` cachea el mapa rol→permisos en memoria y si no, el endpoint sigue respondiendo 403.
 - **Borrado lógico y ARCO:** la baja de una cuenta es `deleted_at` en `users` + el perfil de aspirante (M13). TypeORM excluye las filas borradas de toda consulta, así que el login y el token dejan de funcionar solos; además se fija `tokens_valid_from`, se revocan los refresh y el access presentado va a la blacklist. **Nunca se borra físicamente en caliente**: la purga tras el periodo de retención es un script manual (`pnpm purge:accounts`, simulación por defecto). Postulaciones, vacantes y auditoría se conservan como registro histórico de la contraparte.
 
 ---

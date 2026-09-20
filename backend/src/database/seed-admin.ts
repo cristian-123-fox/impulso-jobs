@@ -1,5 +1,4 @@
 import type { DataSource } from 'typeorm';
-import { runSeedScript } from './seed-script';
 import { hashPassword } from '@/common/utils/password.util';
 import { Role as PlatformRole } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
@@ -10,8 +9,8 @@ import { Role } from '@/modules/iam/roles/entities/role.entity';
 /**
  * Seeder del usuario administrador. Idempotente: crea o actualiza el usuario
  * (verificado, activo, sin bloqueo) y le asigna el rol ADMIN en `user_roles`.
- * Requiere que el rol ADMIN exista (ejecuta antes `pnpm seed:rbac`).
- * Ejecutar: `pnpm seed` (todas) o `pnpm seed:admin` (sólo esta).
+ * Requiere que el rol ADMIN exista; `pnpm seed` siembra el RBAC antes.
+ * Ejecutar: `pnpm seed` (todas) o `pnpm seed -- --only=admin`.
  * Sobrescribible con SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD.
  */
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? 'oscarruiz2614@gmail.com';
@@ -50,7 +49,9 @@ export async function seedAdmin(dataSource: DataSource): Promise<string> {
 
   const adminRole = await roleRepo.findOne({ where: { code: 'ADMIN' } });
   if (!adminRole) {
-    console.warn('⚠ El rol ADMIN no existe. Ejecuta primero: pnpm seed:rbac');
+    console.warn(
+      '⚠ El rol ADMIN no existe. Ejecuta primero: pnpm seed -- --only=rbac',
+    );
   } else {
     const exists = await userRoleRepo.findOne({
       where: { userId: user.id, roleId: adminRole.id },
@@ -66,9 +67,4 @@ export async function seedAdmin(dataSource: DataSource): Promise<string> {
   }
 
   return `Administrador · inicia sesión con ${email}.`;
-}
-
-// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
-if (require.main === module) {
-  void runSeedScript(seedAdmin);
 }

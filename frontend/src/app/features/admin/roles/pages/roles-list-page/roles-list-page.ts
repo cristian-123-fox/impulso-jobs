@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -16,15 +17,24 @@ import { AdminError } from '@/features/admin/shared/admin-error/admin-error';
 import { AdminTableSkeleton } from '@/features/admin/shared/admin-table-skeleton/admin-table-skeleton';
 import { RolesFacade } from '@/features/admin/roles/data/roles.facade';
 import {
+  ADMINISTRABLE_SCOPES,
   CreateRolePayload,
+  ROLE_SCOPE_META,
+  RoleScope,
   RoleSummary,
 } from '@/features/admin/roles/models/roles.models';
 import {
   RoleActionEvent,
   RolesTable,
 } from '@/features/admin/roles/components/roles-table/roles-table';
+import { RolesTabs } from '@/features/admin/roles/components/roles-tabs/roles-tabs';
 import { RoleForm } from '@/features/admin/roles/components/role-form/role-form';
 
+/**
+ * Listado de roles separado por ámbito. La pestaña activa **es** el filtro, y
+ * además decide el ámbito del rol que se crea desde aquí: crear un rol de
+ * empresa estando en la pestaña de empresa es lo que espera cualquiera.
+ */
 @Component({
   selector: 'app-roles-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,6 +43,7 @@ import { RoleForm } from '@/features/admin/roles/components/role-form/role-form'
     AdminError,
     AdminTableSkeleton,
     RolesTable,
+    RolesTabs,
     RoleForm,
     IjButton,
     IjIcon,
@@ -71,34 +82,58 @@ import { RoleForm } from '@/features/admin/roles/components/role-form/role-form'
         </p>
       }
 
-      <!-- Sin filtros ni paginación: los roles son una lista corta y completa. -->
-      <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
-        @switch (facade.rolesState()) {
-          @case ('loading') {
-            <app-admin-table-skeleton [bare]="true" label="Cargando roles…" />
+      <div>
+        <app-roles-tabs
+          [active]="scope()"
+          [counts]="counts()"
+          (select)="scope.set($event)"
+        />
+
+        <!-- Sin filtros ni paginación: los roles son una lista corta y completa. -->
+        <section
+          class="overflow-hidden rounded-b-2xl rounded-tr-2xl border border-t-0 border-line bg-white shadow-card"
+        >
+          <p class="border-b border-line px-4 py-2.5 text-[12.5px] text-muted">
+            {{ scopeMeta().hint }}
+          </p>
+          @switch (facade.rolesState()) {
+            @case ('loading') {
+              <app-admin-table-skeleton [bare]="true" label="Cargando roles…" />
+            }
+            @case ('error') {
+              <app-admin-error
+                [bare]="true"
+                message="No se pudieron cargar los roles."
+                (retry)="facade.loadRoles()"
+              />
+            }
+            @default {
+              <app-roles-table
+                [roles]="visibleRoles()"
+                [emptyMessage]="emptyMessage()"
+                (action)="onAction($event)"
+              />
+            }
           }
-          @case ('error') {
-            <app-admin-error
-              [bare]="true"
-              message="No se pudieron cargar los roles."
-              (retry)="facade.loadRoles()"
-            />
-          }
-          @default {
-            <app-roles-table [roles]="facade.roles()" (action)="onAction($event)" />
-          }
-        }
-      </section>
+        </section>
+
+        <p class="mt-3 text-[12.5px] text-muted">
+          El aspirante no aparece aquí: sus permisos (postularse, subir su CV,
+          guardar vacantes) son fijos y los concede la plataforma, así que no
+          hay nada que administrarle.
+        </p>
+      </div>
     </div>
 
     @if (formOpen()) {
       <ij-modal
         [title]="editing() ? 'Editar rol' : 'Nuevo rol'"
-        [subtitle]="editing()?.name ?? 'Después podrás asignarle permisos.'"
+        [subtitle]="editing()?.name ?? scopeMeta().hint"
         (close)="closeForm()"
       >
         <app-role-form
           [role]="editing()"
+          [scope]="scope()"
           [submitting]="saving()"
           [error]="formError()"
           (save)="onSave($event)"
@@ -123,12 +158,32 @@ export class RolesListPage {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
+  protected readonly scope = signal<RoleScope>('PLATFORM');
   protected readonly formOpen = signal(false);
   protected readonly editing = signal<RoleSummary | null>(null);
   protected readonly removing = signal<RoleSummary | null>(null);
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
+
+  protected readonly scopeMeta = computed(() => ROLE_SCOPE_META[this.scope()]);
+
+  protected readonly visibleRoles = computed(() =>
+    this.facade.rolesOfScope(this.scope()),
+  );
+
+  protected readonly counts = computed(() => {
+    const totals: Partial<Record<RoleScope, number>> = {};
+    for (const scope of ADMINISTRABLE_SCOPES) totals[scope] = 0;
+    for (const role of this.facade.administrableRoles()) {
+      totals[role.scope] = (totals[role.scope] ?? 0) + 1;
+    }
+    return totals;
+  });
+
+  protected readonly emptyMessage = computed(
+    () => `No hay roles de ${this.scopeMeta().label.toLowerCase()}.`,
+  );
 
   constructor() {
     this.facade.loadRoles();
@@ -171,7 +226,8 @@ export class RolesListPage {
     this.saving.set(true);
     this.formError.set(null);
 
-    // Al editar sólo viajan nombre y descripción: el código es inmutable.
+    // Al editar sólo viajan nombre y descripción: el código y el ámbito son
+    // inmutables — cambiar el ámbito dejaría al rol con permisos de otro.
     const request: Observable<RoleSummary> = editing
       ? this.facade.updateRole(editing.id, {
           name: payload.name,

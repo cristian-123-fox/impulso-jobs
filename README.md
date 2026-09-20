@@ -37,15 +37,14 @@ cd backend
 pnpm install
 cp .env.example .env    # ajusta DB_TYPE, credenciales y secretos JWT
 pnpm run migration:run  # crea el esquema
-pnpm run seed:rbac      # roles + matriz de permisos (imprescindible)
-pnpm run seed:admin     # usuario administrador inicial
+pnpm run seed           # catálogos, roles/permisos y administrador inicial
 pnpm run start:dev      # modo desarrollo con recarga en caliente
 ```
 
 La API queda disponible en `http://localhost:3000/api/v1` y la documentación Swagger en `http://localhost:3000/docs`.
 
-> `seed:rbac` es obligatorio: el guard de permisos lee la matriz desde la base de datos. Vuelve a ejecutarlo cada vez que se agregue un permiso.
-> Seeds opcionales con datos de ejemplo: `pnpm run seed:candidate` y `pnpm run seed:company`.
+> `seed` es obligatorio: el guard de permisos lee la matriz desde la base de datos. Vuelve a ejecutarlo cada vez que se agregue un permiso.
+> Con datos de ejemplo (candidato y empresa de prueba): `pnpm run seed:demo`. Para una sola semilla: `pnpm run seed -- --only=rbac` (`-- --list` las enumera).
 
 ### Frontend (`frontend/`)
 
@@ -92,14 +91,15 @@ cd frontend && pnpm test
 | `pnpm run start:dev`       | backend  | Modo desarrollo (watch)                              |
 | `pnpm run migration:run`   | backend  | Aplica las migraciones pendientes                    |
 | `pnpm run migration:revert`| backend  | Revierte la última migración                         |
-| `pnpm run seed:rbac`       | backend  | Siembra roles, permisos y la matriz                  |
-| `pnpm run seed:admin`      | backend  | Crea el usuario administrador                        |
+| `pnpm run seed`            | backend  | Siembra catálogos, roles/permisos y el administrador |
+| `pnpm run seed:demo`       | backend  | Lo anterior + cuentas de prueba                      |
+| `pnpm run mail:preview`    | backend  | Escribe los correos en `.tmp/mail-preview/`          |
 | `pnpm run lint`            | backend  | Lint + fix (ESLint)                                  |
 | `pnpm run format`          | backend  | Formatea (Prettier)                                  |
 | `pnpm start`               | frontend | Modo desarrollo (`ng serve`)                         |
 | `pnpm run watch`           | frontend | Build en watch (desarrollo)                          |
 
-Los scripts de base de datos tienen un gemelo `:prod` (`migration:run:prod`, `seed:rbac:prod`, …) que ejecuta la versión compilada de `dist/`.
+Los scripts de base de datos tienen un gemelo `:prod` (`migration:run:prod`, `seed:prod`, …) que ejecuta la versión compilada de `dist/`. Los trabajos programados (`billing:expire`, `vacancies:expire`, `views:consolidate`) y el mantenimiento (`purge:accounts`, `uploads:rehost`) están documentados en [CLAUDE.md](CLAUDE.md) y [DEPLOY-CPANEL.md](DEPLOY-CPANEL.md).
 
 ## 📄 Documentación específica
 

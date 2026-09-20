@@ -204,7 +204,7 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
                   <td colspan="5">
                     <app-admin-empty icon="tag" message="Sin beneficios en el catálogo.">
                       <p class="max-w-[420px] text-[12.5px] text-muted">
-                        Ejecuta <code>pnpm run seed:plan-features</code> o crea el primero con
+                        Ejecuta <code>pnpm seed</code> o crea el primero con
                         "Nuevo beneficio".
                       </p>
                     </app-admin-empty>

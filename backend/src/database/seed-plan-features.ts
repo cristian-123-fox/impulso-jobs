@@ -1,5 +1,4 @@
 import type { DataSource } from 'typeorm';
-import { runSeedScript } from './seed-script';
 import { PlanFeature } from '@/modules/billing/entities/plan-feature.entity';
 import {
   FeatureValueType,
@@ -15,7 +14,7 @@ import {
  * `/admin/plans`, porque los precios en MXN y el alcance de la Anual son
  * decisiones de negocio todavía abiertas (§7 del mismo documento).
  *
- * Ejecutar: `pnpm seed` (todas) o `pnpm seed:plan-features` (sólo esta). Idempotente.
+ * Ejecutar: `pnpm seed` (todas) o `pnpm seed -- --only=plan-features`. Idempotente.
  */
 
 interface FeatureSeed {
@@ -147,9 +146,4 @@ export async function seedPlanFeatures(
     'Los planes (Media/Alta/Anual) NO se siembran: créalos desde /admin/planes con sus precios reales.',
   );
   return `Beneficios de plan · ${created} creados, ${updated} actualizados.`;
-}
-
-// Entrypoint del comando individual. Con `pnpm seed` lo llama el orquestador.
-if (require.main === module) {
-  void runSeedScript(seedPlanFeatures);
 }

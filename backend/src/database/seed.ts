@@ -1,6 +1,6 @@
 import 'reflect-metadata';
+import type { DataSource } from 'typeorm';
 import { AppDataSource } from './typeorm.config';
-import type { SeedFn } from './seed-script';
 import { seedAdmin } from './seed-admin';
 import { seedApplicationStatuses } from './seed-application-statuses';
 import { seedCandidate } from './seed-candidate';
@@ -9,7 +9,7 @@ import { seedPlanFeatures } from './seed-plan-features';
 import { seedRbac } from './seed-rbac';
 
 /**
- * Orquestador de semillas: **un solo comando** en lugar de seis.
+ * Orquestador de semillas: **el único comando** para sembrar.
  *
  *   pnpm seed              → catálogos + administrador (seguro en cualquier entorno)
  *   pnpm seed:demo         → lo anterior + cuentas de prueba (candidato y empresa)
@@ -17,9 +17,10 @@ import { seedRbac } from './seed-rbac';
  *   pnpm seed -- --skip=plan-features
  *   pnpm seed -- --list
  *
- * Abre **una sola conexión** para todas (los scripts sueltos abrían y cerraban
- * una cada uno) y respeta el orden: RBAC primero, porque el resto necesita que
- * los roles existan.
+ * Abre **una sola conexión** para todas y respeta el orden: RBAC primero,
+ * porque el resto necesita que los roles existan. Los seis scripts sueltos
+ * (`seed:rbac`, `seed:admin`, …) se retiraron: `--only=<clave>` hace lo mismo
+ * compartiendo conexión y diciendo **cuál** falló cuando algo falla.
  *
  * Todas las semillas son idempotentes: insertan lo que falta y actualizan lo que
  * ya está. Correr esto dos veces seguidas no duplica nada.
@@ -32,10 +33,17 @@ import { seedRbac } from './seed-rbac';
  * las seis semillas que ya había, no para que crezca.
  */
 
+/**
+ * Una semilla: recibe la conexión **ya abierta** y devuelve una línea de
+ * resumen. Ni abre ni cierra la conexión — de eso se encarga este orquestador,
+ * y así las seis comparten una sola.
+ */
+export type SeedFn = (dataSource: DataSource) => Promise<string>;
+
 type SeedGroup = 'core' | 'admin' | 'demo';
 
 interface SeedEntry {
-  /** Nombre para `--only` / `--skip`. Coincide con el script individual. */
+  /** Nombre para `--only` / `--skip`. */
   key: string;
   group: SeedGroup;
   description: string;

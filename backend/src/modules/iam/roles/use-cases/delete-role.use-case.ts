@@ -28,7 +28,7 @@ export interface DeleteRoleCommand {
 
 /**
  * Borra un rol **personalizado**. Los de sistema (`is_system`) sostienen la
- * matriz que siembra `seed:rbac` y el rol primario de las cuentas, así que no
+ * matriz que siembra `pnpm seed` y el rol primario de las cuentas, así que no
  * se tocan; un rol asignado a alguien tampoco, para no dejar cuentas sin los
  * permisos que ya usaban — primero se les quita el rol.
  */
