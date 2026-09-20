@@ -2,7 +2,16 @@ import { Routes } from '@angular/router';
 
 /** Área real del candidato — sustituye al prototipo `/panel`. */
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'perfil' },
+  // El panel **es** la entrada del área: antes se caía en el formulario de
+  // perfil, que no dice nada sobre cómo va la búsqueda de empleo.
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import(
+        '@/features/candidate/dashboard/pages/candidate-dashboard-page/candidate-dashboard-page'
+      ).then((m) => m.CandidateDashboardPage),
+  },
   {
     path: 'perfil',
     loadComponent: () =>

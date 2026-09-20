@@ -60,7 +60,7 @@ import {
         <p class="mb-3 text-[13px] font-semibold text-ink-900">Logo de la empresa</p>
         <app-company-logo-picker
           [logoUrl]="logoUrl()"
-          [companyName]="form.controls.businessName.value ?? ''"
+          [companyName]="form.controls.businessName.value"
           [uploading]="uploadingLogo()"
           (fileSelected)="onLogoSelected($event)"
           (remove)="onLogoRemove()"

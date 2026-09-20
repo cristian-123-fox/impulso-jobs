@@ -31,7 +31,7 @@ import {
       [avatarUrl]="photoUrl()"
       sectionLabel="MI CUENTA"
       breadcrumbRoot="Candidato"
-      homeRoute="/candidato/perfil"
+      homeRoute="/candidato"
       roleLabel="Candidato"
       notificationsRoute="/candidato/notificaciones"
       storageKey="ij-candidate-sidebar"
@@ -55,6 +55,7 @@ export class CandidateLayout {
   private readonly profileFacade = inject(CandidateProfileFacade);
 
   protected readonly navItems: readonly ShellNavItem[] = [
+    { path: '/candidato', label: 'Inicio', icon: 'chart', exact: true },
     { path: '/candidato/perfil', label: 'Mi perfil', icon: 'user' },
     { path: '/candidato/cv', label: 'Mis hojas de vida', icon: 'file' },
     { path: '/candidato/postulaciones', label: 'Mis postulaciones', icon: 'briefcase' },

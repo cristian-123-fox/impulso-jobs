@@ -16,8 +16,8 @@ import { TokenStorageService } from '@/core/auth/token-storage.service';
 /** A dónde va cada rol al iniciar sesión — cada uno a su área real. */
 const ROLE_HOME: Record<Role, string> = {
   [Role.ADMIN]: '/admin',
-  [Role.EMPLOYER]: '/empresa/vacantes',
-  [Role.CANDIDATE]: '/candidato/perfil',
+  [Role.EMPLOYER]: '/empresa',
+  [Role.CANDIDATE]: '/candidato',
 };
 
 /**

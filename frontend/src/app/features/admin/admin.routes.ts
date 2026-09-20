@@ -1,7 +1,16 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'usuarios', pathMatch: 'full' },
+  // El panel **es** la entrada del back-office: antes se caía directamente en
+  // el listado de usuarios, que es una herramienta, no una visión de conjunto.
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import(
+        '@/features/admin/dashboard/pages/admin-dashboard-page/admin-dashboard-page'
+      ).then((m) => m.AdminDashboardPage),
+  },
   {
     path: 'usuarios',
     loadChildren: () =>

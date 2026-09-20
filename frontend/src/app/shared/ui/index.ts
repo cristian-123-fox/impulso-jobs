@@ -33,6 +33,23 @@ export { IjAutocomplete } from '@/shared/ui/autocomplete/autocomplete';
 export { IjDatepicker } from '@/shared/ui/datepicker/datepicker';
 export { type IjOption } from '@/shared/ui/forms/option';
 
+// Piezas de los paneles de inicio, compartidas por las tres áreas.
+export { IjKpiCard, type IjKpiTone } from '@/shared/ui/kpi-card/kpi-card';
+export { IjDashboardCard } from '@/shared/ui/dashboard-card/dashboard-card';
+
+// Gráficas de los paneles (ApexCharts, cargado bajo demanda en el navegador).
+export { IjChart } from '@/shared/ui/chart/chart';
+export {
+  IJ_CHART_PALETTE,
+  IJ_CHART_STATUS,
+  areaChartOptions,
+  multiAreaChartOptions,
+  barChartOptions,
+  donutChartOptions,
+  radialChartOptions,
+  sparklineOptions,
+} from '@/shared/ui/chart/chart-theme';
+
 // Tabla del back-office: TanStack Table headless + marcado del kit.
 export { IjTable } from '@/shared/ui/table/table';
 export { IjCell } from '@/shared/ui/table/cell.directive';

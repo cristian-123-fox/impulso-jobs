@@ -140,6 +140,7 @@ Los repositorios se inyectan por **token** (p. ej. `USER_REPOSITORY`) para poder
 | Verificación de correo | `modules/iam/auth/` | `GET auth/email-verification/confirm` · `POST …/resend` | ✅ |
 | Registro (empresa \| candidato) | `modules/iam/registration/` | `POST auth/register` | ✅ |
 | Baja de cuenta y derechos ARCO | `modules/iam/account/` | `DELETE account` · `GET account/data-export` · `POST account/:id/restore` | ✅ |
+| Paneles de inicio | `modules/dashboard/` | `GET {admin,company,candidate}/dashboard` (agregados de cada área) | ✅ |
 | Roles, permisos (RBAC) | `modules/iam/roles/`, `modules/iam/permissions/` | `GET permissions` (catálogo: permisos + grupos + base por ámbito) · `roles` CRUD · `GET`/`PUT roles/:id/permissions` (guardado en lote) · `users/:id/roles` | ✅ |
 | Back-office de usuarios | `modules/iam/users/` | `admin/users` CRUD + `:id/roles`, `:id/status` | ✅ |
 | Perfil de empresa (fiscal/CFDI) | `modules/companies/` | `GET/PUT company/profile` · `PATCH company/profile/logo` | ✅ |
@@ -270,6 +271,7 @@ Familias de tokens definidas:
 
 - **Smart vs Dumb:** los containers (`pages/`) hablan con la fachada; los presentacionales solo `input()/output()`, `ChangeDetectionStrategy.OnPush`, y **no** inyectan servicios de datos.
 - **Facade por feature:** una clase (o store con Signals) expone estado + acciones; un solo lugar por feature toca la API.
+- **Gráficas:** `ij-chart` (ApexCharts) con el tema de `shared/ui/chart/chart-theme.ts`. La librería se carga con `import()` dinámico dentro de `afterNextRender` — un import estático rompe la extracción de rutas del build. La paleta categórica es fija y validada (separación para daltonismo y contraste); no se inventan colores por gráfica.
 - **UI Kit único:** botones, cards, modales, tablas, tabs y la `pricing-card` se **componen** de piezas `ij-*` de `shared/ui/` (estilizadas con Tailwind y comportamiento vía `@angular/cdk`). Las features **no** reescriben estilos ni usan CDK directamente. **Nada de Angular Material** — los controles de formulario son propios (CDK + Tailwind). Si una pieza del kit aún no existe (tabla, paginación, tabs, spinner, empty-state), créala en `shared/ui/` en vez de duplicarla en la feature.
 - **Tipos de la API a mano, derivados del Swagger** mientras no exista `@impulso/api-contract`: envelope en `core/models/`, DTO en el `models/` de cada feature. Mapear DTO→ViewModel si la UI lo necesita.
 - **SSR:** hay rutas prerenderizadas (`/auth/**`). Cualquier llamada a la API en la inicialización va dentro de `afterNextRender`; nada de `window`/`document` fuera de guardas de plataforma. Evita `[innerHTML]` en `<svg>` — `ij-icon` renderiza formas estructurales.

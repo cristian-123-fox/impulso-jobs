@@ -14,6 +14,7 @@ import { ApplicationsModule } from '@/modules/applications/applications.module';
 import { BillingModule } from '@/modules/billing/billing.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
+import { DashboardModule } from '@/modules/dashboard/dashboard.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { TalentModule } from '@/modules/talent/talent.module';
 import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
@@ -36,6 +37,7 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     AdminUsersModule,
     NotificationsModule,
     SessionModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -25,7 +25,7 @@ import { environment } from '@env';
       [menuItems]="menuItems"
       sectionLabel="RECLUTAMIENTO"
       breadcrumbRoot="Empresa"
-      homeRoute="/empresa/vacantes"
+      homeRoute="/empresa"
       roleLabel="Empresa"
       notificationsRoute="/empresa/notificaciones"
       storageKey="ij-company-sidebar"
@@ -36,6 +36,7 @@ import { environment } from '@env';
 })
 export class CompanyLayout {
   protected readonly navItems: readonly ShellNavItem[] = [
+    { path: '/empresa', label: 'Inicio', icon: 'chart', exact: true },
     { path: '/empresa/vacantes', label: 'Mis vacantes', icon: 'briefcase' },
     { path: '/empresa/postulaciones', label: 'Postulaciones', icon: 'file' },
     { path: '/empresa/candidatos', label: 'Buscar candidatos', icon: 'search' },

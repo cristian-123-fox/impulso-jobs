@@ -54,7 +54,7 @@ import { CreateCompanyPayload } from '@/features/admin/companies/models/companie
         <p class="mb-3 text-[13px] font-semibold text-ink-900">Logo de la empresa</p>
         <app-company-logo-picker
           [logoUrl]="logoPreview()"
-          [companyName]="form.controls.businessName.value ?? ''"
+          [companyName]="form.controls.businessName.value"
           [uploading]="uploadingLogo()"
           (fileSelected)="onLogoSelected($event)"
           (remove)="onLogoRemove()"

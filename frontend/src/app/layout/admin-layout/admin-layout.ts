@@ -35,7 +35,7 @@ import { environment } from '@env';
       [menuItems]="menuItems"
       sectionLabel="ADMINISTRACIÓN"
       breadcrumbRoot="Administración"
-      homeRoute="/admin/usuarios"
+      homeRoute="/admin"
       roleLabel="Administrador"
       notificationsRoute="/admin/notificaciones"
       storageKey="ij-admin-sidebar"
@@ -53,6 +53,7 @@ export class AdminLayout {
   private readonly pendingReports = signal(0);
 
   protected readonly navItems = computed<readonly ShellNavItem[]>(() => [
+    { path: '/admin', label: 'Inicio', icon: 'chart', exact: true },
     { path: '/admin/usuarios', label: 'Usuarios', icon: 'users' },
     { path: '/admin/empresas', label: 'Empresas', icon: 'building' },
     { path: '/admin/planes', label: 'Planes', icon: 'tag' },

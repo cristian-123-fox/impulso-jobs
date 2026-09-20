@@ -1,7 +1,16 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'vacantes', pathMatch: 'full' },
+  // El panel **es** la entrada del área: lo primero que ve la empresa al
+  // iniciar sesión. Antes se caía directamente en el listado de vacantes.
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import(
+        '@/features/company/dashboard/pages/company-dashboard-page/company-dashboard-page'
+      ).then((m) => m.CompanyDashboardPage),
+  },
   {
     path: 'vacantes',
     loadChildren: () =>

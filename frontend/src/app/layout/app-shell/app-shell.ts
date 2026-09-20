@@ -30,6 +30,12 @@ export interface ShellNavItem {
   readonly badge?: number;
   /** Enlace externo (abre en nueva pestaña) en vez de routerLink interno. */
   readonly external?: boolean;
+  /**
+   * Marca activo **sólo** en esa URL exacta. Lo necesita la raíz del área
+   * (`/empresa`): con la coincidencia por prefijo que trae `routerLinkActive`,
+   * «Inicio» se quedaría resaltado estando en cualquier otra sección.
+   */
+  readonly exact?: boolean;
 }
 
 /** Entrada del menú de sesión, encima de «Cerrar sesión». */
@@ -120,6 +126,7 @@ export interface ShellMenuItem {
               <a
                 [routerLink]="item.path"
                 routerLinkActive="!bg-brand-50 !text-brand-strong"
+                [routerLinkActiveOptions]="{ exact: !!item.exact }"
                 [title]="item.label"
                 class="relative flex items-center gap-3 rounded-xl text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
                 [class]="expanded() ? 'px-3 py-2.5' : 'justify-center py-2.5'"
@@ -166,6 +173,7 @@ export interface ShellMenuItem {
                 <a
                   [routerLink]="item.path"
                   routerLinkActive="!bg-brand-50 !text-brand-strong"
+                  [routerLinkActiveOptions]="{ exact: !!item.exact }"
                   [title]="item.label"
                   class="relative flex items-center gap-3 rounded-xl text-[13.5px] font-bold text-body transition-colors hover:bg-surface"
                   [class]="expanded() ? 'px-3 py-2.5' : 'justify-center py-2.5'"
@@ -300,6 +308,7 @@ export interface ShellMenuItem {
               <a
                 [routerLink]="item.path"
                 routerLinkActive="!bg-brand-50 !text-brand-strong"
+                [routerLinkActiveOptions]="{ exact: !!item.exact }"
                 class="flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-bold text-body transition-colors hover:bg-surface"
               >
                 <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />
@@ -322,6 +331,7 @@ export interface ShellMenuItem {
               <a
                 [routerLink]="item.path"
                 routerLinkActive="!bg-brand-50 !text-brand-strong"
+                [routerLinkActiveOptions]="{ exact: !!item.exact }"
                 class="flex flex-shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-bold text-body transition-colors hover:bg-surface"
               >
                 <ij-icon [name]="item.icon" [size]="17" [strokeWidth]="1.9" />

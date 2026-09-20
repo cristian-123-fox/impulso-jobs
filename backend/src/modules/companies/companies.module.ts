@@ -54,6 +54,13 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     AdminCompaniesUseCase,
     CompanyMembersUseCase,
   ],
-  exports: [COMPANY_REPOSITORY, COMPANY_USER_REPOSITORY],
+  // `COMPANY_PLAN_REPOSITORY` se exporta para el panel de inicio de la empresa
+  // (`DashboardModule`): leer el plan vigente en sólo lectura. Escribir sobre la
+  // suscripción sigue siendo exclusivo de `billing`.
+  exports: [
+    COMPANY_REPOSITORY,
+    COMPANY_USER_REPOSITORY,
+    COMPANY_PLAN_REPOSITORY,
+  ],
 })
 export class CompaniesModule {}
