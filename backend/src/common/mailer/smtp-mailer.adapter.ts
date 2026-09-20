@@ -29,6 +29,8 @@ export class SmtpMailerAdapter implements MailerPort {
             pass: config.get<string>('SMTP_PASS') ?? '',
           }
         : undefined,
+      logger: true,
+      debug: false,
     });
   }
 
