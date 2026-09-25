@@ -7,8 +7,24 @@ import {
   signal,
 } from '@angular/core';
 import { IconName, IjIcon } from '@/shared/ui';
-import { PermissionTreeGroup } from '@/features/admin/roles/data/roles.facade';
-import { Permission } from '@/features/admin/roles/models/roles.models';
+
+/**
+ * Un permiso tal como lo pinta el árbol. Lo cumplen el `Permission` del
+ * back-office y el catálogo de roles de empresa: el árbol sólo necesita un
+ * id estable, la etiqueta y la descripción.
+ */
+export interface PermissionTreeItem {
+  id: string;
+  code: string;
+  label: string;
+  description: string | null;
+}
+
+/** Un grupo del árbol con sus permisos, ya filtrados para quien los ve. */
+export interface PermissionTreeGroup {
+  group: { key: string; label: string; description: string; icon: string };
+  items: PermissionTreeItem[];
+}
 
 /** Lo que pide el árbol al marcar o desmarcar: uno o varios permisos a la vez. */
 export interface PermissionToggle {
@@ -21,7 +37,7 @@ interface TreeNode {
   label: string;
   description: string;
   icon: IconName;
-  items: Permission[];
+  items: PermissionTreeItem[];
   /** Ids que el usuario puede mover (los fijos no cuentan). */
   editableIds: string[];
   selectedCount: number;
@@ -44,7 +60,10 @@ const KNOWN_ICONS = new Set<string>([
 ]);
 
 /**
- * Árbol de permisos por grupo (presentacional). Sustituye a la matriz plana de
+ * Árbol de permisos por grupo (presentacional). Vive en `shared/` porque lo
+ * usan dos áreas: `/admin/roles/:id` y los roles de empresa de
+ * `/empresa/usuarios`.
+ * Sustituye a la matriz plana de
  * casillas con el código `component.action` como etiqueta, que obligaba a
  * traducir mentalmente `applications.status.update` para saber qué se estaba
  * concediendo.

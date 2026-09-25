@@ -7,6 +7,7 @@ import { Plan } from '@/modules/billing/entities/plan.entity';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { AdminCompaniesController } from '@/modules/companies/controllers/admin-companies.controller';
 import { CompanyProfileController } from '@/modules/companies/controllers/company-profile.controller';
+import { CompanyRolesController } from '@/modules/companies/controllers/company-roles.controller';
 import { CompanyTeamController } from '@/modules/companies/controllers/company-team.controller';
 import { Company } from '@/modules/companies/entities/company.entity';
 import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
@@ -17,6 +18,7 @@ import { CompanyRepository } from '@/modules/companies/repositories/company.repo
 import { COMPANY_USER_REPOSITORY } from '@/modules/companies/repositories/company-user.repository.interface';
 import { CompanyUserRepository } from '@/modules/companies/repositories/company-user.repository';
 import { AdminCompaniesUseCase } from '@/modules/companies/use-cases/admin-companies.use-case';
+import { CompanyRolesUseCase } from '@/modules/companies/use-cases/company-roles.use-case';
 import { CompanyMembersUseCase } from '@/modules/companies/use-cases/company-members.use-case';
 import { CompanyProfileUseCase } from '@/modules/companies/use-cases/company-profile.use-case';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
@@ -41,6 +43,7 @@ import { UsersModule } from '@/modules/iam/users/users.module';
   controllers: [
     CompanyProfileController,
     CompanyTeamController,
+    CompanyRolesController,
     AdminCompaniesController,
   ],
   providers: [
@@ -53,6 +56,7 @@ import { UsersModule } from '@/modules/iam/users/users.module';
     CompanyProfileUseCase,
     AdminCompaniesUseCase,
     CompanyMembersUseCase,
+    CompanyRolesUseCase,
   ],
   // `COMPANY_PLAN_REPOSITORY` se exporta para el panel de inicio de la empresa
   // (`DashboardModule`): leer el plan vigente en sólo lectura. Escribir sobre la

@@ -25,6 +25,9 @@ import {
   COMPANY_MEMBER_ROLE_HINTS,
   COMPANY_MEMBER_ROLE_LABELS,
   CompanyMemberRole,
+  CompanyRole,
+  FULL_ACCESS,
+  TEAM_MANAGER_ROLES,
 } from '@/features/company/team/models/team.models';
 
 /**
@@ -88,6 +91,25 @@ import {
             formControlName="role"
           />
         </div>
+        @if (isManager()) {
+          <p class="rounded-xl bg-surface px-3.5 py-3 text-[12.5px] text-muted sm:col-span-2">
+            Un administrador tiene siempre el <strong class="text-body">acceso completo</strong>.
+          </p>
+        } @else {
+          <div class="sm:col-span-2">
+            <ij-select
+              label="Permisos"
+              [options]="accessOptions()"
+              [searchable]="false"
+              [hint]="
+                roles().length
+                  ? 'Elige un rol para limitar lo que puede hacer.'
+                  : 'Crea roles en la pestaña «Roles» para limitar lo que puede hacer.'
+              "
+              formControlName="access"
+            />
+          </div>
+        }
       </div>
 
       <div class="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4">
@@ -116,6 +138,8 @@ import {
   `,
 })
 export class MemberForm {
+  /** Roles de la empresa que se pueden asignar. */
+  readonly roles = input<readonly CompanyRole[]>([]);
   readonly submitting = input(false);
   readonly error = input<string | null>(null);
   readonly add = output<AddCompanyMemberPayload>();
@@ -143,13 +167,22 @@ export class MemberForm {
     role: this.fb.control<CompanyMemberRole>(CompanyMemberRole.RECRUITER, [
       Validators.required,
     ]),
+    access: this.fb.control<string>(FULL_ACCESS),
   });
+
+  protected readonly accessOptions = computed<readonly IjOption[]>(() => [
+    { value: FULL_ACCESS, label: 'Acceso completo' },
+    ...this.roles().map((role) => ({ value: role.id, label: role.name })),
+  ]);
 
   private readonly selectedRole = signal<CompanyMemberRole>(
     CompanyMemberRole.RECRUITER,
   );
   protected readonly roleHint = computed(
     () => COMPANY_MEMBER_ROLE_HINTS[this.selectedRole()],
+  );
+  protected readonly isManager = computed(() =>
+    TEAM_MANAGER_ROLES.includes(this.selectedRole()),
   );
 
   constructor() {
@@ -171,6 +204,10 @@ export class MemberForm {
     const value = this.form.getRawValue();
     this.add.emit({
       role: value.role,
+      accessRoleId:
+        TEAM_MANAGER_ROLES.includes(value.role) || value.access === FULL_ACCESS
+          ? null
+          : value.access,
       email: value.email.trim().toLowerCase(),
       password: value.password,
     });

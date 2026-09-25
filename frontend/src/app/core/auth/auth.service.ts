@@ -35,6 +35,16 @@ export class AuthService {
   readonly currentUser = this.user.asReadonly();
   readonly isAuthenticated = computed(() => this.user() !== null);
 
+  /**
+   * Permisos de la sesión, o `null` si aún no llegaron de `GET /auth/me`.
+   * Con `null` se muestra todo: ocultar el menú mientras carga lo haría
+   * parpadear, y lo que no se pueda hacer lo frena el backend igualmente.
+   */
+  readonly permissions = computed<ReadonlySet<string> | null>(() => {
+    const list = this.user()?.permissions;
+    return list ? new Set(list) : null;
+  });
+
   /** Renovación en curso compartida para no lanzar varias a la vez. */
   private refresh$?: Observable<string>;
 
@@ -104,6 +114,7 @@ export class AuthService {
       role: identity.role,
       displayName: identity.displayName,
       avatarUrl: identity.avatarUrl,
+      permissions: identity.permissions,
     };
     this.user.set(merged);
     this.storage.setUser(merged);

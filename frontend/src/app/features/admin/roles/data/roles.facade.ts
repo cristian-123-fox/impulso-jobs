@@ -2,12 +2,11 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, tap } from 'rxjs';
 import { RolesApi } from '@/features/admin/roles/data/roles.api';
+import type { PermissionTreeGroup } from '@/shared/permissions/permission-tree';
 import {
   ADMINISTRABLE_SCOPES,
   CreateRolePayload,
-  Permission,
   PermissionCatalog,
-  PermissionGroup,
   RoleScope,
   RoleSummary,
   UpdateRolePayload,
@@ -15,11 +14,8 @@ import {
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
-/** Grupo del árbol con los permisos que aplican al ámbito pedido. */
-export interface PermissionTreeGroup {
-  group: PermissionGroup;
-  items: Permission[];
-}
+/** El árbol vive en `shared/permissions`; se reexporta por compatibilidad. */
+export type { PermissionTreeGroup };
 
 /** Fachada del feature admin/roles: estado con Signals + acciones sobre la API. */
 @Injectable()

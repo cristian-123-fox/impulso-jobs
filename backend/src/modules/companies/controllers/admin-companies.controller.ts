@@ -162,6 +162,7 @@ export class AdminCompaniesController {
       companyId: id,
       userId,
       role: dto.role,
+      accessRoleId: dto.accessRoleId,
       actorUserId: actor.userId,
       ip: client.ip,
       userAgent: client.userAgent,

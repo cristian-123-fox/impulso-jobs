@@ -29,7 +29,7 @@ export interface TeamActionEvent {
   imports: [DatePipe, IjAvatar, IjIcon],
   template: `
     <div class="overflow-x-auto">
-      <table class="w-full min-w-[760px] border-collapse text-left">
+      <table class="w-full min-w-[860px] border-collapse text-left">
         <thead>
           <tr class="border-b border-line bg-surface/60">
             @for (h of headers; track h) {
@@ -78,6 +78,18 @@ export interface TeamActionEvent {
                 </span>
               </td>
               <td class="px-5 py-3.5">
+                @if (member.accessRole; as access) {
+                  <span
+                    class="inline-flex items-center gap-1 rounded-md bg-accent-amber-soft px-2 py-1 text-[11.5px] font-bold text-accent-amber-strong"
+                    title="Sus permisos están limitados por este rol"
+                  >
+                    {{ access.name }}
+                  </span>
+                } @else {
+                  <span class="text-[12.5px] font-semibold text-muted">Acceso completo</span>
+                }
+              </td>
+              <td class="px-5 py-3.5">
                 <span
                   class="inline-block rounded-md px-2 py-1 text-[11.5px] font-bold"
                   [class]="
@@ -101,8 +113,8 @@ export interface TeamActionEvent {
                     <button
                       type="button"
                       [class]="actionClass"
-                      title="Cambiar rol interno"
-                      aria-label="Cambiar rol interno"
+                      title="Cambiar rol y permisos"
+                      aria-label="Cambiar rol y permisos"
                       (click)="emit('role', member)"
                     >
                       <ij-icon name="pen" [size]="15" />
@@ -127,7 +139,7 @@ export interface TeamActionEvent {
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="px-5 py-10 text-center text-[13.5px] text-muted">
+              <td colspan="7" class="px-5 py-10 text-center text-[13.5px] text-muted">
                 Tu equipo aún no tiene usuarios.
               </td>
             </tr>
@@ -146,6 +158,7 @@ export class TeamTable {
   protected readonly headers = [
     'Usuario',
     'Rol interno',
+    'Permisos',
     'Cuenta',
     'Último acceso',
     'Se unió',

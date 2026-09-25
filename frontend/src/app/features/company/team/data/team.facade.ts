@@ -7,8 +7,12 @@ import {
   AddCompanyMemberPayload,
   CompanyMember,
   CompanyMemberRole,
+  CompanyPermissionCatalog,
+  CompanyRole,
+  SaveCompanyRolePayload,
   TEAM_MANAGER_ROLES,
 } from '@/features/company/team/models/team.models';
+import { PermissionTreeGroup } from '@/shared/permissions/permission-tree';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -21,6 +25,44 @@ export class TeamFacade {
 
   readonly members = signal<CompanyMember[]>([]);
   readonly state = signal<LoadState>('idle');
+
+  readonly roles = signal<CompanyRole[]>([]);
+  readonly rolesState = signal<LoadState>('idle');
+  readonly catalog = signal<CompanyPermissionCatalog | null>(null);
+
+  /**
+   * El catálogo convertido al árbol compartido. El árbol trabaja con ids; aquí
+   * el id **es el código**, que es con lo que habla la API de roles de empresa.
+   */
+  readonly permissionTree = computed<PermissionTreeGroup[]>(() => {
+    const catalog = this.catalog();
+    if (!catalog) return [];
+    return catalog.groups
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((group) => ({
+        group,
+        items: catalog.permissions
+          .filter((permission) => permission.group === group.key)
+          .map((permission) => ({
+            id: permission.code,
+            code: permission.code,
+            label: permission.label,
+            description: permission.description,
+          })),
+      }))
+      .filter((node) => node.items.length > 0);
+  });
+
+  /** Códigos que cualquier rol de empresa tiene siempre. */
+  readonly lockedCodes = computed<ReadonlySet<string>>(
+    () =>
+      new Set(
+        (this.catalog()?.permissions ?? [])
+          .filter((permission) => permission.locked)
+          .map((permission) => permission.code),
+      ),
+  );
 
   /** Cuenta con la que se navega: no se puede editar ni quitar a sí misma. */
   readonly currentUserId = computed(() => this.auth.currentUser()?.id ?? null);
@@ -69,8 +111,55 @@ export class TeamFacade {
   updateRole(
     userId: string,
     role: CompanyMemberRole,
+    accessRoleId?: string | null,
   ): Observable<CompanyMember> {
-    return this.api.updateRole(userId, role).pipe(tap(() => this.load()));
+    // El contador de miembros de cada rol también cambia.
+    return this.api.updateRole(userId, role, accessRoleId).pipe(
+      tap(() => {
+        this.load();
+        this.loadRoles();
+      }),
+    );
+  }
+
+  loadRoles(): void {
+    this.rolesState.set('loading');
+    this.api
+      .listRoles()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (roles) => {
+          this.roles.set(roles);
+          this.rolesState.set('loaded');
+        },
+        error: () => this.rolesState.set('error'),
+      });
+  }
+
+  loadCatalog(): void {
+    if (this.catalog()) return;
+    this.api
+      .permissionCatalog()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((catalog) => this.catalog.set(catalog));
+  }
+
+  saveRole(
+    id: string | null,
+    payload: SaveCompanyRolePayload,
+  ): Observable<CompanyRole> {
+    const request = id
+      ? this.api.updateCompanyRole(id, payload)
+      : this.api.createRole(payload);
+    return request.pipe(tap(() => this.loadRoles()));
+  }
+
+  deleteRole(id: string): Observable<void> {
+    return this.api
+      .deleteRole(id)
+      .pipe(
+        tap(() => this.roles.update((list) => list.filter((r) => r.id !== id))),
+      );
   }
 
   remove(userId: string): Observable<void> {

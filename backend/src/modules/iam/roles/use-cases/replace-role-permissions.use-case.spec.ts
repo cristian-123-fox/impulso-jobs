@@ -56,6 +56,7 @@ describe('ReplaceRolePermissionsUseCase', () => {
   beforeEach(() => {
     roles = {
       findAll: jest.fn(),
+      findByCompanyId: jest.fn(),
       findById: jest.fn().mockResolvedValue(roleOf()),
       findByCode: jest.fn(),
       findByIds: jest.fn(),

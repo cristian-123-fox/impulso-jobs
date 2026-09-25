@@ -9,6 +9,7 @@ import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
 import { CompanyMemberRole } from '@/modules/companies/enums/company-member-role.enum';
 import { ICompanyRepository } from '@/modules/companies/repositories/company.repository.interface';
 import { ICompanyUserRepository } from '@/modules/companies/repositories/company-user.repository.interface';
+import { CompanyRolesUseCase } from '@/modules/companies/use-cases/company-roles.use-case';
 import { CompanyMembersUseCase } from '@/modules/companies/use-cases/company-members.use-case';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
@@ -48,6 +49,13 @@ function employer(overrides: Partial<User> = {}): User {
 
 const actor = { actorUserId: 'admin-1', ip: '127.0.0.1', userAgent: 'jest' };
 
+/** Rol propio de la empresa (perfil de permisos restringido). */
+const COMPANY_ROLE = Object.assign(new Role(), {
+  id: 'role-junior',
+  name: 'Reclutador junior',
+  companyId: 'company-1',
+});
+
 describe('CompanyMembersUseCase', () => {
   let companies: jest.Mocked<ICompanyRepository>;
   let members: jest.Mocked<ICompanyUserRepository>;
@@ -58,6 +66,7 @@ describe('CompanyMembersUseCase', () => {
   let audit: jest.Mocked<AuditService>;
   let dataSource: DataSource;
   let useCase: CompanyMembersUseCase;
+  let companyRoles: jest.Mocked<CompanyRolesUseCase>;
 
   beforeEach(() => {
     companies = {
@@ -90,7 +99,8 @@ describe('CompanyMembersUseCase', () => {
       ),
     } as unknown as jest.Mocked<IUserRepository>;
     userRoles = {
-      findRoleIdsByUserId: jest.fn(),
+      findRoleIdsByUserId: jest.fn().mockResolvedValue([]),
+      findByUserIds: jest.fn().mockResolvedValue([]),
       countByRoleId: jest.fn(),
       exists: jest.fn(),
       add: jest.fn(),
@@ -100,7 +110,15 @@ describe('CompanyMembersUseCase', () => {
       findByCode: jest
         .fn()
         .mockResolvedValue(Object.assign(new Role(), { id: 'role-employer' })),
+      findByCompanyId: jest.fn().mockResolvedValue([COMPANY_ROLE]),
     } as unknown as jest.Mocked<IRoleRepository>;
+    companyRoles = {
+      requireOwnRole: jest.fn((companyId: string, roleId: string) =>
+        roleId === COMPANY_ROLE.id
+          ? Promise.resolve(COMPANY_ROLE)
+          : Promise.reject(new Error('rol ajeno')),
+      ),
+    } as unknown as jest.Mocked<CompanyRolesUseCase>;
     hasher = {
       hash: jest.fn().mockResolvedValue('hashed'),
     } as unknown as jest.Mocked<PasswordHasherService>;
@@ -120,6 +138,7 @@ describe('CompanyMembersUseCase', () => {
       hasher,
       audit,
       dataSource,
+      companyRoles,
     );
   });
 
@@ -380,6 +399,134 @@ describe('CompanyMembersUseCase', () => {
         .catch((e: unknown) => e);
 
       expect(errorCodeOf(thrown)).toBe(ErrorCode.COMPANY_MEMBER_NOT_FOUND);
+    });
+  });
+
+  describe('rol de acceso', () => {
+    beforeEach(() => {
+      members.findOne.mockResolvedValue(
+        Object.assign(new CompanyUser(), {
+          id: 'member-1',
+          companyId: 'company-1',
+          userId: 'user-1',
+          role: CompanyMemberRole.RECRUITER,
+          createdAt: new Date(),
+        }),
+      );
+      userRoles.findRoleIdsByUserId.mockResolvedValue(['role-employer']);
+    });
+
+    it('sustituye EMPLOYER por el rol de empresa: si no, los permisos se unirían', async () => {
+      const result = await useCase.updateRole({
+        ...actor,
+        companyId: 'company-1',
+        userId: 'user-1',
+        role: CompanyMemberRole.RECRUITER,
+        accessRoleId: COMPANY_ROLE.id,
+      });
+
+      expect(userRoles.add).toHaveBeenCalledWith(
+        'user-1',
+        COMPANY_ROLE.id,
+        expect.anything(),
+      );
+      expect(userRoles.remove).toHaveBeenCalledWith(
+        'user-1',
+        'role-employer',
+        expect.anything(),
+      );
+      expect(result.accessRole).toEqual({
+        id: COMPANY_ROLE.id,
+        name: 'Reclutador junior',
+      });
+    });
+
+    it('null devuelve el acceso completo', async () => {
+      userRoles.findRoleIdsByUserId.mockResolvedValue([COMPANY_ROLE.id]);
+
+      const result = await useCase.updateRole({
+        ...actor,
+        companyId: 'company-1',
+        userId: 'user-1',
+        role: CompanyMemberRole.RECRUITER,
+        accessRoleId: null,
+      });
+
+      expect(userRoles.remove).toHaveBeenCalledWith(
+        'user-1',
+        COMPANY_ROLE.id,
+        expect.anything(),
+      );
+      expect(userRoles.add).toHaveBeenCalledWith(
+        'user-1',
+        'role-employer',
+        expect.anything(),
+      );
+      expect(result.accessRole).toBeNull();
+    });
+
+    it('un propietario o administrador no admite rol restringido', async () => {
+      await expect(
+        useCase.updateRole({
+          ...actor,
+          companyId: 'company-1',
+          userId: 'user-1',
+          role: CompanyMemberRole.ADMIN,
+          accessRoleId: COMPANY_ROLE.id,
+        }),
+      ).rejects.toBeInstanceOf(AppException);
+      expect(userRoles.add).not.toHaveBeenCalled();
+    });
+
+    it('promover a administrador a alguien restringido le devuelve el acceso completo', async () => {
+      userRoles.findRoleIdsByUserId.mockResolvedValue([COMPANY_ROLE.id]);
+
+      const result = await useCase.updateRole({
+        ...actor,
+        companyId: 'company-1',
+        userId: 'user-1',
+        role: CompanyMemberRole.ADMIN,
+      });
+
+      expect(userRoles.add).toHaveBeenCalledWith(
+        'user-1',
+        'role-employer',
+        expect.anything(),
+      );
+      expect(result.accessRole).toBeNull();
+    });
+
+    it('un rol de otra empresa se rechaza', async () => {
+      await expect(
+        useCase.updateRole({
+          ...actor,
+          companyId: 'company-1',
+          userId: 'user-1',
+          role: CompanyMemberRole.RECRUITER,
+          accessRoleId: 'role-de-otra-empresa',
+        }),
+      ).rejects.toThrow('rol ajeno');
+    });
+
+    it('al salir de la empresa vuelve a EMPLOYER', async () => {
+      userRoles.findRoleIdsByUserId.mockResolvedValue([COMPANY_ROLE.id]);
+
+      await useCase.remove({
+        ...actor,
+        companyId: 'company-1',
+        userId: 'user-1',
+      });
+
+      expect(userRoles.remove).toHaveBeenCalledWith(
+        'user-1',
+        COMPANY_ROLE.id,
+        expect.anything(),
+      );
+      expect(userRoles.add).toHaveBeenCalledWith(
+        'user-1',
+        'role-employer',
+        expect.anything(),
+      );
     });
   });
 });

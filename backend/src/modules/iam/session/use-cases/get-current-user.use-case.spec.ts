@@ -8,6 +8,8 @@ import { Company } from '@/modules/companies/entities/company.entity';
 import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
 import { ICompanyRepository } from '@/modules/companies/repositories/company.repository.interface';
 import { ICompanyUserRepository } from '@/modules/companies/repositories/company-user.repository.interface';
+import { PermissionsService } from '@/modules/iam/permissions/services/permissions.service';
+import { IUserRoleRepository } from '@/modules/iam/users/repositories/user-role.repository.interface';
 import { GetCurrentUserUseCase } from '@/modules/iam/session/use-cases/get-current-user.use-case';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import { IUserRepository } from '@/modules/iam/users/repositories/user.repository.interface';
@@ -54,6 +56,14 @@ describe('GetCurrentUserUseCase', () => {
       candidates,
       companyUsers,
       companies,
+      {
+        findRoleIdsByUserId: jest.fn().mockResolvedValue(['role-1']),
+      } as unknown as IUserRoleRepository,
+      {
+        permissionsForRoles: jest
+          .fn()
+          .mockResolvedValue(new Set(['vacancies.read', 'catalogs.read'])),
+      } as unknown as PermissionsService,
     );
   });
 
@@ -72,6 +82,7 @@ describe('GetCurrentUserUseCase', () => {
       role: Role.CANDIDATE,
       displayName: 'Ana López',
       avatarUrl: 'https://cdn.test/foto.jpg',
+      permissions: ['catalogs.read', 'vacancies.read'],
     });
   });
 
@@ -103,6 +114,7 @@ describe('GetCurrentUserUseCase', () => {
       role: Role.ADMIN,
       displayName: 'ana@example.com',
       avatarUrl: null,
+      permissions: ['catalogs.read', 'vacancies.read'],
     });
     expect(candidates.findByUserId).not.toHaveBeenCalled();
     expect(companyUsers.findByUserId).not.toHaveBeenCalled();

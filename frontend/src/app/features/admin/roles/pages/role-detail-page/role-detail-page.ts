@@ -25,7 +25,7 @@ import {
 import {
   PermissionToggle,
   PermissionTree,
-} from '@/features/admin/roles/components/permission-tree/permission-tree';
+} from '@/shared/permissions/permission-tree';
 
 /**
  * Detalle del rol: datos y **árbol de permisos**.

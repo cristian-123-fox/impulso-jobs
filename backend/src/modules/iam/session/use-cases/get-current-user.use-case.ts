@@ -15,7 +15,12 @@ import {
   type ICompanyUserRepository,
   COMPANY_USER_REPOSITORY,
 } from '@/modules/companies/repositories/company-user.repository.interface';
+import { PermissionsService } from '@/modules/iam/permissions/services/permissions.service';
 import { CurrentUserDto } from '@/modules/iam/session/dto/current-user.dto';
+import {
+  type IUserRoleRepository,
+  USER_ROLE_REPOSITORY,
+} from '@/modules/iam/users/repositories/user-role.repository.interface';
 import {
   type IUserRepository,
   USER_REPOSITORY,
@@ -53,6 +58,9 @@ export class GetCurrentUserUseCase {
     @Inject(COMPANY_USER_REPOSITORY)
     private readonly companyUsers: ICompanyUserRepository,
     @Inject(COMPANY_REPOSITORY) private readonly companies: ICompanyRepository,
+    @Inject(USER_ROLE_REPOSITORY)
+    private readonly userRoles: IUserRoleRepository,
+    private readonly permissions: PermissionsService,
   ) {}
 
   async execute(userId: string): Promise<CurrentUserDto> {
@@ -65,7 +73,10 @@ export class GetCurrentUserUseCase {
       );
     }
 
-    const identity = await this.resolveIdentity(user);
+    const [identity, permissions] = await Promise.all([
+      this.resolveIdentity(user),
+      this.resolvePermissions(user.id),
+    ]);
     const fallback = ownIdentity(user);
 
     return {
@@ -81,7 +92,14 @@ export class GetCurrentUserUseCase {
       // ninguna sigue viendo la de su dominio (logo de la empresa, foto del
       // perfil de aspirante), así que nadie pierde lo que ya veía.
       avatarUrl: fallback.avatarUrl ?? identity.avatarUrl,
+      permissions,
     };
+  }
+
+  /** Mismos roles que resuelve `JwtStrategy`: los de `user_roles`. */
+  private async resolvePermissions(userId: string): Promise<string[]> {
+    const roleIds = await this.userRoles.findRoleIdsByUserId(userId);
+    return [...(await this.permissions.permissionsForRoles(roleIds))].sort();
   }
 
   private async resolveIdentity(

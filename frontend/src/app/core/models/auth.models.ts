@@ -11,6 +11,12 @@ export interface AuthUser {
   displayName?: string;
   /** Foto del candidato o logo de la empresa (T27). URL absoluta. */
   avatarUrl?: string | null;
+  /**
+   * Permisos efectivos (`GET /auth/me`). Sólo deciden qué se **muestra** —el
+   * menú de un miembro de empresa con un rol restringido—; quien autoriza es
+   * el backend. Ausente hasta que se hidrata la sesión.
+   */
+  permissions?: string[];
 }
 
 /** Respuesta de `GET /auth/me`: identidad completa de la sesión activa. */
@@ -20,6 +26,7 @@ export interface CurrentUserResponse {
   role: Role;
   displayName: string;
   avatarUrl: string | null;
+  permissions: string[];
 }
 
 export interface LoginRequest {

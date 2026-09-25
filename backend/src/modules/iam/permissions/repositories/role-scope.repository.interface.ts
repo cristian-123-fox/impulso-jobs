@@ -8,6 +8,8 @@ export interface RoleScopeRow {
   code: string;
   scope: RoleScope;
   isSystem: boolean;
+  /** Informado si el rol pertenece a una empresa. */
+  companyId: string | null;
 }
 
 /**

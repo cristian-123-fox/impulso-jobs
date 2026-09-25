@@ -38,6 +38,7 @@ describe('DeleteRoleUseCase', () => {
   beforeEach(() => {
     roles = {
       findAll: jest.fn(),
+      findByCompanyId: jest.fn(),
       findById: jest.fn(),
       findByCode: jest.fn(),
       findByIds: jest.fn(),

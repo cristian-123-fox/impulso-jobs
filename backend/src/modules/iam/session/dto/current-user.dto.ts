@@ -27,4 +27,13 @@ export class CurrentUserDto {
   /** Foto del candidato o logo de la empresa. URL absoluta (T23). */
   @ApiPropertyOptional({ nullable: true })
   avatarUrl!: string | null;
+
+  /**
+   * Permisos efectivos de la sesión (unión de sus roles + la base del
+   * ámbito). El frontend los usa **sólo para decidir qué mostrar** —el menú de
+   * un miembro de empresa con un rol restringido—; quien autoriza sigue siendo
+   * el `PermissionsGuard` en cada petición.
+   */
+  @ApiProperty({ type: [String] })
+  permissions!: string[];
 }

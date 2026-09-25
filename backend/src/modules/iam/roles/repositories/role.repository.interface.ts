@@ -4,7 +4,10 @@ import { Role } from '@/modules/iam/roles/entities/role.entity';
 export const ROLE_REPOSITORY = 'ROLE_REPOSITORY';
 
 export interface IRoleRepository {
+  /** Roles de plataforma: excluye los que pertenecen a una empresa. */
   findAll(): Promise<Role[]>;
+  /** Roles propios de una empresa (`roles.company_id`). */
+  findByCompanyId(companyId: string): Promise<Role[]>;
   findById(id: string): Promise<Role | null>;
   findByCode(code: string): Promise<Role | null>;
   findByIds(ids: string[]): Promise<Role[]>;

@@ -8,6 +8,7 @@ import { UserStatus } from '@/common/types/user-status.enum';
 import { runInTransaction } from '@/common/utils/transaction.util';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
+  CompanyMemberAccessRoleDto,
   CompanyMemberResponseDto,
   toCompanyMemberResponse,
 } from '@/modules/companies/dto/company-member.dto';
@@ -21,11 +22,14 @@ import {
   type ICompanyUserRepository,
   COMPANY_USER_REPOSITORY,
 } from '@/modules/companies/repositories/company-user.repository.interface';
+import { CompanyRolesUseCase } from '@/modules/companies/use-cases/company-roles.use-case';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
+import { Role } from '@/modules/iam/roles/entities/role.entity';
 import {
   type IRoleRepository,
   ROLE_REPOSITORY,
 } from '@/modules/iam/roles/repositories/role.repository.interface';
+import { EntityManager } from 'typeorm';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import {
   type IUserRepository,
@@ -45,6 +49,8 @@ export interface ActorInfo {
 export interface AddMemberCommand extends ActorInfo {
   companyId: string;
   role: CompanyMemberRole;
+  /** Rol de empresa; `null`/omitido = acceso completo. */
+  accessRoleId?: string | null;
   /** Vincular una cuenta existente… */
   userId?: string;
   /** …o crear una nueva cuenta EMPLOYER. */
@@ -56,6 +62,8 @@ export interface UpdateMemberRoleCommand extends ActorInfo {
   companyId: string;
   userId: string;
   role: CompanyMemberRole;
+  /** `null` = acceso completo; omitido = se conserva el actual. */
+  accessRoleId?: string | null;
 }
 
 export interface RemoveMemberCommand extends ActorInfo {
@@ -64,13 +72,21 @@ export interface RemoveMemberCommand extends ActorInfo {
 }
 
 /**
- * Equipo de una empresa (`company_users`) desde el back-office. El rol interno
- * es la pertenencia dentro de la empresa (OWNER/ADMIN/RECRUITER/MEMBER); no es
- * rol de plataforma ni alimenta el `PermissionsGuard` — el acceso a estos
- * endpoints lo gobierna el permiso `company_users.manage`.
+ * Equipo de una empresa (`company_users`), desde el back-office y desde el
+ * autoservicio. Cada miembro tiene dos cosas distintas:
  *
- * Invariante: toda empresa conserva al menos un OWNER, así que no se puede
- * degradar ni quitar al último. Un usuario pertenece a una sola empresa.
+ * - **Rol interno** (`company_users.role`: OWNER/ADMIN/RECRUITER/MEMBER): quién
+ *   manda sobre el equipo. No alimenta el `PermissionsGuard`.
+ * - **Rol de acceso**: qué puede hacer en la plataforma. Por defecto el rol
+ *   EMPLOYER completo; la empresa puede sustituirlo por uno de sus roles
+ *   (`CompanyRolesUseCase`) para limitarlo. Se guarda **en `user_roles`**,
+ *   reemplazando a EMPLOYER: es lo que ya lee el guard en cada petición, así
+ *   que el cambio surte efecto sin volver a iniciar sesión.
+ *
+ * Invariantes: toda empresa conserva al menos un OWNER; OWNER y ADMIN tienen
+ * siempre el acceso completo —si no, un administrador podría quitarse a sí
+ * mismo la gestión del equipo y dejar la empresa sin llave—; un usuario
+ * pertenece a una sola empresa.
  */
 @Injectable()
 export class CompanyMembersUseCase {
@@ -85,17 +101,35 @@ export class CompanyMembersUseCase {
     private readonly hasher: PasswordHasherService,
     private readonly audit: AuditService,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly companyRoles: CompanyRolesUseCase,
   ) {}
 
   async list(companyId: string): Promise<CompanyMemberResponseDto[]> {
     await this.requireCompany(companyId);
     const memberships = await this.members.findByCompanyId(companyId);
-    const users = await this.users.findByIds(memberships.map((m) => m.userId));
+    const userIds = memberships.map((m) => m.userId);
+    const [users, companyRoles, assignments] = await Promise.all([
+      this.users.findByIds(userIds),
+      this.roles.findByCompanyId(companyId),
+      this.userRoles.findByUserIds(userIds),
+    ]);
     const byId = new Map(users.map((u) => [u.id, u]));
+    const roleById = new Map(companyRoles.map((r) => [r.id, r]));
+    const accessByUser = new Map<string, CompanyMemberAccessRoleDto>();
+    for (const { userId, roleId } of assignments) {
+      const role = roleById.get(roleId);
+      if (role) accessByUser.set(userId, { id: role.id, name: role.name });
+    }
 
     return memberships
       .filter((m) => byId.has(m.userId))
-      .map((m) => toCompanyMemberResponse(m, byId.get(m.userId)!))
+      .map((m) =>
+        toCompanyMemberResponse(
+          m,
+          byId.get(m.userId)!,
+          accessByUser.get(m.userId) ?? null,
+        ),
+      )
       .sort((a, b) => this.rank(a.companyRole) - this.rank(b.companyRole));
   }
 
@@ -119,6 +153,11 @@ export class CompanyMembersUseCase {
     const passwordHash = user
       ? null
       : await this.hasher.hash(command.password!);
+    const accessRole = await this.resolveAccessRole(
+      command.companyId,
+      command.role,
+      command.accessRoleId ?? null,
+    );
 
     let member!: CompanyUser;
     let account!: User;
@@ -133,8 +172,10 @@ export class CompanyMembersUseCase {
         created.role = PlatformRole.EMPLOYER;
         created.status = UserStatus.ACTIVE;
         created.emailVerifiedAt = new Date();
+        // El rol (EMPLOYER o el de empresa) lo pone `applyAccessRole` más
+        // abajo: añadirlo aquí dejaría EMPLOYER junto al rol restringido, y
+        // los permisos se unen.
         account = await this.users.save(created, manager);
-        await this.userRoles.add(account.id, employerRole!.id, manager);
       }
 
       const membership = new CompanyUser();
@@ -142,6 +183,12 @@ export class CompanyMembersUseCase {
       membership.userId = account.id;
       membership.role = command.role;
       member = await this.members.save(membership, manager);
+      await this.applyAccessRole(
+        command.companyId,
+        account.id,
+        accessRole,
+        manager,
+      );
 
       await this.audit.record(
         {
@@ -155,6 +202,7 @@ export class CompanyMembersUseCase {
             companyId: command.companyId,
             userId: account.id,
             role: command.role,
+            accessRoleId: accessRole?.id ?? null,
             createdAccount: !user,
           },
         },
@@ -162,7 +210,7 @@ export class CompanyMembersUseCase {
       );
     });
 
-    return toCompanyMemberResponse(member, account);
+    return toCompanyMemberResponse(member, account, this.toAccess(accessRole));
   }
 
   async updateRole(
@@ -182,8 +230,28 @@ export class CompanyMembersUseCase {
     const user = await this.users.findById(command.userId);
     if (!user) throw this.memberNotFound();
 
+    // Omitido = se conserva el rol de acceso que tuviera (salvo que ahora sea
+    // OWNER/ADMIN, que siempre tienen el completo).
+    const requested =
+      command.accessRoleId === undefined
+        ? ((await this.currentAccessRole(command.companyId, command.userId))
+            ?.id ?? null)
+        : command.accessRoleId;
+    const accessRole = await this.resolveAccessRole(
+      command.companyId,
+      command.role,
+      requested,
+      command.accessRoleId === undefined,
+    );
+
     const saved = await runInTransaction(this.dataSource, async (manager) => {
       const result = await this.members.save(membership, manager);
+      await this.applyAccessRole(
+        command.companyId,
+        command.userId,
+        accessRole,
+        manager,
+      );
       await this.audit.record(
         {
           action: 'company_users.update',
@@ -196,6 +264,7 @@ export class CompanyMembersUseCase {
             companyId: command.companyId,
             userId: command.userId,
             role: command.role,
+            accessRoleId: accessRole?.id ?? null,
           },
         },
         manager,
@@ -203,7 +272,7 @@ export class CompanyMembersUseCase {
       return result;
     });
 
-    return toCompanyMemberResponse(saved, user);
+    return toCompanyMemberResponse(saved, user, this.toAccess(accessRole));
   }
 
   async remove(command: RemoveMemberCommand): Promise<void> {
@@ -216,6 +285,14 @@ export class CompanyMembersUseCase {
 
     await runInTransaction(this.dataSource, async (manager) => {
       await this.members.remove(command.companyId, command.userId, manager);
+      // Fuera de la empresa, un rol de esa empresa no significa nada: la cuenta
+      // vuelve a EMPLOYER, como cualquier cuenta de empresa sin equipo.
+      await this.applyAccessRole(
+        command.companyId,
+        command.userId,
+        null,
+        manager,
+      );
       await this.audit.record(
         {
           action: 'company_users.remove',
@@ -265,6 +342,86 @@ export class CompanyMembersUseCase {
     }
 
     return membership.companyId;
+  }
+
+  /** El rol de empresa que tiene hoy el miembro, si tiene alguno. */
+  private async currentAccessRole(
+    companyId: string,
+    userId: string,
+  ): Promise<Role | null> {
+    const [companyRoles, roleIds] = await Promise.all([
+      this.roles.findByCompanyId(companyId),
+      this.userRoles.findRoleIdsByUserId(userId),
+    ]);
+    return companyRoles.find((role) => roleIds.includes(role.id)) ?? null;
+  }
+
+  /**
+   * Valida el rol de acceso pedido. OWNER y ADMIN no admiten uno: tienen el
+   * acceso completo. Al promover a alguien restringido a ADMIN se le devuelve
+   * el completo sin error (`implicit`), porque ahí nadie pidió restringirlo.
+   */
+  private async resolveAccessRole(
+    companyId: string,
+    internalRole: CompanyMemberRole,
+    accessRoleId: string | null,
+    implicit = false,
+  ): Promise<Role | null> {
+    if (!accessRoleId) return null;
+    if (this.canManage(internalRole)) {
+      if (implicit) return null;
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.COMPANY_ROLE_NOT_ASSIGNABLE,
+        'El propietario y los administradores tienen siempre el acceso completo.',
+      );
+    }
+    return this.companyRoles.requireOwnRole(companyId, accessRoleId);
+  }
+
+  /**
+   * Deja en `user_roles` el acceso pedido: el rol de empresa **en lugar de**
+   * EMPLOYER, o EMPLOYER solo. Los permisos se unen entre roles, así que
+   * mantener EMPLOYER junto al rol de empresa no restringiría nada.
+   */
+  private async applyAccessRole(
+    companyId: string,
+    userId: string,
+    accessRole: Role | null,
+    manager: EntityManager,
+  ): Promise<void> {
+    const employer = await this.roles.findByCode(PlatformRole.EMPLOYER);
+    if (!employer) {
+      throw new AppException(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        ErrorCode.INTERNAL_ERROR,
+        'El rol EMPLOYER no existe. Ejecuta el seed RBAC.',
+      );
+    }
+    const companyRoleIds = new Set(
+      (await this.roles.findByCompanyId(companyId)).map((role) => role.id),
+    );
+    const current = await this.userRoles.findRoleIdsByUserId(userId);
+
+    for (const roleId of current) {
+      if (companyRoleIds.has(roleId) && roleId !== accessRole?.id) {
+        await this.userRoles.remove(userId, roleId, manager);
+      }
+    }
+    if (accessRole) {
+      if (!current.includes(accessRole.id)) {
+        await this.userRoles.add(userId, accessRole.id, manager);
+      }
+      if (current.includes(employer.id)) {
+        await this.userRoles.remove(userId, employer.id, manager);
+      }
+    } else if (!current.includes(employer.id)) {
+      await this.userRoles.add(userId, employer.id, manager);
+    }
+  }
+
+  private toAccess(role: Role | null): CompanyMemberAccessRoleDto | null {
+    return role ? { id: role.id, name: role.name } : null;
   }
 
   private canManage(role: CompanyMemberRole): boolean {

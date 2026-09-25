@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Role as PlatformRole } from '@/common/types/role.enum';
 import { lockedPermissionCodes } from '@/modules/iam/permissions/catalogs/permission-catalog';
 import {
   ROLE_PERMISSION_REPOSITORY,
@@ -23,6 +24,12 @@ import {
  * el aspirante entero vive ahí — su rol no se administra, así que postular o
  * subir un CV no puede depender de una fila en la BD ni de que alguien haya
  * corrido `pnpm seed` en ese entorno.
+ *
+ * **Un rol de empresa nunca supera al rol EMPLOYER.** Sus permisos se
+ * intersecan con los de EMPLOYER al calcularse: si mañana el back-office le
+ * quita un permiso a EMPLOYER, desaparece también de todos los roles que las
+ * empresas crearon, sin tener que tocar sus filas. La validación al guardar
+ * el rol impide lo mismo por delante; esto lo garantiza por detrás.
  */
 @Injectable()
 export class PermissionsService {
@@ -59,6 +66,29 @@ export class PermissionsService {
         const set = map.get(roleId) ?? new Set<string>();
         set.add(code);
         map.set(roleId, set);
+      }
+
+      const employer = roles.find(
+        (role) =>
+          role.code === (PlatformRole.EMPLOYER as string) && !role.companyId,
+      );
+      const ceiling = employer ? map.get(employer.id) : undefined;
+      for (const role of roles) {
+        if (!role.companyId) continue;
+        const own = map.get(role.id) ?? new Set<string>();
+        // Sin EMPLOYER sembrado no hay techo contra el que medir: el rol de
+        // empresa se queda sólo con la base del ámbito, nunca con más.
+        const capped = new Set(
+          [...own].filter((code) => ceiling?.has(code) ?? false),
+        );
+        for (const code of lockedPermissionCodes(
+          role.scope,
+          role.code,
+          false,
+        )) {
+          capped.add(code);
+        }
+        map.set(role.id, capped);
       }
       this.cache = map;
     }

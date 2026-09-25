@@ -46,12 +46,38 @@ export class AddCompanyMemberDto {
   @ApiProperty({ enum: CompanyMemberRole })
   @IsEnum(CompanyMemberRole, { message: 'El rol interno no es válido.' })
   role!: CompanyMemberRole;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Rol de empresa que limita sus permisos. `null` u omitido = acceso completo. ' +
+      'No aplica a OWNER ni ADMIN.',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'El rol seleccionado no es válido.' })
+  accessRoleId?: string | null;
 }
 
 export class UpdateCompanyMemberRoleDto {
   @ApiProperty({ enum: CompanyMemberRole })
   @IsEnum(CompanyMemberRole, { message: 'El rol interno no es válido.' })
   role!: CompanyMemberRole;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    description:
+      'Rol de empresa que limita sus permisos. `null` = acceso completo; ' +
+      'omitido = se conserva el que tenga. No aplica a OWNER ni ADMIN.',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'El rol seleccionado no es válido.' })
+  accessRoleId?: string | null;
+}
+
+/** Rol de empresa de un miembro; `null` en la respuesta = acceso completo. */
+export interface CompanyMemberAccessRoleDto {
+  id: string;
+  name: string;
 }
 
 /** Miembro del equipo de una empresa, con el estado de su cuenta. */
@@ -70,6 +96,11 @@ export interface CompanyMemberResponseDto {
   photoUrl: string | null;
   /** Rol dentro de la empresa (`company_users.role`). */
   companyRole: CompanyMemberRole;
+  /**
+   * Perfil de permisos que le puso la empresa. `null` = acceso completo (el
+   * rol EMPLOYER), que es lo que tienen siempre OWNER y ADMIN.
+   */
+  accessRole: CompanyMemberAccessRoleDto | null;
   /** Estado de la cuenta de plataforma. */
   status: UserStatus;
   emailVerified: boolean;
@@ -80,6 +111,7 @@ export interface CompanyMemberResponseDto {
 export function toCompanyMemberResponse(
   member: CompanyUser,
   user: User,
+  accessRole: CompanyMemberAccessRoleDto | null = null,
 ): CompanyMemberResponseDto {
   const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
   return {
@@ -89,6 +121,7 @@ export function toCompanyMemberResponse(
     jobTitle: user.jobTitle ?? null,
     photoUrl: user.photoUrl ?? null,
     companyRole: member.role,
+    accessRole,
     status: user.status,
     emailVerified: Boolean(user.emailVerifiedAt),
     lastLogin: user.lastLogin?.toISOString() ?? null,

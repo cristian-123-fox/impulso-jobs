@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, In, Not, Repository } from 'typeorm';
+import { EntityManager, In, IsNull, Not, Repository } from 'typeorm';
 import { BaseRepository } from '@/common/repositories/base.repository';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
 import { IRoleRepository } from '@/modules/iam/roles/repositories/role.repository.interface';
@@ -15,7 +15,17 @@ export class RoleRepository
   }
 
   findAll(): Promise<Role[]> {
-    return this.repo().find({ order: { name: 'ASC' } });
+    // Los roles de empresa no son del back-office: cada empresa administra los
+    // suyos desde `/empresa/usuarios`, y listarlos aquí mezclaría cientos de
+    // perfiles ajenos con los roles de la plataforma.
+    return this.repo().find({
+      where: { companyId: IsNull() },
+      order: { name: 'ASC' },
+    });
+  }
+
+  findByCompanyId(companyId: string): Promise<Role[]> {
+    return this.repo().find({ where: { companyId }, order: { name: 'ASC' } });
   }
 
   findById(id: string): Promise<Role | null> {

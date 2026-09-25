@@ -95,6 +95,7 @@ export class CompanyTeamController {
       companyId,
       userId,
       role: dto.role,
+      accessRoleId: dto.accessRoleId,
       actorUserId: user.userId,
       ip: client.ip,
       userAgent: client.userAgent,

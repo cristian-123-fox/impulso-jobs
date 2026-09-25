@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
 import { CandidatesModule } from '@/modules/candidates/candidates.module';
 import { CompaniesModule } from '@/modules/companies/companies.module';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
@@ -14,7 +15,13 @@ import { UsersModule } from '@/modules/iam/users/users.module';
  * importan `AuthModule`, así que el endpoint no cabe dentro de él sin ciclo.
  */
 @Module({
-  imports: [AuthModule, UsersModule, CandidatesModule, CompaniesModule],
+  imports: [
+    AuthModule,
+    UsersModule,
+    CandidatesModule,
+    CompaniesModule,
+    PermissionsModule,
+  ],
   controllers: [SessionController],
   providers: [GetCurrentUserUseCase],
 })

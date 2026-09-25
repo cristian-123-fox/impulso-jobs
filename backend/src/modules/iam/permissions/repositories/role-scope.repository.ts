@@ -20,7 +20,13 @@ export class RoleScopeRepository
 
   async findAll(): Promise<RoleScopeRow[]> {
     const rows = await this.repo().find({
-      select: { id: true, code: true, scope: true, isSystem: true },
+      select: {
+        id: true,
+        code: true,
+        scope: true,
+        isSystem: true,
+        companyId: true,
+      },
     });
     return rows.map((row) => ({
       id: row.id,
@@ -29,6 +35,7 @@ export class RoleScopeRepository
       // como plataforma, que es el default de la columna.
       scope: row.scope ?? RoleScope.PLATFORM,
       isSystem: row.isSystem,
+      companyId: row.companyId ?? null,
     }));
   }
 }

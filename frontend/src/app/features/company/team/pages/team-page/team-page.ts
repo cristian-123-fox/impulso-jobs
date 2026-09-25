@@ -4,6 +4,7 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -13,7 +14,15 @@ import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { IconName, IjButton, IjIcon, IjModal } from '@/shared/ui';
 import { TeamFacade } from '@/features/company/team/data/team.facade';
 import { MemberForm } from '@/features/company/team/components/member-form/member-form';
-import { MemberRoleForm } from '@/features/company/team/components/member-role-form/member-role-form';
+import {
+  MemberRoleChange,
+  MemberRoleForm,
+} from '@/features/company/team/components/member-role-form/member-role-form';
+import { CompanyRoleForm } from '@/features/company/team/components/company-role-form/company-role-form';
+import {
+  CompanyRoleActionEvent,
+  CompanyRolesTable,
+} from '@/features/company/team/components/company-roles-table/company-roles-table';
 import {
   TeamActionEvent,
   TeamTable,
@@ -22,15 +31,34 @@ import {
   AddCompanyMemberPayload,
   COMPANY_MEMBER_ROLE_LABELS,
   CompanyMember,
-  CompanyMemberRole,
+  CompanyRole,
+  SaveCompanyRolePayload,
   TEAM_MANAGER_ROLES,
 } from '@/features/company/team/models/team.models';
 
-/** Usuarios de la empresa: alta, cambio de rol interno y baja, en modal. */
+type TeamTab = 'team' | 'roles';
+
+/**
+ * Usuarios de la empresa y sus roles. Dos pestañas:
+ *
+ * - **Equipo**: alta, rol interno, permisos y baja, en modal.
+ * - **Roles**: perfiles de permisos propios de la empresa, para limitar lo que
+ *   puede hacer un reclutador o un miembro. Sólo la ve quien gestiona el
+ *   equipo (propietario o administrador), que es quien puede asignarlos.
+ */
 @Component({
   selector: 'app-team-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TeamTable, MemberForm, MemberRoleForm, IjButton, IjIcon, IjModal],
+  imports: [
+    TeamTable,
+    MemberForm,
+    MemberRoleForm,
+    CompanyRoleForm,
+    CompanyRolesTable,
+    IjButton,
+    IjIcon,
+    IjModal,
+  ],
   template: `
     <div class="mx-auto max-w-[1240px]">
       <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -49,13 +77,40 @@ import {
             variant="primary"
             shape="rounded"
             size="md"
-            (click)="openAdd()"
+            (click)="tab() === 'roles' ? openRoleForm(null) : openAdd()"
           >
             <ij-icon name="plus" [size]="16" />
-            Nuevo usuario
+            {{ tab() === 'roles' ? 'Nuevo rol' : 'Nuevo usuario' }}
           </button>
         }
       </div>
+
+      @if (facade.canManage()) {
+        <!-- Con -mb-px hace falta overflow-y-hidden (ver CLAUDE.md). -->
+        <div
+          role="tablist"
+          class="mb-5 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line"
+        >
+          @for (item of tabs; track item.value) {
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="tab() === item.value"
+              [class]="tabClass(item.value)"
+              (click)="selectTab(item.value)"
+            >
+              {{ item.label }}
+              @if (item.value === 'roles' && facade.roles().length) {
+                <span class="rounded-full bg-surface px-1.5 text-[11px] font-extrabold text-muted">
+                  {{ facade.roles().length }}
+                </span>
+              }
+            </button>
+          }
+        </div>
+      }
+
+      @if (tab() === 'team') {
 
       <div class="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         @for (card of statCards(); track card.label) {
@@ -128,7 +183,61 @@ import {
         }
       }
       </section>
+      } @else {
+        <p class="mb-4 text-[13.5px] text-muted">
+          Un rol limita lo que puede hacer una persona del equipo. Asígnalo desde la pestaña
+          «Equipo», al editar a un reclutador o a un miembro. Los cambios se aplican al momento.
+        </p>
+
+        @if (actionError(); as message) {
+          <p
+            role="alert"
+            class="mb-4 rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
+          >
+            {{ message }}
+          </p>
+        }
+
+        <section class="overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+          @switch (facade.rolesState()) {
+            @case ('loading') {
+              <div class="p-10 text-center text-[13.5px] text-muted">Cargando roles…</div>
+            }
+            @case ('error') {
+              <div class="p-10 text-center text-[13.5px] font-medium text-red-600">
+                No se pudieron cargar los roles.
+              </div>
+            }
+            @default {
+              <app-company-roles-table
+                [roles]="facade.roles()"
+                (action)="onRoleAction($event)"
+              />
+            }
+          }
+        </section>
+      }
     </div>
+
+    @if (roleForm(); as form) {
+      <ij-modal
+        [title]="form.role ? 'Editar rol' : 'Nuevo rol'"
+        subtitle="Marca lo que podrá hacer quien tenga este rol."
+        size="lg"
+        [scrollable]="true"
+        (close)="closeForms()"
+      >
+        <app-company-role-form
+          [role]="form.role"
+          [groups]="facade.permissionTree()"
+          [locked]="facade.lockedCodes()"
+          [submitting]="saving()"
+          [error]="formError()"
+          (save)="onSaveRole(form.role, $event)"
+          (cancel)="closeForms()"
+        />
+      </ij-modal>
+    }
 
     @if (showAdd()) {
       <ij-modal
@@ -137,6 +246,7 @@ import {
         (close)="closeForms()"
       >
         <app-member-form
+          [roles]="facade.roles()"
           [submitting]="saving()"
           [error]="formError()"
           (add)="onAdd($event)"
@@ -147,13 +257,14 @@ import {
 
     @if (editing(); as member) {
       <ij-modal
-        title="Rol dentro de la empresa"
+        title="Rol y permisos"
         [subtitle]="memberLabel(member)"
         size="sm"
         (close)="closeForms()"
       >
         <app-member-role-form
           [member]="member"
+          [roles]="facade.roles()"
           [submitting]="saving()"
           [error]="formError()"
           (save)="onRoleChange(member, $event)"
@@ -166,6 +277,16 @@ import {
 export class TeamPage {
   protected readonly facade = inject(TeamFacade);
   private readonly destroyRef = inject(DestroyRef);
+
+  protected readonly tabs: readonly { value: TeamTab; label: string }[] = [
+    { value: 'team', label: 'Equipo' },
+    { value: 'roles', label: 'Roles' },
+  ];
+  protected readonly tab = signal<TeamTab>('team');
+  /** Modal de rol abierto; `role: null` = alta. */
+  protected readonly roleForm = signal<{ role: CompanyRole | null } | null>(
+    null,
+  );
 
   protected readonly showAdd = signal(false);
   protected readonly editing = signal<CompanyMember | null>(null);
@@ -222,6 +343,64 @@ export class TeamPage {
 
   constructor() {
     this.facade.load();
+
+    // Los roles se piden sólo si quien navega gestiona el equipo: para el resto
+    // el backend responde 403, y además no los necesita (no asigna nada).
+    effect(() => {
+      if (this.facade.canManage() && this.facade.rolesState() === 'idle') {
+        this.facade.loadRoles();
+      }
+    });
+  }
+
+  protected selectTab(tab: TeamTab): void {
+    this.actionError.set(null);
+    this.tab.set(tab);
+  }
+
+  protected tabClass(value: TeamTab): string {
+    const base =
+      'flex flex-shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-3.5 pb-3 pt-2.5 ' +
+      '-mb-px text-[13.5px] font-bold transition-colors';
+    return this.tab() === value
+      ? `${base} border-brand text-brand-strong`
+      : `${base} border-transparent text-muted hover:text-ink-900`;
+  }
+
+  protected openRoleForm(role: CompanyRole | null): void {
+    this.formError.set(null);
+    this.facade.loadCatalog();
+    this.roleForm.set({ role });
+  }
+
+  protected onRoleAction(event: CompanyRoleActionEvent): void {
+    if (event.action === 'edit') {
+      this.openRoleForm(event.role);
+      return;
+    }
+    if (!confirm(`¿Eliminar el rol «${event.role.name}»? No se puede deshacer.`)) {
+      return;
+    }
+    this.actionError.set(null);
+    this.facade
+      .deleteRole(event.role.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: (error: unknown) =>
+          this.actionError.set(
+            this.messageOf(error, 'No se pudo eliminar el rol.'),
+          ),
+      });
+  }
+
+  protected onSaveRole(
+    role: CompanyRole | null,
+    payload: SaveCompanyRolePayload,
+  ): void {
+    this.submit(
+      this.facade.saveRole(role?.id ?? null, payload),
+      role ? 'No se pudo guardar el rol.' : 'No se pudo crear el rol.',
+    );
   }
 
   protected openAdd(): void {
@@ -233,6 +412,7 @@ export class TeamPage {
   protected closeForms(): void {
     this.showAdd.set(false);
     this.editing.set(null);
+    this.roleForm.set(null);
     this.formError.set(null);
   }
 
@@ -251,13 +431,10 @@ export class TeamPage {
     this.submit(this.facade.add(payload), 'No se pudo agregar al usuario.');
   }
 
-  protected onRoleChange(
-    member: CompanyMember,
-    role: CompanyMemberRole,
-  ): void {
+  protected onRoleChange(member: CompanyMember, change: MemberRoleChange): void {
     this.submit(
-      this.facade.updateRole(member.userId, role),
-      'No se pudo cambiar el rol interno.',
+      this.facade.updateRole(member.userId, change.role, change.accessRoleId),
+      'No se pudo cambiar el rol.',
     );
   }
 

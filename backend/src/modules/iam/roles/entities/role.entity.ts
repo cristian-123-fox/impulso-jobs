@@ -29,4 +29,14 @@ export class Role extends BaseEntity {
     default: RoleScope.PLATFORM,
   })
   scope!: RoleScope;
+
+  /**
+   * Empresa dueña del rol. `null` = rol de plataforma (los de `/admin/roles`).
+   * Informado = perfil de permisos que una empresa creó para su equipo: sólo
+   * ella lo ve y lo asigna, su ámbito es siempre `COMPANY`, y
+   * `PermissionsService` lo recorta a lo que tenga el rol EMPLOYER.
+   */
+  @Index('idx_roles_company_id')
+  @Column({ name: 'company_id', type: 'varchar', length: 36, nullable: true })
+  companyId?: string | null;
 }

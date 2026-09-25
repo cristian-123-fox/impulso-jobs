@@ -31,24 +31,28 @@ describe('PermissionsService', () => {
           code: 'ADMIN',
           scope: RoleScope.PLATFORM,
           isSystem: true,
+          companyId: null,
         },
         {
           id: 'r-employer',
           code: 'EMPLOYER',
           scope: RoleScope.COMPANY,
           isSystem: true,
+          companyId: null,
         },
         {
           id: 'r-candidate',
           code: 'CANDIDATE',
           scope: RoleScope.CANDIDATE,
           isSystem: true,
+          companyId: null,
         },
         {
           id: 'r-nuevo',
           code: 'SOPORTE',
           scope: RoleScope.PLATFORM,
           isSystem: false,
+          companyId: null,
         },
       ]),
     };
@@ -141,5 +145,49 @@ describe('PermissionsService', () => {
     await service.hasPermissions(['r-admin'], ['roles.read']);
     expect(rolePermissions.findRolePermissionCodes).toHaveBeenCalledTimes(2);
     expect(roleScopes.findAll).toHaveBeenCalledTimes(2);
+  });
+
+  describe('roles de empresa', () => {
+    beforeEach(() => {
+      rolePermissions.findRolePermissionCodes.mockResolvedValue([
+        { roleId: 'r-employer', code: 'vacancies.create' },
+        { roleId: 'r-employer', code: 'vacancies.read' },
+        // El rol de empresa tiene una fila que EMPLOYER no: quizá el
+        // back-office se la retiró a EMPLOYER después.
+        { roleId: 'r-junior', code: 'vacancies.read' },
+        { roleId: 'r-junior', code: 'plans.manage' },
+      ]);
+      roleScopes.findAll.mockResolvedValue([
+        {
+          id: 'r-employer',
+          code: 'EMPLOYER',
+          scope: RoleScope.COMPANY,
+          isSystem: true,
+          companyId: null,
+        },
+        {
+          id: 'r-junior',
+          code: 'CO_ABC',
+          scope: RoleScope.COMPANY,
+          isSystem: false,
+          companyId: 'company-1',
+        },
+      ]);
+    });
+
+    it('conserva lo que EMPLOYER también tiene y la base del ámbito', async () => {
+      const granted = await service.permissionsForRoles(['r-junior']);
+
+      expect(granted.has('vacancies.read')).toBe(true);
+      expect(granted.has('catalogs.read')).toBe(true);
+    });
+
+    it('nunca supera a EMPLOYER aunque tenga la fila', async () => {
+      const granted = await service.permissionsForRoles(['r-junior']);
+
+      expect(granted.has('plans.manage')).toBe(false);
+      // Y tampoco hereda lo que EMPLOYER sí tiene pero a él no se le dio.
+      expect(granted.has('vacancies.create')).toBe(false);
+    });
   });
 });
