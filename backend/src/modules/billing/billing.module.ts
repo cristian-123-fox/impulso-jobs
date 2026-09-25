@@ -23,11 +23,15 @@ import { CompanySubscriptionNotifier } from '@/modules/billing/services/company-
 import { EntitlementService } from '@/modules/billing/services/entitlement.service';
 import { ManualPaymentAdapter } from '@/modules/billing/services/manual-payment.adapter';
 import { PAYMENT_PROVIDER } from '@/modules/billing/services/payment-provider.port';
+import { PaymentProviderRegistry } from '@/modules/billing/services/payment-provider.registry';
+import { StripePaymentAdapter } from '@/modules/billing/services/stripe-payment.adapter';
 import { PaymentQueueNotifier } from '@/modules/billing/services/payment-queue-notifier.service';
 import { PricingService } from '@/modules/billing/services/pricing.service';
 import { AdminPaymentsUseCase } from '@/modules/billing/use-cases/admin-payments.use-case';
 import { AdminSubscriptionUseCase } from '@/modules/billing/use-cases/admin-subscription.use-case';
+import { CompanyPaymentsUseCase } from '@/modules/billing/use-cases/company-payments.use-case';
 import { CompanySubscriptionUseCase } from '@/modules/billing/use-cases/company-subscription.use-case';
+import { HandlePaymentWebhookUseCase } from '@/modules/billing/use-cases/handle-payment-webhook.use-case';
 import { ExpirePromotionsUseCase } from '@/modules/billing/use-cases/expire-promotions.use-case';
 import { ExpireSubscriptionsUseCase } from '@/modules/billing/use-cases/expire-subscriptions.use-case';
 import { NotifySubscriptionExpiryUseCase } from '@/modules/billing/use-cases/notify-subscription-expiry.use-case';
@@ -45,11 +49,10 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
 /**
  * M14: monetización.
  *
- * El cobro se hace **contra un puerto**, no contra Stripe: hoy lo implementa
- * `ManualPaymentAdapter` porque no hay cuenta ni entidad legal mexicana. Para
- * conectar Stripe basta escribir `StripePaymentAdapter` con el mismo contrato
- * y cambiar el `useClass` de abajo — la lógica de activación, la idempotencia
- * y los entitlements no se tocan.
+ * El cobro se hace **contra un puerto**: `ManualPaymentAdapter` (solicitud de
+ * pago que confirma el equipo) y `StripePaymentAdapter` (Checkout + webhook)
+ * conviven, y la lógica de activación, la idempotencia y los entitlements son
+ * las mismas para los dos (`SettlePaymentUseCase`).
  */
 @Module({
   imports: [
@@ -83,8 +86,13 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
   providers: [
     { provide: PLAN_REPOSITORY, useClass: PlanRepository },
     { provide: BILLING_REPOSITORY, useClass: BillingRepository },
-    // 👇 Único punto a cambiar cuando exista la cuenta de Stripe.
-    { provide: PAYMENT_PROVIDER, useClass: ManualPaymentAdapter },
+    // Los dos proveedores conviven: la empresa elige en cada compra y cada
+    // orden guarda el suyo. `PAYMENT_PROVIDER` queda como el proveedor por
+    // defecto de los flujos sin elección (asignación desde el back-office).
+    ManualPaymentAdapter,
+    StripePaymentAdapter,
+    PaymentProviderRegistry,
+    { provide: PAYMENT_PROVIDER, useExisting: ManualPaymentAdapter },
     PricingService,
     EntitlementService,
     CompanySubscriptionNotifier,
@@ -94,6 +102,8 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     CompanySubscriptionUseCase,
     AdminSubscriptionUseCase,
     AdminPaymentsUseCase,
+    CompanyPaymentsUseCase,
+    HandlePaymentWebhookUseCase,
     SettlePaymentUseCase,
     ExpirePromotionsUseCase,
     ExpireSubscriptionsUseCase,

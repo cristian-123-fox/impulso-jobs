@@ -12,6 +12,7 @@ import { CompanySubscription } from '@/modules/billing/entities/company-subscrip
 import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entity';
 import {
   PaymentMethod,
+  PaymentProvider,
   PaymentStatus,
   PlanType,
   SubscriptionStatus,
@@ -24,10 +25,9 @@ import {
   type IPlanRepository,
   PLAN_REPOSITORY,
 } from '@/modules/billing/repositories/plan.repository.interface';
-import {
-  type PaymentProviderPort,
-  PAYMENT_PROVIDER,
-} from '@/modules/billing/services/payment-provider.port';
+import type { CheckoutResult } from '@/modules/billing/services/payment-provider.port';
+import { checkoutReturnUrls } from '@/modules/billing/services/checkout-return-urls';
+import { PaymentProviderRegistry } from '@/modules/billing/services/payment-provider.registry';
 import { PaymentQueueNotifier } from '@/modules/billing/services/payment-queue-notifier.service';
 import { PricingService } from '@/modules/billing/services/pricing.service';
 import { BillingActor } from '@/modules/billing/use-cases/plan-catalog.use-case';
@@ -45,7 +45,7 @@ export class CompanySubscriptionUseCase {
   constructor(
     @Inject(BILLING_REPOSITORY) private readonly billing: IBillingRepository,
     @Inject(PLAN_REPOSITORY) private readonly plans: IPlanRepository,
-    @Inject(PAYMENT_PROVIDER) private readonly payments: PaymentProviderPort,
+    private readonly providers: PaymentProviderRegistry,
     private readonly pricing: PricingService,
     private readonly ownership: VacancyOwnershipService,
     private readonly audit: AuditService,
@@ -55,8 +55,11 @@ export class CompanySubscriptionUseCase {
   async create(
     planId: string,
     method: PaymentMethod,
+    providerName: PaymentProvider,
     actor: BillingActor,
   ): Promise<CheckoutResponseDto> {
+    const provider = this.providers.require(providerName);
+    this.providers.assertSupports(provider, method, true);
     const company = await this.ownership.requireCompany(actor.userId);
 
     const plan = await this.plans.findById(planId);
@@ -119,7 +122,7 @@ export class CompanySubscriptionUseCase {
     const order = new PromotionOrder();
     order.subscriptionId = savedSubscription.id;
     order.companyId = company.id;
-    order.provider = this.payments.name;
+    order.provider = provider.name;
     order.paymentMethod = method;
     order.paymentStatus = PaymentStatus.PENDING;
     order.subtotal = price.subtotal.toFixed(2);
@@ -129,17 +132,29 @@ export class CompanySubscriptionUseCase {
     order.installments = 1;
     const savedOrder = await this.billing.saveOrder(order);
 
-    const checkout = await this.payments.createCheckout({
-      orderId: savedOrder.id,
-      companyId: company.id,
-      concept: `${plan.name} · suscripción anual`,
-      total: price.total,
-      currency: price.currency,
-      method,
-      installments: 1,
-      recurring: true,
-      providerPriceId: plan.providerPriceId,
-    });
+    let checkout: CheckoutResult;
+    try {
+      checkout = await provider.createCheckout({
+        orderId: savedOrder.id,
+        companyId: company.id,
+        concept: `${plan.name} · suscripción anual · Impulso Jobs`,
+        total: price.total,
+        currency: price.currency,
+        method,
+        installments: 1,
+        recurring: true,
+        providerPriceId: plan.providerPriceId,
+        returnUrls: checkoutReturnUrls(savedOrder.id),
+      });
+    } catch (error) {
+      // Sin cobro abierto, la suscripción pendiente bloquearía cualquier
+      // intento nuevo (`SUBSCRIPTION_ALREADY_EXISTS`): se deshace aquí.
+      savedOrder.paymentStatus = PaymentStatus.FAILED;
+      await this.billing.saveOrder(savedOrder);
+      savedSubscription.status = SubscriptionStatus.CANCELLED;
+      await this.billing.saveSubscription(savedSubscription);
+      throw error;
+    }
 
     savedOrder.externalReference = checkout.externalReference;
     savedOrder.paymentStatus = checkout.status;
@@ -191,7 +206,11 @@ export class CompanySubscriptionUseCase {
     );
   }
 
-  /** Cancela la renovación automática; el periodo pagado se respeta. */
+  /**
+   * Cancela la renovación automática; el periodo pagado se respeta. Si la paga
+   * una pasarela recurrente, se cancela **primero allí**: marcarla sólo en la
+   * BD dejaría a Stripe cobrando el año siguiente.
+   */
   async cancelRenewal(actor: BillingActor): Promise<SubscriptionResponseDto> {
     const company = await this.ownership.requireCompany(actor.userId);
     const subscription = await this.billing.findLiveSubscriptionByCompany(
@@ -205,6 +224,11 @@ export class CompanySubscriptionUseCase {
         'No tienes ninguna suscripción vigente.',
       );
     }
+
+    await this.stopRecurring(
+      subscription.id,
+      subscription.providerSubscriptionId,
+    );
 
     subscription.autoRenew = false;
     const saved = await this.billing.saveSubscription(subscription);
@@ -220,5 +244,17 @@ export class CompanySubscriptionUseCase {
 
     const plan = await this.plans.findById(saved.planId);
     return toSubscriptionResponse(saved, plan?.name ?? null, null);
+  }
+
+  /** Detiene el cobro recurrente en la pasarela que procesó la suscripción. */
+  private async stopRecurring(
+    subscriptionId: string,
+    providerSubscriptionId: string | null | undefined,
+  ): Promise<void> {
+    if (!providerSubscriptionId) return;
+    const [latest] =
+      await this.billing.findOrdersBySubscriptionId(subscriptionId);
+    const provider = latest ? this.providers.forOrder(latest.provider) : null;
+    await provider?.cancelRecurring(providerSubscriptionId, false);
   }
 }

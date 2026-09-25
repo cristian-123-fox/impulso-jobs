@@ -22,15 +22,18 @@ import { PaginatedResponse } from '@/common/dto/paginated-response.dto';
 import type { AuthenticatedUser } from '@/common/types/authenticated-user';
 import {
   CheckoutResponseDto,
+  OrderResponseDto,
   PromotionResponseDto,
   SubscriptionResponseDto,
 } from '@/modules/billing/dto/billing-response.dto';
+import { PaymentProvider } from '@/modules/billing/enums/billing.enums';
 import {
   CreatePromotionDto,
   CreateSubscriptionDto,
   ListPromotionsQueryDto,
   StartCheckoutDto,
 } from '@/modules/billing/dto/billing.dto';
+import { CompanyPaymentsUseCase } from '@/modules/billing/use-cases/company-payments.use-case';
 import { CompanySubscriptionUseCase } from '@/modules/billing/use-cases/company-subscription.use-case';
 import { BillingActor } from '@/modules/billing/use-cases/plan-catalog.use-case';
 import { VacancyPromotionUseCase } from '@/modules/billing/use-cases/vacancy-promotion.use-case';
@@ -46,6 +49,7 @@ export class CompanyBillingController {
   constructor(
     private readonly promotions: VacancyPromotionUseCase,
     private readonly subscriptions: CompanySubscriptionUseCase,
+    private readonly payments: CompanyPaymentsUseCase,
   ) {}
 
   @Post('vacancies/:id/promotions')
@@ -104,6 +108,7 @@ export class CompanyBillingController {
       promotionId,
       dto.method,
       dto.installments ?? 1,
+      dto.provider ?? PaymentProvider.MANUAL,
       this.actor(user, client),
     );
   }
@@ -120,8 +125,27 @@ export class CompanyBillingController {
     return this.subscriptions.create(
       dto.planId,
       dto.method,
+      dto.provider ?? PaymentProvider.MANUAL,
       this.actor(user, client),
     );
+  }
+
+  /**
+   * Retira un cobro abierto propio: al volver cancelado del Checkout de
+   * Stripe, o para anular una solicitud de pago. Libera la reserva.
+   *
+   * Se exige `promotions.checkout` también para órdenes de suscripción: es el
+   * permiso de "abrir un cobro", y quien puede abrirlo puede retirarlo.
+   */
+  @Post('payments/:orderId/cancel')
+  @RequirePermissions('promotions.checkout')
+  @ResponseMessage('Pago cancelado.')
+  cancelPayment(
+    @Param('orderId') orderId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<OrderResponseDto> {
+    return this.payments.cancel(orderId, this.actor(user, client));
   }
 
   @Get('subscriptions/current')

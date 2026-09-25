@@ -6,7 +6,10 @@ import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
   Checkout,
+  Order,
   PaymentMethod,
+  PaymentProvider,
+  PaymentProviderOption,
   Plan,
   Promotion,
   PromotionsPage,
@@ -24,6 +27,15 @@ export class BillingApi {
   listPlans(): Observable<Plan[]> {
     return this.http
       .get<ApiSuccessResponse<Plan[]>>(`${this.api}/plans`)
+      .pipe(map((r) => r.content));
+  }
+
+  /** Medios de pago del entorno: Stripe sólo aparece si está configurado. */
+  paymentOptions(): Observable<PaymentProviderOption[]> {
+    return this.http
+      .get<
+        ApiSuccessResponse<PaymentProviderOption[]>
+      >(`${this.api}/payments/options`)
       .pipe(map((r) => r.content));
   }
 
@@ -55,10 +67,9 @@ export class BillingApi {
   checkout(
     promotionId: string,
     method: PaymentMethod,
-    installments?: number,
+    provider: PaymentProvider,
   ): Observable<Checkout> {
-    const body: { method: PaymentMethod; installments?: number } = { method };
-    if (installments && installments > 1) body.installments = installments;
+    const body = { method, provider };
 
     return this.http
       .post<
@@ -78,12 +89,23 @@ export class BillingApi {
   createSubscription(
     planId: string,
     method: PaymentMethod,
+    provider: PaymentProvider,
   ): Observable<Checkout> {
     return this.http
       .post<ApiSuccessResponse<Checkout>>(`${this.base}/subscriptions`, {
         planId,
         method,
+        provider,
       })
+      .pipe(map((r) => r.content));
+  }
+
+  /** Retira un cobro abierto propio y libera lo que tenía reservado. */
+  cancelPayment(orderId: string): Observable<Order> {
+    return this.http
+      .post<
+        ApiSuccessResponse<Order>
+      >(`${this.base}/payments/${orderId}/cancel`, {})
       .pipe(map((r) => r.content));
   }
 

@@ -4,7 +4,10 @@ import { Observable, tap } from 'rxjs';
 import { BillingApi } from '@/features/company/billing/data/billing.api';
 import {
   Checkout,
+  Order,
   PaymentMethod,
+  PaymentProvider,
+  PaymentProviderOption,
   Plan,
   Promotion,
   Subscription,
@@ -21,6 +24,7 @@ export class BillingFacade {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly plans = signal<Plan[]>([]);
+  readonly paymentOptions = signal<PaymentProviderOption[]>([]);
   readonly promotions = signal<Promotion[]>([]);
   readonly subscription = signal<Subscription | null>(null);
   /** `true` en cuanto se sabe si hay suscripción (haya o no). */
@@ -50,6 +54,25 @@ export class BillingFacade {
           this.plansLoaded.set(true);
         },
         error: () => this.plansLoaded.set(true),
+      });
+  }
+
+  loadPaymentOptions(): void {
+    this.api
+      .paymentOptions()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (options) => this.paymentOptions.set(options),
+        // Sin respuesta queda al menos la solicitud de pago, que no depende
+        // de ningún servicio externo.
+        error: () =>
+          this.paymentOptions.set([
+            {
+              provider: PaymentProvider.MANUAL,
+              methods: [PaymentMethod.SPEI],
+              recurringMethods: [PaymentMethod.SPEI],
+            },
+          ]),
       });
   }
 
@@ -97,20 +120,30 @@ export class BillingFacade {
   checkout(
     promotionId: string,
     method: PaymentMethod,
-    installments?: number,
+    provider: PaymentProvider,
   ): Observable<Checkout> {
     return this.api
-      .checkout(promotionId, method, installments)
+      .checkout(promotionId, method, provider)
       .pipe(tap(() => this.loadPromotions(this.page())));
   }
 
   createSubscription(
     planId: string,
     method: PaymentMethod,
+    provider: PaymentProvider,
   ): Observable<Checkout> {
     return this.api
-      .createSubscription(planId, method)
+      .createSubscription(planId, method, provider)
       .pipe(tap(() => this.loadSubscription()));
+  }
+
+  cancelPayment(orderId: string): Observable<Order> {
+    return this.api.cancelPayment(orderId).pipe(
+      tap(() => {
+        this.loadPromotions(this.page());
+        this.loadSubscription();
+      }),
+    );
   }
 
   cancelRenewal(): Observable<Subscription> {

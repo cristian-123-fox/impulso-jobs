@@ -17,6 +17,7 @@ import { VacancyPromotion } from '@/modules/billing/entities/vacancy-promotion.e
 import {
   BILLING_CURRENCY,
   PaymentMethod,
+  PaymentProvider,
   PaymentStatus,
   PlanType,
   PromotionStatus,
@@ -29,10 +30,9 @@ import {
   type IPlanRepository,
   PLAN_REPOSITORY,
 } from '@/modules/billing/repositories/plan.repository.interface';
-import {
-  type PaymentProviderPort,
-  PAYMENT_PROVIDER,
-} from '@/modules/billing/services/payment-provider.port';
+import type { CheckoutResult } from '@/modules/billing/services/payment-provider.port';
+import { checkoutReturnUrls } from '@/modules/billing/services/checkout-return-urls';
+import { PaymentProviderRegistry } from '@/modules/billing/services/payment-provider.registry';
 import { PaymentQueueNotifier } from '@/modules/billing/services/payment-queue-notifier.service';
 import { PricingService } from '@/modules/billing/services/pricing.service';
 import { BillingActor } from '@/modules/billing/use-cases/plan-catalog.use-case';
@@ -51,7 +51,7 @@ export class VacancyPromotionUseCase {
   constructor(
     @Inject(BILLING_REPOSITORY) private readonly billing: IBillingRepository,
     @Inject(PLAN_REPOSITORY) private readonly plans: IPlanRepository,
-    @Inject(PAYMENT_PROVIDER) private readonly payments: PaymentProviderPort,
+    private readonly providers: PaymentProviderRegistry,
     private readonly pricing: PricingService,
     private readonly ownership: VacancyOwnershipService,
     private readonly audit: AuditService,
@@ -140,13 +140,20 @@ export class VacancyPromotionUseCase {
     return toPromotionResponse(saved, plan.name, null);
   }
 
-  /** Abre el cobro de una promoción pendiente y crea su orden. */
+  /**
+   * Abre el cobro de una promoción pendiente y crea su orden. Se puede llamar
+   * otra vez sobre la misma promoción (reintentar tras abandonar el Checkout):
+   * las órdenes abiertas anteriores se anulan antes de abrir la nueva.
+   */
   async checkout(
     promotionId: string,
     method: PaymentMethod,
     installments: number,
+    providerName: PaymentProvider,
     actor: BillingActor,
   ): Promise<CheckoutResponseDto> {
+    const provider = this.providers.require(providerName);
+    this.providers.assertSupports(provider, method, false);
     const company = await this.ownership.requireCompany(actor.userId);
     const promotion = await this.billing.findPromotionByIdAndCompany(
       promotionId,
@@ -195,10 +202,12 @@ export class VacancyPromotionUseCase {
       );
     }
 
+    await this.supersedeOpenOrders(promotion.id);
+
     const order = new PromotionOrder();
     order.promotionId = promotion.id;
     order.companyId = company.id;
-    order.provider = this.payments.name;
+    order.provider = provider.name;
     order.paymentMethod = method;
     order.paymentStatus = PaymentStatus.PENDING;
     order.subtotal = price.subtotal.toFixed(2);
@@ -209,17 +218,31 @@ export class VacancyPromotionUseCase {
 
     const stored = await this.billing.saveOrder(order);
 
-    const checkout = await this.payments.createCheckout({
-      orderId: stored.id,
-      companyId: company.id,
-      concept: `${plan.name} · vacante ${promotion.vacancyId}`,
-      total: price.total,
-      currency: price.currency,
-      method,
-      installments: stored.installments,
-      recurring: false,
-      providerPriceId: plan.providerPriceId,
-    });
+    let checkout: CheckoutResult;
+    try {
+      checkout = await provider.createCheckout({
+        orderId: stored.id,
+        companyId: company.id,
+        concept: `Promoción ${plan.name} · Impulso Jobs`,
+        total: price.total,
+        currency: price.currency,
+        method,
+        installments: stored.installments,
+        recurring: false,
+        providerPriceId: plan.providerPriceId,
+        returnUrls: checkoutReturnUrls(stored.id),
+      });
+    } catch (error) {
+      // Sin sesión en la pasarela la orden no tiene cómo pagarse: se marca
+      // fallida para que no aparezca como pendiente en /admin/pagos, y la
+      // promoción se libera —las anteriores ya se anularon arriba—, o la
+      // vacante quedaría bloqueada con `PROMOTION_ALREADY_EXISTS`.
+      stored.paymentStatus = PaymentStatus.FAILED;
+      await this.billing.saveOrder(stored);
+      promotion.status = PromotionStatus.CANCELLED;
+      await this.billing.savePromotion(promotion);
+      throw error;
+    }
 
     stored.externalReference = checkout.externalReference;
     stored.paymentStatus = checkout.status;
@@ -253,6 +276,31 @@ export class VacancyPromotionUseCase {
       checkoutUrl: checkout.checkoutUrl,
       order: toOrderResponse(withReference),
     };
+  }
+
+  /**
+   * Anula las órdenes abiertas de la promoción antes de abrir otra. Se marcan
+   * fallidas **sin** pasar por `SettlePaymentUseCase`, porque eso cancelaría la
+   * promoción entera; y la sesión se expira en la pasarela para que el enlace
+   * viejo no se pueda pagar.
+   */
+  private async supersedeOpenOrders(promotionId: string): Promise<void> {
+    const orders = await this.billing.findOrdersByPromotionId(promotionId);
+    for (const previous of orders) {
+      if (
+        previous.paymentStatus !== PaymentStatus.PENDING &&
+        previous.paymentStatus !== PaymentStatus.AWAITING_PAYMENT
+      ) {
+        continue;
+      }
+      if (previous.externalReference) {
+        await this.providers
+          .forOrder(previous.provider)
+          ?.cancel(previous.externalReference);
+      }
+      previous.paymentStatus = PaymentStatus.FAILED;
+      await this.billing.saveOrder(previous);
+    }
   }
 
   async list(

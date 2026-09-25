@@ -12,6 +12,7 @@ import {
 import { IBillingRepository } from '@/modules/billing/repositories/billing.repository.interface';
 import { IPlanRepository } from '@/modules/billing/repositories/plan.repository.interface';
 import { CompanySubscriptionNotifier } from '@/modules/billing/services/company-subscription-notifier.service';
+import { PaymentProviderRegistry } from '@/modules/billing/services/payment-provider.registry';
 import { AdminPaymentsUseCase } from '@/modules/billing/use-cases/admin-payments.use-case';
 import { SettlePaymentUseCase } from '@/modules/billing/use-cases/settle-payment.use-case';
 import { Company } from '@/modules/companies/entities/company.entity';
@@ -126,6 +127,9 @@ describe('AdminPaymentsUseCase', () => {
       settle,
       notifier,
       audit,
+      {
+        forOrder: jest.fn().mockReturnValue({ cancel: jest.fn() }),
+      } as unknown as PaymentProviderRegistry,
     );
   });
 

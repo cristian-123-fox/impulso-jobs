@@ -29,6 +29,7 @@ import {
   type PaymentProviderPort,
   PAYMENT_PROVIDER,
 } from '@/modules/billing/services/payment-provider.port';
+import { PaymentProviderRegistry } from '@/modules/billing/services/payment-provider.registry';
 import {
   PriceBreakdown,
   PricingService,
@@ -130,6 +131,7 @@ export class AdminSubscriptionUseCase {
     private readonly settle: SettlePaymentUseCase,
     private readonly notifier: CompanySubscriptionNotifier,
     private readonly audit: AuditService,
+    private readonly providers: PaymentProviderRegistry,
   ) {}
 
   /** Suscripción vigente de una empresa, o `null` si no tiene. */
@@ -370,6 +372,7 @@ export class AdminSubscriptionUseCase {
       command.companyId,
       now,
     );
+    await this.stopRecurring(subscription);
 
     subscription.status = SubscriptionStatus.CANCELLED;
     subscription.autoRenew = false;
@@ -413,6 +416,7 @@ export class AdminSubscriptionUseCase {
     previous: CompanySubscription,
     now: Date,
   ): Promise<void> {
+    await this.stopRecurring(previous);
     previous.status = SubscriptionStatus.CANCELLED;
     previous.autoRenew = false;
     await this.billing.saveSubscription(previous);
@@ -428,6 +432,22 @@ export class AdminSubscriptionUseCase {
       grant.expiresAt = now;
       await this.talent.saveGrant(grant);
     }
+  }
+
+  /**
+   * Corta en el acto el cobro recurrente de una suscripción que paga una
+   * pasarela. Va **antes** de tocar la BD: si Stripe falla, la operación se
+   * aborta entera en vez de dejar a la empresa sin plan y pagándolo.
+   */
+  private async stopRecurring(
+    subscription: CompanySubscription,
+  ): Promise<void> {
+    if (!subscription.providerSubscriptionId) return;
+    const [latest] = await this.billing.findOrdersBySubscriptionId(
+      subscription.id,
+    );
+    const provider = latest ? this.providers.forOrder(latest.provider) : null;
+    await provider?.cancelRecurring(subscription.providerSubscriptionId, true);
   }
 
   /** Arrastra el cupo vigente de la suscripción al nuevo fin de periodo. */

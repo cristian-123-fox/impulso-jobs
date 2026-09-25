@@ -14,6 +14,7 @@ import { toOrderResponse } from '@/modules/billing/dto/billing-response.dto';
 import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entity';
 import {
   OPEN_PAYMENT_STATUSES,
+  PaymentProvider,
   PaymentStatus,
 } from '@/modules/billing/enums/billing.enums';
 import {
@@ -25,6 +26,7 @@ import {
   PLAN_REPOSITORY,
 } from '@/modules/billing/repositories/plan.repository.interface';
 import { CompanySubscriptionNotifier } from '@/modules/billing/services/company-subscription-notifier.service';
+import { PaymentProviderRegistry } from '@/modules/billing/services/payment-provider.registry';
 import { BillingActor } from '@/modules/billing/use-cases/plan-catalog.use-case';
 import { SettlePaymentUseCase } from '@/modules/billing/use-cases/settle-payment.use-case';
 import {
@@ -36,6 +38,9 @@ import {
   type IVacancyRepository,
   VACANCY_REPOSITORY,
 } from '@/modules/vacancies/repositories/vacancy.repository.interface';
+
+/** `provider` de la orden es un `varchar`: se compara contra el valor. */
+const MANUAL: string = PaymentProvider.MANUAL;
 
 /** Qué se compró, para el aviso a la empresa y la fila del listado. */
 interface OrderSubject {
@@ -57,6 +62,11 @@ interface OrderSubject {
  * El id del evento es `admin:<orderId>`: confirmar y rechazar son excluyentes,
  * así que un doble clic —o dos administradores a la vez— se queda en uno solo
  * por la idempotencia de `processed_payment_events`.
+ *
+ * **Con Stripe el papel cambia.** Una orden de Stripe no se confirma a mano:
+ * activarla sin que Stripe diga que se cobró regalaría el plan. Lo que se
+ * ofrece es *sincronizar* (preguntarle a Stripe, por si el webhook no llegó) y
+ * rechazar (expirar la sesión abandonada para liberar la reserva).
  */
 @Injectable()
 export class AdminPaymentsUseCase {
@@ -68,6 +78,7 @@ export class AdminPaymentsUseCase {
     private readonly settle: SettlePaymentUseCase,
     private readonly notifier: CompanySubscriptionNotifier,
     private readonly audit: AuditService,
+    private readonly providers: PaymentProviderRegistry,
   ) {}
 
   async list(
@@ -99,6 +110,13 @@ export class AdminPaymentsUseCase {
     actor: BillingActor,
   ): Promise<AdminPaymentResponseDto> {
     const order = await this.requireOpenOrder(orderId);
+    if (order.provider !== MANUAL) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.PAYMENT_NOT_PENDING,
+        'Este pago lo procesa Stripe: se confirma solo. Usa «Sincronizar» si crees que ya se cobró.',
+      );
+    }
     const reference = await this.ensureReference(order);
 
     await this.settle.execute({
@@ -146,6 +164,8 @@ export class AdminPaymentsUseCase {
   ): Promise<AdminPaymentResponseDto> {
     const order = await this.requireOpenOrder(orderId);
     const reference = await this.ensureReference(order);
+    // En Stripe se expira la sesión antes: que el enlace ya no se pueda pagar.
+    await this.providers.forOrder(order.provider)?.cancel(reference);
 
     // Un pago fallido deshace la reserva: la promoción o la suscripción pasan a
     // CANCELLED y la empresa queda libre para volver a contratar.
@@ -185,6 +205,57 @@ export class AdminPaymentsUseCase {
       link: '/empresa/promociones',
     });
 
+    return item;
+  }
+
+  /**
+   * Reconciliación: pregunta a la pasarela por el estado real de la orden y
+   * lo aplica. Sirve cuando un webhook no llegó (endpoint mal configurado,
+   * caída del servidor). Si la pasarela dice que sigue abierta, no toca nada.
+   */
+  async sync(
+    orderId: string,
+    actor: BillingActor,
+  ): Promise<AdminPaymentResponseDto> {
+    const order = await this.requireOpenOrder(orderId);
+    const provider = this.providers.forOrder(order.provider);
+    if (!provider || order.provider === MANUAL) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.PAYMENT_PROVIDER_NOT_AVAILABLE,
+        'Una solicitud de pago no tiene pasarela que consultar: confírmala o recházala.',
+      );
+    }
+    if (!order.externalReference) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.PAYMENT_NOT_PENDING,
+        'La orden no llegó a abrir un cobro en la pasarela.',
+      );
+    }
+
+    const status = await provider.fetchStatus(order.externalReference);
+    if (status === PaymentStatus.PAID || status === PaymentStatus.FAILED) {
+      await this.settle.execute({
+        provider: order.provider,
+        eventId: `sync:${order.id}:${status}`,
+        type: status === PaymentStatus.PAID ? 'sync.paid' : 'sync.failed',
+        externalReference: order.externalReference,
+        status,
+      });
+    }
+
+    await this.audit.record({
+      action: 'payments.admin_sync',
+      actorUserId: actor.userId,
+      entity: 'promotion_order',
+      entityId: order.id,
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+      metadata: { provider: order.provider, providerStatus: status },
+    });
+
+    const [item] = await this.decorate([await this.reload(order.id)]);
     return item;
   }
 

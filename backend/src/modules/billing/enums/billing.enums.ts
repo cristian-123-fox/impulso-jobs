@@ -43,6 +43,17 @@ export enum PaymentMethod {
   MSI = 'MSI',
 }
 
+/**
+ * Quién procesa el cobro. Se guarda en `promotion_orders.provider`, y es lo que
+ * decide a qué adaptador se le pide cancelar o consultar una orden.
+ */
+export enum PaymentProvider {
+  /** Solicitud de pago: el equipo verifica y confirma en `/admin/pagos`. */
+  MANUAL = 'manual',
+  /** Stripe Checkout; se confirma por webhook. */
+  STRIPE = 'stripe',
+}
+
 export enum PaymentStatus {
   /** Orden creada, aún no se envió al proveedor. */
   PENDING = 'PENDING',

@@ -13,6 +13,27 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.MSI]: 'Meses sin intereses',
 };
 
+/** Quién procesa el cobro: `stripe` = pago en línea; `manual` = solicitud. */
+export enum PaymentProvider {
+  MANUAL = 'manual',
+  STRIPE = 'stripe',
+}
+
+/** Medio de pago disponible y sus métodos (`GET /payments/options`). */
+export interface PaymentProviderOption {
+  provider: PaymentProvider;
+  /** Pago único (promoción de vacante). */
+  methods: PaymentMethod[];
+  /** Suscripción recurrente. */
+  recurringMethods: PaymentMethod[];
+}
+
+/** Estados de una orden que todavía se pueden pagar o retirar. */
+export const OPEN_PAYMENT_STATUSES: readonly string[] = [
+  'PENDING',
+  'AWAITING_PAYMENT',
+];
+
 export enum PromotionStatus {
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   ACTIVE = 'ACTIVE',

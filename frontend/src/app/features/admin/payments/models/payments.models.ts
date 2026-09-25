@@ -48,6 +48,12 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
   REFUNDED: 'Reembolsado',
 };
 
+/** Quién procesa el cobro. Espeja `PaymentProvider` del backend. */
+export const PAYMENT_PROVIDER_LABELS: Record<string, string> = {
+  manual: 'Solicitud',
+  stripe: 'Stripe',
+};
+
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   CARD: 'Tarjeta',
   OXXO: 'OXXO',

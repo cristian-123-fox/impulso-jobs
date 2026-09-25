@@ -9,6 +9,7 @@ import { AuditService } from '@/modules/audit/audit.service';
 import { ProcessedPaymentEvent } from '@/modules/billing/entities/processed-payment-event.entity';
 import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entity';
 import {
+  OPEN_PAYMENT_STATUSES,
   PaymentStatus,
   PromotionStatus,
   SubscriptionStatus,
@@ -44,7 +45,9 @@ export interface SettlementResult {
  *
  * Idempotencia: el evento se registra **antes** y fuera de la transacción; si
  * ya existía, se descarta. Sin esto, un webhook reintentado otorgaría el cupo
- * dos veces.
+ * dos veces. Si el procesamiento falla después, el acuse **se borra**: de lo
+ * contrario el reintento de la pasarela se descartaría como duplicado y el
+ * pago quedaría cobrado pero sin aplicar.
  */
 @Injectable()
 export class SettlePaymentUseCase {
@@ -73,6 +76,33 @@ export class SettlePaymentUseCase {
       return { applied: false, orderId: null, paymentStatus: null };
     }
 
+    try {
+      return await this.apply(event, record);
+    } catch (error) {
+      await this.forget(record);
+      throw error;
+    }
+  }
+
+  /** Borra el acuse sin tapar el error original si también falla. */
+  private async forget(record: ProcessedPaymentEvent): Promise<void> {
+    try {
+      await this.billing.forgetEvent(record.provider, record.eventId);
+    } catch (forgetError) {
+      this.logger.error(
+        `No se pudo borrar el acuse de ${record.provider}/${record.eventId}: ${
+          forgetError instanceof Error
+            ? forgetError.message
+            : String(forgetError)
+        }`,
+      );
+    }
+  }
+
+  private async apply(
+    event: PaymentEvent,
+    record: ProcessedPaymentEvent,
+  ): Promise<SettlementResult> {
     const order = await this.billing.findOrderByExternalReference(
       event.externalReference,
     );
@@ -188,6 +218,11 @@ export class SettlePaymentUseCase {
       subscription.status = SubscriptionStatus.ACTIVE;
       subscription.startsAt ??= now;
       subscription.currentPeriodEnd = periodEnd;
+      // Con una pasarela recurrente, su id es lo que reconoce las renovaciones
+      // (`invoice.paid`) y lo que se cancela al quitar la renovación.
+      if (event.providerSubscriptionId) {
+        subscription.providerSubscriptionId = event.providerSubscriptionId;
+      }
       await this.billing.saveSubscription(subscription, manager);
 
       // Cada renovación recarga el cupo: se otorga un grant nuevo por periodo.
@@ -202,11 +237,32 @@ export class SettlePaymentUseCase {
     }
   }
 
-  /** Pago fallido o devuelto: se deshace la reserva. */
+  /**
+   * Pago fallido o devuelto: se deshace la reserva — **salvo que otra orden de
+   * la misma compra siga viva**. Pasa al reintentar: la empresa abandona un
+   * Checkout, abre otro, y la caducidad del primero llega después. Cancelar
+   * ahí dejaría la segunda orden pagando una promoción ya cancelada.
+   */
   private async cancel(
     order: PromotionOrder,
     manager: EntityManager,
   ): Promise<void> {
+    const siblings = order.promotionId
+      ? await this.billing.findOrdersByPromotionId(order.promotionId, manager)
+      : order.subscriptionId
+        ? await this.billing.findOrdersBySubscriptionId(
+            order.subscriptionId,
+            manager,
+          )
+        : [];
+    const anotherAlive = siblings.some(
+      (sibling) =>
+        sibling.id !== order.id &&
+        (sibling.paymentStatus === PaymentStatus.PAID ||
+          OPEN_PAYMENT_STATUSES.includes(sibling.paymentStatus)),
+    );
+    if (anotherAlive) return;
+
     if (order.promotionId) {
       const promotion = await this.billing.findPromotionById(
         order.promotionId,

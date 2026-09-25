@@ -13,6 +13,7 @@ import { IBillingRepository } from '@/modules/billing/repositories/billing.repos
 import { IPlanRepository } from '@/modules/billing/repositories/plan.repository.interface';
 import { CompanySubscriptionNotifier } from '@/modules/billing/services/company-subscription-notifier.service';
 import { PaymentProviderPort } from '@/modules/billing/services/payment-provider.port';
+import { PaymentProviderRegistry } from '@/modules/billing/services/payment-provider.registry';
 import { PricingService } from '@/modules/billing/services/pricing.service';
 import { AdminSubscriptionUseCase } from '@/modules/billing/use-cases/admin-subscription.use-case';
 import { SettlePaymentUseCase } from '@/modules/billing/use-cases/settle-payment.use-case';
@@ -158,6 +159,9 @@ describe('AdminSubscriptionUseCase', () => {
       settle,
       notifier,
       audit,
+      {
+        forOrder: jest.fn().mockReturnValue(null),
+      } as unknown as PaymentProviderRegistry,
     );
   });
 

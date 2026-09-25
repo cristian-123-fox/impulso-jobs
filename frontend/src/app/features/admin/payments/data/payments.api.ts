@@ -45,6 +45,13 @@ export class PaymentsApi {
       .pipe(map((r) => r.content));
   }
 
+  /** Pregunta a Stripe por el estado real (por si no llegó el webhook). */
+  sync(id: string): Observable<AdminPayment> {
+    return this.http
+      .post<ApiSuccessResponse<AdminPayment>>(`${this.base}/${id}/sync`, {})
+      .pipe(map((r) => r.content));
+  }
+
   reject(id: string, reason?: string): Observable<AdminPayment> {
     return this.http
       .post<ApiSuccessResponse<AdminPayment>>(`${this.base}/${id}/reject`, {

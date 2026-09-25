@@ -7,12 +7,15 @@ import {
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IjButton, IjOption, IjSelect } from '@/shared/ui';
+import { PaymentChoice } from '@/features/company/billing/components/payment-choice/payment-choice';
 import {
-  PAYMENT_METHOD_LABELS,
   PaymentMethod,
+  PaymentProvider,
+  PaymentProviderOption,
   Plan,
 } from '@/features/company/billing/models/billing.models';
 
@@ -21,18 +24,18 @@ export interface PromotionRequest {
   vacancyId: string;
   planId: string;
   method: PaymentMethod;
-  installments?: number;
+  provider: PaymentProvider;
 }
 
 /**
- * Compra de una promoción: vacante, plan y método de pago. Los métodos que se
- * ofrecen salen del propio plan (`paymentMethods`) — OXXO, por ejemplo, tiene
- * un tope de importe y el backend lo marca como no disponible.
+ * Compra de una promoción: vacante, plan y cómo pagarla. Con Stripe, el plazo
+ * de los meses sin intereses lo elige el cliente en la página de pago, así que
+ * aquí no se pregunta.
  */
 @Component({
   selector: 'app-promotion-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, CurrencyPipe, IjButton, IjSelect],
+  imports: [FormsModule, CurrencyPipe, IjButton, IjSelect, PaymentChoice],
   template: `
     @if (error()) {
       <p
@@ -92,25 +95,12 @@ export interface PromotionRequest {
         </div>
       </div>
 
-      <ij-select
-        label="Método de pago"
-        name="method"
-        [required]="true"
-        [options]="methodOptions()"
-        [searchable]="false"
-        [hint]="methodHint()"
-        [(ngModel)]="method"
+      <app-payment-choice
+        [plan]="selectedPlan()"
+        [options]="paymentOptions()"
+        [(provider)]="provider"
+        [(method)]="method"
       />
-
-      @if (method() === msi) {
-        <ij-select
-          label="Meses sin intereses"
-          name="installments"
-          [options]="installmentOptions"
-          [searchable]="false"
-          [(ngModel)]="installments"
-        />
-      }
 
       @if (selectedPlan(); as plan) {
         <div class="rounded-xl bg-surface px-4 py-3.5">
@@ -130,7 +120,11 @@ export interface PromotionRequest {
 
     <div class="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4">
       <p class="mr-auto text-[12.5px] text-muted">
-        La promoción se activa cuando el pago se confirma.
+        {{
+          isOnline()
+            ? 'Te llevaremos a la página segura de Stripe.'
+            : 'La promoción se activa cuando confirmemos el pago.'
+        }}
       </p>
       <button
         type="button"
@@ -148,7 +142,7 @@ export interface PromotionRequest {
         [disabled]="submitting() || !canSubmit()"
         (click)="onSubmit()"
       >
-        {{ submitting() ? 'Procesando…' : 'Contratar' }}
+        {{ submitLabel() }}
       </button>
     </div>
   `,
@@ -157,6 +151,7 @@ export class PromotionForm implements OnInit {
   /** Vacantes activas de la empresa. */
   readonly vacancies = input.required<readonly IjOption[]>();
   readonly plans = input.required<readonly Plan[]>();
+  readonly paymentOptions = input.required<readonly PaymentProviderOption[]>();
   /** Plan con el que abrir el formulario (p. ej. el elegido en `/planes`). */
   readonly initialPlanId = input<string | null>(null);
   readonly submitting = input(false);
@@ -164,56 +159,31 @@ export class PromotionForm implements OnInit {
   readonly save = output<PromotionRequest>();
   readonly cancel = output<void>();
 
-  protected readonly msi = PaymentMethod.MSI;
+  private readonly choice = viewChild(PaymentChoice);
 
   protected readonly vacancyId = signal('');
   protected readonly planId = signal('');
-  protected readonly method = signal<PaymentMethod>(PaymentMethod.CARD);
-  protected readonly installments = signal('3');
-
-  protected readonly installmentOptions: readonly IjOption[] = [
-    { value: '3', label: '3 meses' },
-    { value: '6', label: '6 meses' },
-    { value: '9', label: '9 meses' },
-    { value: '12', label: '12 meses' },
-  ];
+  protected readonly provider = signal<PaymentProvider>(PaymentProvider.MANUAL);
+  protected readonly method = signal<PaymentMethod>(PaymentMethod.SPEI);
 
   protected readonly selectedPlan = computed(() =>
     this.plans().find((plan) => plan.id === this.planId()),
   );
 
-  /** Sólo los métodos que el backend acepta para el importe de este plan. */
-  protected readonly methodOptions = computed<readonly IjOption[]>(() => {
-    const plan = this.selectedPlan();
-    if (!plan) {
-      return Object.values(PaymentMethod).map((value) => ({
-        value,
-        label: PAYMENT_METHOD_LABELS[value],
-      }));
-    }
-    return plan.paymentMethods
-      .filter((item) => item.available)
-      .map((item) => ({
-        value: item.method,
-        label: PAYMENT_METHOD_LABELS[item.method] ?? item.method,
-      }));
-  });
+  protected readonly isOnline = computed(
+    () => this.provider() === PaymentProvider.STRIPE,
+  );
 
-  protected readonly methodHint = computed(() => {
-    const plan = this.selectedPlan();
-    if (!plan) return '';
-    const blocked = plan.paymentMethods.filter((item) => !item.available);
-    if (blocked.length === 0) return '';
-    return blocked
-      .map(
-        (item) =>
-          `${PAYMENT_METHOD_LABELS[item.method] ?? item.method}: ${item.reason ?? 'no disponible'}`,
-      )
-      .join(' · ');
+  protected readonly submitLabel = computed(() => {
+    if (this.submitting()) return 'Procesando…';
+    return this.isOnline() ? 'Ir a pagar' : 'Enviar solicitud';
   });
 
   protected readonly canSubmit = computed(
-    () => Boolean(this.vacancyId()) && Boolean(this.planId()),
+    () =>
+      Boolean(this.vacancyId()) &&
+      Boolean(this.planId()) &&
+      (this.choice()?.allowedMethods().includes(this.method()) ?? false),
   );
 
   ngOnInit(): void {
@@ -225,13 +195,11 @@ export class PromotionForm implements OnInit {
 
   protected onSubmit(): void {
     if (!this.canSubmit()) return;
-    const method = this.method();
     this.save.emit({
       vacancyId: this.vacancyId(),
       planId: this.planId(),
-      method,
-      installments:
-        method === PaymentMethod.MSI ? Number(this.installments()) : undefined,
+      method: this.method(),
+      provider: this.provider(),
     });
   }
 }

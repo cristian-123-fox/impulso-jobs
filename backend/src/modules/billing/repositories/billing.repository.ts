@@ -164,6 +164,16 @@ export class BillingRepository implements IBillingRepository {
     return this.subRepo(manager).find({ where: { id: In(ids) } });
   }
 
+  findSubscriptionByProviderId(
+    providerSubscriptionId: string,
+    manager?: EntityManager,
+  ): Promise<CompanySubscription | null> {
+    return this.subRepo(manager).findOne({
+      where: { providerSubscriptionId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   findLiveSubscriptionByCompany(
     companyId: string,
     now: Date,
@@ -315,6 +325,10 @@ export class BillingRepository implements IBillingRepository {
    * clave duplicada aborta la transacción en curso, así que capturarlo dentro
    * dejaría inservible el resto del trabajo.
    */
+  async forgetEvent(provider: string, eventId: string): Promise<void> {
+    await this.events.delete({ provider, eventId });
+  }
+
   async registerEventOnce(
     event: ProcessedPaymentEvent,
     manager?: EntityManager,

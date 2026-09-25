@@ -19,6 +19,7 @@ import {
   BillingPeriod,
   FeatureValueType,
   PaymentMethod,
+  PaymentProvider,
   PlanType,
 } from '@/modules/billing/enums/billing.enums';
 
@@ -164,6 +165,15 @@ export class StartCheckoutDto {
   @IsEnum(PaymentMethod, { message: 'El método de pago no es válido.' })
   method!: PaymentMethod;
 
+  @ApiPropertyOptional({
+    enum: PaymentProvider,
+    default: PaymentProvider.MANUAL,
+    description: '`stripe` = pago en línea; `manual` = solicitud de pago.',
+  })
+  @IsOptional()
+  @IsEnum(PaymentProvider, { message: 'El medio de pago no es válido.' })
+  provider?: PaymentProvider;
+
   @ApiPropertyOptional({ description: 'Meses sin intereses (solo MSI).' })
   @IsOptional()
   @Type(() => Number)
@@ -181,6 +191,15 @@ export class CreateSubscriptionDto {
   @ApiProperty({ enum: PaymentMethod })
   @IsEnum(PaymentMethod, { message: 'El método de pago no es válido.' })
   method!: PaymentMethod;
+
+  @ApiPropertyOptional({
+    enum: PaymentProvider,
+    default: PaymentProvider.MANUAL,
+    description: '`stripe` = pago en línea; `manual` = solicitud de pago.',
+  })
+  @IsOptional()
+  @IsEnum(PaymentProvider, { message: 'El medio de pago no es válido.' })
+  provider?: PaymentProvider;
 }
 
 /**

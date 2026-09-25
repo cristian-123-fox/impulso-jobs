@@ -126,6 +126,9 @@ describe('SettlePaymentUseCase', () => {
 
     billing = {
       registerEventOnce: jest.fn().mockResolvedValue(true),
+      forgetEvent: jest.fn().mockResolvedValue(undefined),
+      findOrdersByPromotionId: jest.fn().mockResolvedValue([]),
+      findOrdersBySubscriptionId: jest.fn().mockResolvedValue([]),
       findOrderByExternalReference: jest.fn(() =>
         Promise.resolve(currentOrder),
       ),
@@ -247,6 +250,32 @@ describe('SettlePaymentUseCase', () => {
       expect(currentPromotion.status).toBe(PromotionStatus.CANCELLED);
       expect(entitlements.applyToVacancy).not.toHaveBeenCalled();
       expect(entitlements.grantTalentVisits).not.toHaveBeenCalled();
+    });
+
+    it('no cancela si otra orden de la misma promoción sigue viva (reintento)', async () => {
+      billing.findOrdersByPromotionId.mockResolvedValueOnce([
+        currentOrder,
+        order({
+          id: 'order-reintento',
+          paymentStatus: PaymentStatus.AWAITING_PAYMENT,
+        }),
+      ]);
+
+      await useCase.execute(
+        paidEvent({ status: PaymentStatus.FAILED, type: 'expired' }),
+      );
+
+      expect(currentPromotion.status).toBe(PromotionStatus.PENDING_PAYMENT);
+    });
+  });
+
+  describe('fallo al procesar', () => {
+    it('borra el acuse para que el reintento de la pasarela vuelva a aplicarlo', async () => {
+      billing.saveOrder.mockRejectedValueOnce(new Error('BD caída'));
+
+      await expect(useCase.execute(paidEvent())).rejects.toThrow('BD caída');
+
+      expect(billing.forgetEvent).toHaveBeenCalledWith('manual', 'evt-1');
     });
   });
 

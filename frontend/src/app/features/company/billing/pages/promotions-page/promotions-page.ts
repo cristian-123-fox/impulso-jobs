@@ -27,6 +27,7 @@ import {
 } from '@/features/company/billing/components/subscription-form/subscription-form';
 import {
   Checkout,
+  OPEN_PAYMENT_STATUSES,
   Order,
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
@@ -112,6 +113,16 @@ interface ExpiryNotice {
         </p>
       }
 
+      @if (notice(); as message) {
+        <p
+          role="status"
+          class="mb-4 flex items-start gap-2 rounded-xl bg-accent-green-soft px-4 py-3 text-[13.5px] font-medium text-accent-green-strong"
+        >
+          <ij-icon name="check" [size]="16" class="mt-0.5 flex-shrink-0" />
+          <span>{{ message }}</span>
+        </p>
+      }
+
       @if (facade.subscription(); as subscription) {
         <section class="mb-6 rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
           <div class="flex flex-wrap items-start justify-between gap-4">
@@ -136,6 +147,16 @@ interface ExpiryNotice {
                       <span class="font-mono">{{ folio(order.id) }}</span>
                     </p>
                     <p class="mt-1 text-[12.5px]">{{ pendingHint(order) }}</p>
+                    @if (isOpen(order)) {
+                      <button
+                        type="button"
+                        class="mt-2 text-[12.5px] font-bold text-amber-900 underline hover:no-underline disabled:opacity-50"
+                        [disabled]="cancellingId() === order.id"
+                        (click)="cancelPayment(order)"
+                      >
+                        {{ isManual(order) ? 'Retirar solicitud' : 'Cancelar pago' }}
+                      </button>
+                    }
                   </div>
                 }
               } @else {
@@ -327,6 +348,16 @@ interface ExpiryNotice {
                             Ver ficha de pago
                           </a>
                         }
+                        @if (promo.status === 'PENDING_PAYMENT' && promo.order && isOpen(promo.order)) {
+                          <button
+                            type="button"
+                            class="text-[12.5px] font-bold text-body hover:text-red-600 disabled:opacity-50"
+                            [disabled]="cancellingId() === promo.order.id"
+                            (click)="cancelPayment(promo.order)"
+                          >
+                            {{ isManual(promo.order) ? 'Retirar solicitud' : 'Cancelar' }}
+                          </button>
+                        }
                       </td>
                     </tr>
                   } @empty {
@@ -361,6 +392,7 @@ interface ExpiryNotice {
         <app-promotion-form
           [vacancies]="vacancyOptions()"
           [plans]="facade.perPublicationPlans()"
+          [paymentOptions]="facade.paymentOptions()"
           [initialPlanId]="initialPlanId()"
           [submitting]="saving()"
           [error]="formError()"
@@ -379,6 +411,7 @@ interface ExpiryNotice {
       >
         <app-subscription-form
           [plans]="facade.subscriptionPlans()"
+          [paymentOptions]="facade.paymentOptions()"
           [initialPlanId]="initialPlanId()"
           [submitting]="saving()"
           [error]="formError()"
@@ -481,6 +514,11 @@ export class PromotionsPage {
    * Plan que llega de `/planes` por `?plan=`. Se resuelve cuando ya se sabe
    * qué planes hay y si la empresa tiene suscripción; hasta entonces espera.
    */
+  /** Aviso de éxito (vuelta del Checkout, pago cancelado). */
+  protected readonly notice = signal<string | null>(null);
+  /** Orden que se está retirando: evita el doble clic. */
+  protected readonly cancellingId = signal<string | null>(null);
+
   private readonly requestedPlanId = signal<string | null>(
     this.route.snapshot.queryParamMap.get('plan'),
   );
@@ -515,6 +553,8 @@ export class PromotionsPage {
     this.facade.loadPlans();
     this.facade.loadPromotions(1);
     this.facade.loadSubscription();
+    this.facade.loadPaymentOptions();
+    this.handleCheckoutReturn();
 
     effect(() => {
       const planId = this.requestedPlanId();
@@ -628,15 +668,10 @@ export class PromotionsPage {
     this.saving.set(true);
     this.formError.set(null);
     this.facade
-      .createSubscription(request.planId, request.method)
+      .createSubscription(request.planId, request.method, request.provider)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (result) => {
-          this.saving.set(false);
-          this.closeForm();
-          this.checkoutKind.set('subscription');
-          this.checkout.set(result);
-        },
+        next: (result) => this.onCheckoutOpened(result, 'subscription'),
         error: (error: unknown) => {
           this.saving.set(false);
           this.formError.set(
@@ -664,7 +699,98 @@ export class PromotionsPage {
   protected pendingHint(order: Order): string {
     return isManualOrder(order)
       ? 'Nuestro equipo está verificando el cobro; te avisaremos en cuanto se active. Si pagas por transferencia, indica el folio en el concepto.'
-      : 'La suscripción se activará en cuanto la pasarela confirme el pago.';
+      : 'Estamos esperando la confirmación de Stripe. Si pagaste con OXXO, se activará cuando se acredite el pago.';
+  }
+
+  protected isOpen(order: Order): boolean {
+    return OPEN_PAYMENT_STATUSES.includes(order.paymentStatus);
+  }
+
+  protected cancelPayment(order: Order): void {
+    this.actionError.set(null);
+    this.cancellingId.set(order.id);
+    this.facade
+      .cancelPayment(order.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.cancellingId.set(null);
+          this.notice.set('Cancelaste el pago. No se hizo ningún cargo y puedes volver a contratar.');
+        },
+        error: (error: unknown) => {
+          this.cancellingId.set(null);
+          this.actionError.set(this.messageOf(error, 'No se pudo cancelar el pago.'));
+        },
+      });
+  }
+
+  /**
+   * Con Stripe el cobro sigue en su página: se redirige en la misma pestaña,
+   * que es a donde Stripe devolverá. La solicitud de pago no sale de aquí:
+   * se enseña el folio en el modal.
+   */
+  private onCheckoutOpened(
+    result: Checkout,
+    kind: 'promotion' | 'subscription',
+  ): void {
+    if (result.checkoutUrl) {
+      window.location.assign(result.checkoutUrl);
+      return;
+    }
+    this.saving.set(false);
+    this.closeForm();
+    this.checkoutKind.set(kind);
+    this.checkout.set(result);
+  }
+
+  /**
+   * Vuelta del Checkout de Stripe (`?checkout=success|cancelled&order=`).
+   *
+   * - **success** no activa nada: lo hace el webhook, que suele llegar antes
+   *   que el usuario pero no siempre. Se avisa y se recarga un par de veces.
+   * - **cancelled** retira la orden en el acto, para que la vacante o la
+   *   suscripción no queden reservadas la hora que tarda en caducar la sesión.
+   */
+  private handleCheckoutReturn(): void {
+    const params = this.route.snapshot.queryParamMap;
+    const result = params.get('checkout');
+    const orderId = params.get('order');
+    if (!result) return;
+
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { checkout: null, order: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+
+    if (result === 'success') {
+      this.notice.set(
+        'Recibimos tu pago. En unos segundos verás tu compra activa; si pagaste con OXXO, se activará cuando se acredite.',
+      );
+      const timers = [3000, 8000].map((delay) =>
+        setTimeout(() => {
+          this.facade.loadPromotions(this.facade.page());
+          this.facade.loadSubscription();
+        }, delay),
+      );
+      this.destroyRef.onDestroy(() => timers.forEach(clearTimeout));
+      return;
+    }
+
+    if (result === 'cancelled' && orderId) {
+      this.facade
+        .cancelPayment(orderId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () =>
+            this.notice.set('Cancelaste el pago. No se hizo ningún cargo y puedes volver a intentarlo.'),
+          error: () =>
+            this.actionError.set(
+              'Cancelaste el pago, pero no pudimos liberar la compra. Se liberará sola en una hora.',
+            ),
+        });
+    }
   }
 
   /**
@@ -714,21 +840,12 @@ export class PromotionsPage {
       .createPromotion(request.vacancyId, request.planId)
       .pipe(
         switchMap((promotion: Promotion) =>
-          this.facade.checkout(
-            promotion.id,
-            request.method,
-            request.installments,
-          ),
+          this.facade.checkout(promotion.id, request.method, request.provider),
         ),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (result) => {
-          this.saving.set(false);
-          this.closeForm();
-          this.checkoutKind.set('promotion');
-          this.checkout.set(result);
-        },
+        next: (result) => this.onCheckoutOpened(result, 'promotion'),
         error: (error: unknown) => {
           this.saving.set(false);
           this.formError.set(

@@ -23,6 +23,7 @@ import {
   AdminPaymentFilter,
   OPEN_PAYMENT_STATUSES,
   PAYMENT_METHOD_LABELS,
+  PAYMENT_PROVIDER_LABELS,
   PAYMENT_STATUS_LABELS,
   orderFolio,
 } from '@/features/admin/payments/models/payments.models';
@@ -39,11 +40,15 @@ import {
 const PAGE_SIZE = 10;
 
 /**
- * Cola de cobros. Mientras no haya pasarela, cada compra de una empresa —una
- * promoción o la suscripción anual— se queda "esperando pago" hasta que alguien
- * del equipo verifica el cobro (la transferencia, el depósito) y lo confirma
- * aquí. Confirmar activa lo comprado; rechazar lo cancela y deja a la empresa
- * libre para volver a contratar. Las dos cosas le llegan como notificación.
+ * Cola de cobros. Una **solicitud de pago** se queda "esperando pago" hasta que
+ * alguien del equipo verifica la transferencia y la confirma aquí. Confirmar
+ * activa lo comprado; rechazar lo cancela y deja a la empresa libre para
+ * volver a contratar. Las dos cosas le llegan como notificación.
+ *
+ * Un cobro de **Stripe** se confirma solo por webhook, así que no se ofrece
+ * "Confirmar" —activaría sin cobro—: se ofrece "Sincronizar" (preguntarle a
+ * Stripe, por si el webhook no llegó) y "Anular" (expirar un Checkout
+ * abandonado para liberar la reserva).
  *
  * Orden **de servidor**: los ids ordenables son los de
  * `ADMIN_PAYMENT_SORT_COLUMNS` en el backend.
@@ -171,11 +176,18 @@ const PAGE_SIZE = 10;
 
                 <ng-template ijCell="total" [ijCellOf]="payments()" let-payment>
                   <div class="text-sm font-bold text-ink-900">{{ money(payment.total) }}</div>
-                  <div class="text-[12px] text-muted">
+                  <div class="flex items-center gap-1.5 text-[12px] text-muted">
+                    <span
+                      class="rounded px-1.5 py-px text-[10.5px] font-bold"
+                      [class]="
+                        payment.provider === 'stripe'
+                          ? 'bg-[#efeafd] text-[#5b3cc4]'
+                          : 'bg-surface text-body'
+                      "
+                    >
+                      {{ providerLabel(payment.provider) }}
+                    </span>
                     {{ methodLabel(payment.paymentMethod) }}
-                    @if (payment.installments > 1) {
-                      · {{ payment.installments }} MSI
-                    }
                   </div>
                 </ng-template>
 
@@ -202,15 +214,28 @@ const PAGE_SIZE = 10;
                 <ng-template ijCell="actions" [ijCellOf]="payments()" let-payment>
                   @if (isOpen(payment)) {
                     <div class="flex items-center justify-end gap-1.5">
-                      <button
-                        type="button"
-                        class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-accent-green-strong active:translate-y-[1px] disabled:opacity-50"
-                        [disabled]="busyId() === payment.id"
-                        (click)="confirming.set(payment)"
-                      >
-                        <ij-icon name="check" [size]="14" />
-                        Confirmar
-                      </button>
+                      @if (payment.provider === 'manual') {
+                        <button
+                          type="button"
+                          class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-accent-green-strong active:translate-y-[1px] disabled:opacity-50"
+                          [disabled]="busyId() === payment.id"
+                          (click)="confirming.set(payment)"
+                        >
+                          <ij-icon name="check" [size]="14" />
+                          Confirmar
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-surface hover:text-brand-strong active:translate-y-[1px] disabled:opacity-50"
+                          title="Consultar a Stripe el estado real del cobro"
+                          [disabled]="busyId() === payment.id"
+                          (click)="sync(payment)"
+                        >
+                          <ij-icon name="history" [size]="14" />
+                          Sincronizar
+                        </button>
+                      }
                       <button
                         type="button"
                         class="flex h-8 items-center gap-1.5 rounded-lg border border-line px-2.5 text-[12.5px] font-bold text-body transition-colors hover:bg-red-50 hover:text-red-600 active:translate-y-[1px] disabled:opacity-50"
@@ -218,7 +243,7 @@ const PAGE_SIZE = 10;
                         (click)="openReject(payment)"
                       >
                         <ij-icon name="x" [size]="14" />
-                        Rechazar
+                        {{ payment.provider === 'manual' ? 'Rechazar' : 'Anular' }}
                       </button>
                     </div>
                   }
@@ -259,6 +284,9 @@ const PAGE_SIZE = 10;
         <p class="text-[13.5px] leading-relaxed text-body">
           La compra se cancela y la empresa podrá volver a contratarla. Le avisaremos con el
           motivo que escribas.
+          @if (payment.provider === 'stripe') {
+            El enlace de pago de Stripe deja de funcionar.
+          }
         </p>
         <div class="mt-4">
           <ij-textarea
@@ -370,6 +398,10 @@ export class PaymentsListPage {
     this.rejecting.set(payment);
   }
 
+  protected sync(payment: AdminPayment): void {
+    this.run(payment, this.api.sync(payment.id), 'No se pudo consultar el pago en Stripe.');
+  }
+
   protected confirm(payment: AdminPayment): void {
     this.confirming.set(null);
     this.run(payment, this.api.confirm(payment.id), 'No se pudo confirmar el pago.');
@@ -407,6 +439,10 @@ export class PaymentsListPage {
 
   protected money(amount: number): string {
     return this.format.currency(amount, 2);
+  }
+
+  protected providerLabel(provider: string): string {
+    return PAYMENT_PROVIDER_LABELS[provider] ?? provider;
   }
 
   protected methodLabel(method: string): string {

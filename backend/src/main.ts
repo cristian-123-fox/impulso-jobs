@@ -21,7 +21,12 @@ async function bootstrap() {
     process.exit(1);
   }
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // `rawBody`: el webhook de Stripe firma los bytes exactos del cuerpo, y el
+  // parser JSON los descarta. Con esto Nest guarda una copia en `req.rawBody`
+  // sin dejar de parsear el JSON para el resto de rutas.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
 
   app.setGlobalPrefix('api/v1');
 

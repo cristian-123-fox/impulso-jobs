@@ -63,6 +63,18 @@ export class AdminPaymentsController {
     return this.payments.confirm(id, this.actor(user, client));
   }
 
+  /** Consulta a la pasarela y aplica el estado real (webhook perdido). */
+  @Post(':id/sync')
+  @RequirePermissions('plans.manage')
+  @ResponseMessage('Pago sincronizado con la pasarela.')
+  sync(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<AdminPaymentResponseDto> {
+    return this.payments.sync(id, this.actor(user, client));
+  }
+
   @Post(':id/reject')
   @RequirePermissions('plans.manage')
   @ResponseMessage('Pago rechazado.')

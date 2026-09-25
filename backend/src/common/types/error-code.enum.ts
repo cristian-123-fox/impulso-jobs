@@ -121,6 +121,12 @@ export enum ErrorCode {
   PAYMENT_ALREADY_SETTLED = 'PAYMENT_ALREADY_SETTLED',
   /** La orden ya no espera cobro (pagada, fallida o reembolsada). */
   PAYMENT_NOT_PENDING = 'PAYMENT_NOT_PENDING',
+  /** El proveedor pedido no está configurado (p. ej. Stripe sin clave). */
+  PAYMENT_PROVIDER_NOT_AVAILABLE = 'PAYMENT_PROVIDER_NOT_AVAILABLE',
+  /** La pasarela respondió con error al abrir, cancelar o consultar. */
+  PAYMENT_PROVIDER_ERROR = 'PAYMENT_PROVIDER_ERROR',
+  /** Webhook con firma inválida o cuerpo ilegible. */
+  PAYMENT_WEBHOOK_INVALID = 'PAYMENT_WEBHOOK_INVALID',
   // Notificaciones (T21)
   NOTIFICATION_NOT_FOUND = 'NOTIFICATION_NOT_FOUND',
 }

@@ -73,6 +73,11 @@ export interface IBillingRepository {
    * pasaron su `currentPeriodEnd` aunque el job de expiración todavía no las
    * haya marcado: si no, la empresa queda sin poder renovar hasta el cron.
    */
+  /** La suscripción que la pasarela conoce por ese id (renovaciones). */
+  findSubscriptionByProviderId(
+    providerSubscriptionId: string,
+    manager?: EntityManager,
+  ): Promise<CompanySubscription | null>;
   findLiveSubscriptionByCompany(
     companyId: string,
     now: Date,
@@ -146,4 +151,9 @@ export interface IBillingRepository {
     event: ProcessedPaymentEvent,
     manager?: EntityManager,
   ): Promise<boolean>;
+  /**
+   * Borra el acuse de un evento cuyo procesamiento falló, para que el
+   * reintento de la pasarela vuelva a aplicarlo.
+   */
+  forgetEvent(provider: string, eventId: string): Promise<void>;
 }

@@ -7,12 +7,14 @@ import {
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { IjButton, IjOption, IjSelect } from '@/shared/ui';
+import { IjButton } from '@/shared/ui';
+import { PaymentChoice } from '@/features/company/billing/components/payment-choice/payment-choice';
 import {
-  PAYMENT_METHOD_LABELS,
   PaymentMethod,
+  PaymentProvider,
+  PaymentProviderOption,
   Plan,
 } from '@/features/company/billing/models/billing.models';
 
@@ -20,19 +22,18 @@ import {
 export interface SubscriptionRequest {
   planId: string;
   method: PaymentMethod;
+  provider: PaymentProvider;
 }
 
 /**
- * Contratación de la suscripción anual de la empresa: plan y método de pago.
- *
- * Los métodos salen del propio plan (`paymentMethods`): para una suscripción el
- * backend ya marca OXXO y MSI como no disponibles —son pago único—, así que
- * aquí sólo se filtra, no se decide.
+ * Contratación de la suscripción anual de la empresa: plan y cómo pagarla.
+ * Con Stripe se cobra con tarjeta y se renueva sola cada año; con la solicitud
+ * de pago, el equipo confirma la transferencia.
  */
 @Component({
   selector: 'app-subscription-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, CurrencyPipe, IjButton, IjSelect],
+  imports: [CurrencyPipe, IjButton, PaymentChoice],
   template: `
     @if (error()) {
       <p
@@ -56,7 +57,7 @@ export interface SubscriptionRequest {
                   ? 'border-brand bg-brand-50'
                   : 'border-line bg-white hover:bg-surface'
               "
-              (click)="selectPlan(plan.id)"
+              (click)="planId.set(plan.id)"
             >
               <div class="flex items-baseline justify-between gap-2">
                 <span class="text-[14px] font-bold text-ink-900">{{ plan.name }}</span>
@@ -79,14 +80,12 @@ export interface SubscriptionRequest {
         </div>
       </div>
 
-      <ij-select
-        label="Método de pago"
-        name="method"
-        [required]="true"
-        [options]="methodOptions()"
-        [searchable]="false"
-        [hint]="methodHint()"
-        [(ngModel)]="method"
+      <app-payment-choice
+        [plan]="selectedPlan()"
+        [options]="paymentOptions()"
+        [recurring]="true"
+        [(provider)]="provider"
+        [(method)]="method"
       />
 
       @if (selectedPlan(); as plan) {
@@ -111,7 +110,11 @@ export interface SubscriptionRequest {
 
     <div class="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4">
       <p class="mr-auto text-[12.5px] text-muted">
-        La suscripción se activa cuando el pago se confirma.
+        {{
+          isOnline()
+            ? 'Te llevaremos a la página segura de Stripe.'
+            : 'La suscripción se activa cuando confirmemos el pago.'
+        }}
       </p>
       <button
         type="button"
@@ -129,7 +132,7 @@ export interface SubscriptionRequest {
         [disabled]="submitting() || !canSubmit()"
         (click)="onSubmit()"
       >
-        {{ submitting() ? 'Procesando…' : 'Contratar' }}
+        {{ submitLabel() }}
       </button>
     </div>
   `,
@@ -137,6 +140,7 @@ export interface SubscriptionRequest {
 export class SubscriptionForm implements OnInit {
   /** Planes de tipo suscripción anual. */
   readonly plans = input.required<readonly Plan[]>();
+  readonly paymentOptions = input.required<readonly PaymentProviderOption[]>();
   /** Plan con el que abrir el formulario (p. ej. el elegido en `/planes`). */
   readonly initialPlanId = input<string | null>(null);
   readonly submitting = input(false);
@@ -144,48 +148,30 @@ export class SubscriptionForm implements OnInit {
   readonly save = output<SubscriptionRequest>();
   readonly cancel = output<void>();
 
+  private readonly choice = viewChild(PaymentChoice);
+
   protected readonly planId = signal('');
-  protected readonly method = signal<PaymentMethod>(PaymentMethod.CARD);
+  protected readonly provider = signal<PaymentProvider>(PaymentProvider.MANUAL);
+  protected readonly method = signal<PaymentMethod>(PaymentMethod.SPEI);
 
   protected readonly selectedPlan = computed(() =>
     this.plans().find((plan) => plan.id === this.planId()),
   );
 
-  protected readonly methodOptions = computed<readonly IjOption[]>(() => {
-    const plan = this.selectedPlan();
-    if (!plan) {
-      return [PaymentMethod.CARD, PaymentMethod.SPEI].map((value) => ({
-        value,
-        label: PAYMENT_METHOD_LABELS[value],
-      }));
-    }
-    return plan.paymentMethods
-      .filter((item) => item.available)
-      .map((item) => ({
-        value: item.method,
-        label: PAYMENT_METHOD_LABELS[item.method] ?? item.method,
-      }));
+  protected readonly isOnline = computed(
+    () => this.provider() === PaymentProvider.STRIPE,
+  );
+
+  protected readonly submitLabel = computed(() => {
+    if (this.submitting()) return 'Procesando…';
+    return this.isOnline() ? 'Ir a pagar' : 'Enviar solicitud';
   });
 
-  protected readonly methodHint = computed(() => {
-    const plan = this.selectedPlan();
-    if (!plan) return '';
-    return plan.paymentMethods
-      .filter((item) => !item.available)
-      .map(
-        (item) =>
-          `${PAYMENT_METHOD_LABELS[item.method] ?? item.method}: ${item.reason ?? 'no disponible'}`,
-      )
-      .join(' · ');
-  });
-
-  protected readonly canSubmit = computed(() => {
-    const plan = this.selectedPlan();
-    if (!plan) return false;
-    return plan.paymentMethods.some(
-      (item) => item.method === this.method() && item.available,
-    );
-  });
+  protected readonly canSubmit = computed(
+    () =>
+      Boolean(this.selectedPlan()) &&
+      (this.choice()?.allowedMethods().includes(this.method()) ?? false),
+  );
 
   ngOnInit(): void {
     const initial = this.initialPlanId();
@@ -193,21 +179,15 @@ export class SubscriptionForm implements OnInit {
     const start =
       plans.find((plan) => plan.id === initial) ??
       (plans.length === 1 ? plans[0] : undefined);
-    if (start) this.selectPlan(start.id);
-  }
-
-  /** Al cambiar de plan, el método se reajusta si el nuevo no lo admite. */
-  protected selectPlan(planId: string): void {
-    this.planId.set(planId);
-    const plan = this.selectedPlan();
-    const allowed = plan?.paymentMethods.filter((item) => item.available) ?? [];
-    if (!allowed.some((item) => item.method === this.method()) && allowed[0]) {
-      this.method.set(allowed[0].method);
-    }
+    if (start) this.planId.set(start.id);
   }
 
   protected onSubmit(): void {
     if (!this.canSubmit()) return;
-    this.save.emit({ planId: this.planId(), method: this.method() });
+    this.save.emit({
+      planId: this.planId(),
+      method: this.method(),
+      provider: this.provider(),
+    });
   }
 }
