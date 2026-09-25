@@ -23,6 +23,10 @@ export class BillingFacade {
   readonly plans = signal<Plan[]>([]);
   readonly promotions = signal<Promotion[]>([]);
   readonly subscription = signal<Subscription | null>(null);
+  /** `true` en cuanto se sabe si hay suscripción (haya o no). */
+  readonly subscriptionLoaded = signal(false);
+  /** `true` en cuanto llegó el catálogo, aunque venga vacío. */
+  readonly plansLoaded = signal(false);
   readonly state = signal<LoadState>('idle');
   readonly total = signal(0);
   readonly page = signal(1);
@@ -40,7 +44,13 @@ export class BillingFacade {
     this.api
       .listPlans()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((plans) => this.plans.set(plans));
+      .subscribe({
+        next: (plans) => {
+          this.plans.set(plans);
+          this.plansLoaded.set(true);
+        },
+        error: () => this.plansLoaded.set(true),
+      });
   }
 
   loadPromotions(page = this.page()): void {
@@ -65,10 +75,16 @@ export class BillingFacade {
       .currentSubscription()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (subscription) => this.subscription.set(subscription),
+        next: (subscription) => {
+          this.subscription.set(subscription);
+          this.subscriptionLoaded.set(true);
+        },
         // Sin suscripción el backend responde `null`; un error no debe romper
         // la vista, que se sostiene sola con los planes.
-        error: () => this.subscription.set(null),
+        error: () => {
+          this.subscription.set(null);
+          this.subscriptionLoaded.set(true);
+        },
       });
   }
 

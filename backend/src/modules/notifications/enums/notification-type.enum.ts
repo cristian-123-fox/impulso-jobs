@@ -27,4 +27,8 @@ export enum NotificationType {
   VACANCY_REPORT_NEW = 'VACANCY_REPORT_NEW',
   /** Pago manual pendiente de confirmar (notifica a admin) */
   PAYMENT_PENDING_CONFIRM = 'PAYMENT_PENDING_CONFIRM',
+  /** Un administrador confirmó el pago de la empresa */
+  PAYMENT_CONFIRMED = 'PAYMENT_CONFIRMED',
+  /** Un administrador rechazó el pago de la empresa */
+  PAYMENT_REJECTED = 'PAYMENT_REJECTED',
 }

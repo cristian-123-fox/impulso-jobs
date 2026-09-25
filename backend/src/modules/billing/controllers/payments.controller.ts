@@ -2,7 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { Body, Controller, Inject, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { RequirePermissions } from '@/common/decorators/require-permissions.decorator';
+import { RequireRoles } from '@/common/decorators/require-roles.decorator';
 import { ResponseMessage } from '@/common/decorators/response-message.decorator';
+import { Role } from '@/common/types/role.enum';
 import { ConfirmPaymentDto } from '@/modules/billing/dto/billing.dto';
 import { PaymentStatus } from '@/modules/billing/enums/billing.enums';
 import {
@@ -15,6 +17,7 @@ import {
 } from '@/modules/billing/use-cases/settle-payment.use-case';
 import { JwtAuthGuard } from '@/modules/iam/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.guard';
+import { RolesGuard } from '@/modules/iam/permissions/guards/roles.guard';
 
 /**
  * Confirmación de cobros.
@@ -24,6 +27,10 @@ import { PermissionsGuard } from '@/modules/iam/permissions/guards/permissions.g
  * (`POST /payments/stripe/webhook`, sin guard y con raw body) construirá el
  * mismo `PaymentEvent` y llamará a `SettlePaymentUseCase`: la lógica de
  * activación y la idempotencia ya están, no cambian.
+ *
+ * Desde el back-office se confirma por `/admin/payments/:id/confirm`, que
+ * trabaja con el id de la orden; esta ruta queda para scripts y pruebas que
+ * sólo conocen la referencia externa.
  */
 @ApiTags('payments')
 @ApiBearerAuth()
@@ -35,7 +42,8 @@ export class PaymentsController {
   ) {}
 
   @Post('confirm')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequireRoles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
   @RequirePermissions('plans.manage')
   @ResponseMessage('Pago aplicado.')
   confirm(@Body() dto: ConfirmPaymentDto): Promise<SettlementResult> {

@@ -370,6 +370,10 @@
       "monthly": "Per posting",
       "annual": "Annual"
     },
+    "cta": {
+      "manage": "Manage plans",
+      "companiesOnly": "For companies only"
+    },
     "features": {
       "unlimited": "{{name}}: unlimited",
       "value": "{{name}}: {{value}}"

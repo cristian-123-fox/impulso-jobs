@@ -16,21 +16,21 @@ import {
   Plan,
 } from '@/features/company/billing/models/billing.models';
 
-/** Lo que hace falta para promocionar una vacante y abrir el cobro. */
-export interface PromotionRequest {
-  vacancyId: string;
+/** Lo que hace falta para contratar la suscripción y abrir el cobro. */
+export interface SubscriptionRequest {
   planId: string;
   method: PaymentMethod;
-  installments?: number;
 }
 
 /**
- * Compra de una promoción: vacante, plan y método de pago. Los métodos que se
- * ofrecen salen del propio plan (`paymentMethods`) — OXXO, por ejemplo, tiene
- * un tope de importe y el backend lo marca como no disponible.
+ * Contratación de la suscripción anual de la empresa: plan y método de pago.
+ *
+ * Los métodos salen del propio plan (`paymentMethods`): para una suscripción el
+ * backend ya marca OXXO y MSI como no disponibles —son pago único—, así que
+ * aquí sólo se filtra, no se decide.
  */
 @Component({
-  selector: 'app-promotion-form',
+  selector: 'app-subscription-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule, CurrencyPipe, IjButton, IjSelect],
   template: `
@@ -44,15 +44,6 @@ export interface PromotionRequest {
     }
 
     <div class="flex flex-col gap-4">
-      <ij-select
-        label="Vacante a promocionar"
-        name="vacancy"
-        [required]="true"
-        [options]="vacancies()"
-        [hint]="vacancies().length ? '' : 'Publica una vacante activa primero.'"
-        [(ngModel)]="vacancyId"
-      />
-
       <div>
         <span class="mb-2 block text-[13px] font-bold text-ink-900">Plan</span>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -65,7 +56,7 @@ export interface PromotionRequest {
                   ? 'border-brand bg-brand-50'
                   : 'border-line bg-white hover:bg-surface'
               "
-              (click)="planId.set(plan.id)"
+              (click)="selectPlan(plan.id)"
             >
               <div class="flex items-baseline justify-between gap-2">
                 <span class="text-[14px] font-bold text-ink-900">{{ plan.name }}</span>
@@ -78,15 +69,11 @@ export interface PromotionRequest {
               <div class="mt-1 text-[17px] font-extrabold text-brand">
                 {{ plan.price.total | currency: plan.price.currency : 'symbol-narrow' : '1.2-2' }}
               </div>
-              <div class="text-[12px] text-muted">
-                IVA incluido@if (plan.validityDays) {
-                  <span> · {{ plan.validityDays }} días</span>
-                }
-              </div>
+              <div class="text-[12px] text-muted">IVA incluido · anual</div>
             </button>
           } @empty {
             <p class="rounded-xl bg-surface px-4 py-5 text-center text-[13px] text-muted sm:col-span-2">
-              Todavía no hay planes por publicación disponibles.
+              Todavía no hay planes de suscripción disponibles.
             </p>
           }
         </div>
@@ -102,16 +89,6 @@ export interface PromotionRequest {
         [(ngModel)]="method"
       />
 
-      @if (method() === msi) {
-        <ij-select
-          label="Meses sin intereses"
-          name="installments"
-          [options]="installmentOptions"
-          [searchable]="false"
-          [(ngModel)]="installments"
-        />
-      }
-
       @if (selectedPlan(); as plan) {
         <div class="rounded-xl bg-surface px-4 py-3.5">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -124,13 +101,17 @@ export interface PromotionRequest {
               {{ plan.price.total | currency: plan.price.currency : 'symbol-narrow' : '1.2-2' }}
             </span>
           </div>
+          <p class="mt-2 text-[12px] text-muted">
+            Vigencia de un año desde que se confirma el pago. Puedes cancelar la renovación
+            automática cuando quieras y conservarás el periodo pagado.
+          </p>
         </div>
       }
     </div>
 
     <div class="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4">
       <p class="mr-auto text-[12.5px] text-muted">
-        La promoción se activa cuando el pago se confirma.
+        La suscripción se activa cuando el pago se confirma.
       </p>
       <button
         type="button"
@@ -153,40 +134,27 @@ export interface PromotionRequest {
     </div>
   `,
 })
-export class PromotionForm implements OnInit {
-  /** Vacantes activas de la empresa. */
-  readonly vacancies = input.required<readonly IjOption[]>();
+export class SubscriptionForm implements OnInit {
+  /** Planes de tipo suscripción anual. */
   readonly plans = input.required<readonly Plan[]>();
   /** Plan con el que abrir el formulario (p. ej. el elegido en `/planes`). */
   readonly initialPlanId = input<string | null>(null);
   readonly submitting = input(false);
   readonly error = input<string | null>(null);
-  readonly save = output<PromotionRequest>();
+  readonly save = output<SubscriptionRequest>();
   readonly cancel = output<void>();
 
-  protected readonly msi = PaymentMethod.MSI;
-
-  protected readonly vacancyId = signal('');
   protected readonly planId = signal('');
   protected readonly method = signal<PaymentMethod>(PaymentMethod.CARD);
-  protected readonly installments = signal('3');
-
-  protected readonly installmentOptions: readonly IjOption[] = [
-    { value: '3', label: '3 meses' },
-    { value: '6', label: '6 meses' },
-    { value: '9', label: '9 meses' },
-    { value: '12', label: '12 meses' },
-  ];
 
   protected readonly selectedPlan = computed(() =>
     this.plans().find((plan) => plan.id === this.planId()),
   );
 
-  /** Sólo los métodos que el backend acepta para el importe de este plan. */
   protected readonly methodOptions = computed<readonly IjOption[]>(() => {
     const plan = this.selectedPlan();
     if (!plan) {
-      return Object.values(PaymentMethod).map((value) => ({
+      return [PaymentMethod.CARD, PaymentMethod.SPEI].map((value) => ({
         value,
         label: PAYMENT_METHOD_LABELS[value],
       }));
@@ -202,9 +170,8 @@ export class PromotionForm implements OnInit {
   protected readonly methodHint = computed(() => {
     const plan = this.selectedPlan();
     if (!plan) return '';
-    const blocked = plan.paymentMethods.filter((item) => !item.available);
-    if (blocked.length === 0) return '';
-    return blocked
+    return plan.paymentMethods
+      .filter((item) => !item.available)
       .map(
         (item) =>
           `${PAYMENT_METHOD_LABELS[item.method] ?? item.method}: ${item.reason ?? 'no disponible'}`,
@@ -212,26 +179,35 @@ export class PromotionForm implements OnInit {
       .join(' · ');
   });
 
-  protected readonly canSubmit = computed(
-    () => Boolean(this.vacancyId()) && Boolean(this.planId()),
-  );
+  protected readonly canSubmit = computed(() => {
+    const plan = this.selectedPlan();
+    if (!plan) return false;
+    return plan.paymentMethods.some(
+      (item) => item.method === this.method() && item.available,
+    );
+  });
 
   ngOnInit(): void {
     const initial = this.initialPlanId();
-    if (initial && this.plans().some((plan) => plan.id === initial)) {
-      this.planId.set(initial);
+    const plans = this.plans();
+    const start =
+      plans.find((plan) => plan.id === initial) ??
+      (plans.length === 1 ? plans[0] : undefined);
+    if (start) this.selectPlan(start.id);
+  }
+
+  /** Al cambiar de plan, el método se reajusta si el nuevo no lo admite. */
+  protected selectPlan(planId: string): void {
+    this.planId.set(planId);
+    const plan = this.selectedPlan();
+    const allowed = plan?.paymentMethods.filter((item) => item.available) ?? [];
+    if (!allowed.some((item) => item.method === this.method()) && allowed[0]) {
+      this.method.set(allowed[0].method);
     }
   }
 
   protected onSubmit(): void {
     if (!this.canSubmit()) return;
-    const method = this.method();
-    this.save.emit({
-      vacancyId: this.vacancyId(),
-      planId: this.planId(),
-      method,
-      installments:
-        method === PaymentMethod.MSI ? Number(this.installments()) : undefined,
-    });
+    this.save.emit({ planId: this.planId(), method: this.method() });
   }
 }

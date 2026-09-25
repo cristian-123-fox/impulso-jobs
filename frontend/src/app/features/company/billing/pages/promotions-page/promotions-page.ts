@@ -5,10 +5,13 @@ import {
   Component,
   DestroyRef,
   computed,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { IjButton, IjIcon, IjModal, IjOption } from '@/shared/ui';
@@ -19,11 +22,20 @@ import {
   PromotionRequest,
 } from '@/features/company/billing/components/promotion-form/promotion-form';
 import {
+  SubscriptionForm,
+  SubscriptionRequest,
+} from '@/features/company/billing/components/subscription-form/subscription-form';
+import {
   Checkout,
+  Order,
+  PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
   PROMOTION_STATUS_LABELS,
+  Plan,
   Promotion,
   SUBSCRIPTION_STATUS_LABELS,
+  isManualOrder,
+  orderFolio,
 } from '@/features/company/billing/models/billing.models';
 import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
 import { VacancyStatus } from '@/features/company/vacancies/models/vacancies.models';
@@ -50,6 +62,7 @@ interface ExpiryNotice {
     DatePipe,
     AdminPagination,
     PromotionForm,
+    SubscriptionForm,
     IjButton,
     IjIcon,
     IjModal,
@@ -65,17 +78,29 @@ interface ExpiryNotice {
             Destaca una vacante o contrata la suscripción anual de la empresa.
           </p>
         </div>
-        <button
-          ij-button
-          type="button"
-          variant="primary"
-          shape="rounded"
-          size="md"
-          (click)="openForm()"
-        >
-          <ij-icon name="award" [size]="16" />
-          Promocionar vacante
-        </button>
+        <div class="flex flex-wrap gap-2.5">
+          @if (canSubscribe()) {
+            <button
+              type="button"
+              class="flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-[13.5px] font-bold text-body transition-colors hover:bg-surface hover:text-brand-strong"
+              (click)="openSubscriptionForm()"
+            >
+              <ij-icon name="calendar" [size]="16" />
+              Contratar suscripción
+            </button>
+          }
+          <button
+            ij-button
+            type="button"
+            variant="primary"
+            shape="rounded"
+            size="md"
+            (click)="openForm()"
+          >
+            <ij-icon name="award" [size]="16" />
+            Promocionar vacante
+          </button>
+        </div>
       </div>
 
       @if (actionError(); as message) {
@@ -101,9 +126,23 @@ interface ExpiryNotice {
                   {{ subscription.currentPeriodEnd | date: 'dd MMM yyyy' }}
                 }
               </p>
-              <p class="mt-1 text-[12.5px] text-muted">
-                Renovación automática: {{ subscription.autoRenew ? 'activada' : 'cancelada' }}
-              </p>
+              @if (subscription.status === 'PENDING_PAYMENT') {
+                @if (subscription.order; as order) {
+                  <div class="mt-3 rounded-xl bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
+                    <p class="font-semibold">
+                      Pago pendiente:
+                      {{ order.total | currency: order.currency : 'symbol-narrow' : '1.2-2' }}
+                      · {{ methodOf(order.paymentMethod) }} · folio
+                      <span class="font-mono">{{ folio(order.id) }}</span>
+                    </p>
+                    <p class="mt-1 text-[12.5px]">{{ pendingHint(order) }}</p>
+                  </div>
+                }
+              } @else {
+                <p class="mt-1 text-[12.5px] text-muted">
+                  Renovación automática: {{ subscription.autoRenew ? 'activada' : 'cancelada' }}
+                </p>
+              }
               @if (expiry(); as expiry) {
                 <p
                   role="status"
@@ -119,7 +158,7 @@ interface ExpiryNotice {
                 </p>
               }
             </div>
-            @if (subscription.autoRenew) {
+            @if (subscription.autoRenew && subscription.status !== 'PENDING_PAYMENT') {
               <button
                 type="button"
                 class="rounded-xl border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-body transition-colors hover:bg-red-50 hover:text-red-600"
@@ -176,6 +215,30 @@ interface ExpiryNotice {
                   </li>
                 }
               </ul>
+
+              <div class="mt-auto pt-5">
+                @if (plan.planType === 'PER_PUBLICATION') {
+                  <button
+                    type="button"
+                    class="w-full rounded-xl border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
+                    (click)="openForm(plan.id)"
+                  >
+                    Promocionar con {{ plan.name }}
+                  </button>
+                } @else if (canSubscribe()) {
+                  <button
+                    type="button"
+                    class="w-full rounded-xl border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
+                    (click)="openSubscriptionForm(plan.id)"
+                  >
+                    Contratar {{ plan.name }}
+                  </button>
+                } @else {
+                  <p class="text-center text-[12px] font-medium text-muted">
+                    Ya tienes una suscripción en curso.
+                  </p>
+                }
+              </div>
             </article>
           } @empty {
             <p
@@ -236,9 +299,14 @@ interface ExpiryNotice {
                         {{ promo.pricePaid | currency: promo.currency : 'symbol-narrow' : '1.2-2' }}
                       </td>
                       <td class="px-5 py-3.5 text-[13px] text-muted">
-                        {{ promo.order?.paymentMethod || '—' }}
-                        @if (promo.order?.paymentStatus; as status) {
-                          <div class="text-[12px]">{{ paymentOf(status) }}</div>
+                        @if (promo.order; as order) {
+                          {{ methodOf(order.paymentMethod) }}
+                          <div class="text-[12px]">
+                            {{ paymentOf(order.paymentStatus) }} · folio
+                            <span class="font-mono">{{ folio(order.id) }}</span>
+                          </div>
+                        } @else {
+                          —
                         }
                       </td>
                       <td class="px-5 py-3.5 text-[13px] text-muted">
@@ -293,9 +361,28 @@ interface ExpiryNotice {
         <app-promotion-form
           [vacancies]="vacancyOptions()"
           [plans]="facade.perPublicationPlans()"
+          [initialPlanId]="initialPlanId()"
           [submitting]="saving()"
           [error]="formError()"
           (save)="onPromote($event)"
+          (cancel)="closeForm()"
+        />
+      </ij-modal>
+    }
+
+    @if (showSubscriptionForm()) {
+      <ij-modal
+        title="Contratar suscripción anual"
+        subtitle="Elige el plan y cómo pagarlo."
+        size="lg"
+        (close)="closeForm()"
+      >
+        <app-subscription-form
+          [plans]="facade.subscriptionPlans()"
+          [initialPlanId]="initialPlanId()"
+          [submitting]="saving()"
+          [error]="formError()"
+          (save)="onSubscribe($event)"
           (cancel)="closeForm()"
         />
       </ij-modal>
@@ -317,7 +404,11 @@ interface ExpiryNotice {
           </div>
           <div class="flex justify-between gap-3">
             <dt class="text-[13px] text-muted">Método</dt>
-            <dd class="text-[13.5px] text-body">{{ result.order.paymentMethod }}</dd>
+            <dd class="text-[13.5px] text-body">{{ methodOf(result.order.paymentMethod) }}</dd>
+          </div>
+          <div class="flex justify-between gap-3">
+            <dt class="text-[13px] text-muted">Folio</dt>
+            <dd class="text-[13.5px] font-mono text-body">{{ folio(result.order.id) }}</dd>
           </div>
           <div class="flex justify-between gap-3">
             <dt class="text-[13px] text-muted">Estado</dt>
@@ -334,7 +425,12 @@ interface ExpiryNotice {
         </dl>
 
         <p class="mt-4 rounded-xl bg-surface px-4 py-3 text-[12.5px] text-muted">
-          La promoción se activará automáticamente cuando el pago se confirme.
+          {{ checkoutKind() === 'subscription' ? 'La suscripción' : 'La promoción' }}
+          se activará automáticamente cuando el pago se confirme.
+          @if (isManual(result.order)) {
+            Nuestro equipo verificará el cobro y te avisaremos en cuanto quede activa.
+            Si pagas por transferencia, indica el folio en el concepto.
+          }
         </p>
 
         <div class="mt-6 flex justify-end gap-3 border-t border-line pt-4">
@@ -368,8 +464,37 @@ export class PromotionsPage {
   private readonly vacanciesApi = inject(VacanciesApi);
   private readonly destroyRef = inject(DestroyRef);
 
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
   protected readonly showForm = signal(false);
+  protected readonly showSubscriptionForm = signal(false);
+  /** Plan preseleccionado al abrir un formulario (tarjeta o `?plan=`). */
+  protected readonly initialPlanId = signal<string | null>(null);
   protected readonly checkout = signal<Checkout | null>(null);
+  /** Qué abrió el último cobro, para el texto del modal. */
+  protected readonly checkoutKind = signal<'promotion' | 'subscription'>(
+    'promotion',
+  );
+
+  /**
+   * Plan que llega de `/planes` por `?plan=`. Se resuelve cuando ya se sabe
+   * qué planes hay y si la empresa tiene suscripción; hasta entonces espera.
+   */
+  private readonly requestedPlanId = signal<string | null>(
+    this.route.snapshot.queryParamMap.get('plan'),
+  );
+
+  /**
+   * Sólo se contrata si no hay una suscripción viva: el backend lo rechazaría
+   * con `SUBSCRIPTION_ALREADY_EXISTS`, y una pendiente de pago también cuenta.
+   */
+  protected readonly canSubscribe = computed(
+    () =>
+      this.facade.subscriptionPlans().length > 0 &&
+      this.facade.subscriptionLoaded() &&
+      this.facade.subscription() === null,
+  );
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -390,6 +515,15 @@ export class PromotionsPage {
     this.facade.loadPlans();
     this.facade.loadPromotions(1);
     this.facade.loadSubscription();
+
+    effect(() => {
+      const planId = this.requestedPlanId();
+      if (!planId) return;
+      if (!this.facade.plansLoaded() || !this.facade.subscriptionLoaded()) {
+        return;
+      }
+      untracked(() => this.openRequestedPlan(planId));
+    });
 
     // Sólo se promocionan vacantes activas.
     this.vacanciesApi
@@ -472,14 +606,100 @@ export class PromotionsPage {
     }
   }
 
-  protected openForm(): void {
+  protected openForm(planId: string | null = null): void {
     this.formError.set(null);
+    this.initialPlanId.set(planId);
     this.showForm.set(true);
+  }
+
+  protected openSubscriptionForm(planId: string | null = null): void {
+    this.formError.set(null);
+    this.initialPlanId.set(planId);
+    this.showSubscriptionForm.set(true);
   }
 
   protected closeForm(): void {
     this.showForm.set(false);
+    this.showSubscriptionForm.set(false);
     this.formError.set(null);
+  }
+
+  protected onSubscribe(request: SubscriptionRequest): void {
+    this.saving.set(true);
+    this.formError.set(null);
+    this.facade
+      .createSubscription(request.planId, request.method)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.saving.set(false);
+          this.closeForm();
+          this.checkoutKind.set('subscription');
+          this.checkout.set(result);
+        },
+        error: (error: unknown) => {
+          this.saving.set(false);
+          this.formError.set(
+            this.messageOf(error, 'No se pudo contratar la suscripción.'),
+          );
+        },
+      });
+  }
+
+  protected folio(orderId: string): string {
+    return orderFolio(orderId);
+  }
+
+  protected methodOf(method: string): string {
+    return (
+      PAYMENT_METHOD_LABELS[method as keyof typeof PAYMENT_METHOD_LABELS] ??
+      method
+    );
+  }
+
+  protected isManual(order: Order): boolean {
+    return isManualOrder(order);
+  }
+
+  protected pendingHint(order: Order): string {
+    return isManualOrder(order)
+      ? 'Nuestro equipo está verificando el cobro; te avisaremos en cuanto se active. Si pagas por transferencia, indica el folio en el concepto.'
+      : 'La suscripción se activará en cuanto la pasarela confirme el pago.';
+  }
+
+  /**
+   * Abre el formulario que corresponde al plan elegido en `/planes` y limpia
+   * el parámetro, para que recargar la página no lo vuelva a abrir.
+   */
+  private openRequestedPlan(planId: string): void {
+    this.requestedPlanId.set(null);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { plan: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+
+    const plan: Plan | undefined = this.facade
+      .plans()
+      .find((item) => item.id === planId);
+    if (!plan) {
+      this.actionError.set(
+        'Ese plan ya no está disponible. Elige otro de la lista.',
+      );
+      return;
+    }
+    if (plan.planType === 'PER_PUBLICATION') {
+      this.openForm(plan.id);
+      return;
+    }
+    if (this.canSubscribe()) {
+      this.openSubscriptionForm(plan.id);
+      return;
+    }
+    this.actionError.set(
+      'Tu empresa ya tiene una suscripción en curso; podrás contratar otra cuando termine.',
+    );
   }
 
   /**
@@ -506,6 +726,7 @@ export class PromotionsPage {
         next: (result) => {
           this.saving.set(false);
           this.closeForm();
+          this.checkoutKind.set('promotion');
           this.checkout.set(result);
         },
         error: (error: unknown) => {

@@ -54,6 +54,17 @@ export enum PaymentStatus {
 }
 
 /**
+ * Órdenes que todavía esperan cobro: las únicas que un administrador puede
+ * confirmar o rechazar. `PENDING` entra porque es el estado de una orden cuyo
+ * checkout falló a medias; con el adaptador manual casi todas son
+ * `AWAITING_PAYMENT`.
+ */
+export const OPEN_PAYMENT_STATUSES: readonly PaymentStatus[] = [
+  PaymentStatus.PENDING,
+  PaymentStatus.AWAITING_PAYMENT,
+];
+
+/**
  * Códigos de beneficio del catálogo (`Impulso_Jobs_Planes_Suscripciones.md` §4).
  * El **valor** de cada uno por plan lo define un administrador; aquí sólo
  * viven los códigos a los que se refiere la lógica de negocio.

@@ -127,6 +127,23 @@ export interface Subscription {
   order: Order | null;
 }
 
+/**
+ * Folio corto de la orden: lo que la empresa cita al pagar y lo que el
+ * back-office ve en `/admin/pagos`. Espejado en
+ * `features/admin/payments/models/payments.models.ts`.
+ */
+export function orderFolio(orderId: string): string {
+  return orderId.slice(0, 8).toUpperCase();
+}
+
+/**
+ * Sin pasarela, el cobro lo confirma a mano el equipo: la empresa tiene que
+ * saber que no hay nada más que hacer en pantalla.
+ */
+export function isManualOrder(order: Order): boolean {
+  return order.provider === 'manual';
+}
+
 /** Lo que devuelve abrir un cobro: a dónde ir y en qué estado quedó. */
 export interface Checkout {
   orderId: string;

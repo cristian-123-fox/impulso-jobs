@@ -370,6 +370,10 @@
       "monthly": "Por publicación",
       "annual": "Anual"
     },
+    "cta": {
+      "manage": "Gestionar planes",
+      "companiesOnly": "Sólo para empresas"
+    },
     "features": {
       "unlimited": "{{name}}: ilimitado",
       "value": "{{name}}: {{value}}"

@@ -1,5 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import { AuthService } from '@/core/auth/auth.service';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
+import { Role } from '@/core/models/role.enum';
 import { PublicPlansApi } from '@/features/public/plans/data/public-plans.api';
 import {
   ApiPlan,
@@ -17,6 +19,14 @@ const CYCLE_BY_PERIOD: Record<string, BillingCycle> = {
   ANNUAL: 'annual',
 };
 
+/** Dónde compra una empresa: su panel de promociones, que lee `?plan=`. */
+const COMPANY_PURCHASE_ROUTE = '/empresa/promociones';
+
+type PlanCta = Pick<
+  PricingPlan,
+  'ctaLink' | 'ctaQueryParams' | 'ctaLabel' | 'ctaDisabled'
+>;
+
 /**
  * Facade del feature de planes. Los planes vienen de `GET /plans` (los que el
  * admin creó y activó en `/admin/planes`); aquí solo se proyectan a las cards.
@@ -31,6 +41,7 @@ const CYCLE_BY_PERIOD: Record<string, BillingCycle> = {
 export class PlansFacade {
   private readonly api = inject(PublicPlansApi);
   private readonly i18n = inject(AppTranslateService);
+  private readonly auth = inject(AuthService);
 
   private readonly apiPlans = signal<ApiPlan[]>([]);
   private readonly loadingState = signal(false);
@@ -107,9 +118,47 @@ export class PlansFacade {
       recommended: plan.isPopular,
       accent: plan.isPopular ? 'amber' : ACCENTS[index % ACCENTS.length],
       periodLabel: this.i18n.t(`plans.periods.${cycle}`),
-      ctaLink: '/auth/registro/empresa',
+      ...this.ctaFor(plan),
       features: plan.features.map((feature) => this.toFeature(feature)),
     };
+  }
+
+  /**
+   * El botón depende de quién mira, y lee la sesión: el `computed` que pinte
+   * las tarjetas se rearma al iniciar o cerrar sesión.
+   *
+   * - **Empresa con sesión** → su panel, con el plan preseleccionado. Antes
+   *   caía siempre en el registro, aunque la empresa ya tuviera cuenta.
+   * - **Sin sesión** → el registro de empresa con `?plan=`, que lo pasa al
+   *   login como `returnUrl`: quien ya tiene cuenta entra y aterriza en el
+   *   formulario de compra. En SSR no hay sesión, así que éste es también el
+   *   HTML que sirve el servidor; el cliente lo corrige al hidratar.
+   * - **Administrador** → el back-office de planes.
+   * - **Aspirante** → botón inactivo: los planes son de empresa.
+   */
+  private ctaFor(plan: ApiPlan): PlanCta {
+    switch (this.auth.currentUser()?.role) {
+      case Role.EMPLOYER:
+        return {
+          ctaLink: COMPANY_PURCHASE_ROUTE,
+          ctaQueryParams: { plan: plan.id },
+        };
+      case Role.ADMIN:
+        return {
+          ctaLink: '/admin/planes',
+          ctaLabel: this.i18n.t('plans.cta.manage'),
+        };
+      case Role.CANDIDATE:
+        return {
+          ctaDisabled: true,
+          ctaLabel: this.i18n.t('plans.cta.companiesOnly'),
+        };
+      default:
+        return {
+          ctaLink: '/auth/registro/empresa',
+          ctaQueryParams: { plan: plan.id },
+        };
+    }
   }
 
   private toFeature(feature: ApiPlanFeature): { label: string; included: boolean } {

@@ -28,6 +28,7 @@ import {
   type PaymentProviderPort,
   PAYMENT_PROVIDER,
 } from '@/modules/billing/services/payment-provider.port';
+import { PaymentQueueNotifier } from '@/modules/billing/services/payment-queue-notifier.service';
 import { PricingService } from '@/modules/billing/services/pricing.service';
 import { BillingActor } from '@/modules/billing/use-cases/plan-catalog.use-case';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
@@ -48,6 +49,7 @@ export class CompanySubscriptionUseCase {
     private readonly pricing: PricingService,
     private readonly ownership: VacancyOwnershipService,
     private readonly audit: AuditService,
+    private readonly paymentQueue: PaymentQueueNotifier,
   ) {}
 
   async create(
@@ -153,6 +155,11 @@ export class CompanySubscriptionUseCase {
       metadata: { planCode: plan.code, method, total: withReference.total },
     });
 
+    await this.paymentQueue.notifyPending(
+      withReference,
+      `${company.businessName} · suscripción ${plan.name}`,
+    );
+
     return {
       orderId: withReference.id,
       checkoutUrl: checkout.checkoutUrl,
@@ -160,7 +167,11 @@ export class CompanySubscriptionUseCase {
     };
   }
 
-  /** Suscripción vigente de la empresa, si la tiene. */
+  /**
+   * Suscripción vigente de la empresa, si la tiene, con su última orden: una
+   * suscripción pendiente de pago sin su orden no le dice a la empresa ni
+   * cuánto ni con qué folio pagar.
+   */
   async current(actor: BillingActor): Promise<SubscriptionResponseDto | null> {
     const company = await this.ownership.requireCompany(actor.userId);
     const subscription = await this.billing.findLiveSubscriptionByCompany(
@@ -169,8 +180,15 @@ export class CompanySubscriptionUseCase {
     );
     if (!subscription) return null;
 
-    const plan = await this.plans.findById(subscription.planId);
-    return toSubscriptionResponse(subscription, plan?.name ?? null, null);
+    const [plan, orders] = await Promise.all([
+      this.plans.findById(subscription.planId),
+      this.billing.findOrdersBySubscriptionId(subscription.id),
+    ]);
+    return toSubscriptionResponse(
+      subscription,
+      plan?.name ?? null,
+      orders[0] ?? null,
+    );
   }
 
   /** Cancela la renovación automática; el periodo pagado se respeta. */

@@ -88,12 +88,26 @@ import {
           </div>
 
           @if (plan().ctaLink; as ctaLink) {
-            <a ij-button [routerLink]="ctaLink" variant="primary" shape="rounded" size="lg">
-              {{ t('pricing.buy') }}
+            <a
+              ij-button
+              [routerLink]="ctaLink"
+              [queryParams]="plan().ctaQueryParams ?? null"
+              variant="primary"
+              shape="rounded"
+              size="lg"
+            >
+              {{ plan().ctaLabel ?? t('pricing.buy') }}
             </a>
           } @else {
-            <button ij-button type="button" variant="primary" shape="rounded" size="lg">
-              {{ t('pricing.buy') }}
+            <button
+              ij-button
+              type="button"
+              variant="primary"
+              shape="rounded"
+              size="lg"
+              [disabled]="plan().ctaDisabled ?? false"
+            >
+              {{ plan().ctaLabel ?? t('pricing.buy') }}
             </button>
           }
         </div>

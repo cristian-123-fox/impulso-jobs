@@ -20,10 +20,13 @@ import {
   PromotionStatus,
   SubscriptionStatus,
 } from '@/modules/billing/enums/billing.enums';
+import { ADMIN_PAYMENT_SORT_COLUMNS } from '@/modules/billing/dto/admin-payment.dto';
 import {
+  AdminOrderSearch,
   CompanyPromotionSearch,
   IBillingRepository,
 } from '@/modules/billing/repositories/billing.repository.interface';
+import { buildOrder } from '@/common/utils/sort.util';
 
 /** Estados que significan "esta promoción sigue ocupando la vacante". */
 const LIVE_PROMOTION_STATUSES = [
@@ -121,6 +124,14 @@ export class BillingRepository implements IBillingRepository {
     });
   }
 
+  findPromotionsByIds(
+    ids: string[],
+    manager?: EntityManager,
+  ): Promise<VacancyPromotion[]> {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.promoRepo(manager).find({ where: { id: In(ids) } });
+  }
+
   findExpiredActivePromotions(
     now: Date,
     manager?: EntityManager,
@@ -143,6 +154,14 @@ export class BillingRepository implements IBillingRepository {
     manager?: EntityManager,
   ): Promise<CompanySubscription | null> {
     return this.subRepo(manager).findOne({ where: { id } });
+  }
+
+  findSubscriptionsByIds(
+    ids: string[],
+    manager?: EntityManager,
+  ): Promise<CompanySubscription[]> {
+    if (ids.length === 0) return Promise.resolve([]);
+    return this.subRepo(manager).find({ where: { id: In(ids) } });
   }
 
   findLiveSubscriptionByCompany(
@@ -240,6 +259,36 @@ export class BillingRepository implements IBillingRepository {
     return this.orderRepo(manager).find({
       where: { promotionId },
       order: { createdAt: 'DESC' },
+    });
+  }
+
+  findOrdersBySubscriptionId(
+    subscriptionId: string,
+    manager?: EntityManager,
+  ): Promise<PromotionOrder[]> {
+    return this.orderRepo(manager).find({
+      where: { subscriptionId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  findAndCountOrders(
+    criteria: AdminOrderSearch,
+    manager?: EntityManager,
+  ): Promise<[PromotionOrder[], number]> {
+    const statuses = criteria.statuses ?? [];
+    return this.orderRepo(manager).findAndCount({
+      where: statuses.length > 0 ? { paymentStatus: In([...statuses]) } : {},
+      // La cola se atiende por antigüedad, pero el listado general se lee de
+      // lo más reciente a lo más viejo: el desempate es el `id`, que es único.
+      order: buildOrder<PromotionOrder>(
+        criteria.sortBy,
+        criteria.sortOrder,
+        ADMIN_PAYMENT_SORT_COLUMNS,
+        { createdAt: 'DESC', id: 'ASC' },
+      ),
+      skip: (criteria.page - 1) * criteria.limit,
+      take: criteria.limit,
     });
   }
 

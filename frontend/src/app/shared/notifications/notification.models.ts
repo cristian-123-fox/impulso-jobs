@@ -7,7 +7,9 @@ export type NotificationType =
   | 'PROMOTION_EXPIRED'
   | 'VACANCY_REPORT_RESOLVED'
   | 'VACANCY_REPORT_NEW'
-  | 'PAYMENT_PENDING_CONFIRM';
+  | 'PAYMENT_PENDING_CONFIRM'
+  | 'PAYMENT_CONFIRMED'
+  | 'PAYMENT_REJECTED';
 
 export interface Notification {
   id: string;

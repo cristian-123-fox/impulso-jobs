@@ -18,4 +18,13 @@ export interface PricingPlan {
   readonly periodLabel?: string;
   /** Destino del CTA "Comprar ahora"; sin él, el botón no navega. */
   readonly ctaLink?: string;
+  /**
+   * Query params del CTA. Van aparte porque `routerLink` escapa el `?` de una
+   * cadena: `'/empresa/promociones?plan=x'` navegaría a una ruta inexistente.
+   */
+  readonly ctaQueryParams?: Readonly<Record<string, string>>;
+  /** Sustituye a "Comprar ahora" (p. ej. "Gestionar planes" para un admin). */
+  readonly ctaLabel?: string;
+  /** Botón visible pero inactivo: el plan no es para quien lo está viendo. */
+  readonly ctaDisabled?: boolean;
 }

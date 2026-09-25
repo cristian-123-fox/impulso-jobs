@@ -14,7 +14,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
@@ -74,6 +74,7 @@ const STEP_CONTROLS: string[][] = [
           <a
             ij-button
             routerLink="/auth/login"
+            [queryParams]="loginQueryParams"
             variant="primary"
             shape="rounded"
             size="lg"
@@ -210,7 +211,7 @@ const STEP_CONTROLS: string[][] = [
         </p>
         <p class="mt-1.5 text-center text-[13.5px] text-muted">
           {{ t('auth.register.haveAccount') }}
-          <a routerLink="/auth/login" class="font-semibold text-brand-strong hover:text-brand-600">{{ t('auth.register.loginLink') }}</a>
+          <a routerLink="/auth/login" [queryParams]="loginQueryParams" class="font-semibold text-brand-strong hover:text-brand-600">{{ t('auth.register.loginLink') }}</a>
         </p>
       }
     </div>
@@ -221,6 +222,16 @@ export class RegisterCompanyPage {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly i18n = inject(AppTranslateService);
+  private readonly route = inject(ActivatedRoute);
+
+  /**
+   * Si se llegó desde `/planes` con `?plan=`, el login devuelve a la empresa
+   * al formulario de compra de ese plan en vez de a su panel. Sólo aguanta
+   * mientras la persona siga en este navegador: el enlace del correo de
+   * verificación no lo lleva.
+   */
+  protected readonly loginQueryParams: Record<string, string> | null =
+    this.planReturnUrl();
 
   protected readonly stepLabels = computed(() => [
     this.i18n.t('auth.register.steps.account'),
@@ -371,5 +382,13 @@ export class RegisterCompanyPage {
       return body?.errorCode;
     }
     return undefined;
+  }
+
+  private planReturnUrl(): Record<string, string> | null {
+    const plan = this.route.snapshot.queryParamMap.get('plan');
+    if (!plan) return null;
+    return {
+      returnUrl: `/empresa/promociones?plan=${encodeURIComponent(plan)}`,
+    };
   }
 }

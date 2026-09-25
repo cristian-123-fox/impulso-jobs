@@ -33,6 +33,7 @@ import {
   type PaymentProviderPort,
   PAYMENT_PROVIDER,
 } from '@/modules/billing/services/payment-provider.port';
+import { PaymentQueueNotifier } from '@/modules/billing/services/payment-queue-notifier.service';
 import { PricingService } from '@/modules/billing/services/pricing.service';
 import { BillingActor } from '@/modules/billing/use-cases/plan-catalog.use-case';
 import { VacancyStatus } from '@/modules/vacancies/enums/vacancy.enums';
@@ -54,6 +55,7 @@ export class VacancyPromotionUseCase {
     private readonly pricing: PricingService,
     private readonly ownership: VacancyOwnershipService,
     private readonly audit: AuditService,
+    private readonly paymentQueue: PaymentQueueNotifier,
   ) {}
 
   async create(
@@ -240,6 +242,11 @@ export class VacancyPromotionUseCase {
         provider: withReference.provider,
       },
     });
+
+    await this.paymentQueue.notifyPending(
+      withReference,
+      `${company.businessName} · promoción ${plan.name}`,
+    );
 
     return {
       orderId: withReference.id,
