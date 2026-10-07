@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -137,6 +138,38 @@ export class AdminPlansController {
     return this.catalog.setPlanFeatures(
       id,
       dto.features,
+      this.actor(user, client),
+    );
+  }
+
+  @Delete('plan-features/:code')
+  @RequirePermissions('plans.manage')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ResponseMessage('Beneficio eliminado.')
+  deleteFeature(
+    @Param('code') code: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<void> {
+    return this.catalog.deleteFeature(
+      code,
+      this.actor(user, client),
+    );
+  }
+
+@Delete('plans/:id/features/:featureCode')
+  @RequirePermissions('plans.manage')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ResponseMessage('Beneficio eliminado.')
+  deletePlanFeature(
+    @Param('id') id: string,
+    @Param('featureCode') featureCode: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<void> {
+    return this.catalog.deletePlanFeature(
+      id,
+      featureCode,
       this.actor(user, client),
     );
   }

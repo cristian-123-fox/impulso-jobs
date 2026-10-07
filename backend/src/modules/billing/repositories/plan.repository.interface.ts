@@ -39,4 +39,14 @@ export interface IPlanRepository {
   ): Promise<PlanFeatureValue>;
   /** Reemplaza la matriz de un plan: borra la anterior antes de escribir. */
   deleteValuesByPlanId(planId: string, manager?: EntityManager): Promise<void>;
+
+  /** Borra un beneficio específico de un plan por su código. */
+  deleteValueByFeatureCode(
+    planId: string,
+    featureCode: string,
+    manager?: EntityManager,
+  ): Promise<void>;
+
+  /** Elimina un beneficio del catálogo (por su código). */
+  deleteFeature(code: string, manager?: EntityManager): Promise<void>;
 }

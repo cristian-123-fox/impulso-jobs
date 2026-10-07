@@ -16,7 +16,7 @@ import {
 } from '@/features/admin/plans/models/plans.models';
 
 /** Acción solicitada sobre un plan desde la tabla. */
-export type PlanAction = 'edit' | 'features' | 'activate' | 'deactivate';
+export type PlanAction = 'edit' | 'features' | 'activate' | 'deactivate' | 'delete';
 
 export interface PlanActionEvent {
   action: PlanAction;
@@ -147,6 +147,15 @@ export interface PlanActionEvent {
                 (click)="emit('deactivate', plan)"
               >
                 <ij-icon name="pause" [size]="15" />
+              </button>
+              <button
+                type="button"
+                class="flex h-8 w-8 items-center justify-center rounded-lg border border-danger text-danger transition-colors hover:bg-danger-100 hover:text-danger-800 active:translate-y-[1px]"
+                title="Eliminar beneficio"
+                aria-label="Eliminar beneficio"
+                (click)="emit('delete', plan)"
+              >
+                <ij-icon name="trash" [size]="15" />
               </button>
             } @else {
               <button

@@ -101,4 +101,16 @@ export class PlanRepository implements IPlanRepository {
   ): Promise<void> {
     await this.valueRepo(manager).delete({ planId });
   }
+
+  async deleteValueByFeatureCode(
+    planId: string,
+    featureCode: string,
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.valueRepo(manager).delete({ planId, featureCode });
+  }
+
+  async deleteFeature(code: string, manager?: EntityManager): Promise<void> {
+    await this.featureRepo(manager).delete({ code });
+  }
 }

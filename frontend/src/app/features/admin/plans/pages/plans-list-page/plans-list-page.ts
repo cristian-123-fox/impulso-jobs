@@ -196,6 +196,15 @@ type OpenModal = 'plan' | 'features' | 'catalog' | null;
                       >
                         <ij-icon name="pen" [size]="15" />
                       </button>
+                      <button
+                        type="button"
+                        class="flex h-8 w-8 items-center justify-center rounded-lg border border-danger text-danger transition-colors hover:bg-danger-100 hover:text-danger-800 active:translate-y-[1px]"
+                        title="Eliminar beneficio"
+                        aria-label="Eliminar beneficio"
+                        (click)="deletePlanFeature(feature.code)"
+                      >
+                        <ij-icon name="trash" [size]="15" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -376,6 +385,13 @@ export class PlansListPage {
         return;
       case 'deactivate':
         this.deactivating.set(plan);
+        return;
+      case 'delete':
+        this.run(
+          this.facade.setFeatures(plan.id, []),
+          'No se pudo eliminar el beneficio.',
+        );
+        return;
     }
   }
 
@@ -388,6 +404,13 @@ export class PlansListPage {
     this.run(
       this.facade.changeStatus(plan.id, false),
       'No se pudo despublicar el plan.',
+    );
+  }
+
+  protected onDeleteConfirmed(plan: Plan): void {
+    this.run(
+      this.facade.setFeatures(plan.id, []),
+      'No se pudo eliminar el beneficio.',
     );
   }
 
@@ -416,6 +439,23 @@ export class PlansListPage {
       this.facade.saveFeature(payload),
       'No se pudo guardar el beneficio.',
     );
+  }
+
+  protected deletePlanFeature(code: string): void {
+    if (!confirm('¿Estás seguro de eliminar este beneficio del catálogo?')) return;
+    this.facade.deletePlanFeature(code).subscribe({
+      next: () => {
+        this.facade.loadFeatures();
+        this.formError.set(null);
+      },
+      error: (error: unknown) => {
+        if ((error as { status?: number })?.status === 404) {
+          this.formError.set('El beneficio no existe o ya fue eliminado.');
+        } else {
+          this.formError.set(this.messageOf(error, 'No se pudo eliminar el beneficio.'));
+        }
+      },
+    });
   }
 
   /** Envío desde un modal: cierra al terminar, deja el error dentro si falla. */

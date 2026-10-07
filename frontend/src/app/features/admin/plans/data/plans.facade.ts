@@ -120,6 +120,12 @@ export class PlansFacade {
     );
   }
 
+  deletePlanFeature(code: string): Observable<Plan> {
+    return this.api
+      .deletePlanFeature(code)
+      .pipe(tap(() => this.load()));
+  }
+
   private upsert(plan: Plan): void {
     this.plans.update((list) => {
       const index = list.findIndex((item) => item.id === plan.id);

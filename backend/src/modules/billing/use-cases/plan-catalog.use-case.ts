@@ -174,6 +174,31 @@ export class PlanCatalogUseCase {
     return toPlanFeatureResponse(saved);
   }
 
+  async deleteFeature(
+    code: string,
+    actor: BillingActor,
+  ): Promise<void> {
+    const existing = await this.plans.findFeatureByCode(code);
+    if (!existing) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.PLAN_FEATURE_NOT_FOUND,
+        'El beneficio no existe.',
+      );
+    }
+
+    await this.plans.deleteFeature(code);
+
+    await this.audit.record({
+      action: 'plans.feature.delete',
+      actorUserId: actor.userId,
+      entity: 'plan_feature',
+      entityId: code,
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+    });
+  }
+
   /**
    * Reemplaza la matriz de beneficios de un plan. Se borra la anterior para
    * que quitar un beneficio sea posible: un `upsert` dejaría los viejos.
@@ -219,6 +244,26 @@ export class PlanCatalogUseCase {
     });
 
     return this.get(plan.id);
+  }
+
+  async deletePlanFeature(
+    planId: string,
+    featureCode: string,
+    actor: BillingActor,
+  ): Promise<void> {
+    const plan = await this.requirePlan(planId);
+
+    await this.plans.deleteValueByFeatureCode(plan.id, featureCode);
+
+    await this.audit.record({
+      action: 'plans.feature.delete',
+      actorUserId: actor.userId,
+      entity: 'plan',
+      entityId: plan.id,
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+      metadata: { featureCode },
+    });
   }
 
   private compose(

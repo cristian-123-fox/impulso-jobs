@@ -84,4 +84,10 @@ export class PlansApi {
       )
       .pipe(map((r) => r.content));
   }
+
+  deletePlanFeature(code: string): Observable<Plan> {
+    return this.http
+      .delete<ApiSuccessResponse<Plan>>(`${this.base}/plan-features/${code}`)
+      .pipe(map((r) => r.content));
+  }
 }
