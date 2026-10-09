@@ -683,7 +683,6 @@
       "submitting": "Signing in…",
       "submitted": "Signed in",
       "socialDivider": "Or sign in with",
-      "socialWith": "Sign in with {{provider}}",
       "noAccount": "Don't have an account?",
       "createAccount": "Create one",
       "passwordChanged": "Password updated. Sign in again with your new password."
@@ -693,6 +692,8 @@
       "blocked": "Your account is temporarily locked. Wait a few minutes and try again.",
       "inactive": "Your account is not active. Please contact support.",
       "notVerified": "You need to verify your email before signing in.",
+      "googleInvalid": "We could not sign you in with Google. Please try again.",
+      "googleNotConfigured": "Signing in with Google is not available right now.",
       "generic": "We could not sign you in. Please try again later."
     },
     "forgot": {

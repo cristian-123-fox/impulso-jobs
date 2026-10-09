@@ -7,7 +7,7 @@ import { environment } from '@env';
 import { AuthService } from '@/core/auth/auth.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 
-const NO_REFRESH_PATHS = ['/auth/login', '/auth/refresh'];
+const NO_REFRESH_PATHS = ['/auth/login', '/auth/refresh', '/auth/google'];
 
 /**
  * 401 que **no** significan "tu sesión caducó".

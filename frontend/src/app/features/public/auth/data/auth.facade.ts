@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '@/core/auth/auth.service';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
+import { LoginResponse } from '@/core/models/auth.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import {
@@ -34,29 +35,46 @@ export class LoginFacade {
   private pendingEmail = '';
 
   login(credentials: LoginCredentials): void {
-    this.status.set('loading');
-    this.errorMessage.set(null);
-    this.showResend.set(false);
-    this.resendStatus.set('idle');
     this.pendingEmail = credentials.email;
-
+    this.start();
     this.api
       .login({ email: credentials.email, password: credentials.password })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (response) => {
-          this.auth.setSession(response);
-          this.status.set('success');
-          // Sólo rutas internas: un returnUrl externo sería un open redirect.
-          const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-          const target =
-            returnUrl?.startsWith('/') && !returnUrl.startsWith('//')
-              ? returnUrl
-              : this.auth.redirectUrlFor(response.user.role);
-          void this.router.navigateByUrl(target);
-        },
+        next: (response) => this.onSuccess(response),
         error: (error: unknown) => this.handleError(error),
       });
+  }
+
+  /** El ID token de Google sigue el mismo camino que cualquier login. */
+  loginWithGoogle(credential: string): void {
+    this.start();
+    this.api
+      .googleLogin(credential)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response) => this.onSuccess(response),
+        error: (error: unknown) => this.handleError(error),
+      });
+  }
+
+  private start(): void {
+    this.status.set('loading');
+    this.errorMessage.set(null);
+    this.showResend.set(false);
+    this.resendStatus.set('idle');
+  }
+
+  private onSuccess(response: LoginResponse): void {
+    this.auth.setSession(response);
+    this.status.set('success');
+    // Sólo rutas internas: un returnUrl externo sería un open redirect.
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    const target =
+      returnUrl?.startsWith('/') && !returnUrl.startsWith('//')
+        ? returnUrl
+        : this.auth.redirectUrlFor(response.user.role);
+    void this.router.navigateByUrl(target);
   }
 
   resendVerification(): void {
@@ -91,6 +109,12 @@ export class LoginFacade {
       case AuthErrorCode.EMAIL_NOT_VERIFIED:
         this.errorMessage.set(this.i18n.t('auth.errors.notVerified'));
         this.showResend.set(true);
+        break;
+      case AuthErrorCode.GOOGLE_INVALID_TOKEN:
+        this.errorMessage.set(this.i18n.t('auth.errors.googleInvalid'));
+        break;
+      case AuthErrorCode.GOOGLE_NOT_CONFIGURED:
+        this.errorMessage.set(this.i18n.t('auth.errors.googleNotConfigured'));
         break;
       default:
         this.errorMessage.set(this.i18n.t('auth.errors.generic'));

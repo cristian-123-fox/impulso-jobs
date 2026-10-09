@@ -257,9 +257,10 @@ export interface CandidateProfileResponseDto {
   lastName: string;
   /** País emisor del documento (ISO 3166-1 alpha-2). */
   documentCountry: string;
-  documentType: string;
-  documentNumber: string;
-  birthDate: string;
+  /** `null` cuando el perfil nació con login de Google y aún no se completa. */
+  documentType: string | null;
+  documentNumber: string | null;
+  birthDate: string | null;
   professionalTitle: string | null;
   summary: string | null;
   address: string | null;

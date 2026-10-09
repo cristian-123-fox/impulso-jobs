@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs/operators';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { environment } from '@env';
 import { IjIcon } from '@/shared/ui';
 import { LoginFacade } from '@/features/public/auth/data/auth.facade';
 import { LoginForm } from '@/features/public/auth/components/login-form/login-form';
@@ -40,7 +41,9 @@ import { LoginForm } from '@/features/public/auth/components/login-form/login-fo
         [errorMessage]="facade.errorMessage()"
         [showResend]="facade.showResend()"
         [resendStatus]="facade.resendStatus()"
+        [googleEnabled]="googleEnabled"
         (submitted)="facade.login($event)"
+        (googleCredential)="facade.loginWithGoogle($event)"
         (resendRequested)="facade.resendVerification()"
       />
     </ng-container>
@@ -49,6 +52,9 @@ import { LoginForm } from '@/features/public/auth/components/login-form/login-fo
 export class LoginPage {
   protected readonly facade = inject(LoginFacade);
   private readonly route = inject(ActivatedRoute);
+
+  /** Sin Client ID no hay botón de Google: la tarjeta ni lo pinta. */
+  protected readonly googleEnabled = environment.googleClientId.trim() !== '';
 
   protected readonly passwordChanged = toSignal(
     this.route.queryParamMap.pipe(

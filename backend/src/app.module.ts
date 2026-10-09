@@ -7,6 +7,7 @@ import { AuthModule } from '@/modules/iam/auth/auth.module';
 import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
 import { RolesModule } from '@/modules/iam/roles/roles.module';
 import { RegistrationModule } from '@/modules/iam/registration/registration.module';
+import { SocialLoginModule } from '@/modules/iam/social-login/social-login.module';
 import { AdminUsersModule } from '@/modules/iam/users/admin-users.module';
 import { AccountModule } from '@/modules/iam/account/account.module';
 import { SessionModule } from '@/modules/iam/session/session.module';
@@ -27,6 +28,7 @@ import { VacanciesModule } from '@/modules/vacancies/vacancies.module';
     PermissionsModule,
     RolesModule,
     RegistrationModule,
+    SocialLoginModule,
     CandidatesModule,
     CompaniesModule,
     VacanciesModule,

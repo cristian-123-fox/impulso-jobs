@@ -18,10 +18,10 @@ export interface CandidateProfileSummary {
   lastName?: string;
   /** País emisor del documento (ISO 3166-1 alpha-2). */
   documentCountry?: string;
-  documentType?: string;
-  documentNumber?: string;
+  documentType?: string | null;
+  documentNumber?: string | null;
   curp?: string | null;
-  birthDate?: string;
+  birthDate?: string | null;
   professionalTitle?: string | null;
   /** País de residencia. Sin él, `state` es ambiguo (`GUA`, `DC`). */
   country?: string;

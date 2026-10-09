@@ -683,7 +683,6 @@
       "submitting": "Ingresando…",
       "submitted": "Sesión iniciada",
       "socialDivider": "O ingresa con",
-      "socialWith": "Ingresar con {{provider}}",
       "noAccount": "¿No tienes cuenta?",
       "createAccount": "Crea una cuenta",
       "passwordChanged": "Contraseña actualizada. Entra de nuevo con la contraseña nueva."
@@ -693,6 +692,8 @@
       "blocked": "Tu cuenta está bloqueada temporalmente. Espera unos minutos e intenta de nuevo.",
       "inactive": "Tu cuenta no está activa. Contacta a soporte.",
       "notVerified": "Debes verificar tu correo antes de iniciar sesión.",
+      "googleInvalid": "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+      "googleNotConfigured": "El inicio de sesión con Google no está disponible por ahora.",
       "generic": "No pudimos iniciar sesión. Inténtalo más tarde."
     },
     "forgot": {

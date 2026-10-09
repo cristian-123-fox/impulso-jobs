@@ -27,6 +27,11 @@ export enum ErrorCode {
   AUTH_PASSWORD_MISMATCH = 'AUTH_PASSWORD_MISMATCH',
   AUTH_INVALID_VERIFICATION_TOKEN = 'AUTH_INVALID_VERIFICATION_TOKEN',
   AUTH_EMAIL_ALREADY_VERIFIED = 'AUTH_EMAIL_ALREADY_VERIFIED',
+  // Login con Google (Google Identity Services)
+  /** El credential no es válido, está caducado o no pertenece a este sitio. */
+  AUTH_GOOGLE_INVALID_TOKEN = 'AUTH_GOOGLE_INVALID_TOKEN',
+  /** Falta `GOOGLE_CLIENT_ID`: el proveedor está apagado en esta instancia. */
+  AUTH_GOOGLE_NOT_CONFIGURED = 'AUTH_GOOGLE_NOT_CONFIGURED',
   // RBAC
   ROLE_NOT_FOUND = 'ROLE_NOT_FOUND',
   ROLE_ALREADY_EXISTS = 'ROLE_ALREADY_EXISTS',

@@ -582,6 +582,8 @@ Dos notas antes de empezar, porque cambian el tamaño de las tarjetas:
 | T33 | Ver la vacante en modal desde "Mis postulaciones" y "Guardadas" | Mejora UX | Media | S (1 d) | — | ✅ **Hecha** |
 | T34 | El admin asigna, cambia y quita el plan de una empresa | Feature | Alta | M (3–5 d) | N13 ✅ | ✅ **Hecha** (`/admin/companies/:id/subscription` + sección «Plan» en `/admin/empresas/:id`) |
 | T35 | Botón "Ver sitio" en sidebar de admin y empresa | Mejora UX | Baja | XS (1 h) | — | ✅ **Hecha** |
+| T36 | Aspirantes de México, Colombia, Estados Unidos y Canadá | Feature / transversal | Alta | L (5–8 d) | — | ✅ **Hecha** (multi-país MX/CO/US/CA, ver `Impulso_Jobs_Multipais_Candidatos.md`) |
+| T37 | Login con Google (candidatos, auto-registro) | Feature / auth | Media | M (2–3 d) | GOOGLE_CLIENT_ID | ✅ **Hecha** (`POST /auth/google` + botón GIS en el login; migración `AddGoogleLogin`) |
 
 Estimaciones a ojo, para ordenar el tablero — no son compromisos.
 
@@ -879,6 +881,26 @@ SELECT u.id, u.email, u.role FROM users u
 **Criterios de aceptación:** el camino mexicano no cambia (registro con CURP y Jalisco, perfil de empresa que guarda `3312345678` como `+523312345678`); un colombiano ve CC/CE/PPT/Pasaporte y sus 33 departamentos; un aspirante de Canadá guarda `604 555 0123` como `+16045550123` y al reabrir el formulario **sigue diciendo Canadá**; dos aspirantes de países distintos pueden tener el mismo número de pasaporte; un `POST` a mano con `country: 'CO'` y `documentType: 'MX_CURP'` responde **400**; la ficha del banco de talento dice «Guainía, Colombia» y no «Guanajuato»; con `?lang=en` los nombres de país salen en inglés y la etiqueta dice «State» o «Province or territory».
 
 **Fuera de alcance, y sigue estándolo:** empresas y vacantes no mexicanas, moneda y facturación, zona horaria, verificación de teléfono por SMS y dígito verificador de la cédula. **T28 (traducir el área privada) deja de ser opcional**: un aspirante de Toronto entra a `/candidato` y lo ve en español.
+
+---
+
+### T37 · Login con Google (candidatos) ✅
+
+**Hecho (2026-10-09).** Botón "Continuar con Google" en el login de candidatos con **auto-registro**: si el correo no existe, la cuenta de candidato nace en el acto con el correo **ya verificado** (Google lo garantiza) y perfil creado sin inventar datos (`document_type`, `document_number`, `birth_date` quedan NULL — las columnas se hicieron anulables, y `NULL` no colisiona en el índice único del documento ni en PG ni en MySQL).
+
+**Flujo:** Google Identity Services pinta el botón oficial en el navegador → GIS entrega un **ID token** → el frontend lo manda a `POST /auth/google` → el backend lo **verifica contra Google** (`google-auth-library`, `verifyIdToken` con audience = `GOOGLE_CLIENT_ID`; nunca se confía en el payload sin verificar) → se busca el usuario por `google_id` → si no existe se registra como CANDIDATE → sesión emitida por el mismo camino que el login por contraseña. El **client secret de OAuth no se usa ni se guarda en el repo**: la verificación del ID token sólo necesita el Client ID.
+
+**Backend — nuevo módulo `modules/iam/social-login/`** (módulo propio, como `registration/`, para no abrir ciclo de DI con `candidates`): `GoogleLoginController` (`POST /auth/google`, solo rol candidato), `GoogleLoginDto`, `GoogleTokenVerifierService` (catch a null para no exponer `any`), `GoogleLoginUseCase` (+ spec, 5 pruebas) y su module, registrado en `app.module.ts`. Además: refactor de la emisión de sesión a `SessionService` (compartido con `LoginUseCase`), `UserRepository.findByGoogleId()`, `User.googleId`, y los códigos de error nuevos `AUTH_GOOGLE_INVALID_TOKEN` y `AUTH_GOOGLE_NOT_CONFIGURED` (503 si no hay `GOOGLE_CLIENT_ID`). Cuentas Google: `password_hash` = hash de `randomUUID()` (nadie conoce la clave → login por contraseña falla siempre; "olvidé mi contraseña" permite fijar una).
+
+**Migración `1720000034000-AddGoogleLogin`:** `users.google_id` (varchar 64, índice único) + `candidate_profiles.document_type/document_number/birth_date` → NULL. `down()` verifica que no haya datos que perder antes de restaurar los NOT NULL.
+
+**Frontend:** `GoogleIdentityService` (`core/auth/`, carga `gsi/client` protegido con `PLATFORM_ID` + `afterNextRender` — `/auth/**` se prerenderiza), botón oficial de GIS localizado en `login-form.ts` (divider "O ingresa con"; **solo en la pestaña Candidato** — el backend crea cuentas de candidato, el botón en la pestaña Empresa prometería algo que no hace; se oculta con CSS para no destruir el iframe de GIS), `googleEnabled` se activa sólo si hay `googleClientId` en el environment (sin Client ID, un botón muerto en el login es peor que no tenerlo; si GIS no carga, el bloque entero desaparece), `AuthApi.googleLogin` + `LoginFacade.loginWithGoogle` (mismo éxito/error que el login por contraseña), `/auth/google` añadido a `NO_AUTH_PATHS` y `NO_REFRESH_PATHS`, códigos `GOOGLE_INVALID_TOKEN`/`GOOGLE_NOT_CONFIGURED` y traducciones es/en. Se retiraron los tres botones sociales decorativos (LinkedIn/X/Google muertos) que tenía el login — el de Google es el primero que funciona de verdad.
+
+**Configuración (ya activa en demo):** `GOOGLE_CLIENT_ID` en `backend/.env` y `googleClientId` en `frontend/src/environments/environment{,.production}.ts` (mismo valor, público). En Google Cloud: Client ID tipo *Aplicación web*, orígenes de JavaScript autorizados `http://localhost:4200` y `https://demo.impulsojobs.com`, pantalla de consentimiento con los testers en "Usuarios de prueba". `GOOGLE_CLIENT_ID` documentada en `.env.example`.
+
+**Limitación conocida:** una cuenta creada con Google no puede usar "Cambiar contraseña" (exige la contraseña actual, que nunca la tuvo) ni "Eliminar cuenta" (mismo motivo); el camino válido es el flujo de recuperación. Se anota aquí a propósito en vez de arreglarlo con un hueco en la seguridad.
+
+**Verificado:** backend `pnpm build` + **470 tests en verde** (59 suites); frontend build dev y prod (con prerender) + `ng test` 58/58; y **end-to-end real** con la cuenta del equipo: registro de candidato nuevo desde el botón y login de cuenta existente, ambos con sesión emitida. Tras el primer intento fallido por `no existe la columna User.google_id`, se corrió `pnpm migration:run` — recordar `migration:run:prod` en el despliegue. Sin permisos nuevos (el endpoint es de identidad, como `/auth/login`).
 
 ---
 

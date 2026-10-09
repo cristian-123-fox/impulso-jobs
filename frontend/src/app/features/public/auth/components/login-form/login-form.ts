@@ -2,10 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   inject,
   input,
   output,
   signal,
+  afterNextRender,
+  viewChild,
 } from '@angular/core';
 import {
   NonNullableFormBuilder,
@@ -14,7 +17,10 @@ import {
 } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { environment } from '@env';
+import { GoogleIdentityService } from '@/core/auth/google-identity.service';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
+import { LanguageService } from '@/core/i18n/language.service';
 import {
   AccountType,
   LoginCredentials,
@@ -27,6 +33,10 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
  * Tarjeta del formulario de acceso (presentacional). Incluye el selector
  * Candidato/Empresa, valida con un formulario reactivo tipado y emite las
  * credenciales; el estado del envío llega por inputs desde la fachada.
+ *
+ * El botón de Google lo pinta GIS (estilo oficial de Google) dentro de un
+ * contenedor propio; sólo hay que escuchar `googleCredential` y mandarlo al
+ * backend. Ver `GoogleIdentityService`.
  */
 @Component({
   selector: 'app-login-form',
@@ -208,46 +218,19 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
         {{ submitLabel() }}
       </button>
 
-      <!-- Accesos sociales -->
-      @if (showSocialLogins()) {
-        <div class="mt-7">
+      <!-- Acceso con Google (GIS pinta el botón dentro del contenedor) -->
+      @if (googleEnabled() && !googleFailed()) {
+        <!-- Se oculta en la pestaña Empresa: el backend crea cuentas de
+             candidato, así que ofrecerlo ahí prometería algo que no hace. -->
+        <div class="mt-7" [class.hidden]="accountType() === 'company'">
           <div class="flex items-center gap-3.5">
             <span class="whitespace-nowrap text-[13.5px] font-semibold text-body">
               {{ t('auth.login.socialDivider') }}
             </span>
             <span class="h-px flex-1 bg-line"></span>
           </div>
-          <div class="mt-4 flex justify-center gap-3">
-            <button
-              type="button"
-              [class]="socialClass"
-              [attr.aria-label]="t('auth.login.socialWith', { provider: 'LinkedIn' })"
-            >
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0ZM.2 8.2h4.56V24H.2V8.2Zm7.14 0h4.37v2.16h.06c.61-1.15 2.1-2.36 4.32-2.36 4.62 0 5.47 3.04 5.47 6.99V24h-4.56v-6.99c0-1.67-.03-3.82-2.33-3.82-2.33 0-2.69 1.82-2.69 3.7V24H7.34V8.2Z" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              [class]="socialClass"
-              [attr.aria-label]="t('auth.login.socialWith', { provider: 'X' })"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M18.24 2.25h3.31l-7.23 8.26L22.75 21.75h-6.66l-5.22-6.82-5.97 6.82H1.58l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23Zm-1.16 17.52h1.83L7.02 4.13H5.05L17.08 19.77Z" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              [class]="socialClass"
-              [attr.aria-label]="t('auth.login.socialWith', { provider: 'Google' })"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="#4285F4" d="M23.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.47a5.53 5.53 0 0 1-2.4 3.63v3h3.86c2.26-2.09 3.57-5.17 3.57-8.87Z" />
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A12 12 0 0 0 12 24Z" />
-                <path fill="#FBBC05" d="M5.27 14.29a7.2 7.2 0 0 1 0-4.58V6.62H1.29a12 12 0 0 0 0 10.76l3.98-3.09Z" />
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42A11.97 11.97 0 0 0 12 0 12 12 0 0 0 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75Z" />
-              </svg>
-            </button>
+          <div class="mt-4 flex justify-center">
+            <div #googleButton class="min-h-[40px]"></div>
           </div>
         </div>
       }
@@ -267,21 +250,24 @@ export class LoginForm {
   readonly showResend = input(false);
   readonly resendStatus = input<ResendStatus>('idle');
   /**
-   * Apagado por defecto: el backend no expone OAuth. Sus rutas de auth son
-   * login, refresh, logout, register, verificación de correo y recuperación de
-   * contraseña; no hay ningún callback social. Los tres botones eran
-   * `<button>` sin handler, así que en la pantalla más crítica del embudo el
-   * usuario pulsaba "Ingresar con Google" y no pasaba nada.
-   *
-   * El bloque se queda en la plantilla: cuando exista OAuth basta con pasar
-   * `[showSocialLogins]="true"` y engancharlos.
+   * Ofrecer el login con Google. Sólo lo activa la página cuando hay
+   * `googleClientId` en el environment: sin Client ID el botón no puede
+   * funcionar, y un botón muerto en la pantalla más crítica del embudo es
+   * peor que no tener botón.
    */
-  readonly showSocialLogins = input(false);
+  readonly googleEnabled = input(false);
   readonly submitted = output<LoginCredentials>();
+  /** ID token que GIS entrega al usuario elegir su cuenta. */
+  readonly googleCredential = output<string>();
   readonly resendRequested = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly i18n = inject(AppTranslateService);
+  private readonly language = inject(LanguageService);
+  private readonly google = inject(GoogleIdentityService);
+  private readonly googleHost = viewChild<ElementRef<HTMLElement>>(
+    'googleButton',
+  );
 
   protected readonly form = this.fb.group({
     email: this.fb.control('', [Validators.required, Validators.email]),
@@ -292,6 +278,27 @@ export class LoginForm {
 
   protected readonly accountType = signal<AccountType>('candidate');
   protected readonly showPassword = signal(false);
+  /** Si GIS no carga (red, bloqueador) el bloque entero desaparece. */
+  protected readonly googleFailed = signal(false);
+
+  constructor() {
+    // `afterNextRender`: GIS toca `document`, y `/auth/**` se prerenderiza.
+    afterNextRender(() => {
+      if (!this.googleEnabled()) return;
+      const host = this.googleHost();
+      if (!host) return;
+      this.google
+        .load()
+        .then(() =>
+          this.google.renderButton(host.nativeElement, {
+            clientId: environment.googleClientId,
+            lang: this.language.current(),
+            onCredential: (credential) => this.googleCredential.emit(credential),
+          }),
+        )
+        .catch(() => this.googleFailed.set(true));
+    });
+  }
 
   protected readonly isLoading = computed(() => this.status() === 'loading');
   protected readonly isSuccess = computed(() => this.status() === 'success');
@@ -310,11 +317,6 @@ export class LoginForm {
   protected readonly registerLink = computed(() =>
     this.accountType() === 'company' ? '/auth/registro/empresa' : '/auth/registro',
   );
-
-  protected readonly socialClass =
-    'flex h-[46px] w-[52px] items-center justify-center rounded-xl border ' +
-    'border-line bg-surface text-ink-900 transition-colors ' +
-    'hover:border-brand/30 hover:bg-brand-50';
 
   protected segClass(type: AccountType): string {
     const base = 'rounded-lg py-2.5 text-sm font-semibold transition-colors';

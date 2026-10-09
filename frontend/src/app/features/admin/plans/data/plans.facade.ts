@@ -56,9 +56,13 @@ export class PlansFacade {
       });
   }
 
-  /** El catálogo de beneficios cambia poco: se pide una sola vez. */
-  loadFeatures(): void {
-    if (this.featuresState() === 'loading' || this.features().length > 0) return;
+  /**
+   * El catálogo de beneficios cambia poco: se pide una sola vez. `force`
+   * sirve para refrescarlo tras un alta o una baja.
+   */
+  loadFeatures(force = false): void {
+    if (this.featuresState() === 'loading') return;
+    if (!force && this.features().length > 0) return;
     this.featuresState.set('loading');
     this.api
       .listFeatures()
@@ -120,10 +124,20 @@ export class PlansFacade {
     );
   }
 
-  deletePlanFeature(code: string): Observable<Plan> {
-    return this.api
-      .deletePlanFeature(code)
-      .pipe(tap(() => this.load()));
+  /**
+   * Baja del catálogo. Hay que refrescar **las dos** vistas: la tabla de
+   * beneficios (que lee `features`) y los planes (cuya matriz se compone
+   * recorriendo el catálogo entero).
+   */
+  deletePlanFeature(code: string): Observable<void> {
+    return this.api.deletePlanFeature(code).pipe(
+      tap(() => {
+        this.features.update((list) =>
+          list.filter((item) => item.code !== code),
+        );
+        this.load();
+      }),
+    );
   }
 
   private upsert(plan: Plan): void {

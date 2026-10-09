@@ -9,6 +9,7 @@ import { PasswordResetController } from '@/modules/iam/auth/controllers/password
 import { EmailVerificationController } from '@/modules/iam/auth/controllers/email-verification.controller';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
 import { TokenService } from '@/modules/iam/auth/services/token.service';
+import { SessionService } from '@/modules/iam/auth/services/session.service';
 import { JwtStrategy } from '@/modules/iam/auth/strategies/jwt.strategy';
 import { JwtAuthGuard } from '@/modules/iam/auth/guards/jwt-auth.guard';
 import { LoginUseCase } from '@/modules/iam/auth/use-cases/login.use-case';
@@ -36,6 +37,7 @@ import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/co
   providers: [
     PasswordHasherService,
     TokenService,
+    SessionService,
     JwtStrategy,
     JwtAuthGuard,
     LoginUseCase,
@@ -50,6 +52,7 @@ import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/co
   exports: [
     JwtAuthGuard,
     PasswordHasherService,
+    SessionService,
     RequestEmailVerificationUseCase,
     MailerModule,
   ],

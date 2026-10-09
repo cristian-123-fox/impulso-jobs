@@ -33,10 +33,10 @@ export interface AccountExportCandidateDto {
   id: string;
   firstName: string;
   lastName: string;
-  documentType: string;
-  documentNumber: string;
+  documentType: string | null;
+  documentNumber: string | null;
   curp: string | null;
-  birthDate: string;
+  birthDate: string | null;
   professionalTitle: string | null;
   summary: string | null;
   country: string;

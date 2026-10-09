@@ -9,4 +9,11 @@ export const environment = {
   apiBaseUrl: 'https://api.impulsojobs.com/api/v1',
   /** Base absoluta del sitio: canonical, og:url y JSON-LD (T16). */
   siteUrl: 'https://demo.impulsojobs.com',
+  /**
+   * Client ID de Google para el login con Google (mismo valor que
+   * `GOOGLE_CLIENT_ID` en el `.env` del backend). Mientras esté vacío, el
+   * botón no se ofrece; al rellenarlo, declarar `siteUrl` como origen de
+   * JavaScript autorizado en Google Cloud Console.
+   */
+  googleClientId: '346875649935-iidcr4041osdva1u4ak01k3ifaiqss8u.apps.googleusercontent.com',
 };

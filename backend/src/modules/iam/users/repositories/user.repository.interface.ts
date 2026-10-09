@@ -25,6 +25,14 @@ export interface UserSearchCriteria {
 
 export interface IUserRepository {
   findByEmail(email: string, manager?: EntityManager): Promise<User | null>;
+  /**
+   * Identidad de Google (`users.google_id`). Va antes que el correo: el `sub`
+   * es lo único estable cuando la persona renombra su dirección.
+   */
+  findByGoogleId(
+    googleId: string,
+    manager?: EntityManager,
+  ): Promise<User | null>;
   findById(id: string, manager?: EntityManager): Promise<User | null>;
   findByIds(ids: string[], manager?: EntityManager): Promise<User[]>;
   save(user: User, manager?: EntityManager): Promise<User>;

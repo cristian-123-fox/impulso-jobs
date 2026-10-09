@@ -13,6 +13,13 @@ export class User extends BaseEntity {
   @Column({ name: 'password_hash', type: 'varchar', length: 255 })
   passwordHash!: string;
 
+  /**
+   * `sub` del token de Google, para vincular la identidad cuando el correo
+   * cambie. `null` en las cuentas que no nacieron allí.
+   */
+  @Column({ name: 'google_id', type: 'varchar', length: 64, nullable: true })
+  googleId?: string | null;
+
   @Column({ type: 'varchar', length: 20, default: Role.CANDIDATE })
   role!: Role;
 

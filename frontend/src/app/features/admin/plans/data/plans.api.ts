@@ -85,9 +85,8 @@ export class PlansApi {
       .pipe(map((r) => r.content));
   }
 
-  deletePlanFeature(code: string): Observable<Plan> {
-    return this.http
-      .delete<ApiSuccessResponse<Plan>>(`${this.base}/plan-features/${code}`)
-      .pipe(map((r) => r.content));
+  /** El backend responde 204 sin cuerpo: no hay `content` que mapear. */
+  deletePlanFeature(code: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/plan-features/${code}`);
   }
 }

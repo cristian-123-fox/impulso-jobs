@@ -4,7 +4,7 @@ import { environment } from '@env';
 import { TokenStorageService } from '@/core/auth/token-storage.service';
 
 /** Endpoints que NO llevan Authorization (obtienen/renuevan credenciales). */
-const NO_AUTH_PATHS = ['/auth/login', '/auth/refresh'];
+const NO_AUTH_PATHS = ['/auth/login', '/auth/refresh', '/auth/google'];
 
 /** Adjunta `Authorization: Bearer <access>` a las peticiones a la API propia. */
 export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {

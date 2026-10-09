@@ -1,24 +1,18 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
-import { Role } from '@/common/types/role.enum';
-import { TokenType } from '@/common/types/token-type.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
-import { runInTransaction } from '@/common/utils/transaction.util';
 import { AuditService } from '@/modules/audit/audit.service';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import {
   type IUserRepository,
   USER_REPOSITORY,
 } from '@/modules/iam/users/repositories/user.repository.interface';
-import {
-  type ITokenUserRepository,
-  TOKEN_USER_REPOSITORY,
-} from '@/modules/iam/users/repositories/token-user.repository.interface';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
-import { TokenService } from '@/modules/iam/auth/services/token.service';
+import {
+  SessionResult,
+  SessionService,
+} from '@/modules/iam/auth/services/session.service';
 
 export interface LoginCommand {
   email: string;
@@ -27,11 +21,7 @@ export interface LoginCommand {
   userAgent: string;
 }
 
-export interface LoginResult {
-  accessToken: string;
-  refreshToken: string;
-  user: { id: string; email: string; role: Role };
-}
+export type LoginResult = SessionResult;
 
 export const MAX_FAILED_ATTEMPTS = 3;
 export const BLOCK_MINUTES = 3;
@@ -41,12 +31,9 @@ export const BLOCK_MINUTES = 3;
 export class LoginUseCase {
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: IUserRepository,
-    @Inject(TOKEN_USER_REPOSITORY)
-    private readonly tokens: ITokenUserRepository,
     private readonly hasher: PasswordHasherService,
-    private readonly tokenService: TokenService,
+    private readonly session: SessionService,
     private readonly audit: AuditService,
-    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async execute(command: LoginCommand): Promise<LoginResult> {
@@ -125,56 +112,7 @@ export class LoginUseCase {
       );
     }
 
-    return this.issueSession(user, command);
-  }
-
-  private async issueSession(
-    user: User,
-    command: LoginCommand,
-  ): Promise<LoginResult> {
-    const access = await this.tokenService.signAccess({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
-    const refresh = await this.tokenService.signRefresh(user.id);
-
-    user.failedAttempts = 0;
-    user.blockedUntil = null;
-    user.lastLogin = new Date();
-    user.lastLoginIp = command.ip;
-    user.lastLoginDevice = command.userAgent;
-
-    await runInTransaction(this.dataSource, async (manager) => {
-      await this.users.save(user, manager);
-      await this.tokens.create(
-        {
-          id: refresh.jti,
-          userId: user.id,
-          tokenType: TokenType.REFRESH,
-          expiresAt: refresh.expiresAt,
-          revoked: false,
-          userAgent: command.userAgent,
-          ip: command.ip,
-        },
-        manager,
-      );
-    });
-
-    await this.audit.record({
-      action: 'auth.login.success',
-      actorUserId: user.id,
-      entity: 'user',
-      entityId: user.id,
-      ip: command.ip,
-      userAgent: command.userAgent,
-    });
-
-    return {
-      accessToken: access.token,
-      refreshToken: refresh.token,
-      user: { id: user.id, email: user.email, role: user.role },
-    };
+    return this.session.issue(user, command);
   }
 
   private async registerFailedAttempt(

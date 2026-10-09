@@ -445,7 +445,6 @@ export class PlansListPage {
     if (!confirm('¿Estás seguro de eliminar este beneficio del catálogo?')) return;
     this.facade.deletePlanFeature(code).subscribe({
       next: () => {
-        this.facade.loadFeatures();
         this.formError.set(null);
       },
       error: (error: unknown) => {

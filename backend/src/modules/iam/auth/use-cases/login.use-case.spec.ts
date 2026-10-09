@@ -8,6 +8,7 @@ import { User } from '@/modules/iam/users/entities/user.entity';
 import { IUserRepository } from '@/modules/iam/users/repositories/user.repository.interface';
 import { ITokenUserRepository } from '@/modules/iam/users/repositories/token-user.repository.interface';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
+import { SessionService } from '@/modules/iam/auth/services/session.service';
 import { TokenService } from '@/modules/iam/auth/services/token.service';
 import { LoginUseCase } from '@/modules/iam/auth/use-cases/login.use-case';
 
@@ -82,14 +83,16 @@ describe('LoginUseCase', () => {
       ),
     } as unknown as DataSource;
 
-    useCase = new LoginUseCase(
+    // El servicio de sesión va real (con los mocks de alrededor): la emisión
+    // de tokens es parte del contrato del login, no un detalle a ocultar.
+    const session = new SessionService(
       users,
       tokens,
-      hasher,
       tokenService,
       audit,
       dataSource,
     );
+    useCase = new LoginUseCase(users, hasher, session, audit);
   });
 
   it('emite tokens en login exitoso y reinicia los intentos', async () => {

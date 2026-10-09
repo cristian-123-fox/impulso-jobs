@@ -40,22 +40,36 @@ export class CandidateProfile extends BaseEntity {
   })
   documentCountry!: string;
 
-  @Column({ name: 'document_type', type: 'varchar', length: 20 })
-  documentType!: DocumentType;
+  @Column({
+    name: 'document_type',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  documentType!: DocumentType | null;
 
   /**
    * Único por `(document_country, document_type, document_number)` — ver el
    * `@Index` de la clase. Un pasaporte `AB123456` mexicano y uno colombiano son
    * personas distintas, y el índice global anterior los tomaba por la misma.
+   *
+   * `null` (y no `''`) cuando la cuenta llegó por Google: varios perfiles sin
+   * documento no colisionan, mientras que dos `''` sí romperían el índice.
    */
-  @Column({ name: 'document_number', type: 'varchar', length: 40 })
-  documentNumber!: string;
+  @Column({
+    name: 'document_number',
+    type: 'varchar',
+    length: 40,
+    nullable: true,
+  })
+  documentNumber!: string | null;
 
   @Column({ type: 'varchar', length: 18, nullable: true })
   curp?: string | null;
 
-  @Column({ name: 'birth_date', type: 'date' })
-  birthDate!: string;
+  /** `null` cuando el aspirante llegó por Google y aún no la ha dado de alta. */
+  @Column({ name: 'birth_date', type: 'date', nullable: true })
+  birthDate!: string | null;
 
   @Column({
     name: 'professional_title',

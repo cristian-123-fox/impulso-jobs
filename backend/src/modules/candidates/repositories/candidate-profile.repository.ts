@@ -48,7 +48,11 @@ export class CandidateProfileRepository
     const count = await this.repo(manager).count({
       where: {
         documentCountry,
-        documentType: documentType as CandidateProfile['documentType'],
+        // La columna admite `null` (perfiles nacidos en Google), pero aquí
+        // siempre llega un documento concreto: se estrecha el tipo a secas.
+        documentType: documentType as NonNullable<
+          CandidateProfile['documentType']
+        >,
         documentNumber,
       },
     });

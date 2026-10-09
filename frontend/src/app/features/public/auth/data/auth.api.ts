@@ -23,6 +23,19 @@ export class AuthApi {
       .pipe(map((response) => response.content));
   }
 
+  /**
+   * Login con Google: manda el ID token que GIS dio en el navegador. El
+   * backend lo verifica contra Google y, si el correo no existe, crea la
+   * cuenta de candidato.
+   */
+  googleLogin(credential: string): Observable<LoginResponse> {
+    return this.http
+      .post<ApiSuccessResponse<LoginResponse>>(`${this.base}/auth/google`, {
+        credential,
+      })
+      .pipe(map((response) => response.content));
+  }
+
   /** Registro único empresa/candidato (discrimina por accountType). */
   register(payload: RegisterPayload): Observable<RegisterResult> {
     return this.http

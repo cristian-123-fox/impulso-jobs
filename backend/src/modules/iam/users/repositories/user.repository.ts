@@ -36,6 +36,13 @@ export class UserRepository
     });
   }
 
+  findByGoogleId(
+    googleId: string,
+    manager?: EntityManager,
+  ): Promise<User | null> {
+    return this.repo(manager).findOne({ where: { googleId } });
+  }
+
   findById(id: string, manager?: EntityManager): Promise<User | null> {
     return this.repo(manager).findOne({ where: { id } });
   }
