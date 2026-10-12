@@ -314,7 +314,7 @@ export class StripePaymentAdapter implements PaymentProviderPort {
       }
       case 'invoice.paid': {
         const invoice = event.data.object;
-        const subscriptionId = this.idOf(invoice.subscription);
+        const subscriptionId = this.subscriptionOfInvoice(invoice);
         // El primer cobro (`subscription_create`) ya lo liquida
         // `checkout.session.completed`: aquí sólo interesan las renovaciones.
         if (
@@ -360,6 +360,26 @@ export class StripePaymentAdapter implements PaymentProviderPort {
       );
     }
     return this.client;
+  }
+
+  /**
+   * La forma del evento la decide la versión de API **del endpoint** del
+   * dashboard, no `STRIPE_API_VERSION`. Desde `2025-03-31.basil` la factura ya
+   * no trae `subscription`: vive en `parent.subscription_details.subscription`.
+   * Se leen las dos, o una renovación con un endpoint moderno se ignoraría.
+   */
+  private subscriptionOfInvoice(invoice: Stripe.Invoice): string | null {
+    const modern = invoice as Stripe.Invoice & {
+      parent?: {
+        subscription_details?: {
+          subscription?: string | { id: string } | null;
+        } | null;
+      } | null;
+    };
+    return (
+      this.idOf(invoice.subscription) ??
+      this.idOf(modern.parent?.subscription_details?.subscription)
+    );
   }
 
   private idOf(
