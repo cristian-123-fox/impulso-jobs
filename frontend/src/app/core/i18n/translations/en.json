@@ -36,7 +36,8 @@
     "columns": {
       "candidates": "Candidates",
       "companies": "Companies",
-      "brand": "Impulso Jobs"
+      "brand": "Impulso Jobs",
+      "legal": "Legal"
     },
     "links": {
       "searchJobs": "Browse jobs",
@@ -50,7 +51,9 @@
       "searchTalent": "Search talent",
       "about": "About us",
       "faq": "FAQ",
-      "contact": "Contact"
+      "contact": "Contact",
+      "privacy": "Privacy notice",
+      "terms": "Terms and conditions"
     }
   },
   "home": {

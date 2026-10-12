@@ -1,0 +1,14 @@
+# Fin de línea y archivos binarios.
+#
+# Sin este archivo, `core.autocrlf=true` (Git for Windows y la config global
+# de este equipo) hace que git quiera convertir LF->CRLF al hacer checkout, y
+# `core.safecrlf=true` bloquea el `git add` de cualquier archivo de texto
+# ("fatal: LF would be replaced by CRLF"). Todo lo versionado aquí está en LF,
+# así que se declara explícitamente y el comportamiento deja de depender de la
+# config local de cada máquina.
+
+* text=auto eol=lf
+
+# Los PDF de `public/legal/` (aviso de privacidad y términos) son binarios:
+# sin esta línea, cualquier normalización de fin de línea los corrompe.
+*.pdf binary

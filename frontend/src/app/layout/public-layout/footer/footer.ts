@@ -14,6 +14,11 @@ interface FooterLink {
   /** Clave de traducción; el texto se resuelve en la plantilla. */
   readonly labelKey: string;
   readonly path: string;
+  /**
+   * Documento served as a static file (los PDF legales): no es una ruta del
+   * router, así que va con `href` y se abre en otra pestaña en vez de navegar.
+   */
+  readonly file?: boolean;
 }
 
 interface FooterColumn {
@@ -78,7 +83,7 @@ interface FooterColumn {
 
       <!-- Columnas -->
       <div
-        class="mx-auto grid max-w-[1120px] gap-8 pt-2 sm:grid-cols-2 lg:grid-cols-[1.6fr_repeat(3,1fr)]"
+        class="mx-auto grid max-w-[1120px] gap-8 pt-2 sm:grid-cols-2 lg:grid-cols-[1.6fr_repeat(4,1fr)]"
       >
         <div>
           <ij-logo variant="light" size="sm" />
@@ -107,11 +112,21 @@ interface FooterColumn {
             <h2 class="mb-5 text-base font-semibold text-white">{{ t(col.titleKey) }}</h2>
             <div class="flex flex-col gap-2.5">
               @for (link of col.links; track link.path) {
-                <a
-                  [routerLink]="link.path"
-                  class="text-sm text-footer-muted transition-colors hover:text-white"
-                  >{{ t(link.labelKey) }}</a
-                >
+                @if (link.file) {
+                  <a
+                    [href]="link.path"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-sm text-footer-muted transition-colors hover:text-white"
+                    >{{ t(link.labelKey) }}</a
+                  >
+                } @else {
+                  <a
+                    [routerLink]="link.path"
+                    class="text-sm text-footer-muted transition-colors hover:text-white"
+                    >{{ t(link.labelKey) }}</a
+                  >
+                }
               }
             </div>
           </div>
@@ -158,8 +173,10 @@ export class Footer {
 
   /**
    * Cuatro columnas de enlaces se volvían dos listas de "Enlaces" repetidos
-   * (Inicio, Empresas y Contacto salían dos veces). Quedan tres, sin duplicados.
-   * Todos apuntan a rutas que existen en `app.routes.ts`; antes eran `href="#"`.
+   * (Inicio, Empresas y Contacto salían dos veces). Quedan cuatro, sin duplicados.
+   * Las tres primeras apuntan a rutas que existen en `app.routes.ts`; antes eran
+   * `href="#"`. La cuarta son los PDF legales, archivos estáticos de
+   * `public/legal/` (`file: true`), que no pasan por el router.
    */
   protected readonly columns: readonly FooterColumn[] = [
     {
@@ -187,6 +204,17 @@ export class Footer {
         { labelKey: 'footer.links.about', path: '/nosotros' },
         { labelKey: 'footer.links.faq', path: '/faq' },
         { labelKey: 'footer.links.contact', path: '/contacto' },
+      ],
+    },
+    {
+      titleKey: 'footer.columns.legal',
+      links: [
+        { labelKey: 'footer.links.privacy', path: '/legal/politica-privacidad.pdf', file: true },
+        {
+          labelKey: 'footer.links.terms',
+          path: '/legal/terminos-condiciones.pdf',
+          file: true,
+        },
       ],
     },
   ];
