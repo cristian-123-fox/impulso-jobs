@@ -154,6 +154,35 @@ describe('StripePaymentAdapter', () => {
       });
     });
 
+    it('invoice.paid con API basil+ lee la suscripción de parent', async () => {
+      const { payload, signature } = signed({
+        id: 'evt_inv_dahlia',
+        type: 'invoice.paid',
+        data: {
+          object: {
+            id: 'in_456',
+            object: 'invoice',
+            billing_reason: 'subscription_cycle',
+            parent: {
+              type: 'subscription_details',
+              subscription_details: { subscription: 'sub_456' },
+            },
+            amount_paid: 232000,
+            currency: 'mxn',
+            lines: { data: [{ period: { end: 1830000000 } }] },
+          },
+        },
+      });
+
+      await expect(
+        adapter.parseEvent(payload, signature),
+      ).resolves.toMatchObject({
+        kind: 'renewal',
+        providerSubscriptionId: 'sub_456',
+        amount: 2320,
+      });
+    });
+
     it('el primer invoice.paid lo cubre el checkout: se ignora', async () => {
       const { payload, signature } = signed({
         id: 'evt_inv0',
