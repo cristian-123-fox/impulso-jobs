@@ -27,6 +27,14 @@
  */
 export const PENDING_TOKEN = '[PENDIENTE]';
 
+/**
+ * Lo que se publica en lugar de un dato que sigue sin rellenar.
+ *
+ * No es un marcador de plantilla —no se nota que falta algo en el código— ni el
+ * `[PENDIENTE]`, que se publicaría tal cual por el prerender.
+ */
+export const PENDING_PLACEHOLDER = '—';
+
 export interface LegalIdentity {
   /** Razón social o nombre del responsable. Sin abreviar. */
   readonly legalName: string;
@@ -51,15 +59,41 @@ export interface LegalIdentity {
   readonly consumerEmail: string;
 }
 
+/**
+ * Datos del responsable, tomados de su Constancia de Situación Fiscal.
+ *
+ * ⚠ **Verificar `rfc` antes de publicar.** Tal como llegó de la constancia,
+ * `GARC840404P36` no cuadra: el dígito verificador que declara es `6` y el que
+ * resulta del algoritmo del SAT sobre los doce primeros caracteres es `4`. Es
+ * probable que sea un error al copiar la constancia (la CURP `GARC840404HJCLMH05`
+ * comparte los primeros diez), pero un RFC mal publicado en el aviso de
+ * privacidad es un problema: es el identificador fiscal con el que Hacienda
+ * identifica a esta persona. No se cambió por nuestra cuenta porque la fuente es el
+ * documento oficial.
+ *
+ * ⚠ **`operatingAddress` se ha dejado por ahora igual al fiscal.** La constancia no
+ * distingue uno del otro; si el giro se ejerce desde otro domicilio, hay que
+ * cambiarlo.
+ *
+ * ⚠ **`consumerPhone` sigue vacío:** la constancia fiscal no incluye teléfono y
+ * no se ha proporcionado otro. Sale con un guion en la tabla en vez de un
+ * marcador. Los términos lo piden (art. 76 Bis fr. III LFPC).
+ */
 export const LEGAL_IDENTITY: LegalIdentity = {
-  legalName: PENDING_TOKEN,
+  // Persona física: la constancia dice «Nombre (s)» y no razón social, así que
+  // va el nombre completo tal como viene en el documento oficial.
+  legalName: 'CHRISTIAN RAUL GALAVIZ RAMIREZ',
   tradeName: 'Impulso Jobs',
-  rfc: PENDING_TOKEN,
-  fiscalAddress: PENDING_TOKEN,
-  operatingAddress: PENDING_TOKEN,
-  dataProtectionContact: PENDING_TOKEN,
+  rfc: 'GARC840404P36',
+  fiscalAddress:
+    'Av. Alemania 1294, Interior 1, Col. Moderna, Guadalajara, Jalisco, C.P. 44190. Entre Av. Federalismo Sur y Calle Pavo',
+  operatingAddress:
+    'Av. Alemania 1294, Interior 1, Col. Moderna, Guadalajara, Jalisco, C.P. 44190. Entre Av. Federalismo Sur y Calle Pavo',
+  // El aviso de ARCO y el de descargas de imagen apuntan al mismo correo: es la
+  // art. 29 LFPDPPP la que exige que exista ese contacto, no que sea distinto.
+  dataProtectionContact: 'holla@impulsojobs.com',
   consumerPhone: PENDING_TOKEN,
-  consumerEmail: PENDING_TOKEN,
+  consumerEmail: 'holla@impulsojobs.com',
 };
 
 /** `false` mientras falte un dato obligatorio: las plantillas lo señalan. */
@@ -98,13 +132,20 @@ const TOKEN_PATTERN = /\{\{([A-Z_]+)\}\}/g;
  *
  * Un marcador sin campo asociado se deja tal cual: es un error de redacción que
  * debe verse, no taparse.
+ *
+ * Un campo **aún sin rellenar** sale como guion y no como `{{...}}` ni como
+ * `[PENDIENTE]`: las rutas `/legal/**` se prerenderizan, así que lo que caiga
+ * aquí queda incrustado en HTML público, y un aviso de privacidad publicado con
+ * corchetes en la tabla del responsable se ve —y se cita— como lo que es: un
+ * documento sin terminar.
  */
 export function fillIdentityTokens(text: string): string {
   return text.replace(TOKEN_PATTERN, (match, token: string) => {
     const field = IDENTITY_TOKENS[token];
     if (!field) return match;
-    const value = LEGAL_IDENTITY[field];
-    return value?.trim() ? value : match;
+    const value = LEGAL_IDENTITY[field]?.trim();
+    if (!value || value === PENDING_TOKEN) return PENDING_PLACEHOLDER;
+    return value;
   });
 }
 
