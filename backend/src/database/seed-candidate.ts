@@ -7,6 +7,7 @@ import { UserRole } from '@/modules/iam/users/entities/user-role.entity';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
 import { DocumentType } from '@/modules/candidates/enums/document-type.enum';
+import { seedAccountConsents } from './seed-consents';
 
 /**
  * Seeder de un candidato de prueba. Idempotente: crea o actualiza el usuario
@@ -100,6 +101,11 @@ export async function seedCandidate(dataSource: DataSource): Promise<string> {
     );
     console.log('Perfil de candidato creado (candidate_profile).');
   }
+
+  const consents = await seedAccountConsents(dataSource, user);
+  console.log(
+    `Consentimientos legales registrados: ${consents} (si ya estaban, 0).`,
+  );
 
   return `Candidato de prueba · ${email} / ${CANDIDATE_PASSWORD} (rol CANDIDATE).`;
 }

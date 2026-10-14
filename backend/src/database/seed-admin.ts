@@ -5,6 +5,7 @@ import { UserStatus } from '@/common/types/user-status.enum';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import { UserRole } from '@/modules/iam/users/entities/user-role.entity';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
+import { seedAccountConsents } from './seed-consents';
 
 /**
  * Seeder del usuario administrador. Idempotente: crea o actualiza el usuario
@@ -65,6 +66,11 @@ export async function seedAdmin(dataSource: DataSource): Promise<string> {
       console.log('Rol ADMIN asignado en user_roles.');
     }
   }
+
+  const consents = await seedAccountConsents(dataSource, user);
+  console.log(
+    `Consentimientos legales registrados: ${consents} (si ya estaban, 0).`,
+  );
 
   return `Administrador · inicia sesión con ${email}.`;
 }

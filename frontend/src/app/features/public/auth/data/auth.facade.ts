@@ -9,6 +9,7 @@ import { LoginResponse } from '@/core/models/auth.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import {
+  type LegalAcceptancePayload,
   LoginCredentials,
   LoginStatus,
   ResendStatus,
@@ -32,13 +33,23 @@ export class LoginFacade {
   readonly showResend = signal(false);
   readonly resendStatus = signal<ResendStatus>('idle');
 
+  /**
+   * La cuenta existe pero hay documentos obligatorios en una versión que esta
+   * persona todavía no aceptó.
+   *
+   * Cuando está activo, el formulario enseña las casillas y las exige: no es un
+   * alta, es un re-consentimiento sobre el mismo contrato. Con Google se
+   * resuelve volviendo a pulsar el botón, que pide un token nuevo a Google.
+   */
+  readonly needsReconsent = signal(false);
+
   private pendingEmail = '';
 
-  login(credentials: LoginCredentials): void {
+  login(credentials: LoginCredentials, legal?: LegalAcceptancePayload): void {
     this.pendingEmail = credentials.email;
     this.start();
     this.api
-      .login({ email: credentials.email, password: credentials.password })
+      .login({ email: credentials.email, password: credentials.password, legal })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.onSuccess(response),
@@ -47,10 +58,13 @@ export class LoginFacade {
   }
 
   /** El ID token de Google sigue el mismo camino que cualquier login. */
-  loginWithGoogle(credential: string): void {
+  loginWithGoogle(
+    credential: string,
+    legal: LegalAcceptancePayload,
+  ): void {
     this.start();
     this.api
-      .googleLogin(credential)
+      .googleLogin(credential, legal)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.onSuccess(response),
@@ -68,6 +82,7 @@ export class LoginFacade {
   private onSuccess(response: LoginResponse): void {
     this.auth.setSession(response);
     this.status.set('success');
+    this.needsReconsent.set(false);
     // Sólo rutas internas: un returnUrl externo sería un open redirect.
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     const target =
@@ -115,6 +130,19 @@ export class LoginFacade {
         break;
       case AuthErrorCode.GOOGLE_NOT_CONFIGURED:
         this.errorMessage.set(this.i18n.t('auth.errors.googleNotConfigured'));
+        break;
+      case AuthErrorCode.LEGAL_CONSENT_REQUIRED:
+        // Cuenta anterior al registro de consentimiento: no se actualizó nada,
+        // sencillamente nunca quedó constancia de lo que aceptó.
+        this.needsReconsent.set(true);
+        this.errorMessage.set(this.i18n.t('auth.errors.legalFirstTime'));
+        break;
+      case AuthErrorCode.LEGAL_VERSION_OUTDATED:
+        // No es un error de credenciales: es una versión nueva que hay que
+        // aceptar. La vista muestra las casillas y el siguiente intento ya
+        // manda el bloque legal.
+        this.needsReconsent.set(true);
+        this.errorMessage.set(this.i18n.t('auth.errors.legalOutdated'));
         break;
       default:
         this.errorMessage.set(this.i18n.t('auth.errors.generic'));

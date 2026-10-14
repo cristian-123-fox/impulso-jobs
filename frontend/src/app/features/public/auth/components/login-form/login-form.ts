@@ -19,6 +19,9 @@ import { RouterLink } from '@angular/router';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { environment } from '@env';
 import { GoogleIdentityService } from '@/core/auth/google-identity.service';
+import { ConsentService } from '@/core/consent/consent.service';
+import { LegalDocCode, legalDocument } from '@/shared/catalogs/legal.catalogs';
+import type { LegalAcceptancePayload } from '@/features/public/auth/models/auth.models';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { LanguageService } from '@/core/i18n/language.service';
 import {
@@ -27,7 +30,7 @@ import {
   LoginStatus,
   ResendStatus,
 } from '@/features/public/auth/models/auth.models';
-import { IjButton, IjIcon, IjInput } from '@/shared/ui';
+import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
 
 /**
  * Tarjeta del formulario de acceso (presentacional). Incluye el selector
@@ -48,6 +51,7 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
     IjButton,
     IjIcon,
     IjInput,
+    IjLegalConsent,
     TranslocoDirective,
   ],
   template: `
@@ -128,8 +132,8 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
                     </span>
                   }
                 }
-              </div>
-            }
+</div>
+      }
           </div>
         </div>
       }
@@ -199,7 +203,25 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
         </a>
       </div>
 
-      <!-- Enviar -->
+      <!--
+          Re-consentimiento por versión nueva.
+
+          Sólo aparece cuando el backend respondió LEGAL_VERSION_OUTDATED: la
+          cuenta existe y los documentos obligatorios ya no son los que esa
+          persona aceptó. No es un alta, así que aquí no se saca la casilla de
+          cesión de imagen —esa se concede en el perfil, no en el login— ni se
+          pide aceptar de nuevo lo que no cambió.
+        -->
+        @if (needsReconsent()) {
+          <div class="mt-6 rounded-xl border border-line bg-surface p-4">
+            <p class="text-[13px] font-semibold text-body">
+              {{ t('auth.login.reconsentTitle') }}
+            </p>
+            <ij-legal-consent #reconsent class="mt-3 block" />
+          </div>
+        }
+
+        <!-- Enviar -->
       <button
         ij-button
         type="submit"
@@ -219,10 +241,58 @@ import { IjButton, IjIcon, IjInput } from '@/shared/ui';
       </button>
 
       <!-- Acceso con Google (GIS pinta el botón dentro del contenedor) -->
-      @if (googleEnabled() && !googleFailed()) {
+      @if (googleBlocked()) {
+        <!--
+          Sin consentimiento funcional no se descarga nada de Google, así que no
+          hay botón que pintar. En vez de esconderlo sin más, se explica por qué
+          y se da el enlace a la Política de cookies para cambiarlo: el artículo
+          14, párrafo tercero, del Reglamento de la LFPDPPP pide informar de
+          cómo se pueden deshabilitar, no dejarlas en un limbo.
+        -->
+        <p class="mt-7 text-center text-[13px] leading-relaxed text-muted">
+          {{ t('legal.cookies.googleBlocked') }}
+          <a
+            [routerLink]="cookiesRoute"
+            class="font-medium text-ink underline decoration-line underline-offset-2"
+            >{{ t('legal.documents.cookies') }}</a
+          >
+        </p>
+      } @else if (googleEnabled() && !googleFailed()) {
         <!-- Se oculta en la pestaña Empresa: el backend crea cuentas de
              candidato, así que ofrecerlo ahí prometería algo que no hace. -->
         <div class="mt-7" [class.hidden]="accountType() === 'company'">
+          <!--
+            Aviso legal del acceso con Google.
+
+            Va sobre el botón, no debajo, y es una casilla por el mismo motivo que
+            en el registro: el endpoint de Google CREA la cuenta si no existe, y
+            además guarda la fotografía que viene en el perfil de Google. Sin
+            esta casilla habría una segunda puerta de alta por la que la ley no
+            pasa, y una foto usada sin que nadie la autorizara.
+
+            El texto lo dice: aceptarlos aquí es aceptar el alta que puede
+            ocurrir al entrar. En una cuenta ya existente el backend descarta
+            este bloque, y decirlo evita que alguien crea que está firmando algo
+            que no se le guarda.
+
+            Vive dentro de este bloque a propósito: sólo hay algo que consentir
+            cuando hay botón de Google. Por eso la consulta al componente es
+            tolerante y no "required"; mírese legalConsent en la clase.
+          -->
+          <!--
+            Al pedir un re-consentimiento se oculta: quedaría una segunda tanda
+            de casillas compitiendo con la de arriba, y marcarla no serviría
+            de nada porque el envío lee el otro bloque.
+          -->
+          @if (!needsReconsent()) {
+            <ij-legal-consent
+              #consent
+              [imageRights]="true"
+              [signupNotice]="true"
+              class="mb-5 block"
+            />
+          }
+
           <div class="flex items-center gap-3.5">
             <span class="whitespace-nowrap text-[13.5px] font-semibold text-body">
               {{ t('auth.login.socialDivider') }}
@@ -255,19 +325,73 @@ export class LoginForm {
    * funcionar, y un botón muerto en la pantalla más crítica del embudo es
    * peor que no tener botón.
    */
+  /**
+   * El backend pidió aceptar una versión nueva de los documentos. Enseña las
+   * casillas y las exige antes de reintentar: no es un alta, es un cambio de
+   * versión sobre una cuenta que ya existe.
+   */
+  readonly needsReconsent = input(false);
+
   readonly googleEnabled = input(false);
   readonly submitted = output<LoginCredentials>();
-  /** ID token que GIS entrega al usuario elegir su cuenta. */
-  readonly googleCredential = output<string>();
+  /**
+   * ID token que GIS entrega al elegir cuenta, junto con los documentos
+   * aceptados. El backend los exige cuando la cuenta no existe.
+   */
+  readonly googleCredential = output<{
+    credential: string;
+    legal: LegalAcceptancePayload;
+  }>();
   readonly resendRequested = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly i18n = inject(AppTranslateService);
   private readonly language = inject(LanguageService);
+  private readonly cookieConsent = inject(ConsentService);
   private readonly google = inject(GoogleIdentityService);
   private readonly googleHost = viewChild<ElementRef<HTMLElement>>(
     'googleButton',
   );
+  /**
+   * Bloque de casillas del acceso con Google.
+   *
+   * Va dentro del bloque que se dibuja sólo cuando hay botón de Google, así que
+   * la consulta **no** es `required`: con `viewChild.required` el login normal
+   * —sin error previo— no encuentra el elemento y Angular lanza NG0951 al
+   * pulsar Google, que es exactamente lo que rompía el acceso con Google.
+   */
+  private readonly legalConsent = viewChild<IjLegalConsent>('consent');
+
+  /**
+   * Casillas del re-consentimiento, sobre el botón de entrar. Son un bloque
+   * aparte del de Google porque cada uno aparece sólo cuando aplica: el de
+   * Google por un posible alta, éste por una versión nueva.
+   */
+  private readonly reconsentConsent = viewChild<IjLegalConsent>('reconsent');
+
+  private readonly requiredConsentError = computed(() =>
+    this.i18n.t('legal.consent.requiredError'),
+  );
+
+  /**
+   * Mapea las casillas al payload que espera el registro de consentimiento.
+   *
+   * El componente tipa el código con su enum del catálogo, que incluye códigos
+   * que el endpoint de autenticación no acepta; el cast es el punto donde se
+   * recorta esa diferencia y conviene que haya uno solo.
+   *
+   * Si hay bloque de re-consentimiento manda él, no el de alta: cuando el
+   * backend pidió aceptar una versión nueva **sólo hay un bloque en pantalla**,
+   * y leer el otro sería mandar casillas que la persona no marcó.
+   */
+  private acceptanceDocuments(source?: IjLegalConsent): LegalAcceptancePayload['documents'] {
+    const consent = source ?? this.reconsentConsent() ?? this.legalConsent();
+    return (consent?.acceptance() ?? []).map((doc) => ({
+      code: doc.code as LegalAcceptancePayload['documents'][number]['code'],
+      version: doc.version,
+      granted: doc.granted,
+    }));
+  }
 
   protected readonly form = this.fb.group({
     email: this.fb.control('', [Validators.required, Validators.email]),
@@ -277,9 +401,19 @@ export class LoginForm {
   protected readonly controls = this.form.controls;
 
   protected readonly accountType = signal<AccountType>('candidate');
+  /** Ruta de la Política de cookies, para explicar por qué no hay botón. */
+  protected readonly cookiesRoute = legalDocument(LegalDocCode.COOKIES).route;
+
   protected readonly showPassword = signal(false);
   /** Si GIS no carga (red, bloqueador) el bloque entero desaparece. */
   protected readonly googleFailed = signal(false);
+  /**
+   * El botón no se pinta porque la categoría funcional no está autorizada.
+   * Es un estado distinto de `googleFailed`: aquí no hubo ningún error y el
+   * script ni siquiera se pidió. La plantilla muestra un enlace a la Política
+   * de cookies en vez de un fallo seco.
+   */
+  protected readonly googleBlocked = signal(false);
 
   constructor() {
     // `afterNextRender`: GIS toca `document`, y `/auth/**` se prerenderiza.
@@ -287,15 +421,27 @@ export class LoginForm {
       if (!this.googleEnabled()) return;
       const host = this.googleHost();
       if (!host) return;
+
+      // `load()` resuelve en `null` cuando no hay consentimiento para la
+      // categoría funcional. Ahí no es un fallo: el botón simplemente no se
+      // pinta y el login por correo sigue igual de disponible.
       this.google
         .load()
-        .then(() =>
+        .then(() => {
+          if (!this.cookieConsent.allows('functional')) {
+            this.googleBlocked.set(true);
+            return;
+          }
           this.google.renderButton(host.nativeElement, {
             clientId: environment.googleClientId,
             lang: this.language.current(),
-            onCredential: (credential) => this.googleCredential.emit(credential),
-          }),
-        )
+            onCredential: (credential) =>
+              this.googleCredential.emit({
+                credential,
+                legal: { documents: this.acceptanceDocuments() },
+              }),
+          });
+        })
         .catch(() => this.googleFailed.set(true));
     });
   }
@@ -336,6 +482,20 @@ export class LoginForm {
       return;
     }
     const value = this.form.getRawValue();
+
+    if (this.needsReconsent()) {
+      // Se exige la casilla antes de gastar el intento: el backend responde
+      // 409 igual, pero así quien no ha marcado no ve un error de servidor.
+      const consent = this.reconsentConsent();
+      if (!consent || !consent.validate(this.requiredConsentError())) return;
+      this.submitted.emit({
+        ...value,
+        accountType: this.accountType(),
+        legal: { documents: this.acceptanceDocuments(consent) },
+      });
+      return;
+    }
+
     this.submitted.emit({ ...value, accountType: this.accountType() });
   }
 }

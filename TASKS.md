@@ -5,7 +5,8 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 - **Parte A — Demo (QA agosto 2026):** correcciones del PDF "Pruebas software impulso Jobs" + decisiones del equipo. Prioridad absoluta.
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
 - **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21–T27 hechas**; lo que T26 dejó fuera a propósito (áreas privadas y correos) está levantado como **T28**, pendiente de la decisión N10.
-- **Parte D — Backlog solicitado (lista del 2026-09-12):** segunda tanda de apuntes del equipo (T29–T35), verificada igual contra el código. **T29 es un bug de producción** (403 al postularse) y va primero; el resto son mejoras de back-office y del área del candidato. Decisiones abiertas: N11, N12, N13.
+- **Parte D — Backlog solicitado (lista del 2026-09-12):** segunda tanda de apuntes del equipo (T29–T37), verificada igual contra el código. **T29 es un bug de producción** (403 al postularse) y va primero; el resto son mejoras de back-office y del área del candidato. Decisiones abiertas: N11, N12, N13.
+- **Parte E — Cumplimiento legal (LFPDPPP, 2026-10-14):** T38–T40, revisión contra la ley vigente. **Código cerrado ✅**; queda bloqueada la publicación por los 6 datos del responsable, que sólo tiene el negocio. Incluye los seis bugs (B7–B12) encontrados y corregidos al verificar la implementación.
 
 ---
 
@@ -904,6 +905,90 @@ SELECT u.id, u.email, u.role FROM users u
 
 ---
 
+# Parte E · Cumplimiento legal (LFPDPPP) ✅
+
+Levantado el **2026-10-14** al revisar la aplicación contra la LFPDPPP vigente (la que sustituyó a la de 2010, reforma del DOF 14-nov-2025). Objetivo doble: dejar constancia de qué acepta cada persona y **no publicar** documentos que no identifiquen al responsable.
+
+## Resumen para el gestor de tareas
+
+| # | Título | Tipo | Estado |
+|---|---|---|---|
+| T38 | Registro de consentimiento y documentos legales versionados | Feature / legal | ✅ **Hecha** (salvo los datos del responsable, ver pendientes) |
+| T39 | Re-consentimiento al cambiar la versión de un documento | Feature / legal | ✅ **Hecha** |
+| T40 | Consultar los consentimientos en el back-office | Feature / admin | ✅ **Hecha** (`/admin/legal`) |
+
+---
+
+### T38 · Registro de consentimiento y documentos legales versionados ✅
+
+**Qué se pidió:** que la plataforma deje constancia de qué acepta cada persona, cuándo y desde dónde, y que los documentos legales (términos, aviso de privacidad, cookies, reembolso, cesión de derechos de imagen y finalidades comerciales) existan con versión y fecha de vigencia.
+
+**Estado al cerrar:** ✅ Backend, frontend y back-office completos. **⛔ Pendiente de datos del negocio:** los datos del responsable están como `[PENDIENTE]` y bloquean la publicación (ver abajo).
+
+**Modelo de datos** (migración `InitLegal`):
+
+- `legal_documents` — maestro de versiones. El código no cambia aunque cambie el texto (`TERMS` sigue siendo `TERMS`), que es lo que permite saber años después qué ley estaba vigente el día que alguien aceptó. Un registro por versión.
+- `legal_consents` — **sólo crece**. No hay `update` ni `delete`: revocar no es un `UPDATE`, es **insertar otra fila** con `granted = false` para el mismo documento. Cada fila guarda código, versión, huella opcional, `granted`, método, origen, IP, user-agent y metadatos.
+
+**Por qué no se guarda "la versión aceptada" en el usuario:** porque `legal_consents` ya es ese registro y es append-only. Una columna que se sobrescribiera en cada cambio de versión rompería la única fuente que la ley manda conservar. La versión vigente de una persona se **deriva** de su última fila, igual que la revocación.
+
+**Dónde se recaba el consentimiento:**
+
+1. `POST /auth/register` — obligatorio (Términos y Aviso). Todo en una transacción.
+2. `POST /auth/google` — obligatorio **sólo si la cuenta no existe**, porque ese endpoint crea cuentas de candidato. En una cuenta ya existente el backend no lo exige.
+3. `POST /legal/consents` — público, con sesión o sólo correo (banner de cookies, newsletter, contacto).
+4. Revocación en `POST /legal/consents/withdraw`, con sesión.
+
+**El checkbox nunca viene marcado.** No hay estado inicial que alguien pueda activar por descuido: el `checked` sale de un signal que arranca en `false` y sólo cambia con un `change` real. Las casillas accesorias (comunicaciones comerciales, cesión de imagen) van siempre en la lista, marcadas o no: que a alguien se le ofreciera el newsletter y lo declinara es justamente lo que demuestra que la casilla no venía marcada por el sistema.
+
+**Frontend:**
+
+- 6 documentos con texto propio en español e inglés (`legal-content.es.ts` / `.en.ts`), fuera del diccionario de Transloco a propósito: son miles de palabras con tablas y referencias a artículos, y un `{{ t() }}` mal escrito se descubre en la página, no al compilar.
+- `ij-legal-consent`: componente único con las tres reglas que se pueden violar sin darse cuenta (obligatoria sin marcar, versión tomada del catálogo, lo rechazado también se declara).
+- Banner de cookies que **no descarga el script de Google** si no hay consentimiento funcional: no es ocultarlo, es que la petición no llega a hacerse.
+- Pantalla `/admin/legal` de sólo lectura con KPIs, filtros, tabla y detalle.
+
+**Interpolación del responsable:** los documentos se escriben con `{{RFC}}`, `{{LEGAL_NAME}}` y compañía, y `fillIdentityTokens()` los sustituye por los datos de `LEGAL_IDENTITY` al renderizar, sobre una copia para no mutar el catálogo. Marcador desconocido o campo vacío se deja tal cual: un error de redacción debe verse, no taparse.
+
+**Pendiente de datos del negocio 🔷** (bloquea la publicación):
+
+`LEGAL_IDENTITY` en `frontend/src/app/shared/catalogs/legal.catalogs.ts` tiene 6 campos como `[PENDIENTE]`: razón social, RFC, domicilio fiscal, domicilio de operación, contacto de datos personales (art. 29) y teléfono/correo de contacto. Salen de la Constancia de Situación Fiscal del responsable. Mientras falten, `isIdentityComplete()` da `false` y las páginas muestran un aviso rojo. **No se rellenan a mano en la base**: sería fabricar consentimiento.
+
+---
+
+### T39 · Re-consentimiento al cambiar la versión de un documento ✅
+
+**Qué se pidió:** el alta exigía aceptar la versión vigente, pero después nadie volvía a mirar qué había aceptado cada persona. Al publicar documentos nuevos, las cuentas existentes seguían entrando con un consentimiento anclado a un texto que ya nadie tenía delante.
+
+**Fix:** `LegalReconsentService` compara, en cada login, la versión vigente de los documentos con `blocksRegistration` contra la última fila de cada titular. Si no coincide, el login responde 409 y exige aceptación explícita **del código y de la versión** — aceptar el código sin la versión dejaría constancia de un consentimiento sobre un texto no visto.
+
+**Dos motivos, dos códigos, porque el mensaje es distinto:**
+
+| Situación | Código | Mensaje |
+|---|---|---|
+| Nunca aceptó (cuenta anterior al módulo) | `LEGAL_CONSENT_REQUIRED` | «Antes de entrar tienes que aceptar…» |
+| Aceptó una versión que ya no es la vigente | `LEGAL_VERSION_OUTDATED` | «Actualizamos…» |
+
+El primero es normal —casi todas las cuentas existentes— y el segundo no. Decir «actualizamos» a quien nunca aceptó sería mentirse.
+
+**Solo bloquean los documentos con `blocksRegistration`.** Cambiar los cookies o el texto de reembolso no bloquea a nadie: ese campo es lo que separa lo que impide usar el servicio de lo que no.
+
+**Dónde se aplica:** en `LoginUseCase` (correo) y en `GoogleLoginUseCase` (rama de cuenta existente). En ambos, **después** de validar credenciales, para no decirle a un desconocido que tiene documentos desactualizados.
+
+**Los seeds registran consentimiento** (`seedAccountConsents`). Una cuenta sembrada simula una que se dio de alta por la aplicación, y esa alta sí habría dejado constancia: sin esto, `pnpm seed` producía cuentas que no podían entrar en su propia aplicación.
+
+**Las cuentas reales anteriores al módulo no se tocan.** No se puede dar por aceptado lo que nadie aceptó: la primera vez que entren, el backend se lo pide. Es lo correcto y a la vez lo más incómodo.
+
+---
+
+### T40 · Consultar los consentimientos en el back-office ✅
+
+`GET /admin/legal-consents` con permiso `legal.consents.read` (sólo `ADMIN`), filtros por documento, origen y resultado, búsqueda por correo, paginación y resumen con conteos **vigentes**, no históricos: revocar inserta una fila, así que contar filas con `granted = true` daría un número que no corresponde con nadie.
+
+Pantalla en `/admin/legal`, sólo lectura por diseño — el registro es evidencia y no se edita desde la interfaz.
+
+---
+
 ## bugs o ajustes 
 
 ### B1 · Click en tarjeta de "Guardadas" redirigía a la web ✅
@@ -1019,3 +1104,87 @@ SELECT u.id, u.email, u.role FROM users u
 **Archivos modificados (9):** `admin-companies.controller.ts`, `admin-companies.use-case.ts`, `admin-companies.use-case.spec.ts`, `companies.api.ts`, `companies.facade.ts`, `company-create-form.ts`, `company-edit-form.ts`, `companies-list-page.ts`, `company-detail-page.ts`. **Archivo nuevo (1):** `company-logo-picker.ts`.
 
 **Criterios de aceptación:** al crear una empresa se puede seleccionar un logo que se sube después del alta; al editar, se muestra el logo actual y se puede reemplazar o quitar; el logo aparece en el listado de empresas y en la cabecera del detalle; una empresa sin logo sigue mostrando iniciales; archivos inválidos (tipo o tamaño) muestran error antes de intentar subir.
+
+---
+
+### B7 · 403 en `/admin/legal` con un código de permiso mal escrito ✅
+
+**Bug:** `GET /admin/legal-consents` respondía 403 aunque el rol `ADMIN` tuviera el permiso concedido y el grupo «Cumplimiento legal» apareciera con nombre propio en `/admin/roles`.
+
+**Causa:** la migración `AddLegalConsentsReadPermission` sembraba el código como **`legal.consents_read`** (guion bajo) mientras el guard, el catálogo y `seed-rbac.ts` piden **`legal.consents.read`** (punto). `PermissionsGuard` compara cadenas exactas, así que la fila existía, se veía en la interfaz y el endpoint no la encontraba. Se copió de `AddAccountProfilePermission`, donde `profile_manage` sí encaja con el patrón de `seed-rbac.ts` (parte por el **primer** punto).
+
+**Fix:** migración corregida a `ACTION = 'consents.read'` y limpieza del código erróneo en `up()` y `down()`, para que en otros entornos la reparación sea automática. Además se añadió `permission-codes.spec.ts`, que ata los cuatro sitios donde vive un código de permiso (guard, catálogo, seed y migraciones): se comprobó que **falla** si se reintroduce el guion bajo.
+
+**Vale la pena notar:** `PermissionsService` cachea el mapa rol→permisos en memoria. Tras aplicar la migración hay que **reiniciar el backend**; si no, el endpoint sigue dando 403 con los datos ya correctos.
+
+---
+
+### B8 · El login con Google no hacía nada ✅
+
+**Bug:** al pulsar «Continuar con Google» no entraba a la cuenta y la página se quedaba en blanco en `/candidato`. El backend recibía el login correctamente, la ruta funcionaba y el panel tenía datos; lo que se rompía era un paso antes.
+
+**Causa:** el bloque `<ij-legal-consent>` se había insertado **dentro del banner de error** del formulario de login, anidado en `@if (isError())` → `@if (showResend())`. Se conectó con `viewChild.required`, que exige que el elemento exista siempre; sin error previo el elemento no estaba y Angular lanzaba `NG0951: Child query result is required but no value is available` en el callback de Google, antes de enviar nada.
+
+Las etiquetas seguían cuadrando porque el componente es autoclausurado, así que el compilador no se quejó: el error era en tiempo de ejecución.
+
+**Fix:** el bloque se movió al tramo de Google, encima del botón, y la consulta pasó a `viewChild` tolerante (`legalConsent()?.acceptance() ?? []`). Con regresión en `login-form.spec.ts`, verificada reintroduciendo el `.required`.
+
+**Bug hermana, encontrado al probar:** al pedir re-consentimiento se mostraba un segundo bloque de casillas arriba del botón de correo, pero el botón de Google seguía leyendo el suyo. Se marcaba el de arriba y se mandaba el de abajo, sin marcar — dos 409 seguidos en el log. Ahora, cuando hay re-consentimiento **sólo hay un bloque en pantalla** y ambas rutas leen ese.
+
+---
+
+### B9 · Ningún alta con consentimiento se podía guardar ✅
+
+**Bug:** `POST /legal/consents` respondía 500 con «el valor nulo en la columna `created_at` de la relación `legal_consents` viola la restricción de no nulo». Salió al intentar registrar el primer consentimiento de verdad; es decir, **ningún alta con consentimiento había funcionado jamás** en esta base.
+
+**Causa:** la migración `InitLegal` creó `legal_consents` y `legal_documents` con `{ name: 'created_at', type: 'timestamp' }`, **sin `default: 'CURRENT_TIMESTAMP'`**, que sí llevan todas las demás tablas del esquema (`users`, `roles`, …). TypeORM se apoya en ese default y, sin él, manda `NULL` contra una columna `NOT NULL`. `legal_documents` tenía el mismo defecto, escondido porque esa tabla solo la escriben migraciones y no el runtime.
+
+**Fix:** migración nueva `AddLegalTimestampsDefault` con `changeColumn` — la definición completa de la columna, que es como el repo genera SQL portable para Postgres y MySQL. **`InitLegal` no se editó**: una migración aplicada es inmutable y cambiarla no altera lo que ya corrió.
+
+**Cómo se encontró:** aislando el insert contra la base dentro de una transacción con rollback y comparando los metadatos de `legal_consents` con los de `users` (idénticos). La diferencia estaba en el DDL, no en el código. Un barrido de `information_schema` confirmó que solo las dos tablas del módulo legal estaban afectadas.
+
+**Por qué las pruebas no lo cazaron:** todas las pruebas de use-case usan dobles de repositorio, y el default vive en la base. Se añadió un test de la migración para que no se pueda volver a ir.
+
+---
+
+### B10 · Los enlaces del pie no llevaban a la vista ✅
+
+**Bug:** al pulsar un enlace del footer, la ruta nueva cargaba pero el scroll se quedaba donde estabas — miles de píxeles abajo. Parecía que el enlace no funcionaba y había que subir a mano para confirmarlo.
+
+**Causa:** `provideRouter(routes)` sin política de scroll. Existía un componente `ScrollTop`, pero es sólo el botón flotante de «volver arriba»; no restaura la posición al cambiar de ruta.
+
+**Fix:** `withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' })`. Se añade `anchorScrolling` porque no era sólo cosa del pie: hay enlaces con ancla (`/legal/aviso-de-privacidad#finalidades`) y sin eso se llegaba a la sección correcta situándose arriba de la página.
+
+---
+
+### B11 · El texto de consentimiento era ilegible en el pie ✅
+
+**Bug:** en el newsletter del footer, el texto de los consentimientos y los enlaces eran prácticamente invisibles.
+
+**Causa:** `ij-legal-consent` usa `text-body` (`#35354a`, azul grisáceo oscuro) y enlaces `text-ink` (`#1f3b73`) sobre `bg-ink-card`, un azul casi negro. **El pie es el único uso del componente sobre fondo oscuro** — en formularios y login está sobre blanco y se veía bien, por eso nadie lo notó antes.
+
+**Fix:** input `tone="light" | "dark"` en el componente; en oscuro usa `text-footer-fg`, `text-footer-muted` y enlaces en blanco. El pie lo pasa; los otros cinco usos siguen en claro sin cambios. De paso se añadió una etiqueta «Alertas de empleo» con icono y se bajó el texto a 13 px con interlineado corto, igual que en el login.
+
+---
+
+### B12 · Aviso de Google Identity repetido al volver al login ✅
+
+**Bug:** en consola, `[GSI_LOGGER]: google.accounts.id.initialize() is called multiple times` cada vez que se volvía a `/auth/login`.
+
+**Causa:** `renderButton()` llamaba a `initialize()` en cada pintado, y el formulario de login se recrea en cada visita.
+
+**Fix:** `initialize()` corre una sola vez y quien repinta deja su manejador en un campo, al que despacha el `callback` registrado. Sólo con un cerrojo el botón habría dejado de funcionar al volver a la página, porque habría quedado atado al closure de un componente ya destruido.
+
+El segundo aviso del log —`Cross-Origin-Opener-Policy policy would block the window.postMessage`— **no es del proyecto**: no se activa COOP en ningún sitio, el dev server no devuelve esa cabecera y nuestro código no llama `postMessage`. Proviene del script de Google en su iframe.
+
+---
+
+## Verificación de la Parte E
+
+- **Backend:** `pnpm build` limpio, ESLint sin errores nuevos, **526 tests en verde** (67 suites). La app arranca (`BOOT OK`: el grafo de DI resuelve, incluido el ciclo `AuthModule ↔ LegalModule` cerrado con `forwardRef`).
+- **Frontend:** build de producción con prerender limpio, **110 tests en verde** (Chrome Headless), 0 errores de TypeScript.
+- **Migraciones aplicadas:** `InitLegal`, `AddLegalConsentsReadPermission`, `AddLegalTimestampsDefault`. Sin pendientes.
+
+**Pendiente de negocio (no es código):** los 6 campos `[PENDIENTE]` de `LEGAL_IDENTITY`. Mientras falten, la web no debe publicarse: los documentos se sirven sin identificar al responsable, que es justo lo que la LFPDPPP exige incluir.
+
+**Pendiente de contenido:** los PDF de privacidad y términos son del **2026-10-12**, anteriores a este trabajo, y dicen cosas distintas a las páginas HTML. Además, cookies, reembolso, cesión de derechos de imagen y finalidades comerciales **sólo existen en HTML**: no hay PDF descargable. Regenerar los PDF desde el HTML actual cuando se disentren los datos del responsable.

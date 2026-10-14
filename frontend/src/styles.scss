@@ -1,5 +1,31 @@
 @import '@angular/cdk/overlay-prebuilt.css';
 
+/**
+ * Rubik autoalojada.
+ *
+ * Antes venía de `fonts.googleapis.com` con un `<link>` en `index.html`, lo que
+ * significa que **cada** visita entregaba la IP del visitante a Google antes de
+ * que nadie hubiera respondido al banner de cookies. El artículo 14, párrafo
+ * tercero, del Reglamento de la LFPDPPP obliga a informar en ese mismo momento
+ * del uso de mecanismos que recaban datos de manera automática.
+ *
+ * `@fontsource/rubik` sirve los `.woff2` desde el propio dominio: Rubik es SIL
+ * OFL 1.1, que permite autoalojarla sin pedir nada. Se pierden los `<preconnect>`
+ * porque ya no hay nada a lo que conectarse.
+ *
+ * `latin` sólo, y los cinco pesos que el tema usa (300–700). Cargar el resto de
+ * alfabetos y pesos sería enviar tipografías que nadie va a ver.
+ *
+ * Nota de licencia: la OFL exige que el aviso de copyright y la licencia
+ * con la distribución. `@fontsource` las incluye en su paquete, que queda en
+ * `node_modules` y dentro del build.
+ */
+@import '@fontsource/rubik/300.css';
+@import '@fontsource/rubik/400.css';
+@import '@fontsource/rubik/500.css';
+@import '@fontsource/rubik/600.css';
+@import '@fontsource/rubik/700.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

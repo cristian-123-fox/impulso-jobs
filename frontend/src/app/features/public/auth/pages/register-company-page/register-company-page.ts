@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -20,7 +21,10 @@ import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
-import { RegisterStatus } from '@/features/public/auth/models/auth.models';
+import {
+  type LegalAcceptancePayload,
+  RegisterStatus,
+} from '@/features/public/auth/models/auth.models';
 import { AuthStepper } from '@/features/public/auth/components/auth-stepper/auth-stepper';
 import { MX_STATES, SAT_TAX_REGIMES } from '@/shared/catalogs/mx.catalogs';
 import { passwordPolicyValidator } from '@/shared/validators/password.validator';
@@ -29,7 +33,14 @@ import {
   postalCodeValidator,
   rfcValidator,
 } from '@/shared/validators/mx-identifiers.validator';
-import { IjButton, IjIcon, IjInput, IjOption, IjSelect } from '@/shared/ui';
+import {
+  IjButton,
+  IjIcon,
+  IjInput,
+  IjLegalConsent,
+  IjOption,
+  IjSelect,
+} from '@/shared/ui';
 
 const STEP_CONTROLS: string[][] = [
   ['email', 'password', 'confirmPassword'],
@@ -50,6 +61,7 @@ const STEP_CONTROLS: string[][] = [
     IjIcon,
     IjInput,
     IjSelect,
+    IjLegalConsent,
     TranslocoDirective,
   ],
   template: `
@@ -179,6 +191,13 @@ const STEP_CONTROLS: string[][] = [
             </div>
           }
 
+          <!--
+            Consentimiento legal, en el último paso del wizard. Mismo bloque que
+            el alta de candidato pero sin la casilla de cesión de imagen: una
+            empresa no sube una foto de persona al registrarse.
+          -->
+          <ij-legal-consent #consent class="mt-6 block" />
+
           <!-- Navegación -->
           <div class="mt-7 flex items-center gap-3">
             @if (step() > 0) {
@@ -222,6 +241,8 @@ export class RegisterCompanyPage {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly i18n = inject(AppTranslateService);
+  /** Bloque de casillas legales del último paso. */
+  private readonly consent = viewChild.required<IjLegalConsent>('consent');
   private readonly route = inject(ActivatedRoute);
 
   /**
@@ -328,6 +349,13 @@ export class RegisterCompanyPage {
       return;
     }
 
+    // Verificación local antes de tocar la red. El backend también lo exigiría
+    // con un 400, pero fallar aquí evita el viaje y deja el error junto a la
+    // casilla que falta.
+    if (!this.consent().validate(this.i18n.t('legal.consent.requiredError'))) {
+      return;
+    }
+
     const v = this.form.getRawValue();
     this.status.set('loading');
     this.errorMessage.set(null);
@@ -337,6 +365,7 @@ export class RegisterCompanyPage {
         accountType: 'company',
         email: v.email,
         password: v.password,
+        legal: { documents: this.acceptanceDocuments() },
         company: {
           businessName: v.businessName,
           legalName: v.legalName,
@@ -374,6 +403,16 @@ export class RegisterCompanyPage {
       default:
         this.errorMessage.set(this.i18n.t('auth.register.genericError'));
     }
+  }
+
+  private acceptanceDocuments(): LegalAcceptancePayload['documents'] {
+    return this.consent()
+      .acceptance()
+      .map((doc) => ({
+        code: doc.code as LegalAcceptancePayload['documents'][number]['code'],
+        version: doc.version,
+        granted: doc.granted,
+      }));
   }
 
   private errorCodeOf(error: unknown): string | undefined {

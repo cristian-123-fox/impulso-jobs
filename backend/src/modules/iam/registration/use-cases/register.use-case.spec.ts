@@ -19,6 +19,23 @@ import {
   RegisterCommand,
   RegisterUseCase,
 } from '@/modules/iam/registration/use-cases/register.use-case';
+import { LegalDocumentCode } from '@/modules/legal/enums/legal.enums';
+import { RecordConsentUseCase } from '@/modules/legal/use-cases/record-consent.use-case';
+
+/** Aceptación mínima válida: Términos y Aviso, como exige el art. 7 LFPDPPP. */
+const legalAcceptance = (
+  extra: Partial<{ granted: Record<string, boolean> }> = {},
+) => ({
+  documents: [
+    { code: LegalDocumentCode.TERMS, version: '1.0.0', granted: true },
+    { code: LegalDocumentCode.PRIVACY, version: '1.0.0', granted: true },
+    {
+      code: LegalDocumentCode.MARKETING,
+      version: '1.0.0',
+      granted: extra.granted?.MARKETING ?? false,
+    },
+  ],
+});
 
 function errorCodeOf(e: unknown): string | undefined {
   return e instanceof AppException
@@ -30,6 +47,7 @@ const companyCommand = (): RegisterCommand => ({
   accountType: 'company',
   email: 'empresa@test.io',
   password: 'Secreta#123',
+  legal: legalAcceptance(),
   company: {
     businessName: 'Impulso Talent',
     legalName: 'Impulso Talent SA de CV',
@@ -47,6 +65,7 @@ const candidateCommand = (): RegisterCommand => ({
   accountType: 'candidate',
   email: 'ana@test.io',
   password: 'Secreta#123',
+  legal: legalAcceptance(),
   candidate: {
     firstName: 'Ana',
     lastName: 'García',
@@ -72,6 +91,7 @@ describe('RegisterUseCase', () => {
   let candidates: jest.Mocked<ICandidateProfileRepository>;
   let hasher: jest.Mocked<PasswordHasherService>;
   let requestVerification: jest.Mocked<RequestEmailVerificationUseCase>;
+  let recordConsent: jest.Mocked<RecordConsentUseCase>;
   let audit: jest.Mocked<AuditService>;
   let dataSource: DataSource;
   let useCase: RegisterUseCase;
@@ -113,6 +133,9 @@ describe('RegisterUseCase', () => {
     requestVerification = {
       execute: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<RequestEmailVerificationUseCase>;
+    recordConsent = {
+      execute: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<RecordConsentUseCase>;
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
     dataSource = {
       transaction: jest.fn((work: (m: unknown) => Promise<unknown>) =>
@@ -129,6 +152,7 @@ describe('RegisterUseCase', () => {
       candidates,
       hasher,
       requestVerification,
+      recordConsent,
       audit,
       dataSource,
     );

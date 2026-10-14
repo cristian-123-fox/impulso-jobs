@@ -8,6 +8,7 @@ import { Role } from '@/modules/iam/roles/entities/role.entity';
 import { Company } from '@/modules/companies/entities/company.entity';
 import { CompanyUser } from '@/modules/companies/entities/company-user.entity';
 import { CompanyMemberRole } from '@/modules/companies/enums/company-member-role.enum';
+import { seedAccountConsents } from './seed-consents';
 
 /**
  * Seeder de una empresa de prueba. Idempotente: crea o actualiza el usuario
@@ -102,6 +103,11 @@ export async function seedCompany(dataSource: DataSource): Promise<string> {
     );
     console.log('Empresa + membresía OWNER creadas (companies/company_users).');
   }
+
+  const consents = await seedAccountConsents(dataSource, user);
+  console.log(
+    `Consentimientos legales registrados: ${consents} (si ya estaban, 0).`,
+  );
 
   return `Empresa de prueba · ${email} / ${COMPANY_PASSWORD} (rol EMPLOYER).`;
 }

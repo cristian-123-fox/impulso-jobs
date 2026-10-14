@@ -33,6 +33,16 @@ export { IjAutocomplete } from '@/shared/ui/autocomplete/autocomplete';
 export { IjDatepicker } from '@/shared/ui/datepicker/datepicker';
 export { type IjOption } from '@/shared/ui/forms/option';
 
+// Casillas de consentimiento legal (LFPDPPP art. 7, 15 y 16; LFPC art. 76 Bis).
+// Va en el kit y no en cada feature: las tres reglas que debe cumplir —casilla
+// obligatoria sin marcar, versión tomada del catálogo, y declarar también lo
+// rechazado— son fáciles de romper duplicándolo.
+export {
+  IjLegalConsent,
+  type LegalAcceptanceValue,
+  type LegalConsentChange,
+} from '@/shared/ui/legal-consent/legal-consent';
+
 // Piezas de los paneles de inicio, compartidas por las tres áreas.
 export { IjKpiCard, type IjKpiTone } from '@/shared/ui/kpi-card/kpi-card';
 export { IjDashboardCard } from '@/shared/ui/dashboard-card/dashboard-card';

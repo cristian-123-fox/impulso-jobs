@@ -36,12 +36,42 @@ import {
   type IUserRoleRepository,
   USER_ROLE_REPOSITORY,
 } from '@/modules/iam/users/repositories/user-role.repository.interface';
+import type { RegisterLegalDto } from '@/modules/iam/registration/dto/register.dto';
+import {
+  ConsentMethod,
+  ConsentSource,
+  LegalDocumentCode,
+} from '@/modules/legal/enums/legal.enums';
+import { RecordConsentUseCase } from '@/modules/legal/use-cases/record-consent.use-case';
+import { LegalReconsentService } from '@/modules/legal/services/legal-reconsent.service';
 
 export interface GoogleLoginCommand {
   credential: string;
+  /** Documentos aceptados en la pantalla de login; obligatorio si hay alta. */
+  legal?: RegisterLegalDto;
   ip: string;
   userAgent: string;
 }
+
+/**
+ * Sin alta no hay consentimiento que recabar, así que sólo se comprueba cuando
+ * la cuenta no existe. Un login normal de una cuenta ya creada no necesita
+ * mandar nada.
+ */
+const REQUIRED_AT_GOOGLE_SIGNUP: readonly LegalDocumentCode[] = [
+  LegalDocumentCode.TERMS,
+  LegalDocumentCode.PRIVACY,
+];
+
+const REQUIRED_LABEL: Record<LegalDocumentCode, string> = {
+  [LegalDocumentCode.TERMS]: 'los Términos y condiciones',
+  [LegalDocumentCode.PRIVACY]: 'el Aviso de privacidad',
+  [LegalDocumentCode.COOKIES]: 'la Política de cookies',
+  [LegalDocumentCode.REFUND]: 'la Política de reembolso',
+  [LegalDocumentCode.IMAGE_RIGHTS]: 'la cesión de derechos de imagen',
+  [LegalDocumentCode.MARKETING]:
+    'el consentimiento para comunicaciones comerciales',
+};
 
 /**
  * Login con Google. Si el correo no existe, la cuenta **nace aquí como
@@ -73,6 +103,8 @@ export class GoogleLoginUseCase {
     @Inject(ROLE_REPOSITORY) private readonly roles: IRoleRepository,
     @Inject(CANDIDATE_PROFILE_REPOSITORY)
     private readonly candidates: ICandidateProfileRepository,
+    private readonly recordConsent: RecordConsentUseCase,
+    private readonly reconsent: LegalReconsentService,
     private readonly verifier: GoogleTokenVerifier,
     private readonly hasher: PasswordHasherService,
     private readonly session: SessionService,
@@ -85,7 +117,12 @@ export class GoogleLoginUseCase {
     const client = { ip: command.ip, userAgent: command.userAgent };
     const email = identity.email.trim().toLowerCase();
 
-    const user = await this.resolveAccount(identity, email, client);
+    const user = await this.resolveAccount(
+      identity,
+      email,
+      client,
+      command.legal,
+    );
     return this.session.issue(user, client);
   }
 
@@ -93,6 +130,7 @@ export class GoogleLoginUseCase {
     identity: GoogleIdentity,
     email: string,
     client: { ip: string; userAgent: string },
+    legal?: RegisterLegalDto,
   ): Promise<User> {
     // Primero por `sub`: si la persona renombró su correo de Google, sigue
     // siendo la misma cuenta.
@@ -101,13 +139,51 @@ export class GoogleLoginUseCase {
       (await this.users.findByEmail(email));
 
     if (!existing) {
-      return this.createCandidate(identity, email, client);
+      this.assertLegalAcceptance(legal);
+      return this.createCandidate(identity, email, client, legal!);
     }
 
     await this.assertUsable(existing, client);
     await this.linkIdentity(existing, identity, email);
     await this.ensureCandidateProfile(existing, identity);
+
+    // Mismo criterio que el login por correo: si se publicó una versión nueva de
+    // los documentos obligatorios, esta cuenta tiene que aceptarla antes de
+    // entrar. Va después de `assertUsable` para no responder a un desconocido.
+    await this.reconsent.requireCurrentVersions({
+      userId: existing.id,
+      email: existing.email,
+      legal,
+      ip: client.ip,
+      userAgent: client.userAgent,
+    });
+
     return existing;
+  }
+
+  /**
+   * Alta por Google sin consentimiento: 400, no 401.
+   *
+   * Es la contrapartida de que este endpoint cree cuentas. Sin este portón,
+   * `POST /auth/google` sería una segunda puerta de alta que esquivaría el
+   * consentimiento que sí se exige en `POST /auth/register`.
+   */
+  private assertLegalAcceptance(legal: RegisterLegalDto | undefined): void {
+    const accepted = new Set(
+      (legal?.documents ?? [])
+        .filter((doc) => doc.granted)
+        .map((doc) => doc.code),
+    );
+
+    for (const required of REQUIRED_AT_GOOGLE_SIGNUP) {
+      if (!accepted.has(required)) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.LEGAL_CONSENT_REQUIRED,
+          `Debes leer y aceptar ${REQUIRED_LABEL[required]} para crear la cuenta.`,
+        );
+      }
+    }
   }
 
   /** Mismas compuertas que el login por contraseña: bloqueada o inactiva. */
@@ -195,6 +271,7 @@ export class GoogleLoginUseCase {
     identity: GoogleIdentity,
     email: string,
     client: { ip: string; userAgent: string },
+    legal: RegisterLegalDto,
   ): Promise<User> {
     const role = await this.roles.findByCode('CANDIDATE');
     if (!role) {
@@ -240,6 +317,21 @@ export class GoogleLoginUseCase {
         },
         manager,
       );
+
+      // Misma transacción que el alta: una cuenta creada sin constancia de qué
+      // aceptó es justo lo que la LFPDPPP no permite. Aquí importa más que en
+      // el registro normal, porque además se guarda `identity.picture`.
+      await this.recordConsent.execute({
+        documents: legal.documents.map((doc) => ({ ...doc })),
+        method: ConsentMethod.EXPRESS_WRITTEN,
+        source: ConsentSource.GOOGLE_REGISTRATION,
+        userId: created.id,
+        subjectEmail: email,
+        metadata: { accountType: 'candidate', provider: 'google' },
+        ip: client.ip,
+        userAgent: client.userAgent,
+        manager,
+      });
     });
 
     return created;

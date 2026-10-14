@@ -29,6 +29,7 @@
     "@angular/router": "^20.0.0",
     "@angular/ssr": "^20.0.2",
     "@ckeditor/ckeditor5-angular": "^11.2.0",
+    "@fontsource/rubik": "^5.3.0",
     "@jsverse/transloco": "^8.4.0",
     "@tanstack/angular-table": "9.2.4",
     "apexcharts": "^7.4.0",

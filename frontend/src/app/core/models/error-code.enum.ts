@@ -27,5 +27,9 @@ export enum AuthErrorCode {
   UNSUPPORTED_COUNTRY = 'UNSUPPORTED_COUNTRY',
   INVALID_SUBDIVISION = 'INVALID_SUBDIVISION',
   INVALID_PHONE = 'INVALID_PHONE',
+  /** La cuenta existe pero hay documentos obligatorios en una versión nueva. */
+  LEGAL_VERSION_OUTDATED = 'LEGAL_VERSION_OUTDATED',
+  /** La cuenta nunca dejó constancia de aceptar los documentos obligatorios. */
+  LEGAL_CONSENT_REQUIRED = 'LEGAL_CONSENT_REQUIRED',
   INVALID_DOCUMENT_NUMBER = 'INVALID_DOCUMENT_NUMBER',
 }

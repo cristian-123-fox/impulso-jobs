@@ -5,6 +5,7 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -20,7 +21,10 @@ import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
-import { RegisterStatus } from '@/features/public/auth/models/auth.models';
+import {
+  type LegalAcceptancePayload,
+  RegisterStatus,
+} from '@/features/public/auth/models/auth.models';
 import { AuthStepper } from '@/features/public/auth/components/auth-stepper/auth-stepper';
 import {
   type CountryCode,
@@ -46,6 +50,7 @@ import {
   IjDatepicker,
   IjIcon,
   IjInput,
+  IjLegalConsent,
   IjPhoneInput,
   IjSelect,
 } from '@/shared/ui';
@@ -92,6 +97,7 @@ const STEP_CONTROLS: string[][] = [
     IjSelect,
     IjDatepicker,
     IjPhoneInput,
+    IjLegalConsent,
     TranslocoDirective,
   ],
   template: `
@@ -233,6 +239,17 @@ const STEP_CONTROLS: string[][] = [
             </div>
           }
 
+          <!--
+            Consentimiento legal, en el último paso del wizard.
+
+            Va fuera del formGroup a propósito: sus reglas (la obligatoria nunca
+            viene marcada, la versión se toma del catálogo, y lo rechazado también
+            se declara) no encajan en un control de formulario tipado. La
+            validación se hace con validate() desde onSubmit(), antes de tocar
+            la API.
+          -->
+          <ij-legal-consent #consent [imageRights]="true" class="mt-6 block" />
+
           <!-- Navegación -->
           <div class="mt-7 flex items-center gap-3">
             @if (step() > 0) {
@@ -276,6 +293,8 @@ export class RegisterCandidatePage {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly destroyRef = inject(DestroyRef);
   private readonly i18n = inject(AppTranslateService);
+  /** Bloque de casillas legales del último paso. */
+  private readonly consent = viewChild.required<IjLegalConsent>('consent');
 
   protected readonly stepLabels = computed(() => [
     this.i18n.t('auth.register.steps.account'),
@@ -471,6 +490,18 @@ export class RegisterCandidatePage {
       return;
     }
 
+    // Antes de tocar la red. El backend también lo exigiría con un 400
+    // (`LEGAL_CONSENT_REQUIRED`), pero fallar aquí evita un viaje de ida y vuelta
+    // y deja el error junto a la casilla que falta, que es donde el usuario lo
+    // puede ver.
+    if (
+      !this.consent().validate(
+        this.i18n.t('legal.consent.requiredError'),
+      )
+    ) {
+      return;
+    }
+
     const v = this.form.getRawValue();
     this.status.set('loading');
     this.errorMessage.set(null);
@@ -480,6 +511,7 @@ export class RegisterCandidatePage {
         accountType: 'candidate',
         email: v.email,
         password: v.password,
+        legal: { documents: this.acceptanceDocuments() },
         candidate: {
           firstName: v.firstName,
           lastName: v.lastName,
@@ -556,6 +588,25 @@ export class RegisterCandidatePage {
       default:
         this.errorMessage.set(this.i18n.t('auth.register.genericError'));
     }
+  }
+
+  /**
+   * Los documentos que salen del bloque de casillas, en el formato que espera
+   * el registro.
+   *
+   * El mapeo es uno a uno y sin filtrar: lo que salió con `granted: false`
+   * viaja igual. Que a alguien se le ofreciera el newsletter y lo declinara es
+   * lo que demuestra que la casilla no venía marcada, y eso sólo se puede
+   * probar si la negativa queda registrada.
+   */
+  private acceptanceDocuments(): LegalAcceptancePayload['documents'] {
+    return this.consent()
+      .acceptance()
+      .map((doc) => ({
+        code: doc.code as LegalAcceptancePayload['documents'][number]['code'],
+        version: doc.version,
+        granted: doc.granted,
+      }));
   }
 
   private errorCodeOf(error: unknown): string | undefined {

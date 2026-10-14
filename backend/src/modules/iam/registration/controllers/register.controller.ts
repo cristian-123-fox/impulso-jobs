@@ -30,6 +30,7 @@ export class RegisterController {
       accountType: dto.accountType,
       email: dto.email,
       password: dto.password,
+      legal: dto.legal,
       company: dto.company,
       candidate: dto.candidate,
       ip: client.ip,

@@ -29,6 +29,7 @@ export class GoogleLoginController {
   ): Promise<SessionResult> {
     return this.googleLogin.execute({
       credential: dto.credential,
+      legal: dto.legal,
       ip: client.ip,
       userAgent: client.userAgent,
     });

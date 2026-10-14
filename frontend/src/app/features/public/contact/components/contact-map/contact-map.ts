@@ -8,6 +8,7 @@ import {
   input,
   viewChild,
 } from '@angular/core';
+import { ThirdPartyGateService } from '@/core/consent/third-party-gate.service';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
 import { IjIcon } from '@/shared/ui';
 import { ContactMapLocation } from '@/features/public/contact/models/contact.models';
@@ -61,6 +62,7 @@ const BRAND_COLOR = '#b3571d';
 export class ContactMap {
   readonly location = input.required<ContactMapLocation>();
 
+  private readonly gate = inject(ThirdPartyGateService);
   private readonly mapEl = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly transloco = inject(TranslocoService);
   private map: import('leaflet').Map | undefined;
@@ -92,6 +94,12 @@ export class ContactMap {
   }
 
   private async initLeaflet(): Promise<void> {
+    // Sin consentimiento para la categoría funcional no se inicializa el mapa:
+    // cada tesela que descarga comunica la IP del visitante a
+    // OpenStreetMap, y el artículo 14, párrafo tercero, del Reglamento de la
+    // LFPDPPP exige informar de ello en el momento y de cómo evitarlo.
+    if (!this.gate.allows('functional')) return;
+
     // Leaflet es CJS: según el interop, el namespace puede venir en `default`.
     const mod = await import('leaflet');
     const L =

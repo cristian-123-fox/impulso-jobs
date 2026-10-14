@@ -129,6 +129,14 @@ export const PERMISSION_GROUPS: readonly PermissionGroupMeta[] = [
     order: 10,
   },
   {
+    key: 'legal',
+    label: 'Cumplimiento legal',
+    description:
+      'Documentos legales y constancia de qué aceptó cada titular. Sólo lectura.',
+    icon: 'shield',
+    order: 11,
+  },
+  {
     key: 'other',
     label: 'Sin clasificar',
     description:
@@ -460,6 +468,16 @@ export const PERMISSION_CATALOG: Readonly<Record<string, PermissionMeta>> = {
     label: 'Ver notificaciones',
     description: 'Leer los avisos de la plataforma y marcarlos como leídos.',
     scopes: ALL_SCOPES,
+  },
+
+  // ── Cumplimiento legal ────────────────────────────────────────────────
+  'legal.consents.read': {
+    group: 'legal',
+    label: 'Ver consentimientos',
+    description:
+      'Consultar qué documento aceptó cada titular, con versión, fecha e IP. ' +
+      'Sólo lectura: el registro es inmutable.',
+    scopes: BACK_OFFICE,
   },
 };
 

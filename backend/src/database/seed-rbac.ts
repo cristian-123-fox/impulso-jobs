@@ -129,6 +129,7 @@ const PERMISSION_CODES: readonly string[] = [
   'account.data_export',
   'account.profile_manage',
   'notifications.read',
+  'legal.consents.read',
 ];
 
 const ROLE_META: Record<
@@ -168,6 +169,7 @@ const MATRIX: Record<string, readonly string[]> = {
     'catalogs.read',
     'catalogs.manage',
     'audit.read',
+    'legal.consents.read',
     'companies.read',
     'companies.create',
     'companies.update',

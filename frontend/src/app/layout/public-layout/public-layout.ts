@@ -3,12 +3,13 @@ import { RouterOutlet } from '@angular/router';
 import { Navbar } from '@/layout/public-layout/navbar/navbar';
 import { Footer } from '@/layout/public-layout/footer/footer';
 import { ScrollTop } from '@/layout/public-layout/scroll-top/scroll-top';
+import { IjCookieBanner } from '@/shared/ui/cookie-banner/cookie-banner';
 
 /** Shell del portal público: navbar sticky + contenido enrutado + footer. */
 @Component({
   selector: 'app-public-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, Navbar, Footer, ScrollTop],
+  imports: [RouterOutlet, Navbar, Footer, ScrollTop, IjCookieBanner],
   template: `
     <div class="flex min-h-screen flex-col bg-white">
       <app-navbar />
@@ -18,6 +19,14 @@ import { ScrollTop } from '@/layout/public-layout/scroll-top/scroll-top';
       <app-footer />
     </div>
     <app-scroll-top />
+
+    <!--
+      El aviso de cookies va en el layout y no en cada página: así aparece en
+      todas, incluidas las que se sirven por SSR, y no depende de que cada
+      feature se acuerde de montarlo. Se queda fijo en pantalla para no alterar el
+      flujo de la página.
+    -->
+    <ij-cookie-banner />
   `,
 })
 export class PublicLayout {}

@@ -69,6 +69,9 @@ export class AdminLayout {
       badge: this.pendingPayments(),
     },
     { path: '/admin/roles', label: 'Roles y permisos', icon: 'shield' },
+    // Registro de aceptaciones de los documentos legales. Sin contador: es una
+    // consulta, no una cola de trabajo.
+    { path: '/admin/legal', label: 'Consentimientos', icon: 'file' },
     {
       path: '/admin/denuncias',
       label: 'Denuncias',

@@ -141,4 +141,18 @@ export enum ErrorCode {
   PAYMENT_WEBHOOK_INVALID = 'PAYMENT_WEBHOOK_INVALID',
   // Notificaciones (T21)
   NOTIFICATION_NOT_FOUND = 'NOTIFICATION_NOT_FOUND',
+  // Legal: documentos versionados y consentimiento (art. 7, 15 y 16 LFPDPPP)
+  LEGAL_DOCUMENT_NOT_FOUND = 'LEGAL_DOCUMENT_NOT_FOUND',
+  /** El código o la versión no existen en `legal_documents` (front desalineado). */
+  LEGAL_DOCUMENT_VERSION_UNKNOWN = 'LEGAL_DOCUMENT_VERSION_UNKNOWN',
+  /** Falta aceptar un documento cuyo rechazo impide usar el servicio. */
+  LEGAL_CONSENT_REQUIRED = 'LEGAL_CONSENT_REQUIRED',
+  /**
+   * La cuenta ya existía pero hay documentos obligatorios en una versión que
+   * esa persona todavía no ha aceptado. Se responde en vez de dejarla entrar:
+   * el art. 7 de la LFPDPPP exige que el consentimiento sea sobre la versión
+   * vigente, y aceptarlo al alta y no después dejaría el contrato apoyado en un
+   * texto que ya nadie tiene delante.
+   */
+  LEGAL_VERSION_OUTDATED = 'LEGAL_VERSION_OUTDATED',
 }

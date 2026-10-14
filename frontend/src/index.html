@@ -8,9 +8,26 @@
   <link rel="icon" type="image/png" href="/assets/images/logos/logo_naranja.png">
   <link rel="apple-touch-icon" href="/assets/images/logos/logo_naranja.png">
   <meta name="theme-color" content="#e47c3f">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!--
+    La tipografía NO se pide aquí a propósito.
+
+    Antes este archivo traía `<link href="https://fonts.googleapis.com/...">`, que
+    se descargaba en **cada** visita: la dirección IP de cualquier visitante se
+    leía a Google antes de que nadie hubiera contestado nada, y el artículo 14,
+    párrafo tercero, del Reglamento de la LFPDPPP obliga a informar en ese mismo
+    momento del uso de mecanismos que recaban datos automáticamente.
+
+    Se resuelve en dos pasos:
+
+    1. `styles.scss` tiene `@font-face` apuntando a `/assets/fonts/`, donde se
+       sirve Rubik desde el propio dominio. Rubik es SIL OFL 1.1, que permite
+       autoalojarla. Cero peticiones a terceros y cero espera: es el camino
+       correcto, no una concessions.
+    2. El CSS se carga desde el propio origen en la primera visita, así que la
+       tipografía tampoco depende del consentimiento de cookies. No es una
+       tecnología de terceros y no debe de estar detrás de un banner.
+  -->
 </head>
 <body>
   <app-root></app-root>

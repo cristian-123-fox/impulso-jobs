@@ -4,6 +4,7 @@ import {
   inject,
   input,
   output,
+  viewChild,
 } from '@angular/core';
 import {
   NonNullableFormBuilder,
@@ -11,12 +12,23 @@ import {
   Validators,
 } from '@angular/forms';
 import { TranslocoDirective } from '@jsverse/transloco';
+import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import {
   ContactFormValue,
   ContactInfoCard,
 } from '@/features/public/contact/models/contact.models';
-import { IjButton, IjIcon, IjInput, IjPhoneInput, IjTextarea } from '@/shared/ui';
+import {
+  IjButton,
+  IjIcon,
+  IjInput,
+  IjLegalConsent,
+  IjPhoneInput,
+  IjTextarea,
+} from '@/shared/ui';
 import { BRAND_EMAILS } from '@/shared/catalogs/brand.catalogs';
+
+import type { AcceptedDocument } from '@/features/public/legal/data/legal.api';
+import { LegalConsentFacade } from '@/features/public/legal/data/legal-consent.facade';
 import { phoneRequiredValidator } from '@/shared/validators/phone.validator';
 import { emptyPhoneValue, toPhonePayload } from '@/shared/utils/phone';
 
@@ -34,6 +46,7 @@ import { emptyPhoneValue, toPhonePayload } from '@/shared/utils/phone';
     IjInput,
     IjPhoneInput,
     IjTextarea,
+    IjLegalConsent,
     TranslocoDirective,
   ],
   template: `
@@ -98,6 +111,23 @@ import { emptyPhoneValue, toPhonePayload } from '@/shared/utils/phone';
               vez de fingir un acuse de recibo, el envío abre el gestor de
               correo con todo redactado, que sí llega a su destino.
             -->
+            <!--
+              Aviso de privacidad, obligatorio antes de leer el mensaje.
+
+              El artículo 16, fracción II de la LFPDPPP exige dar la
+              «modalidad simplificada» —identidad del responsable, finalidades y
+              medios para limitar el uso— en el punto mismo en que se recaba, y
+              no una remisión a una página que el usuario tendría que abrir. Este
+              bloque es esa modalidad simplificada: las tres casillas del
+              componente cumplen el contenido mínimo, y el enlace abre el aviso
+              integral.
+
+              El alta no va en el formGroup por lo mismo que en los registros: su
+              regla —la casilla obligatoria nunca marcada— es incompatible con
+              el estado por defecto de un control de formulario.
+            -->
+            <ij-legal-consent #consent class="block" />
+
             <p class="text-[13px] leading-relaxed text-muted">
               {{ t('contact.form.alsoWrite') }}
               <a
@@ -193,6 +223,16 @@ export class ContactFormSection {
       return;
     }
 
+    // Antes de leer el mensaje. El backend también lo exigiría con un 400, pero
+    // fallar aquí deja el error junto a la casilla que falta.
+    if (
+      !this.consent().validate(
+        this.i18n.t('legal.consent.requiredError'),
+      )
+    ) {
+      return;
+    }
+
     const value = this.form.getRawValue();
     // El correo que se abre lleva el teléfono ya en E.164, con su indicativo:
     // es lo que hace falta para devolver la llamada a Bogotá o a Toronto.
@@ -200,6 +240,15 @@ export class ContactFormSection {
       ...value,
       phone: toPhonePayload(value.phone).phone ?? '',
     });
+
+    // La constancia del consentimiento va por su cuenta, y no dentro del mismo
+    // evento: el formulario de contacto todavía no tiene endpoint, así que el
+    // mensaje no sale a ninguna parte. La aceptación sí tiene que quedar, y
+    // `POST /legal/consents` aceptaVisitantes sin cuenta a través del correo.
+    this.consents
+      .record(this.acceptance(), 'CONTACT_FORM', { formId: 'contacto' }, value.email)
+      .subscribe();
+
     this.form.reset({
       name: '',
       email: '',
@@ -207,5 +256,18 @@ export class ContactFormSection {
       subject: '',
       message: '',
     });
+  }
+
+  /** Bloque de casillas: se declara antes de leer el mensaje. */
+  private readonly consent = viewChild.required<IjLegalConsent>('consent');
+  private readonly consents = inject(LegalConsentFacade);
+  private readonly i18n = inject(AppTranslateService);
+
+  private acceptance(): AcceptedDocument[] {
+    return this.consent().acceptance().map((doc) => ({
+      code: doc.code as AcceptedDocument['code'],
+      version: doc.version,
+      granted: doc.granted,
+    }));
   }
 }

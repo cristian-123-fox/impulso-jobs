@@ -29,9 +29,21 @@ export interface CurrentUserResponse {
   permissions: string[];
 }
 
+/** Un documento tal y como se declara que se acepta. Espejo de `AcceptedDocumentDto`. */
+export interface LegalConsentDocument {
+  code: 'TERMS' | 'PRIVACY' | 'MARKETING' | 'IMAGE_RIGHTS';
+  version: string;
+  granted: boolean;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
+  /**
+   * Sólo viaja cuando el backend pidió aceptar una versión nueva
+   * (LEGAL_VERSION_OUTDATED). En un login normal se omite entero.
+   */
+  legal?: { documents: LegalConsentDocument[] };
 }
 
 export interface LoginResponse {

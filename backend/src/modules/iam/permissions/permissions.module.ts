@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
 import { Component } from '@/modules/iam/permissions/entities/component.entity';
@@ -33,7 +33,9 @@ import { PermissionsController } from '@/modules/iam/permissions/controllers/per
       RolePermission,
       Role,
     ]),
-    AuthModule,
+    // forwardRef por el ciclo con AuthModule, que importa LegalModule para el
+    // re-consentimiento y de ahí vuelve este módulo.
+    forwardRef(() => AuthModule),
   ],
   controllers: [PermissionsController],
   providers: [

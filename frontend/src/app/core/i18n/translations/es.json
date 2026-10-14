@@ -26,7 +26,8 @@
       "placeholder": "tu@correo.com",
       "submit": "Suscribirme",
       "pending": "Todavía no podemos guardar tu correo: el aviso de vacantes se activa cuando abramos el envío por correo.",
-      "hint": "Un correo por semana. Puedes darte de baja cuando quieras."
+      "hint": "Un correo por semana. Puedes darte de baja cuando quieras.",
+      "badge": "Alertas de empleo"
     },
     "tagline": "Conectamos talento y empresas para impulsar tu próxima oportunidad profesional.",
     "addressLabel": "Dirección:",
@@ -37,7 +38,8 @@
       "candidates": "Candidatos",
       "companies": "Empresas",
       "brand": "Impulso Jobs",
-      "legal": "Legal"
+      "legal": "Legal",
+      "downloads": "Descargar"
     },
     "links": {
       "searchJobs": "Buscar empleos",
@@ -688,7 +690,8 @@
       "socialDivider": "O ingresa con",
       "noAccount": "¿No tienes cuenta?",
       "createAccount": "Crea una cuenta",
-      "passwordChanged": "Contraseña actualizada. Entra de nuevo con la contraseña nueva."
+      "passwordChanged": "Contraseña actualizada. Entra de nuevo con la contraseña nueva.",
+      "reconsentTitle": "Acepta los documentos legales para entrar"
     },
     "errors": {
       "invalidCredentials": "Correo o contraseña incorrectos.",
@@ -697,7 +700,9 @@
       "notVerified": "Debes verificar tu correo antes de iniciar sesión.",
       "googleInvalid": "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
       "googleNotConfigured": "El inicio de sesión con Google no está disponible por ahora.",
-      "generic": "No pudimos iniciar sesión. Inténtalo más tarde."
+      "generic": "No pudimos iniciar sesión. Inténtalo más tarde.",
+      "legalOutdated": "Actualizamos nuestros documentos legales. Revísalos y acepta la versión vigente para entrar.",
+      "legalFirstTime": "Antes de entrar tienes que aceptar los Términos y el Aviso de privacidad. Los aceptas una sola vez."
     },
     "forgot": {
       "title": "Recuperar contraseña",
@@ -821,5 +826,91 @@
         "rfcTaken": "Ya existe una empresa registrada con este RFC."
       }
     }
+  },
+  "legal": {
+    "breadcrumb": "Documento legal",
+    "versionLine": "Versión {{version}} · en vigor desde el {{date}}",
+    "summary": "En resumen",
+    "index": "Contenido",
+    "identityIncomplete": "Aviso interno: faltan datos del responsable. Rellena los campos [PENDIENTE] en shared/catalogs/legal.catalogs.ts antes de publicar.",
+    "documents": {
+      "privacy": "Aviso de privacidad",
+      "terms": "Términos y condiciones",
+      "cookies": "Política de cookies",
+      "refund": "Política de reembolso",
+      "imageRights": "Cesión de derechos de imagen",
+      "marketing": "Finalidades comerciales"
+    },
+    "consent": {
+      "requiredLabel": "He leído y acepto los",
+      "and": "y el",
+      "marketingLabel": "Autorizo que me envíen comunicaciones comerciales y vacantes similares. Puedo cancelar cuando quiera.",
+      "imageLabel": "Autorizo el uso de mi fotografía de perfil para mostrarme en el banco de talento.",
+      "requiredError": "Debes leer y aceptar los Términos y el Aviso de privacidad para continuar.",
+      "signupNotice": "Si aún no tienes cuenta, al entrar con Google se creará y aceptas los Términos y el Aviso de privacidad."
+    },
+    "cookies": {
+      "banner": {
+        "title": "Cookies y tecnologías de terceros",
+        "body": "Usamos cookies propias para recordar tu idioma y tu respuesta a este aviso. Con tu permiso cargaríamos tipografía y mapas de terceros, que ven tu dirección IP. Puedes rechazar todo y seguir usando el sitio con normalidad."
+      },
+      "acceptAll": "Aceptar todo",
+      "rejectAll": "Rechazar todo",
+      "showDetails": "Ver qué usamos",
+      "hideDetails": "Ocultar detalle",
+      "alwaysOn": "siempre activa",
+      "toggle": "Permitir {{name}}",
+      "manageTitle": "Cambiar mis preferencias",
+      "manageBody": "Puedes revisar y cambiar tu decisión en cualquier momento. Al reabrir el aviso no se carga nada hasta que vuelvas a elegir.",
+      "reopen": "Cambiar mis preferencias",
+      "googleBlocked": "El acceso con Google necesita cookies funcionales. Puedes activarlas en la",
+      "categories": {
+        "necessary": "Imprescindibles",
+        "functional": "Funcionales",
+        "analytics": "Analíticas",
+        "marketing": "Comerciales"
+      },
+      "purpose": {
+        "ij_lang": "Recordar el idioma que elegiste. No te identifica.",
+        "ij_consent": "Recordar tu respuesta a este aviso para no volver a preguntarlo.",
+        "gis": "Botón de acceso con Google. Google puede ver tu IP al iniciar sesión.",
+        "osm_tiles": "Mapa de la página de contacto y de las vacantes. Cada tesela comunica tu IP a OpenStreetMap.",
+        "stripe": "Procesar el pago de planes y promociones."
+      }
+    },
+    "copyright": "Derechos de autor",
+    "copyrightPage": {
+      "title": "Aviso y contraaviso de contenido protegido",
+      "intro": "Si consideras que una imagen o un texto publicado en Impulso Jobs infringe tus derechos de autor, puedes pedir que lo retiremos. Y si publicaste algo y retiramos tu material por error, puedes presentar un contraaviso. Ambos procedimientos están previstos en la Ley Federal del Derecho de Autor.",
+      "legalTitle": "Cómo funciona",
+      "rule1": "No condicionamos el retiro a que acredites el registro de la obra ante el Registro Público de la Propiedad Intelectual. Una declaración bajo protesta de decir verdad es suficiente.",
+      "rule2": "Quien publicó el material recibe la notificación y puede responder con un contraaviso.",
+      "rule3": "Presentar un aviso o un contraaviso de mala fe es sancionable administrativamente.",
+      "typeLabel": "Tipo de aviso",
+      "types": {
+        "takedown": "Aviso de titular: retiren el material",
+        "takedownHint": "Eres el titular de los derechos sobre la obra indicada.",
+        "counter": "Contraaviso: el retiro fue un error",
+        "counterHint": "Publicaste el material y solicitaste su reinstate."
+      },
+      "nameLabel": "Nombre completo",
+      "emailLabel": "Correo electrónico",
+      "urlLabel": "URL exacta del material",
+      "urlPlaceholder": "https://impulsojobs.mx/legal/aviso-de-privacidad",
+      "workLabel": "Obra protegida y derecho que se invoke sobre ella",
+      "reasonLabel": "Motivo y descripción de los hechos",
+      "proofLabel": "Enlace a la evidencia de titularidad (opcional)",
+      "proofHint": "Sirve como respaldo, pero no es obligatorio: la ley prohíbe condicionar el retiro a acreditar el registro. Si no tienes enlace, basta tu declaración bajo protesta de decir verdad.",
+      "swornLabel": "Declaro bajo protesta de decir verdad que los datos son ciertos y que soy titular de los derechos invocados. Entiendo que un aviso falso es sancionable.",
+      "submit": "Enviar aviso",
+      "mailFallback": "Enviar por correo",
+      "missingFields": "Faltan campos obligatorios.",
+      "swornRequired": "Debes marcar la declaración bajo protesta de decir verdad.",
+      "takedownSubject": "Aviso de derechos de autor — retiro de material",
+      "counterSubject": "Contraaviso — reinstate de material",
+      "required": "Este campo es obligatorio.",
+      "urlError": "Debe ser una URL completa que empiece por http:// o https://"
+    },
+    "downloadPdf": "Descargar PDF"
   }
 }

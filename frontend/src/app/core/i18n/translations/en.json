@@ -26,7 +26,8 @@
       "placeholder": "you@email.com",
       "submit": "Subscribe",
       "pending": "We can't save your email yet: job alerts start once we turn on email delivery.",
-      "hint": "One email a week. Unsubscribe whenever you like."
+      "hint": "One email a week. Unsubscribe whenever you like.",
+      "badge": "Job alerts"
     },
     "tagline": "We connect talent and companies to drive your next career opportunity.",
     "addressLabel": "Address:",
@@ -37,7 +38,8 @@
       "candidates": "Candidates",
       "companies": "Companies",
       "brand": "Impulso Jobs",
-      "legal": "Legal"
+      "legal": "Legal",
+      "downloads": "Download"
     },
     "links": {
       "searchJobs": "Browse jobs",
@@ -688,7 +690,8 @@
       "socialDivider": "Or sign in with",
       "noAccount": "Don't have an account?",
       "createAccount": "Create one",
-      "passwordChanged": "Password updated. Sign in again with your new password."
+      "passwordChanged": "Password updated. Sign in again with your new password.",
+      "reconsentTitle": "Accept the legal documents to continue"
     },
     "errors": {
       "invalidCredentials": "Wrong email or password.",
@@ -697,7 +700,9 @@
       "notVerified": "You need to verify your email before signing in.",
       "googleInvalid": "We could not sign you in with Google. Please try again.",
       "googleNotConfigured": "Signing in with Google is not available right now.",
-      "generic": "We could not sign you in. Please try again later."
+      "generic": "We could not sign you in. Please try again later.",
+      "legalOutdated": "We updated our legal documents. Review them and accept the current version to continue.",
+      "legalFirstTime": "Before signing in you must accept the Terms and the Privacy Notice. You accept them once."
     },
     "forgot": {
       "title": "Reset your password",
@@ -821,5 +826,91 @@
         "rfcTaken": "A company with this RFC is already registered."
       }
     }
+  },
+  "legal": {
+    "breadcrumb": "Legal document",
+    "versionLine": "Version {{version}} · in force since {{date}}",
+    "summary": "In summary",
+    "index": "Contents",
+    "identityIncomplete": "Internal notice: controller details are missing. Fill in the [PENDIENTE] fields in shared/catalogs/legal.catalogs.ts before publishing.",
+    "documents": {
+      "privacy": "Privacy notice",
+      "terms": "Terms and conditions",
+      "cookies": "Cookie policy",
+      "refund": "Refund policy",
+      "imageRights": "Image rights assignment",
+      "marketing": "Commercial purposes"
+    },
+    "consent": {
+      "requiredLabel": "I have read and accept the",
+      "and": "and the",
+      "marketingLabel": "I agree to receive commercial messages and similar vacancies. I can cancel at any time.",
+      "imageLabel": "I authorise the use of my profile photo to appear in the talent bank.",
+      "requiredError": "You must read and accept the Terms and the Privacy notice to continue.",
+      "signupNotice": "If you do not have an account yet, signing in with Google will create one and you accept the Terms and the Privacy Notice."
+    },
+    "cookies": {
+      "banner": {
+        "title": "Cookies and third-party technologies",
+        "body": "We use our own cookies to remember your language and your answer to this banner. With your permission we would load third-party fonts and maps, which see your IP address. You can reject everything and keep using the site normally."
+      },
+      "acceptAll": "Accept all",
+      "rejectAll": "Reject all",
+      "showDetails": "See what we use",
+      "hideDetails": "Hide details",
+      "alwaysOn": "always on",
+      "toggle": "Allow {{name}}",
+      "manageTitle": "Change my preferences",
+      "manageBody": "You can review and change your decision at any time. Reopening the banner loads nothing until you choose again.",
+      "reopen": "Change my preferences",
+      "googleBlocked": "Sign in with Google needs functional cookies. You can enable them in the",
+      "categories": {
+        "necessary": "Essential",
+        "functional": "Functional",
+        "analytics": "Analytics",
+        "marketing": "Marketing"
+      },
+      "purpose": {
+        "ij_lang": "Remembers the language you chose. Does not identify you.",
+        "ij_consent": "Remembers your answer to this banner so we do not ask again.",
+        "gis": "Sign in with Google button. Google can see your IP when you sign in.",
+        "osm_tiles": "Map on the contact page and on vacancies. Each tile sends your IP to OpenStreetMap.",
+        "stripe": "Processing payment for plans and promotions."
+      }
+    },
+    "copyright": "Copyright",
+    "copyrightPage": {
+      "title": "Copyright notice and counter-notice",
+      "intro": "If you believe an image or text published on Impulso Jobs infringes your copyright, you can ask us to remove it. And if you published something that we removed by mistake, you can file a counter-notice. Both procedures are set out in the Federal Copyright Law.",
+      "legalTitle": "How it works",
+      "rule1": "We do not condition removal on you registering the work with the copyright registry. A statement under oath of truth is enough.",
+      "rule2": "Whoever published the material is notified and may respond with a counter-notice.",
+      "rule3": "Filing a bad-faith notice or counter-notice is administratively penalised.",
+      "typeLabel": "Notice type",
+      "types": {
+        "takedown": "Rights-holder notice: remove this material",
+        "takedownHint": "You hold the rights in the work described.",
+        "counter": "Counter-notice: the removal was a mistake",
+        "counterHint": "You published the material and want it restored."
+      },
+      "nameLabel": "Full name",
+      "emailLabel": "Email address",
+      "urlLabel": "Exact URL of the material",
+      "urlPlaceholder": "https://impulsojobs.mx/legal/aviso-de-privacidad",
+      "workLabel": "Protected work and the right you claim over it",
+      "reasonLabel": "Reason and description of the facts",
+      "proofLabel": "Link to evidence of ownership (optional)",
+      "proofHint": "Useful as backup, but not required: the law forbids conditioning removal on registering the work. If you have no link, your statement under oath of truth is enough.",
+      "swornLabel": "I declare under oath of truth that the details are accurate and that I hold the rights claimed. I understand that a false notice is penalised.",
+      "submit": "Send notice",
+      "mailFallback": "Send by email",
+      "missingFields": "Required fields are missing.",
+      "swornRequired": "You must tick the statement under oath of truth.",
+      "takedownSubject": "Copyright notice — material removal",
+      "counterSubject": "Counter-notice — material reinstatement",
+      "required": "This field is required.",
+      "urlError": "Must be a full URL starting with http:// or https://"
+    },
+    "downloadPdf": "Download PDF"
   }
 }

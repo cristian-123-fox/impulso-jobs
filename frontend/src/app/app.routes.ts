@@ -92,6 +92,15 @@ export const routes: Routes = [
         loadChildren: () =>
           import('@/features/public/plans/plans.routes').then((m) => m.routes),
       },
+      // Documentos legales, bajo `/legal` para que el grupo sea lazy sin
+      // ensuciar las rutas hermanas del portal. La URL final queda
+      // `/legal/aviso-de-privacidad`, que también es mejor para agrupar en un
+      // sitemap.
+      {
+        path: 'legal',
+        loadChildren: () =>
+          import('@/features/public/legal/legal.routes').then((m) => m.LEGAL_ROUTES),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

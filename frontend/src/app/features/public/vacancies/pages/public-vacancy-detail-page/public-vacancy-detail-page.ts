@@ -17,6 +17,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ThirdPartyGateService } from '@/core/consent/third-party-gate.service';
 import { TranslocoDirective } from '@jsverse/transloco';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { LocaleFormatService } from '@/core/i18n/locale-format.service';
@@ -606,6 +607,7 @@ const BRAND_COLOR = '#e47c3f';
   `,
 })
 export class PublicVacancyDetailPage {
+  private readonly gate = inject(ThirdPartyGateService);
   private readonly api = inject(PublicVacanciesApi);
   private readonly applicationsApi = inject(CandidateApplicationsApi);
   private readonly route = inject(ActivatedRoute);
@@ -1175,6 +1177,12 @@ export class PublicVacancyDetailPage {
   }
 
   private async initLeaflet(el: HTMLElement, coords: MapCoords): Promise<void> {
+    // Sin consentimiento para la categoría funcional no se inicializa el mapa:
+    // cada tesela que descarga comunica la IP del visitante a
+    // OpenStreetMap, y el artículo 14, párrafo tercero, del Reglamento de la
+    // LFPDPPP exige informar de ello en el momento y de cómo evitarlo.
+    if (!this.gate.allows('functional')) return;
+
     // Leaflet es CJS: según el interop, el namespace puede venir en `default`.
     const mod = await import('leaflet');
     const L =

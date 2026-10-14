@@ -41,6 +41,14 @@ export const routes: Routes = [
       ),
   },
   {
+    // Consulta del registro de consentimientos (sólo lectura). Va despues de
+    // pagos y antes de denuncias porque es lo que se mira cuando llega una
+    // reclamacion o una solicitud de ARCO.
+    path: 'legal',
+    loadChildren: () =>
+      import('@/features/admin/legal/legal.routes').then((m) => m.routes),
+  },
+  {
     path: 'denuncias',
     loadChildren: () =>
       import('@/features/admin/reports/reports.routes').then((m) => m.routes),

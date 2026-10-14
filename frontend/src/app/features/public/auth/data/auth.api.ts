@@ -7,6 +7,7 @@ import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import { LoginRequest, LoginResponse } from '@/core/models/auth.models';
 import {
   ConfirmResetPayload,
+  type LegalAcceptancePayload,
   RegisterPayload,
   RegisterResult,
 } from '@/features/public/auth/models/auth.models';
@@ -27,11 +28,20 @@ export class AuthApi {
    * Login con Google: manda el ID token que GIS dio en el navegador. El
    * backend lo verifica contra Google y, si el correo no existe, crea la
    * cuenta de candidato.
+   *
+   * `legal` viaja siempre, aunque sea en un login de cuenta ya existente: el
+   * backend sólo lo exige cuando va a crear la cuenta, que es el único caso en el
+   * que hay consentimiento que recabar — y también el único en el que se guarda
+   * una fotografía de Google sin que nadie la haya autorizado.
    */
-  googleLogin(credential: string): Observable<LoginResponse> {
+  googleLogin(
+    credential: string,
+    legal: LegalAcceptancePayload,
+  ): Observable<LoginResponse> {
     return this.http
       .post<ApiSuccessResponse<LoginResponse>>(`${this.base}/auth/google`, {
         credential,
+        legal,
       })
       .pipe(map((response) => response.content));
   }

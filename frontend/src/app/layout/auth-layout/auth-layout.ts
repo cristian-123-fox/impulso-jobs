@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { IjLogo } from '@/shared/ui';
+import { IjCookieBanner } from '@/shared/ui/cookie-banner/cookie-banner';
 
 /**
  * Shell mínimo para las pantallas de acceso (login/registro/reset). Aporta el
@@ -11,7 +12,7 @@ import { IjLogo } from '@/shared/ui';
 @Component({
   selector: 'app-auth-layout',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterOutlet, IjLogo],
+  imports: [RouterLink, RouterOutlet, IjLogo, IjCookieBanner],
   template: `
     <main
       class="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface px-5 py-10"
@@ -42,6 +43,14 @@ import { IjLogo } from '@/shared/ui';
         <router-outlet />
       </div>
     </main>
+
+    <!--
+      También aquí, y es especialmente importante: la ruta /auth/login es donde se
+      carga Google Identity Services. Sin este aviso, el script de Google se
+      descargaría antes de que nadie hubiera dicho nada, y además a una altura
+      de 440 px el banner taparía el botón de Google, que está justo debajo.
+    -->
+    <ij-cookie-banner />
   `,
 })
 export class AuthLayout {

@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { MailerModule } from '@/common/mailer/mailer.module';
 import { AuditModule } from '@/modules/audit/audit.module';
+import { LegalModule } from '@/modules/legal/legal.module';
 import { UsersModule } from '@/modules/iam/users/users.module';
 import { AuthController } from '@/modules/iam/auth/controllers/auth.controller';
 import { PasswordResetController } from '@/modules/iam/auth/controllers/password-reset.controller';
@@ -28,6 +29,9 @@ import { ConfirmEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/co
     UsersModule,
     AuditModule,
     MailerModule,
+    // Ciclo con LegalModule, que importa AuthModule por sus guards. El
+    // re-consentimiento vive en el módulo legal y se necesita aquí.
+    forwardRef(() => LegalModule),
   ],
   controllers: [
     AuthController,

@@ -1,3 +1,4 @@
+import { LegalConsentDocument } from '@/core/models/auth.models';
 /** Tipo de cuenta elegido en el selector del login (afecta copy/redirección). */
 export type AccountType = 'candidate' | 'company';
 
@@ -7,6 +8,11 @@ export interface LoginCredentials {
   password: string;
   remember: boolean;
   accountType: AccountType;
+  /**
+   * Sólo se rellena cuando el backend pidió aceptar una versión nueva. En un
+   * login normal viaja `undefined` y la petición no lleva el bloque.
+   */
+  legal?: LegalAcceptancePayload;
 }
 
 export type LoginStatus = 'idle' | 'loading' | 'success' | 'error';
@@ -78,6 +84,7 @@ export interface RegisterCompanyPayload {
   accountType: 'company';
   email: string;
   password: string;
+  legal: LegalAcceptancePayload;
   company: RegisterCompanyData;
 }
 
@@ -85,7 +92,19 @@ export interface RegisterCandidatePayload {
   accountType: 'candidate';
   email: string;
   password: string;
+  legal: LegalAcceptancePayload;
   candidate: RegisterCandidateData;
+}
+
+/**
+ * Lo que la persona acepta al registrarse. Es una lista y no campos sueltos
+ * porque el front decide qué casillas mostró: un candidato ve la de cesión de
+ * imagen y una empresa no. `TERMS` y `PRIVACY` con `granted: true` son
+ * obligatorios; el backend lo rechaza con 400 si no llegan (arts. 7 y 16
+ * LFPDPPP).
+ */
+export interface LegalAcceptancePayload {
+  documents: LegalConsentDocument[];
 }
 
 export type RegisterPayload = RegisterCompanyPayload | RegisterCandidatePayload;

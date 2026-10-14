@@ -43,7 +43,38 @@ import {
 } from '@/modules/candidates/repositories/candidate-profile.repository.interface';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
 import { RequestEmailVerificationUseCase } from '@/modules/iam/auth/use-cases/request-email-verification.use-case';
-import { AccountType } from '@/modules/iam/registration/dto/register.dto';
+import {
+  AccountType,
+  RegisterLegalDto,
+} from '@/modules/iam/registration/dto/register.dto';
+import type { AcceptedDocumentDto } from '@/modules/legal/dto/record-consent.dto';
+import {
+  ConsentMethod,
+  ConsentSource,
+  LegalDocumentCode,
+} from '@/modules/legal/enums/legal.enums';
+import { RecordConsentUseCase } from '@/modules/legal/use-cases/record-consent.use-case';
+
+/**
+ * Documentos sin los que no hay alta. El contrato (art. 7 LFPDPPP: el
+ * tratamiento está sujeto al consentimiento) y el aviso (art. 16: hay que
+ * darlo a conocer antes de recabar), que es también lo que exige la LFPC para
+ * un contrato de adhesión.
+ */
+const REQUIRED_AT_REGISTRATION: readonly LegalDocumentCode[] = [
+  LegalDocumentCode.TERMS,
+  LegalDocumentCode.PRIVACY,
+];
+
+const REQUIRED_LABEL: Record<LegalDocumentCode, string> = {
+  [LegalDocumentCode.TERMS]: 'los Términos y condiciones',
+  [LegalDocumentCode.PRIVACY]: 'el Aviso de privacidad',
+  [LegalDocumentCode.COOKIES]: 'la Política de cookies',
+  [LegalDocumentCode.REFUND]: 'la Política de reembolso',
+  [LegalDocumentCode.IMAGE_RIGHTS]: 'la cesión de derechos de imagen',
+  [LegalDocumentCode.MARKETING]:
+    'el consentimiento para comunicaciones comerciales',
+};
 
 export interface RegisterCompanyData {
   businessName: string;
@@ -85,6 +116,8 @@ export interface RegisterCommand {
   accountType: AccountType;
   email: string;
   password: string;
+  /** Versiones aceptadas y casillas marcadas. Sin esto el registro es 400. */
+  legal: RegisterLegalDto;
   company?: RegisterCompanyData;
   candidate?: RegisterCandidateData;
   ip: string;
@@ -117,12 +150,18 @@ export class RegisterUseCase {
     private readonly candidates: ICandidateProfileRepository,
     private readonly hasher: PasswordHasherService,
     private readonly requestVerification: RequestEmailVerificationUseCase,
+    private readonly recordConsent: RecordConsentUseCase,
     private readonly audit: AuditService,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async execute(command: RegisterCommand): Promise<RegisterResult> {
     const email = command.email.trim().toLowerCase();
+
+    // Lo primero de todo: sin aceptación válida de Términos y Aviso no se
+    // escribe nada. Va antes que comprobar el `accountType` porque un cliente
+    // malicioso manda ambas cosas y el orden sólo decide qué error ve.
+    this.assertLegalAcceptance(command.legal);
 
     if (
       command.accountType !== 'company' &&
@@ -272,6 +311,22 @@ export class RegisterUseCase {
         },
         manager,
       );
+
+      // El consentimiento va en la MISMA transacción que el alta. Si la
+      // constancia no se pudiera escribir, tampoco debe existir la cuenta: un
+      // usuario sin evidencia de qué aceptó es exactamente lo que la ley
+      // prohíbe, y separarlo dejaría la puerta abierta a altas sin registro.
+      await this.recordConsent.execute({
+        documents: this.acceptedDocuments(command),
+        method: ConsentMethod.EXPRESS_WRITTEN,
+        source: ConsentSource.REGISTRATION,
+        userId: saved.id,
+        subjectEmail: email,
+        metadata: { accountType: command.accountType },
+        ip: command.ip,
+        userAgent: command.userAgent,
+        manager,
+      });
     });
 
     // Verificación de correo (M4) fuera de la transacción: la cuenta ya existe.
@@ -295,5 +350,49 @@ export class RegisterUseCase {
       ErrorCode.VALIDATION_ERROR,
       `Faltan los datos del ${kind}.`,
     );
+  }
+
+  /**
+   * Valida la lista de documentos antes de tocar la base de datos.
+   *
+   * Los dos obligatorios se comprueban **antes** de abrir la transacción, no
+   * dentro: si a alguien le falta marcar la casilla, no tiene por qué ver
+   * crearse y deshacerse una cuenta.
+   *
+   * `EXPRESS_WRITTEN` y no `EXPRESS_CHECKBOX`: además del clic queda escrito
+   * qué versión vio, cuándo, desde qué IP y con qué huella del texto. Es el
+   * nivel que pide el art. 8 LFPDPPP cuando hay datos personales sensibles (el
+   * candidato entrega documento oficial y fecha de nacimiento) y el que
+   * corresponde a un contrato de adhesión bajo la LFPC.
+   */
+  private assertLegalAcceptance(legal: RegisterLegalDto): void {
+    const accepted = new Set(
+      (legal?.documents ?? [])
+        .filter((doc) => doc.granted)
+        .map((doc) => doc.code),
+    );
+
+    for (const required of REQUIRED_AT_REGISTRATION) {
+      if (!accepted.has(required)) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.LEGAL_CONSENT_REQUIRED,
+          `Debes leer y aceptar ${REQUIRED_LABEL[required]}.`,
+        );
+      }
+    }
+  }
+
+  /** Sustituye el array del comando por los documentos ya validados. */
+  private acceptedDocuments(command: RegisterCommand): AcceptedDocumentDto[] {
+    // Lo que se rechaza también se registra: que a alguien se le ofreciera el
+    // newsletter y lo declinara es justamente lo que demuestra que la casilla no
+    // venía marcada.
+    return command.legal.documents.map((doc) => ({
+      code: doc.code,
+      version: doc.version,
+      granted: doc.granted,
+      ...(doc.contentHash ? { contentHash: doc.contentHash } : {}),
+    }));
   }
 }
