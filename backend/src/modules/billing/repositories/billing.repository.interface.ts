@@ -82,6 +82,13 @@ export interface IBillingRepository {
     companyId: string,
     now: Date,
     manager?: EntityManager,
+    /**
+     * `true` bloquea la fila (`SELECT … FOR UPDATE`) hasta que termine la
+     * transacción. Es obligatorio al consumir el último cupo de promoción:
+     * sin el lock, dos peticiones simultáneas pueden pasar la comprobación y
+     * gastar el mismo crédito.
+     */
+    lock?: boolean,
   ): Promise<CompanySubscription | null>;
   /** Suscripciones en curso cuyo periodo ya venció (trabajo de expiración). */
   findExpiredActiveSubscriptions(

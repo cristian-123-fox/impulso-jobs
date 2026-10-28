@@ -23,6 +23,7 @@ import type { AuthenticatedUser } from '@/common/types/authenticated-user';
 import {
   CheckoutResponseDto,
   OrderResponseDto,
+  PromotionListItemDto,
   PromotionResponseDto,
   SubscriptionResponseDto,
 } from '@/modules/billing/dto/billing-response.dto';
@@ -90,7 +91,7 @@ export class CompanyBillingController {
     @Query() query: ListPromotionsQueryDto,
     @CurrentUser() user: AuthenticatedUser,
     @ClientInfo() client: ClientInfoPayload,
-  ): Promise<PaginatedResponse<PromotionResponseDto>> {
+  ): Promise<PaginatedResponse<PromotionListItemDto>> {
     return this.promotions.list(
       this.actor(user, client),
       query.page ?? 1,
@@ -185,6 +186,7 @@ export class CompanyBillingController {
       dto.method,
       dto.provider ?? PaymentProvider.MANUAL,
       this.actor(user, client),
+      dto.recurringConsent ?? false,
     );
   }
 

@@ -48,8 +48,13 @@ export class LoginFacade {
   login(credentials: LoginCredentials, legal?: LegalAcceptancePayload): void {
     this.pendingEmail = credentials.email;
     this.start();
+    // `legal` puede venir como segundo argumento (compatibilidad) o embebido
+    // dentro de `credentials` (lo que hace el formulario al re-consentir). Si se
+    // ignora el segundo, el bloque legal nunca llega al backend y el login entra
+    // en un bucle pidiendo aceptar una y otra vez.
+    const legalToSend = legal ?? credentials.legal;
     this.api
-      .login({ email: credentials.email, password: credentials.password, legal })
+      .login({ email: credentials.email, password: credentials.password, legal: legalToSend })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.onSuccess(response),

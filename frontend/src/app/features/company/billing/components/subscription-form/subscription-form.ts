@@ -9,7 +9,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { IjButton } from '@/shared/ui';
+import { RouterLink } from '@angular/router';
+import { IjButton, IjProviderInfo } from '@/shared/ui';
 import { PaymentChoice } from '@/features/company/billing/components/payment-choice/payment-choice';
 import {
   PaymentMethod,
@@ -23,6 +24,8 @@ export interface SubscriptionRequest {
   planId: string;
   method: PaymentMethod;
   provider: PaymentProvider;
+  /** Aceptación expresa del cobro recurrente (sólo con Stripe). */
+  recurringConsent: boolean;
 }
 
 /**
@@ -33,7 +36,7 @@ export interface SubscriptionRequest {
 @Component({
   selector: 'app-subscription-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, IjButton, PaymentChoice],
+  imports: [CurrencyPipe, RouterLink, IjButton, IjProviderInfo, PaymentChoice],
   template: `
     @if (error()) {
       <p
@@ -80,14 +83,6 @@ export interface SubscriptionRequest {
         </div>
       </div>
 
-      <app-payment-choice
-        [plan]="selectedPlan()"
-        [options]="paymentOptions()"
-        [recurring]="true"
-        [(provider)]="provider"
-        [(method)]="method"
-      />
-
       @if (selectedPlan(); as plan) {
         <div class="rounded-xl bg-surface px-4 py-3.5">
           <div class="flex flex-wrap items-baseline justify-between gap-2">
@@ -105,6 +100,42 @@ export interface SubscriptionRequest {
             automática cuando quieras y conservarás el periodo pagado.
           </p>
         </div>
+
+        <app-payment-choice
+          [plan]="selectedPlan()"
+          [options]="paymentOptions()"
+          [recurring]="true"
+          [(provider)]="provider"
+          [(method)]="method"
+        />
+
+        <ij-provider-info
+          [total]="plan.price.total"
+          [currency]="plan.price.currency"
+        />
+
+        @if (isOnline()) {
+          <label class="flex items-start gap-2.5 rounded-xl border border-line bg-white px-4 py-3 text-[12.5px] leading-relaxed text-body">
+            <input
+              type="checkbox"
+              class="mt-0.5 h-4 w-4 rounded border-line text-brand focus:ring-brand"
+              [checked]="recurringConsent()"
+              (change)="recurringConsent.set($any($event.target).checked)"
+            />
+            <span>
+              Autorizo expresamente el cobro recurrente anual con mi tarjeta y
+              entiendo que la suscripción se renueva sola hasta que cancele la
+              renovación desde mi cuenta. Puedo cancelar en cualquier momento sin
+              penalización; consulta los
+              <a
+                routerLink="/legal/terminos-y-condiciones"
+                target="_blank"
+                class="font-semibold text-brand-strong hover:underline"
+                >Términos y condiciones</a
+              >.
+            </span>
+          </label>
+        }
       }
     </div>
 
@@ -153,6 +184,8 @@ export class SubscriptionForm implements OnInit {
   protected readonly planId = signal('');
   protected readonly provider = signal<PaymentProvider>(PaymentProvider.MANUAL);
   protected readonly method = signal<PaymentMethod>(PaymentMethod.SPEI);
+  /** Debe empezar en `false`: la ley prohíbe la casilla premarcada. */
+  protected readonly recurringConsent = signal(false);
 
   protected readonly selectedPlan = computed(() =>
     this.plans().find((plan) => plan.id === this.planId()),
@@ -170,7 +203,8 @@ export class SubscriptionForm implements OnInit {
   protected readonly canSubmit = computed(
     () =>
       Boolean(this.selectedPlan()) &&
-      (this.choice()?.allowedMethods().includes(this.method()) ?? false),
+      (this.choice()?.allowedMethods().includes(this.method()) ?? false) &&
+      (!this.isOnline() || this.recurringConsent()),
   );
 
   ngOnInit(): void {
@@ -188,6 +222,7 @@ export class SubscriptionForm implements OnInit {
       planId: this.planId(),
       method: this.method(),
       provider: this.provider(),
+      recurringConsent: this.recurringConsent(),
     });
   }
 }

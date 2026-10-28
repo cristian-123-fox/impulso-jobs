@@ -9,6 +9,7 @@ export { IjModal } from '@/shared/ui/modal/modal';
 export { IjRichText } from '@/shared/ui/rich-text/rich-text';
 export { IjPricingCard } from '@/shared/ui/pricing-card/pricing-card';
 export { IjPageHeader } from '@/shared/ui/page-header/page-header';
+export { IjProviderInfo } from '@/shared/ui/provider-info/provider-info';
 export {
   IjPdfViewer,
   type IjPdfFile,

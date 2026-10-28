@@ -97,6 +97,8 @@ export enum PlanFeatureCode {
   EDIT_TITLE_ON_REACTIVATE = 'edit_title_on_reactivate',
   PUBLICATION_DAYS = 'publication_days',
   PROMOTED_VACANCIES = 'promoted_vacancies',
+  /** Duración de la promoción en días; si falta, cae a `publication_days`. */
+  PROMOTION_DAYS = 'promotion_days',
 }
 
 /** IVA mexicano. Se guarda por plan (`tax_rate`) por si cambia la tasa. */

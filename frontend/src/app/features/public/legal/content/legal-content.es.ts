@@ -24,8 +24,9 @@ const privacy: LegalDocumentContent = {
       'tratan con consentimiento expreso, no tácito.',
     'Mostramos tu información a las empresas que contratan con nosotros solo ' +
       'cuando tu lo autorizas al hacer visible tu perfil.',
-    'No vendemos tus datos, no los usamos para publicidad de terceros y no los ' +
-      'salimos de México sin una base legal expresa.',
+    'No vendemos tus datos ni los usamos para publicidad de terceros. Algunos ' +
+      'proveedores tecnológicos que nos prestan servicio pueden tratarlos fuera ' +
+      'de México, siempre como encargados y bajo contrato.',
     'Puedes ejercer tus derechos ARCO y revocar tu consentimiento cuando ' +
       'quieras, sin dar explicaciones ni penalización.',
   ],
@@ -134,14 +135,15 @@ const privacy: LegalDocumentContent = {
           'Aun así exigimos tu consentimiento expreso al hacer visible tu ' +
           'perfil, para que la decisión sea tuya y quede registrada.',
         'A los proveedores que nos contratan para operar el servicio, en su ' +
-          'papel de persona encargada: pasarela de pago, correo electrónico y ' +
-          'alojamiento. La persona encargada recibe este aviso y asume las ' +
-          'mismas obligaciones que nosotros.',
+          'papel de persona encargada: pasarela de pago, correo electrónico, ' +
+          'inicio de sesión con Google y alojamiento. La persona encargada ' +
+          'recibe este aviso y asume las mismas obligaciones que nosotros.',
       ],
       callout:
-        'Las transferencias fuera de México exigirían una base legal propia del ' +
-        'artículo 36 y una cláusula expresa en este aviso. A la fecha de esta ' +
-        'versión no hay ninguna.',
+        'Algunos de esos encargados pueden estar fuera de México. En todos los ' +
+        'casos tratan los datos por cuenta nuestra, no los usan para fines ' +
+        'propios y están sujetos a obligaciones de confidencialidad y seguridad. ' +
+        'No hacemos transferencias a terceros distintos de las dos descritas.',
     },
     {
       id: 'cookies',
@@ -201,7 +203,8 @@ const privacy: LegalDocumentContent = {
           'meses, por el artículo 10, párrafo tercero, de la LFPDPPP.',
         'Constancia de aceptación de documentos legales: se conserva aunque se ' +
           'elimine la cuenta, porque es la evidencia de lo que se aceptó.',
-        'Hoja de vida y archivos que subiste: se eliminan con tu cuenta.',
+        'Hoja de vida y archivos que subiste: se eliminan al purgarse la cuenta, ' +
+          'una vez transcurrido el periodo de retención.',
       ],
       callout:
         'Cuando un dato deja de ser necesario para las finalidades de este ' +
@@ -213,9 +216,9 @@ const privacy: LegalDocumentContent = {
       table: {
         head: ['Derecho', 'Cómo se ejerce sin papeleo'],
         rows: [
-          ['Acceso', 'Descarga completa de tus datos en JSON desde «Mi cuenta»'],
+          ['Acceso', 'Escríbenos al correo de datos personales; te enviamos un volcado completo en JSON'],
           ['Rectificación', 'Edita tu perfil o los datos de tu empresa'],
-          ['Cancelación', 'Baja de cuenta desde «Mi cuenta»; se anula de inmediato'],
+          ['Cancelación', 'Escríbenos al correo de datos personales; la baja se aplica y se invalidan tus sesiones'],
           ['Oposición', 'Cambia la visibilidad de tu perfil en «Configuración»'],
         ],
       },
@@ -246,14 +249,14 @@ const privacy: LegalDocumentContent = {
           'válido.',
       ],
       bullets: [
-        'Desde «Mi cuenta» puedes revocar cada consentimiento y ver el historial ' +
-          'completo de lo que aceptaste, con fecha y versión.',
-        'Escribirnos al correo de datos personales surte el mismo efecto.',
+        'Escríbenos al correo de datos personales para revocar un consentimiento ' +
+          'o pedir el historial completo de lo que aceptaste, con fecha y versión.',
       ],
       callout:
         'Revocar los Términos o el Aviso no cancela tu cuenta ni anula una ' +
         'suscripción en curso: cierra la puerta a tratamientos futuros. Para ' +
-        'cancelar de verdad, usa la baja de cuenta.',
+        'cancelar de verdad, solicita la baja de cuenta por el correo de datos ' +
+        'personales.',
     },
     {
       id: 'menores',
@@ -345,7 +348,8 @@ const terms: LegalDocumentContent = {
       bullets: [
         'Una cuenta por persona; en empresas, una por colaborador autorizado.',
         'Los datos que registras deben ser ciertos y estar al día. Verificamos ' +
-          'el correo y, para candidatos, la identidad documental.',
+          'el correo y validamos el formato y la unicidad del documento de ' +
+          'identidad; no autenticamos documentos oficiales ante la autoridad.',
         'Eres responsable de la confidencialidad de tu contraseña y de toda ' +
           'actividad hecha con tu cuenta.',
         'Notifica de inmediato cualquier uso no autorizado.',
@@ -403,12 +407,14 @@ const terms: LegalDocumentContent = {
           'procesamiento.',
         'El periodo contratado comienza cuando se confirma el pago, no cuando se ' +
           'solicita.',
-        'Emitimos comprobante fiscal digital por cada cobro.',
+        'Emitimos comprobante fiscal digital (CFDI) a solicitud del cliente, una ' +
+          'vez identificado el pago. La solicitud se hace por el correo de ' +
+          'reclamaciones con los datos fiscales de la empresa.',
       ],
       callout:
-        'Las facturas se timbran al identificarse el pago. En medios en efectivo ' +
-        'o transferencia, como el vale de pagado OXXO, el comprobante puede ' +
-        'tardar hasta que el pago se aplica.',
+        'La factura no se timbra automáticamente al cobrar. En medios en efectivo ' +
+        'o transferencia, como el vale de OXXO, el comprobante se emite cuando el ' +
+        'pago se aplica y el cliente lo solicita.',
     },
     {
       id: 'renovacion',
@@ -548,7 +554,8 @@ const terms: LegalDocumentContent = {
   closing:
     'Al marcar las casillas consientes de forma expresa con este documento. ' +
     'Guardamos esa aceptación con su versión, la fecha, la dirección IP y el ' +
-    'navegador, y puedes ver el registro en «Mi cuenta».',
+    'navegador. Puedes pedir una copia del registro escribiendo al correo de ' +
+    'datos personales de la sección 1 del aviso de privacidad.',
 };
 
 /**
@@ -702,7 +709,8 @@ const refund: LegalDocumentContent = {
       'el pago.',
     'Reembolsamos íntegro el error de cobro, el cobro duplicado y el pago sin ' +
       'autorización.',
-    'Reembolsamos la parte proporcional no consumida de una cancelación.',
+    'Puedes solicitar el reembolso proporcional del periodo no consumido; se ' +
+      'tramita por correo y se ejecuta en los plazos de esta política.',
     'No reembolsamos el periodo ya consumido.',
     'Reembolsar no cancela la suscripción: para dejar de cobrar hay que cancelar ' +
       'además.',
@@ -746,16 +754,18 @@ const refund: LegalDocumentContent = {
       heading: '3. Cancelación de una suscripción en curso',
       paragraphs: ['Al cancelar:'],
       bullets: [
-        'Se desactiva el acceso a las funciones de pago de inmediato.',
+        'Se detiene la renovación automática; conservas el acceso hasta el final ' +
+          'del periodo que ya pagaste.',
         'El periodo ya consumido no se devuelve.',
-        'El periodo no consumido se devuelve de forma proporcional, calculada ' +
-          'por días.',
+        'Puedes solicitar el reembolso proporcional del periodo no consumido, ' +
+          'calculado por días, escribiendo al correo de soporte.',
         'La cancelación no genera ningún cargo adicional.',
       ],
       callout:
         'La fracción IX del artículo 76 Bis de la Ley Federal de Protección al ' +
         'Consumidor nos obliga a ofrecer este mecanismo de cancelación inmediata. ' +
-        'No podemos añadirle penalización ni condiciones.',
+        'No podemos añadirle penalización ni condiciones. La cancelación surte ' +
+        'efecto en el momento en que la confirmas desde tu cuenta.',
     },
     {
       id: 'promociones',
@@ -791,7 +801,8 @@ const refund: LegalDocumentContent = {
         'El reembolso se ejecuta por el mismo medio con el que pagaste. Las ' +
           'tarjetas de crédito tienen el plazo del banco emisor, que no depende de ' +
           'nosotros.',
-        'Emitimos o complementamos el comprobante fiscal correspondiente.',
+        'Emitimos la factura (CFDI) a solicitud del cliente, una vez identificado ' +
+          'el pago y con sus datos fiscales.',
       ],
       callout:
         'Los reembolsos se ejecutan en un máximo de quince días hábiles desde ' +

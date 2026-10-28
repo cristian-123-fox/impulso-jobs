@@ -4,18 +4,27 @@ import { Observable, tap } from 'rxjs';
 import { BillingApi } from '@/features/company/billing/data/billing.api';
 import {
   Checkout,
+  EligibleVacancy,
   Order,
   PaymentMethod,
   PaymentProvider,
   PaymentProviderOption,
   Plan,
   Promotion,
+  PromotionListItem,
+  PromotionSummary,
   Subscription,
 } from '@/features/company/billing/models/billing.models';
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
-const PAGE_SIZE = 10;
+/**
+ * La página de promociones muestra activas e historial en dos tablas, sin
+ * paginador propio. Se traen hasta 100 filas: suficiente para el histórico
+ * normal de una empresa y evita que una promoción antigua quede fuera por el
+ * corte de 10.
+ */
+const PAGE_SIZE = 100;
 
 /** Fachada de facturación de la empresa: planes, promociones y suscripción. */
 @Injectable()
@@ -25,8 +34,13 @@ export class BillingFacade {
 
   readonly plans = signal<Plan[]>([]);
   readonly paymentOptions = signal<PaymentProviderOption[]>([]);
-  readonly promotions = signal<Promotion[]>([]);
+  readonly promotions = signal<PromotionListItem[]>([]);
   readonly subscription = signal<Subscription | null>(null);
+  /** Resumen de cupos calculado por el backend (fuente de la sección 1). */
+  readonly summary = signal<PromotionSummary | null>(null);
+  readonly summaryState = signal<LoadState>('idle');
+  readonly eligibleVacancies = signal<EligibleVacancy[]>([]);
+  readonly eligibleState = signal<LoadState>('idle');
   /** `true` en cuanto se sabe si hay suscripción (haya o no). */
   readonly subscriptionLoaded = signal(false);
   /** `true` en cuanto llegó el catálogo, aunque venga vacío. */
@@ -111,6 +125,36 @@ export class BillingFacade {
       });
   }
 
+  /** Resumen de plan y cupos: lo calcula el backend, no el componente. */
+  loadSummary(): void {
+    this.summaryState.set('loading');
+    this.api
+      .summary()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (summary) => {
+          this.summary.set(summary);
+          this.summaryState.set('loaded');
+        },
+        error: () => this.summaryState.set('error'),
+      });
+  }
+
+  /** Vacantes activas sin promoción viva, para el modal de activación. */
+  loadEligibleVacancies(): void {
+    this.eligibleState.set('loading');
+    this.api
+      .eligibleVacancies()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (vacancies) => {
+          this.eligibleVacancies.set(vacancies);
+          this.eligibleState.set('loaded');
+        },
+        error: () => this.eligibleState.set('error'),
+      });
+  }
+
   createPromotion(
     vacancyId: string,
     planId: string | null,
@@ -118,7 +162,13 @@ export class BillingFacade {
   ): Observable<Promotion> {
     return this.api
       .createPromotion(vacancyId, planId, useSubscriptionCredit)
-      .pipe(tap(() => this.loadPromotions(1)));
+      .pipe(
+        tap(() => {
+          this.loadPromotions(1);
+          this.loadSummary();
+          this.loadEligibleVacancies();
+        }),
+      );
   }
 
   checkout(
@@ -135,9 +185,10 @@ export class BillingFacade {
     planId: string,
     method: PaymentMethod,
     provider: PaymentProvider,
+    recurringConsent = false,
   ): Observable<Checkout> {
     return this.api
-      .createSubscription(planId, method, provider)
+      .createSubscription(planId, method, provider, recurringConsent)
       .pipe(tap(() => this.loadSubscription()));
   }
 

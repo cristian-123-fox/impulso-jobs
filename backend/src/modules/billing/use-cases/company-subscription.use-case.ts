@@ -57,9 +57,22 @@ export class CompanySubscriptionUseCase {
     method: PaymentMethod,
     providerName: PaymentProvider,
     actor: BillingActor,
+    recurringConsent = false,
   ): Promise<CheckoutResponseDto> {
     const provider = this.providers.require(providerName);
     this.providers.assertSupports(provider, method, true);
+
+    // La LFPC exige consentimiento expreso e informado para el cobro
+    // recurrente. Con la solicitud de pago no hay cargo automático, así que
+    // sólo se exige cuando la pasarela va a cobrar sola.
+    if (providerName === PaymentProvider.STRIPE && !recurringConsent) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.SUBSCRIPTION_CONSENT_REQUIRED,
+        'Debes aceptar expresamente la renovación automática para pagar en línea.',
+      );
+    }
+
     const company = await this.ownership.requireCompany(actor.userId);
 
     const plan = await this.plans.findById(planId);
@@ -167,7 +180,13 @@ export class CompanySubscriptionUseCase {
       entityId: savedSubscription.id,
       ip: actor.ip,
       userAgent: actor.userAgent,
-      metadata: { planCode: plan.code, method, total: withReference.total },
+      metadata: {
+        planCode: plan.code,
+        method,
+        total: withReference.total,
+        provider: providerName,
+        recurringConsent,
+      },
     });
 
     await this.paymentQueue.notifyPending(

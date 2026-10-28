@@ -2,15 +2,11 @@
  * Datos de contacto de la marca. Un único origen para el footer, la página de
  * contacto y el mapa, para que no vuelvan a divergir entre sí.
  *
- * ────────────────────────────────────────────────────────────────────────────
- * TODO(negocio): esto son DATOS DE MUESTRA, no la sede real.
- * Antes de publicar hay que reemplazar dirección, teléfonos, correos y
- * coordenadas por los de la empresa. Están aquí, juntos y en un solo archivo,
- * precisamente para que sea un cambio de un minuto.
- *
- * Sustituyen al contenido anterior, que situaba la empresa en Bogotá con
- * teléfonos +57 pese a que todo el producto es de México: catálogos de estados
- * y municipios MX, régimen fiscal del SAT, uso de CFDI y precios en MXN.
+ * Dirección, teléfonos y correos confirmados por el negocio para la entrega.
+ * Deben coincidir con `LEGAL_IDENTITY` (aviso de privacidad y términos): si
+ * cambia el domicilio fiscal, se actualizan los dos archivos en el mismo
+ * commit. Las coordenadas son aproximadas a la altura de Av. Alemania 1294;
+ * el mapa es orientativo, no una geolocalización catastral.
  * ────────────────────────────────────────────────────────────────────────────
  */
 export interface BrandOffice {
@@ -23,11 +19,11 @@ export interface BrandOffice {
 }
 
 export const BRAND_OFFICE: BrandOffice = {
-  street: 'Av. Paseo de la Reforma 296, piso 4',
-  locality: 'Col. Juárez, Cuauhtémoc, 06600',
-  city: 'Ciudad de México',
-  lat: 19.4284,
-  lng: -99.1653,
+  street: 'Av. Alemania 1294, Interior 1',
+  locality: 'Col. Moderna, 44190',
+  city: 'Guadalajara, Jalisco',
+  lat: 20.6637456,
+  lng: -103.3581704,
 };
 
 /** Dirección en una línea, para el footer y los metadatos. */

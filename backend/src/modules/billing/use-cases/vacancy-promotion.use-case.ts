@@ -9,8 +9,10 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
   CheckoutResponseDto,
+  PromotionListItemDto,
   PromotionResponseDto,
   toOrderResponse,
+  toPromotionListItem,
   toPromotionResponse,
 } from '@/modules/billing/dto/billing-response.dto';
 import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entity';
@@ -106,22 +108,19 @@ export class VacancyPromotionUseCase {
       let planCode: string | null = null;
 
       await runInTransaction(this.dataSource, async (manager) => {
+        // `FOR UPDATE`: dos peticiones simultáneas no pueden leer el mismo
+        // saldo y gastar el último cupo dos veces.
         const subscription = await this.billing.findLiveSubscriptionByCompany(
           company.id,
           new Date(),
           manager,
+          true,
         );
-        if (
-          !subscription ||
-          subscription.status !== SubscriptionStatus.ACTIVE ||
-          (subscription.promotionCredits ?? 0) -
-            (subscription.usedPromotionCredits ?? 0) <=
-            0
-        ) {
+        if (!subscription || subscription.status !== SubscriptionStatus.ACTIVE) {
           throw new AppException(
             HttpStatus.CONFLICT,
             ErrorCode.PROMOTION_NOT_PAYABLE,
-            'No tienes créditos de promoción disponibles en tu suscripción.',
+            'No tienes una suscripción activa con promociones disponibles.',
           );
         }
 
@@ -147,12 +146,29 @@ export class VacancyPromotionUseCase {
           );
         }
 
-        subscription.usedPromotionCredits =
-          (subscription.usedPromotionCredits ?? 0) + 1;
+        const entitlements = await this.entitlements.resolve(plan, manager);
+        // El plan es la fuente de verdad del cupo. `promotion_credits` en la
+        // suscripción es una caché del periodo: si quedó en 0 por una compra
+        // anterior a la configuración del beneficio, se corrige aquí.
+        const included = Math.max(0, entitlements.promotionCredits);
+        const used = subscription.usedPromotionCredits ?? 0;
+        if (included - used <= 0) {
+          throw new AppException(
+            HttpStatus.CONFLICT,
+            ErrorCode.PROMOTION_NOT_PAYABLE,
+            'No tienes créditos de promoción disponibles en tu suscripción.',
+          );
+        }
+
+        subscription.promotionCredits = included;
+        subscription.usedPromotionCredits = used + 1;
         await this.billing.saveSubscription(subscription, manager);
 
-        const entitlements = await this.entitlements.resolve(plan, manager);
-        const days = entitlements.publicationDays ?? plan.validityDays ?? null;
+        const days =
+          entitlements.promotionDays ??
+          entitlements.publicationDays ??
+          plan.validityDays ??
+          null;
         const startsAt = new Date();
         const endsAt = days === null ? null : this.addDays(startsAt, days);
 
@@ -168,6 +184,9 @@ export class VacancyPromotionUseCase {
         promotion.vacancyId = vacancy.id;
         promotion.planId = plan.id;
         promotion.companyId = company.id;
+        // Origen del cupo: la suscripción que lo financió. En una compra
+        // puntual queda NULL y el origen es la orden.
+        promotion.subscriptionId = subscription.id;
         promotion.purchasedBy = actor.userId;
         promotion.status = PromotionStatus.ACTIVE;
         promotion.pricePaid = '0';
@@ -430,7 +449,7 @@ export class VacancyPromotionUseCase {
     actor: BillingActor,
     page: number,
     limit: number,
-  ): Promise<PaginatedResponse<PromotionResponseDto>> {
+  ): Promise<PaginatedResponse<PromotionListItemDto>> {
     const company = await this.ownership.requireCompany(actor.userId);
     const [rows, total] = await this.billing.findAndCountPromotionsByCompany({
       companyId: company.id,
@@ -438,7 +457,9 @@ export class VacancyPromotionUseCase {
       limit,
     });
 
-    const items = await this.decorate(rows);
+    // Lista deliberadamente sin `order`, `pricePaid` ni `currency`: una compra
+    // no es una promoción. Los cobros se consultan en su propio módulo.
+    const items = await this.decorateList(rows);
     return toPaginated(items, total, page, limit);
   }
 
@@ -457,10 +478,19 @@ export class VacancyPromotionUseCase {
 
     const entitlements = plan ? await this.entitlements.resolve(plan) : null;
     const durationDays =
-      entitlements?.publicationDays ?? plan?.validityDays ?? null;
+      entitlements?.promotionDays ??
+      entitlements?.publicationDays ??
+      plan?.validityDays ??
+      null;
 
-    const included = subscription ? (subscription.promotionCredits ?? 0) : 0;
+    // El plan es la fuente de verdad. `promotion_credits` en la suscripción
+    // puede haber quedado en 0 en compras antiguas; leerlo a ciegas producía
+    // el «0 promociones disponibles de 0» aunque el plan incluyera una.
+    const included = subscription
+      ? Math.max(0, entitlements?.promotionCredits ?? 0)
+      : 0;
     const used = subscription ? (subscription.usedPromotionCredits ?? 0) : 0;
+    const available = Math.max(0, included - used);
 
     const [rows] = await this.billing.findAndCountPromotionsByCompany({
       companyId: company.id,
@@ -478,20 +508,15 @@ export class VacancyPromotionUseCase {
             startsAt: subscription.startsAt ?? null,
             currentPeriodEnd: subscription.currentPeriodEnd ?? null,
             autoRenew: subscription.autoRenew,
-            promotionCredits: subscription.promotionCredits ?? 0,
-            usedPromotionCredits: subscription.usedPromotionCredits ?? 0,
-            availableCredits:
-              (subscription.promotionCredits ?? 0) -
-              (subscription.usedPromotionCredits ?? 0),
+            promotionCredits: included,
+            usedPromotionCredits: used,
+            availableCredits: available,
             promotionDurationDays: durationDays,
           }
         : null,
       promotionsIncluded: included,
       promotionsUsed: used,
-      promotionsAvailable: subscription
-        ? (subscription.promotionCredits ?? 0) -
-          (subscription.usedPromotionCredits ?? 0)
-        : 0,
+      promotionsAvailable: available,
       promotionDurationDays: durationDays,
       promotionsCount: rows.length,
     };
@@ -559,6 +584,35 @@ export class VacancyPromotionUseCase {
     const result = new Date(from);
     result.setDate(result.getDate() + days);
     return result;
+  }
+
+  /**
+   * Datos de la tabla de promociones: plan y vacante, nada de pagos.
+   * Se resuelven en lote para no hacer N+1 por fila.
+   */
+  private async decorateList(
+    rows: VacancyPromotion[],
+  ): Promise<PromotionListItemDto[]> {
+    if (rows.length === 0) return [];
+
+    const planIds = [...new Set(rows.map((row) => row.planId))];
+    const vacancyIds = [...new Set(rows.map((row) => row.vacancyId))];
+    const [plans, vacancies] = await Promise.all([
+      Promise.all(planIds.map((id) => this.plans.findById(id))),
+      this.vacancies.findByIds(vacancyIds),
+    ]);
+    const planById = new Map(
+      plans.filter((plan): plan is Plan => Boolean(plan)).map((plan) => [plan.id, plan]),
+    );
+    const vacancyById = new Map(vacancies.map((vacancy) => [vacancy.id, vacancy]));
+
+    return rows.map((promotion) =>
+      toPromotionListItem(
+        promotion,
+        planById.get(promotion.planId)?.name ?? null,
+        vacancyById.get(promotion.vacancyId)?.title ?? null,
+      ),
+    );
   }
 
   private async decorate(

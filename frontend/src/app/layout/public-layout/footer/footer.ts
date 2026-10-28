@@ -117,11 +117,13 @@ interface FooterColumn {
         </div>
       </div>
 
-      <!-- Columnas -->
-      <div
-        class="mx-auto grid max-w-[1120px] gap-8 pt-2 sm:grid-cols-2 lg:grid-cols-[1.6fr_repeat(4,1fr)]"
-      >
-        <div>
+      <!--
+        Una sola fila de columnas, incluida la legal. En pantallas estrechas no
+        se apilan: la fila se desplaza en horizontal para no romper el diseño.
+      -->
+      <div class="mx-auto max-w-[1120px] overflow-x-auto pt-2">
+        <div class="grid min-w-[1040px] grid-cols-[1.6fr_repeat(4,1fr)] gap-8">
+          <div>
           <ij-logo variant="light" size="sm" />
           <p class="mb-4 mt-5 max-w-[280px] text-sm leading-relaxed text-footer-muted">
             {{ t('footer.tagline') }}
@@ -167,6 +169,7 @@ interface FooterColumn {
             </div>
           </div>
         }
+        </div>
       </div>
 
       <!-- Barra inferior -->
@@ -211,19 +214,13 @@ export class Footer {
    * Columnas de enlaces del pie.
    *
    * Antes eran dos listas de "Enlaces" repetidos (Inicio, Empresas y Contacto
-   * salían dos veces). Ahora hay cinco y ninguna se repite.
+   * salían dos veces). Ahora son cuatro y ninguna se repite; la legal va
+   * incluida en la misma fila.
    *
-   * Las cuatro primeras apuntan a rutas que existen en `app.routes.ts`; antes las
-   * tres primeras eran `href="#"`. La quinta son los PDF legales, que se
-   * sirvieron como enlaces sueltos y siguen ahí como copia descargable
-   * (`file: true`).
-   *
-   * Sobre tener las dos cosas: las **páginas HTML son la versión canónica**,
-   * porque una PDF no se puede versionar y el registro de consentimiento apunta
-   * a una versión concreta. El PDF se conserva porque hay quien lo pide en papel
-   * —entre ellos el cliente—, pero son copias: si divergen, hay dos documentos
-   * legales distintos con el mismo nombre en el mismo sitio. Al regenerar uno hay
-   * que regenerar el otro en el mismo commit.
+   * Todas apuntan a rutas que existen en `app.routes.ts`. Los PDF legales se
+   * retiraron del sitio: no se versionan, no tienen índice navegable y llegaron
+   * a contradecir las páginas HTML. La página es la única versión canónica y es
+   * la que queda registrada en `legal_consents`.
    */
   protected readonly columns: readonly FooterColumn[] = [
     {
@@ -260,23 +257,11 @@ export class Footer {
         { labelKey: 'legal.documents.terms', path: '/legal/terminos-y-condiciones' },
         { labelKey: 'legal.documents.cookies', path: '/legal/politica-de-cookies' },
         { labelKey: 'legal.documents.refund', path: '/legal/politica-de-reembolso' },
-        { labelKey: 'legal.documents.imageRights', path: '/legal/cesion-de-derechos-de-imagen' },
+        {
+          labelKey: 'legal.documents.imageRights',
+          path: '/legal/cesion-de-derechos-de-imagen',
+        },
         { labelKey: 'legal.copyright', path: '/legal/aviso-de-derechos-de-autor' },
-      ],
-    },
-    {
-      titleKey: 'footer.columns.downloads',
-      links: [
-        {
-          labelKey: 'legal.documents.privacy',
-          path: '/legal/politica-privacidad.pdf',
-          file: true,
-        },
-        {
-          labelKey: 'legal.documents.terms',
-          path: '/legal/terminos-condiciones.pdf',
-          file: true,
-        },
       ],
     },
   ];

@@ -62,22 +62,15 @@ export interface LegalIdentity {
 /**
  * Datos del responsable, tomados de su Constancia de Situación Fiscal.
  *
- * ⚠ **Verificar `rfc` antes de publicar.** Tal como llegó de la constancia,
- * `GARC840404P36` no cuadra: el dígito verificador que declara es `6` y el que
- * resulta del algoritmo del SAT sobre los doce primeros caracteres es `4`. Es
- * probable que sea un error al copiar la constancia (la CURP `GARC840404HJCLMH05`
- * comparte los primeros diez), pero un RFC mal publicado en el aviso de
- * privacidad es un problema: es el identificador fiscal con el que Hacienda
- * identifica a esta persona. No se cambió por nuestra cuenta porque la fuente es el
- * documento oficial.
+ * El RFC y el domicilio se tomaron de la Constancia de Situación Fiscal emitida
+ * por el SAT el 5 de octubre de 2026. Si el negocio cambia de domicilio fiscal,
+ * hay que actualizar también la constancia y este archivo en el mismo commit.
  *
- * ⚠ **`operatingAddress` se ha dejado por ahora igual al fiscal.** La constancia no
- * distingue uno del otro; si el giro se ejerce desde otro domicilio, hay que
- * cambiarlo.
+ * `operatingAddress` se ha dejado igual al fiscal: la constancia no distingue
+ * uno del otro. Si el giro se ejerce desde otro domicilio, hay que cambiarlo.
  *
- * ⚠ **`consumerPhone` sigue vacío:** la constancia fiscal no incluye teléfono y
- * no se ha proporcionado otro. Sale con un guion en la tabla en vez de un
- * marcador. Los términos lo piden (art. 76 Bis fr. III LFPC).
+ * El teléfono es el que el negocio confirmó para aclaraciones y reclamaciones
+ * (art. 76 Bis fr. III LFPC).
  */
 export const LEGAL_IDENTITY: LegalIdentity = {
   // Persona física: la constancia dice «Nombre (s)» y no razón social, así que
@@ -91,9 +84,9 @@ export const LEGAL_IDENTITY: LegalIdentity = {
     'Av. Alemania 1294, Interior 1, Col. Moderna, Guadalajara, Jalisco, C.P. 44190. Entre Av. Federalismo Sur y Calle Pavo',
   // El aviso de ARCO y el de descargas de imagen apuntan al mismo correo: es la
   // art. 29 LFPDPPP la que exige que exista ese contacto, no que sea distinto.
-  dataProtectionContact: 'holla@impulsojobs.com',
-  consumerPhone: PENDING_TOKEN,
-  consumerEmail: 'holla@impulsojobs.com',
+  dataProtectionContact: 'hola@impulsojobs.mx',
+  consumerPhone: '+52 55 4160 3820',
+  consumerEmail: 'hola@impulsojobs.mx',
 };
 
 /** `false` mientras falte un dato obligatorio: las plantillas lo señalan. */
@@ -103,6 +96,7 @@ export function isIdentityComplete(): boolean {
     LEGAL_IDENTITY.rfc,
     LEGAL_IDENTITY.fiscalAddress,
     LEGAL_IDENTITY.dataProtectionContact,
+    LEGAL_IDENTITY.consumerPhone,
     LEGAL_IDENTITY.consumerEmail,
   ].every((value) => value.trim() !== PENDING_TOKEN && value.trim() !== '');
 }
@@ -207,18 +201,16 @@ export const LEGAL_DOCUMENTS: readonly LegalDocDefinition[] = [
   {
     code: LegalDocCode.PRIVACY,
     route: '/legal/aviso-de-privacidad',
-    pdf: '/legal/politica-privacidad.pdf',
-    version: '1.0.0',
-    effectiveDate: '2026-10-01',
+    version: '1.1.0',
+    effectiveDate: '2026-10-28',
     titleKey: 'legal.documents.privacy',
     required: true,
   },
   {
     code: LegalDocCode.TERMS,
     route: '/legal/terminos-y-condiciones',
-    pdf: '/legal/terminos-condiciones.pdf',
-    version: '1.0.0',
-    effectiveDate: '2026-10-01',
+    version: '1.1.0',
+    effectiveDate: '2026-10-28',
     titleKey: 'legal.documents.terms',
     required: true,
   },
@@ -233,8 +225,8 @@ export const LEGAL_DOCUMENTS: readonly LegalDocDefinition[] = [
   {
     code: LegalDocCode.REFUND,
     route: '/legal/politica-de-reembolso',
-    version: '1.0.0',
-    effectiveDate: '2026-10-01',
+    version: '1.1.0',
+    effectiveDate: '2026-10-28',
     titleKey: 'legal.documents.refund',
     required: false,
   },

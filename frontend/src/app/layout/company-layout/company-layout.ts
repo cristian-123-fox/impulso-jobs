@@ -46,7 +46,7 @@ const NAV_ITEMS: readonly CompanyNavItem[] = [
   },
   {
     path: '/empresa/promociones',
-    label: 'Promociona tu vacante',
+    label: 'Promociona tus vacantes',
     icon: 'award',
     permission: 'promotions.read',
   },

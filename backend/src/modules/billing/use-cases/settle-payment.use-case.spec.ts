@@ -44,6 +44,8 @@ const ENTITLEMENTS: PlanEntitlements = {
   editTitleOnReactivate: true,
   talentVisits: 20,
   publicationDays: 60,
+  promotionCredits: 4,
+  promotionDays: 30,
 };
 
 function order(overrides: Partial<PromotionOrder> = {}): PromotionOrder {

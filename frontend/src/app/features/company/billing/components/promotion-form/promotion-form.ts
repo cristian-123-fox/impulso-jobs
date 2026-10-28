@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IjButton, IjOption, IjSelect } from '@/shared/ui';
+import { IjButton, IjOption, IjProviderInfo, IjSelect } from '@/shared/ui';
 import { PaymentChoice } from '@/features/company/billing/components/payment-choice/payment-choice';
 import {
   PaymentMethod,
@@ -35,7 +35,15 @@ export interface PromotionRequest {
 @Component({
   selector: 'app-promotion-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, CurrencyPipe, DatePipe, IjButton, IjSelect, PaymentChoice],
+  imports: [
+    FormsModule,
+    CurrencyPipe,
+    DatePipe,
+    IjButton,
+    IjProviderInfo,
+    IjSelect,
+    PaymentChoice,
+  ],
   template: `
     @if (error()) {
       <p
@@ -127,6 +135,11 @@ export interface PromotionRequest {
             </span>
           </div>
         </div>
+
+        <ij-provider-info
+          [total]="plan.price.total"
+          [currency]="plan.price.currency"
+        />
       }
     </div>
 

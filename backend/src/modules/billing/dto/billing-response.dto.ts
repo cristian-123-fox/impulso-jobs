@@ -60,6 +60,26 @@ export interface PromotionResponseDto {
   order: OrderResponseDto | null;
 }
 
+/**
+ * Fila de la tabla de promociones de la empresa.
+ *
+ * **No incluye `order`, `pricePaid` ni `currency`.** La tabla de promociones
+ * no es la tabla de pagos: mezclar ambos hacía que una compra de $500 con
+ * tarjeta y folio apareciera como si fuera una promoción. Los datos de cobro
+ * viven en `GET /company/payments`/`/admin/pagos`, no aquí.
+ */
+export interface PromotionListItemDto {
+  id: string;
+  vacancyId: string;
+  vacancyTitle: string | null;
+  planId: string;
+  planName: string | null;
+  status: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  createdAt: string;
+}
+
 export interface SubscriptionResponseDto {
   id: string;
   planId: string;
@@ -68,6 +88,8 @@ export interface SubscriptionResponseDto {
   startsAt: string | null;
   currentPeriodEnd: string | null;
   autoRenew: boolean;
+  /** Proveedor de la última orden (`stripe`, `manual`). Null sin orden. */
+  provider: string | null;
   postingCredits: number;
   usedPostingCredits: number;
   promotionCredits: number;
@@ -176,6 +198,24 @@ export function toOrderResponse(order: PromotionOrder): OrderResponseDto {
   };
 }
 
+export function toPromotionListItem(
+  promotion: VacancyPromotion,
+  planName: string | null,
+  vacancyTitle: string | null,
+): PromotionListItemDto {
+  return {
+    id: promotion.id,
+    vacancyId: promotion.vacancyId,
+    vacancyTitle,
+    planId: promotion.planId,
+    planName,
+    status: promotion.status,
+    startsAt: promotion.startsAt?.toISOString() ?? null,
+    endsAt: promotion.endsAt?.toISOString() ?? null,
+    createdAt: promotion.createdAt.toISOString(),
+  };
+}
+
 export function toPromotionResponse(
   promotion: VacancyPromotion,
   planName: string | null,
@@ -211,6 +251,7 @@ export function toSubscriptionResponse(
     startsAt: subscription.startsAt?.toISOString() ?? null,
     currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
     autoRenew: subscription.autoRenew,
+    provider: order?.provider ?? null,
     postingCredits: subscription.postingCredits ?? 0,
     usedPostingCredits: subscription.usedPostingCredits ?? 0,
     promotionCredits: subscription.promotionCredits ?? 0,

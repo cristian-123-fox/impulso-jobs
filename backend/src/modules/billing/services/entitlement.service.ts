@@ -40,6 +40,13 @@ export interface PlanEntitlements {
   talentVisits: number;
   /** Días de publicación. Cae al `validity_days` del plan si no se define. */
   publicationDays: number | null;
+  /** Promociones incluidas en el plan (`promoted_vacancies`). */
+  promotionCredits: number;
+  /**
+   * Duración de una promoción en días (`promotion_days`). Si el plan no la
+   * define, se usa `publication_days` y, en último caso, `validity_days`.
+   */
+  promotionDays: number | null;
 }
 
 /**
@@ -109,6 +116,15 @@ export class EntitlementService {
         byCode,
         PlanFeatureCode.PUBLICATION_DAYS,
       ),
+      promotionCredits: this.number(
+        byCode,
+        PlanFeatureCode.PROMOTED_VACANCIES,
+        0,
+      ),
+      promotionDays: this.optionalNumber(
+        byCode,
+        PlanFeatureCode.PROMOTION_DAYS,
+      ),
     };
   }
 
@@ -147,7 +163,13 @@ export class EntitlementService {
     // Promocionar re-sube la vacante en el portal.
     vacancy.refreshedAt = startsAt;
 
-    const days = entitlements.publicationDays ?? plan.validityDays ?? null;
+    // `promotion_days` manda para la vigencia del distintivo; la publicación
+    // de la vacante tiene su propio reloj (`vacancies.expires_at`).
+    const days =
+      entitlements.promotionDays ??
+      entitlements.publicationDays ??
+      plan.validityDays ??
+      null;
     const endsAt = days === null ? null : this.addDays(startsAt, days);
 
     await this.vacancies.save(vacancy, manager);

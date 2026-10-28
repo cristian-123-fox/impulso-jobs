@@ -180,6 +180,7 @@ export class BillingRepository implements IBillingRepository {
     companyId: string,
     now: Date,
     manager?: EntityManager,
+    lock = false,
   ): Promise<CompanySubscription | null> {
     // El estado no basta: hasta que corre el job de expiración, una
     // suscripción vencida sigue en ACTIVE y bloqueaba la renovación. Las
@@ -191,6 +192,7 @@ export class BillingRepository implements IBillingRepository {
         { ...base, currentPeriodEnd: MoreThan(now) },
       ],
       order: { createdAt: 'DESC' },
+      lock: lock ? { mode: 'pessimistic_write' } : undefined,
     });
   }
 

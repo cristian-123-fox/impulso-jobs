@@ -6,12 +6,14 @@ import { environment } from '@env';
 import { ApiSuccessResponse } from '@/core/models/api-response.models';
 import {
   Checkout,
+  EligibleVacancy,
   Order,
   PaymentMethod,
   PaymentProvider,
   PaymentProviderOption,
   Plan,
   Promotion,
+  PromotionSummary,
   PromotionsPage,
   Subscription,
 } from '@/features/company/billing/models/billing.models';
@@ -97,12 +99,14 @@ export class BillingApi {
     planId: string,
     method: PaymentMethod,
     provider: PaymentProvider,
+    recurringConsent: boolean,
   ): Observable<Checkout> {
     return this.http
       .post<ApiSuccessResponse<Checkout>>(`${this.base}/subscriptions`, {
         planId,
         method,
         provider,
+        recurringConsent,
       })
       .pipe(map((r) => r.content));
   }
@@ -116,15 +120,19 @@ export class BillingApi {
       .pipe(map((r) => r.content));
   }
 
-  summary(): Observable<any> {
+  summary(): Observable<PromotionSummary> {
     return this.http
-      .get<ApiSuccessResponse<any>>(`${this.base}/promotions/summary`)
+      .get<
+        ApiSuccessResponse<PromotionSummary>
+      >(`${this.base}/promotions/summary`)
       .pipe(map((r) => r.content));
   }
 
-  eligibleVacancies(): Observable<any[]> {
+  eligibleVacancies(): Observable<EligibleVacancy[]> {
     return this.http
-      .get<ApiSuccessResponse<any[]>>(`${this.base}/promotions/eligible-vacancies`)
+      .get<
+        ApiSuccessResponse<EligibleVacancy[]>
+      >(`${this.base}/promotions/eligible-vacancies`)
       .pipe(map((r) => r.content));
   }
 

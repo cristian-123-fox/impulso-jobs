@@ -213,6 +213,19 @@ export class CreateSubscriptionDto {
   @IsOptional()
   @IsEnum(PaymentProvider, { message: 'El medio de pago no es válido.' })
   provider?: PaymentProvider;
+
+  /**
+   * Aceptación expresa del cobro recurrente (art. 76 Bis fr. VIII y IX LFPC).
+   * Obligatoria cuando la suscripción se cobra con tarjeta vía Stripe; con la
+   * solicitud de pago no hay cobro automático, así que no aplica.
+   */
+  @ApiPropertyOptional({
+    description:
+      'Aceptación expresa de la renovación automática. Obligatoria con Stripe.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  recurringConsent?: boolean;
 }
 
 /**

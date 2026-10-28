@@ -6,7 +6,7 @@ Estados: ✅ hecho · 🔄 en curso · ⬜ pendiente · 🔷 decisión de negoci
 - **Parte B — Backlog de producto (análisis Computrabajo):** extraído de `computrabajocontextoclonacion.md`, cruzado contra el código real. Post-demo salvo los quick wins.
 - **Parte C — Backlog solicitado (septiembre 2026):** lista del equipo del 2026-09-10 (T21–T27), verificada contra el código. Fichas autocontenidas, listas para pegar en el gestor de tareas. **T21–T27 hechas**; lo que T26 dejó fuera a propósito (áreas privadas y correos) está levantado como **T28**, pendiente de la decisión N10.
 - **Parte D — Backlog solicitado (lista del 2026-09-12):** segunda tanda de apuntes del equipo (T29–T37), verificada igual contra el código. **T29 es un bug de producción** (403 al postularse) y va primero; el resto son mejoras de back-office y del área del candidato. Decisiones abiertas: N11, N12, N13.
-- **Parte E — Cumplimiento legal (LFPDPPP, 2026-10-14):** T38–T40, revisión contra la ley vigente. **Código cerrado ✅**; queda bloqueada la publicación por los 6 datos del responsable, que sólo tiene el negocio. Incluye los seis bugs (B7–B12) encontrados y corregidos al verificar la implementación.
+- **Parte E — Cumplimiento legal (LFPDPPP, 2026-10-14):** T38–T40, revisión contra la ley vigente. **Código cerrado ✅**. El **2026-10-28** se completaron los datos del responsable (RFC/domicilio de la Constancia de Situación Fiscal, teléfono y correo), se subieron los documentos a la versión **1.1.0** y se retiraron los PDF obsoletos; el estado vigente y los pendientes están en [`REVISION-ENTREGA.md`](REVISION-ENTREGA.md). Incluye los seis bugs (B7–B12) encontrados y corregidos al verificar la implementación.
 
 ---
 

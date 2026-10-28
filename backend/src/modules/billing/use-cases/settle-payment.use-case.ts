@@ -222,10 +222,13 @@ export class SettlePaymentUseCase {
         plan.postingQuota ?? subscription.postingCredits ?? 0;
       subscription.usedPostingCredits = 0;
 
-      const planValues = await this.plans.findValuesByPlanIds([plan.id], manager);
-      const promoted = planValues.find((v) => v.featureCode === 'promoted_vacancies');
-      const promotedCount = promoted && promoted.isIncluded ? Number(promoted.value ?? 0) : 0;
-      subscription.promotionCredits = Number.isFinite(promotedCount) ? promotedCount : subscription.promotionCredits ?? 0;
+      // El plan es la fuente de verdad: `promoted_vacancies` se resuelve en el
+      // mismo lugar que el resto de beneficios. Si el valor falta, el plan no
+      // incluye promociones y se guarda 0, no un número inventado.
+      subscription.promotionCredits = Math.max(
+        0,
+        entitlements.promotionCredits,
+      );
       subscription.usedPromotionCredits = 0;
       // Con una pasarela recurrente, su id es lo que reconoce las renovaciones
       // (`invoice.paid`) y lo que se cancela al quitar la renovación.

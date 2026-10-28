@@ -8,6 +8,16 @@
 > qué quedó cubierto por código, qué quedó como decisión de negocio y qué está
 > pendiente.
 
+> **Actualización 2026-10-28 — revisión de entrega.** El estado vigente está en
+> [`REVISION-ENTREGA.md`](REVISION-ENTREGA.md). En resumen: `LEGAL_IDENTITY` ya
+> está completo (RFC y domicilio de la Constancia de Situación Fiscal, teléfono
+> y correo confirmados), los documentos cambiaron a la versión **1.1.0** y los
+> PDF obsoletos se retiraron del sitio. Sigue pendiente el CFDI automático
+> (ahora “a solicitud”), el reembolso operado desde la plataforma y la purga de
+> archivos en disco. La Constancia de Situación Fiscal que estaba en
+> `frontend/public/legal/` se movió a `private/legal/`; **hay que purgarla del
+> historial del repositorio público**.
+
 ---
 
 ## 0. Lo primero: cambió la ley bajo los pies del proyecto

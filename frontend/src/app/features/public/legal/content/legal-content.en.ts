@@ -30,8 +30,9 @@ const privacy: LegalDocumentContent = {
       'processed with express, not tacit, consent.',
     'We show your information to companies that subscribe to us only when you ' +
       'authorise it by making your profile visible.',
-    'We do not sell your data, do not use it for third-party advertising and ' +
-      'do not send it outside Mexico without an express legal basis.',
+    'We do not sell your data or use it for third-party advertising. Some ' +
+      'technology providers that serve us may process it outside Mexico, always ' +
+      'as processors and under contract.',
     'You can exercise your ARCO rights and withdraw consent at any time, ' +
       'without explanation and without penalty.',
   ],
@@ -138,13 +139,15 @@ const privacy: LegalDocumentContent = {
           'consent when you make your profile visible, so the decision is yours ' +
           'and is recorded.',
         'To suppliers who run the service on our behalf, in their role as ' +
-          'processor: payment gateway, email service and hosting. The processor ' +
-          'receives this notice and assumes the same obligations we do.',
+          'processor: payment gateway, email service, Google sign-in and hosting. ' +
+          'The processor receives this notice and assumes the same obligations we ' +
+          'do.',
       ],
       callout:
-        'Transfers outside Mexico would require their own legal basis under ' +
-          'article 36 and an express clause in this notice. As of this version ' +
-          'there are none.',
+        'Some of those processors may be located outside Mexico. In every case ' +
+        'they process the data on our behalf, do not use it for their own ' +
+        'purposes and are bound by confidentiality and security obligations. We ' +
+        'make no transfers to third parties other than the two described.',
     },
     {
       id: 'cookies',
@@ -203,7 +206,8 @@ const privacy: LegalDocumentContent = {
           'under article 10, third paragraph, of the LFPDPPP.',
         'Legal document acceptance records: kept even after the account is ' +
           'deleted, because they are the evidence of what was accepted.',
-        'CV and files you uploaded: deleted with your account.',
+        'CV and files you uploaded: deleted when the account is purged, once the ' +
+          'retention period has elapsed.',
       ],
       callout:
         'When data is no longer needed for the purposes in this notice, it is ' +
@@ -215,9 +219,9 @@ const privacy: LegalDocumentContent = {
       table: {
         head: ['Right', 'How to exercise it yourself'],
         rows: [
-          ['Access', 'Download all your data as JSON from «My account»'],
+          ['Access', 'Email the data protection address and we send you a full JSON export'],
           ['Rectification', 'Edit your profile or your company details'],
-          ['Cancellation', 'Close your account from «My account»; effective immediately'],
+          ['Cancellation', 'Email the data protection address; the account is closed and your sessions are revoked'],
           ['Objection', 'Change your profile visibility in «Settings»'],
         ],
       },
@@ -248,14 +252,14 @@ const privacy: LegalDocumentContent = {
           'effect: what was done while you consented remains valid.',
       ],
       bullets: [
-        'From «My account» you can withdraw each consent and see the full ' +
-          'history of what you accepted, with date and version.',
-        'Writing to the data protection address has the same effect.',
+        'Email the data protection address to withdraw a consent or request the ' +
+          'full history of what you accepted, with date and version.',
       ],
       callout:
         'Withdrawing the Terms or the Notice does not cancel your account or ' +
         'void a current subscription: it closes the door to future processing. ' +
-        'To actually cancel, use account deletion.',
+        'To actually cancel, request account deletion at the data protection ' +
+        'address.',
     },
     {
       id: 'menores',
@@ -339,7 +343,8 @@ const terms: LegalDocumentContent = {
       bullets: [
         'One account per person; for companies, one per authorised team member.',
         'The data you register must be accurate and current. We verify the ' +
-          'email and, for candidates, documentary identity.',
+          'email and validate the format and uniqueness of the identity ' +
+          'document; we do not authenticate official documents with any authority.',
         'You are responsible for keeping your password confidential and for all ' +
           'activity on your account.',
         'Notify us immediately of any unauthorised use.',
@@ -393,12 +398,13 @@ const terms: LegalDocumentContent = {
           'third-party payment methods are responsible for their own processing.',
         'The contracted period begins when payment is confirmed, not when it is ' +
           'requested.',
-        'We issue a digital tax receipt for every charge.',
+        'We issue a digital tax receipt (CFDI) on request, once payment is ' +
+          'identified. You request it by email with your company tax details.',
       ],
       callout:
-        'Invoices are issued once payment is identified. For cash or transfer ' +
-          'methods such as an OXXO voucher, the receipt may take until payment ' +
-          'is applied.',
+        'Invoices are not stamped automatically when you pay. For cash or ' +
+          'transfer methods such as an OXXO voucher, the receipt is issued when ' +
+          'payment is applied and the customer requests it.',
     },
     {
       id: 'renovacion',
@@ -530,8 +536,9 @@ const terms: LegalDocumentContent = {
   ],
   closing:
     'By ticking the boxes you consent expressly to this document. We record ' +
-    'that acceptance with its version, date, IP address and browser, and you ' +
-    'can see the record any time from «My account».',
+    'that acceptance with its version, date, IP address and browser. You can ' +
+    'request a copy of the record by emailing the data protection address in ' +
+    'section 1 of the privacy notice.',
 };
 
 /** Cookie policy. No Mexican cookie law exists; the LFPDPPP fills the gap. */
@@ -662,7 +669,8 @@ const refund: LegalDocumentContent = {
     'Plans are digital services that start the moment payment is confirmed.',
     'We refund in full any billing error, duplicate charge, or unauthorised ' +
       'payment.',
-    'We refund the unused portion of a cancellation proportionally.',
+    'You may request a proportional refund of the unconsumed period; it is ' +
+      'handled by email within the deadlines of this policy.',
     'We do not refund the consumed period.',
     'A refund does not cancel the subscription: you must cancel as well to stop ' +
       'being charged.',
@@ -706,15 +714,18 @@ const refund: LegalDocumentContent = {
       heading: '3. Cancelling a current subscription',
       paragraphs: ['When you cancel:'],
       bullets: [
-        'Access to paid features is disabled immediately.',
+        'Automatic renewal stops; you keep access until the end of the period ' +
+          'you already paid for.',
         'The consumed period is not refunded.',
-        'The unconsumed period is refunded proportionally, calculated by days.',
+        'You may request a proportional refund of the unconsumed period, ' +
+          'calculated by days, by emailing support.',
         'Cancellation generates no additional charge.',
       ],
       callout:
         'Article 76 Bis(IX) of the Federal Consumer Protection Law obliges us ' +
         'to offer this immediate cancellation mechanism. We cannot add penalties ' +
-        'or conditions.',
+        'or conditions. Cancellation takes effect the moment you confirm it from ' +
+        'your account.',
     },
     {
       id: 'promociones',
@@ -746,7 +757,8 @@ const refund: LegalDocumentContent = {
           'you the exact amount before refunding.',
         'The refund runs through the same method you paid with. Credit-card ' +
           'timelines are set by the issuing bank, not by us.',
-        'We issue or amend the corresponding tax receipt.',
+        'We issue the invoice (CFDI) on request, once payment is identified and ' +
+          'with your tax details.',
       ],
       callout:
         'Refunds are executed within fifteen working days of approval, as this ' +

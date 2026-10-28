@@ -146,11 +146,48 @@ export interface Subscription {
   startsAt: string | null;
   currentPeriodEnd: string | null;
   autoRenew: boolean;
+  /** Proveedor de la última orden (`stripe`, `manual`). Null sin orden. */
+  provider: string | null;
   postingCredits: number;
   usedPostingCredits: number;
   promotionCredits: number;
   usedPromotionCredits: number;
   order: Order | null;
+}
+
+/** Plan y cupos de promoción tal como los calcula el backend. */
+export interface PromotionSummarySubscription {
+  id: string;
+  planId: string;
+  planName: string | null;
+  status: string;
+  startsAt: string | null;
+  currentPeriodEnd: string | null;
+  autoRenew: boolean;
+  /** Promociones incluidas en el plan. */
+  promotionCredits: number;
+  usedPromotionCredits: number;
+  /** `max(0, incluidas - usadas)`, calculado en backend. */
+  availableCredits: number;
+  /** Días que dura cada promoción; null si el plan no lo define. */
+  promotionDurationDays: number | null;
+}
+
+export interface PromotionSummary {
+  subscription: PromotionSummarySubscription | null;
+  promotionsIncluded: number;
+  promotionsUsed: number;
+  promotionsAvailable: number;
+  promotionDurationDays: number | null;
+  promotionsCount: number;
+}
+
+/** Vacante activa sin promoción viva, para el modal de activación. */
+export interface EligibleVacancy {
+  id: string;
+  title: string;
+  status: string;
+  expiresAt: string | null;
 }
 
 /**
@@ -177,8 +214,24 @@ export interface Checkout {
   order: Order;
 }
 
+/**
+ * Fila de la tabla de promociones. Deliberadamente sin `order`, `pricePaid` ni
+ * `currency`: los pagos se consultan en su propio módulo, no aquí.
+ */
+export interface PromotionListItem {
+  id: string;
+  vacancyId: string;
+  vacancyTitle: string | null;
+  planId: string;
+  planName: string | null;
+  status: string;
+  startsAt: string | null;
+  endsAt: string | null;
+  createdAt: string;
+}
+
 export interface PromotionsPage {
-  items: Promotion[];
+  items: PromotionListItem[];
   total: number;
   page: number;
   limit: number;

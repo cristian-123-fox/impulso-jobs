@@ -25,6 +25,19 @@ export class VacancyPromotion extends BaseEntity {
   @Column({ name: 'company_id', type: 'varchar', length: 36 })
   companyId!: string;
 
+  /**
+   * Suscripción de la que salió el cupo, cuando la promoción se activó con un
+   * crédito del plan. NULL en una compra puntual: ahí el origen es la orden.
+   */
+  @Index('idx_vacancy_promotions_subscription_id')
+  @Column({
+    name: 'subscription_id',
+    type: 'varchar',
+    length: 36,
+    nullable: true,
+  })
+  subscriptionId?: string | null;
+
   @Column({ name: 'purchased_by', type: 'varchar', length: 36 })
   purchasedBy!: string;
 

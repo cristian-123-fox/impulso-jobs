@@ -10,6 +10,11 @@ out-tsc/
 /.angular/cache
 *.tsbuildinfo
 
+# ===== Documentos privados del negocio =====
+# Constancia de situación fiscal, PDF legales archivados, contratos, etc.
+# No se publican ni se despliegan: nunca deben vivir bajo frontend/public.
+private/
+
 # ===== Variables de entorno =====
 .env
 .env.local
