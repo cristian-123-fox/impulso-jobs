@@ -138,3 +138,33 @@ export function subscriptionExpiryNoticeDays(): number[] {
   if (parsed.length === 0) return [];
   return [...new Set(parsed)].sort((a, b) => b - a);
 }
+
+/**
+ * Días de gracia (hábiles) que se conceden tras el vencimiento de la
+ * suscripción antes de marcarla `EXPIRED`. Configurable con
+ * `SUBSCRIPTION_GRACE_PERIOD_DAYS` (entero positivo). Por defecto 3.
+ */
+export const DEFAULT_SUBSCRIPTION_GRACE_PERIOD_DAYS = 3;
+
+export function subscriptionGracePeriodDays(): number {
+  const raw = process.env.SUBSCRIPTION_GRACE_PERIOD_DAYS;
+  if (raw === undefined) return DEFAULT_SUBSCRIPTION_GRACE_PERIOD_DAYS;
+  const parsed = Number(raw.trim());
+  if (!Number.isFinite(parsed) || parsed <= 0) return 0;
+  return Math.floor(parsed);
+}
+
+/**
+ * Suma `days` días hábiles (lunes–viernes, sin contar fines de semana) a
+ * `date`. No considera festivos. Devuelve una fecha nueva.
+ */
+export function addBusinessDays(date: Date, days: number): Date {
+  const result = new Date(date.getTime());
+  let remaining = Math.max(0, Math.floor(days));
+  while (remaining > 0) {
+    result.setUTCDate(result.getUTCDate() + 1);
+    const weekday = result.getUTCDay();
+    if (weekday !== 0 && weekday !== 6) remaining -= 1;
+  }
+  return result;
+}

@@ -19,6 +19,8 @@ import {
   PaymentStatus,
   PromotionStatus,
   SubscriptionStatus,
+  addBusinessDays,
+  subscriptionGracePeriodDays,
 } from '@/modules/billing/enums/billing.enums';
 import { ADMIN_PAYMENT_SORT_COLUMNS } from '@/modules/billing/dto/admin-payment.dto';
 import {
@@ -192,16 +194,27 @@ export class BillingRepository implements IBillingRepository {
     });
   }
 
-  findExpiredActiveSubscriptions(
+  async findExpiredActiveSubscriptions(
     now: Date,
     manager?: EntityManager,
   ): Promise<CompanySubscription[]> {
-    return this.subRepo(manager).find({
+    const graceDays = subscriptionGracePeriodDays();
+    const rows = await this.subRepo(manager).find({
       where: {
         status: In(EXPIRABLE_SUBSCRIPTION_STATUSES),
         currentPeriodEnd: LessThanOrEqual(now),
       },
       order: { currentPeriodEnd: 'ASC' },
+    });
+    // La gracia (días hábiles) retrasa la caducidad efectiva: una suscripción
+    // vencida hace menos de `graceDays` días hábiles sigue considerándose viva.
+    return rows.filter((subscription) => {
+      if (!subscription.currentPeriodEnd) return false;
+      const expiresAt = addBusinessDays(
+        subscription.currentPeriodEnd,
+        graceDays,
+      );
+      return expiresAt.getTime() <= now.getTime();
     });
   }
 
