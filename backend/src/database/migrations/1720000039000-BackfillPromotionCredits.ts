@@ -7,7 +7,7 @@ export class BackfillPromotionCredits1720000039000 implements MigrationInterface
     await queryRunner.query(`
       UPDATE company_subscriptions cs
       SET promotion_credits = COALESCE(
-            (SELECT CAST(pfv.value AS INTEGER)
+            (SELECT CAST(pfv.value AS DECIMAL(10,0))
              FROM plan_feature_values pfv
              WHERE pfv.plan_id = cs.plan_id
                AND pfv.feature_code = 'promoted_vacancies'
@@ -16,13 +16,13 @@ export class BackfillPromotionCredits1720000039000 implements MigrationInterface
           ),
           used_promotion_credits = LEAST(
             COALESCE(
-              (SELECT COUNT(*)::int
+              (SELECT COUNT(*)
                FROM vacancy_promotions vp
                WHERE vp.company_id = cs.company_id),
               0
             ),
             COALESCE(
-              (SELECT CAST(pfv.value AS INTEGER)
+              (SELECT CAST(pfv.value AS DECIMAL(10,0))
                FROM plan_feature_values pfv
                WHERE pfv.plan_id = cs.plan_id
                  AND pfv.feature_code = 'promoted_vacancies'

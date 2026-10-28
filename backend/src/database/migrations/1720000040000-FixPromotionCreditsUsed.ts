@@ -7,7 +7,7 @@ export class FixPromotionCreditsUsed1720000040000 implements MigrationInterface 
     await queryRunner.query(`
       UPDATE company_subscriptions cs
       SET used_promotion_credits = COALESCE(
-            (SELECT COUNT(*)::int
+            (SELECT COUNT(*)
              FROM vacancy_promotions vp
              WHERE vp.company_id = cs.company_id
                AND vp.plan_id = cs.plan_id
