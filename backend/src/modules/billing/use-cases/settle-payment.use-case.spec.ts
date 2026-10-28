@@ -141,6 +141,7 @@ describe('SettlePaymentUseCase', () => {
 
     plans = {
       findById: jest.fn().mockResolvedValue(plan()),
+      findValuesByPlanIds: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<IPlanRepository>;
 
     entitlements = {

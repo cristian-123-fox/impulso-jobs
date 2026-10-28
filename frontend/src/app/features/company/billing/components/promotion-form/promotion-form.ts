@@ -1,4 +1,4 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -35,7 +35,7 @@ export interface PromotionRequest {
 @Component({
   selector: 'app-promotion-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, CurrencyPipe, IjButton, IjSelect, PaymentChoice],
+  imports: [FormsModule, CurrencyPipe, DatePipe, IjButton, IjSelect, PaymentChoice],
   template: `
     @if (error()) {
       <p
@@ -56,6 +56,7 @@ export interface PromotionRequest {
         [(ngModel)]="vacancyId"
       />
 
+      @if (!creditMode()) {
       <div>
         <span class="mb-2 block text-[13px] font-bold text-ink-900">Plan</span>
         <div class="grid gap-3 sm:grid-cols-2">
@@ -94,13 +95,24 @@ export interface PromotionRequest {
           }
         </div>
       </div>
+      }
 
+      @if (!creditMode()) {
       <app-payment-choice
         [plan]="selectedPlan()"
         [options]="paymentOptions()"
         [(provider)]="provider"
         [(method)]="method"
       />
+      } @else {
+        <div class="rounded-xl bg-surface px-4 py-3 text-[13px] text-body">
+          Se utilizará 1 promoción disponible de tu plan. No se realizará ningún cobro adicional.
+          @if (promotionDays()) {
+            <div class="mt-1">Duración: {{ promotionDays() }} días. Finalización prevista: {{ estimatedEnd() | date: 'dd/MM/yyyy' }}.</div>
+          }
+          <div class="mt-1">Cupos disponibles: {{ availableCredits() }}</div>
+        </div>
+      }
 
       @if (selectedPlan(); as plan) {
         <div class="rounded-xl bg-surface px-4 py-3.5">
@@ -120,11 +132,7 @@ export interface PromotionRequest {
 
     <div class="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-line pt-4">
       <p class="mr-auto text-[12.5px] text-muted">
-        {{
-          isOnline()
-            ? 'Te llevaremos a la página segura de Stripe.'
-            : 'La promoción se activa cuando confirmemos el pago.'
-        }}
+        {{ creditMode() ? 'La promoción se activará al confirmar.' : (isOnline() ? 'Te llevaremos a la página segura de Stripe.' : 'La promoción se activa cuando confirmemos el pago.') }}
       </p>
       <button
         type="button"
@@ -154,6 +162,10 @@ export class PromotionForm implements OnInit {
   readonly paymentOptions = input.required<readonly PaymentProviderOption[]>();
   /** Plan con el que abrir el formulario (p. ej. el elegido en `/planes`). */
   readonly initialPlanId = input<string | null>(null);
+  /** Si la empresa tiene suscripción activa, promociona con un crédito. */
+  readonly creditMode = input(false);
+  readonly promotionDays = input<number | null>(null);
+  readonly availableCredits = input<number>(0);
   readonly submitting = input(false);
   readonly error = input<string | null>(null);
   readonly save = output<PromotionRequest>();
@@ -170,20 +182,30 @@ export class PromotionForm implements OnInit {
     this.plans().find((plan) => plan.id === this.planId()),
   );
 
+  protected readonly estimatedEnd = computed(() => {
+    const days = this.promotionDays();
+    if (!days) return null;
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d;
+  });
+
   protected readonly isOnline = computed(
     () => this.provider() === PaymentProvider.STRIPE,
   );
 
   protected readonly submitLabel = computed(() => {
     if (this.submitting()) return 'Procesando…';
+    if (this.creditMode()) return 'Promocionar';
     return this.isOnline() ? 'Ir a pagar' : 'Enviar solicitud';
   });
 
   protected readonly canSubmit = computed(
     () =>
       Boolean(this.vacancyId()) &&
-      Boolean(this.planId()) &&
-      (this.choice()?.allowedMethods().includes(this.method()) ?? false),
+      (this.creditMode() ||
+        (Boolean(this.planId()) &&
+          (this.choice()?.allowedMethods().includes(this.method()) ?? false))),
   );
 
   ngOnInit(): void {

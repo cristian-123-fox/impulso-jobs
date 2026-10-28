@@ -62,6 +62,11 @@ export class PlanRepository implements IPlanRepository {
     return this.planRepo(manager).save(plan);
   }
 
+  async delete(id: string, manager?: EntityManager): Promise<void> {
+    await this.valueRepo(manager).delete({ planId: id });
+    await this.planRepo(manager).delete({ id });
+  }
+
   findFeatures(manager?: EntityManager): Promise<PlanFeature[]> {
     return this.featureRepo(manager).find({ order: { sortOrder: 'ASC' } });
   }

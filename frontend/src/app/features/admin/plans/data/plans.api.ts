@@ -53,6 +53,10 @@ export class PlansApi {
       .pipe(map((r) => r.content));
   }
 
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/plans/${id}`);
+  }
+
   /** Reemplaza la matriz completa de beneficios del plan. */
   setFeatures(
     id: string,

@@ -55,6 +55,13 @@ const FEATURES: readonly FeatureSeed[] = [
     sortOrder: 4,
   },
   {
+    code: PlanFeatureCode.APPLICANT_CV_ACCESS,
+    name: 'Acceso a los CV',
+    description: 'CV de los candidatos que se postulan a la publicación.',
+    valueType: FeatureValueType.BOOLEAN,
+    sortOrder: 5,
+  },
+  {
     code: PlanFeatureCode.FEATURED_RANKING,
     name: 'Oferta destacada',
     description: 'Aparece en los primeros lugares del portal.',
@@ -116,6 +123,13 @@ const FEATURES: readonly FeatureSeed[] = [
     description: 'Vigencia de la publicación promocionada.',
     valueType: FeatureValueType.NUMERIC,
     sortOrder: 13,
+  },
+  {
+    code: PlanFeatureCode.PROMOTED_VACANCIES,
+    name: 'Vacantes promocionadas',
+    description: 'Cantidad de vacantes que incluye el plan.',
+    valueType: FeatureValueType.NUMERIC,
+    sortOrder: 14,
   },
 ];
 

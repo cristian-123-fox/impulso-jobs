@@ -142,6 +142,18 @@ export class AdminPlansController {
     );
   }
 
+  @Delete('plans/:id')
+  @RequirePermissions('plans.manage')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ResponseMessage('Plan eliminado.')
+  deletePlan(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<void> {
+    return this.catalog.deletePlan(id, this.actor(user, client));
+  }
+
   @Delete('plan-features/:code')
   @RequirePermissions('plans.manage')
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -151,13 +163,10 @@ export class AdminPlansController {
     @CurrentUser() user: AuthenticatedUser,
     @ClientInfo() client: ClientInfoPayload,
   ): Promise<void> {
-    return this.catalog.deleteFeature(
-      code,
-      this.actor(user, client),
-    );
+    return this.catalog.deleteFeature(code, this.actor(user, client));
   }
 
-@Delete('plans/:id/features/:featureCode')
+  @Delete('plans/:id/features/:featureCode')
   @RequirePermissions('plans.manage')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ResponseMessage('Beneficio eliminado.')

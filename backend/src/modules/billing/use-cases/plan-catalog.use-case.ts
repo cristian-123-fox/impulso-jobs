@@ -143,6 +143,22 @@ export class PlanCatalogUseCase {
     return this.get(plan.id);
   }
 
+  async deletePlan(id: string, actor: BillingActor): Promise<void> {
+    const plan = await this.requirePlan(id);
+
+    await this.plans.delete(plan.id);
+
+    await this.audit.record({
+      action: 'plans.delete',
+      actorUserId: actor.userId,
+      entity: 'plan',
+      entityId: plan.id,
+      ip: actor.ip,
+      userAgent: actor.userAgent,
+      metadata: { code: plan.code },
+    });
+  }
+
   listFeatures(): Promise<PlanFeatureResponseDto[]> {
     return this.plans
       .findFeatures()
@@ -174,10 +190,7 @@ export class PlanCatalogUseCase {
     return toPlanFeatureResponse(saved);
   }
 
-  async deleteFeature(
-    code: string,
-    actor: BillingActor,
-  ): Promise<void> {
+  async deleteFeature(code: string, actor: BillingActor): Promise<void> {
     const existing = await this.plans.findFeatureByCode(code);
     if (!existing) {
       throw new AppException(

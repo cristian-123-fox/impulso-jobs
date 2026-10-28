@@ -17,6 +17,9 @@ export interface IPlanRepository {
   ): Promise<boolean>;
   save(plan: Plan, manager?: EntityManager): Promise<Plan>;
 
+  /** Elimina un plan y sus valores de beneficio. */
+  delete(id: string, manager?: EntityManager): Promise<void>;
+
   /** Catálogo de beneficios, en orden de presentación. */
   findFeatures(manager?: EntityManager): Promise<PlanFeature[]>;
   findFeatureByCode(

@@ -155,9 +155,22 @@ export class SetPlanFeaturesDto {
 }
 
 export class CreatePromotionDto {
-  @ApiProperty({ description: 'Plan por publicación a aplicar.' })
+  @ApiPropertyOptional({ description: 'Vacante a promocionar.' })
+  @IsOptional()
   @IsUUID()
-  planId!: string;
+  vacancyId?: string;
+
+  @ApiPropertyOptional({ description: 'Plan por publicación a aplicar.' })
+  @IsOptional()
+  @IsUUID()
+  planId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Usar un crédito de la suscripción activa en vez de pagar.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  useSubscriptionCredit?: boolean;
 }
 
 export class StartCheckoutDto {
@@ -226,3 +239,23 @@ export class ConfirmPaymentDto {
 }
 
 export class ListPromotionsQueryDto extends PaginationQueryDto {}
+
+export class PromotionSummaryDto {
+  subscription: {
+    id: string | null;
+    planId: string | null;
+    planName: string | null;
+    status: string | null;
+    startsAt: Date | null;
+    currentPeriodEnd: Date | null;
+    autoRenew: boolean;
+    postingCredits: number;
+    usedPostingCredits: number;
+    availableCredits: number;
+    promotionDurationDays: number | null;
+  } | null;
+  promotionsIncluded: number;
+  promotionsUsed: number;
+  promotionsAvailable: number;
+  promotionDurationDays: number | null;
+}

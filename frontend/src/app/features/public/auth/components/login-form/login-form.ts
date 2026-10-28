@@ -2,14 +2,17 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   input,
   output,
+  PLATFORM_ID,
   signal,
   afterNextRender,
   viewChild,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   NonNullableFormBuilder,
   ReactiveFormsModule,
@@ -241,26 +244,28 @@ import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
       </button>
 
       <!-- Acceso con Google (GIS pinta el botón dentro del contenedor) -->
-      @if (googleBlocked()) {
-        <!--
-          Sin consentimiento funcional no se descarga nada de Google, así que no
-          hay botón que pintar. En vez de esconderlo sin más, se explica por qué
-          y se da el enlace a la Política de cookies para cambiarlo: el artículo
-          14, párrafo tercero, del Reglamento de la LFPDPPP pide informar de
-          cómo se pueden deshabilitar, no dejarlas en un limbo.
-        -->
-        <p class="mt-7 text-center text-[13px] leading-relaxed text-muted">
-          {{ t('legal.cookies.googleBlocked') }}
-          <a
-            [routerLink]="cookiesRoute"
-            class="font-medium text-ink underline decoration-line underline-offset-2"
-            >{{ t('legal.documents.cookies') }}</a
-          >
-        </p>
-      } @else if (googleEnabled() && !googleFailed()) {
+      @if (googleEnabled() && !googleFailed()) {
         <!-- Se oculta en la pestaña Empresa: el backend crea cuentas de
              candidato, así que ofrecerlo ahí prometería algo que no hace. -->
-        <div class="mt-7" [class.hidden]="accountType() === 'company'">
+        @if (googleBlocked()) {
+          <!--
+            Sin consentimiento funcional no se descarga nada de Google, así que no
+            hay botón que pintar. En vez de esconderlo sin más, se explica por qué
+            y se da el enlace a la Política de cookies para cambiarlo: el artículo
+            14, párrafo tercero, del Reglamento de la LFPDPPP pide informar de
+            cómo se pueden deshabilitar, no dejarlas en un limbo.
+          -->
+          <p class="mt-7 text-center text-[13px] leading-relaxed text-muted">
+            {{ t('legal.cookies.googleBlocked') }}
+            <a
+              [routerLink]="cookiesRoute"
+              class="font-medium text-ink underline decoration-line underline-offset-2"
+              >{{ t('legal.documents.cookies') }}</a
+            >
+          </p>
+        }
+
+        <div class="mt-7" [class.hidden]="accountType() === 'company' || googleBlocked()">
           <!--
             Aviso legal del acceso con Google.
 
@@ -284,7 +289,7 @@ import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
             de casillas compitiendo con la de arriba, y marcarla no serviría
             de nada porque el envío lee el otro bloque.
           -->
-          @if (!needsReconsent()) {
+          @if (!needsReconsent() && !googleBlocked()) {
             <ij-legal-consent
               #consent
               [imageRights]="true"
@@ -293,13 +298,21 @@ import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
             />
           }
 
-          <div class="flex items-center gap-3.5">
-            <span class="whitespace-nowrap text-[13.5px] font-semibold text-body">
-              {{ t('auth.login.socialDivider') }}
-            </span>
-            <span class="h-px flex-1 bg-line"></span>
-          </div>
-          <div class="mt-4 flex justify-center">
+          @if (!googleBlocked()) {
+            <div class="flex items-center gap-3.5">
+              <span class="whitespace-nowrap text-[13.5px] font-semibold text-body">
+                {{ t('auth.login.socialDivider') }}
+              </span>
+              <span class="h-px flex-1 bg-line"></span>
+            </div>
+          }
+
+          <!--
+            El contenedor se mantiene en el DOM aunque esté bloqueado, para poder
+            pintar el botón en cuanto se acepten las cookies funcionales sin
+            recargar la página.
+          -->
+          <div class="mt-4 flex justify-center" [class.hidden]="googleBlocked()">
             <div #googleButton class="min-h-[40px]"></div>
           </div>
         </div>
@@ -348,6 +361,7 @@ export class LoginForm {
   private readonly i18n = inject(AppTranslateService);
   private readonly language = inject(LanguageService);
   private readonly cookieConsent = inject(ConsentService);
+  private readonly platformId = inject(PLATFORM_ID);
   private readonly google = inject(GoogleIdentityService);
   private readonly googleHost = viewChild<ElementRef<HTMLElement>>(
     'googleButton',
@@ -407,6 +421,8 @@ export class LoginForm {
   protected readonly showPassword = signal(false);
   /** Si GIS no carga (red, bloqueador) el bloque entero desaparece. */
   protected readonly googleFailed = signal(false);
+  /** Evita repintar el botón de Google más de una vez por instancia. */
+  private readonly googleRendered = signal(false);
   /**
    * El botón no se pinta porque la categoría funcional no está autorizada.
    * Es un estado distinto de `googleFailed`: aquí no hubo ningún error y el
@@ -417,33 +433,58 @@ export class LoginForm {
 
   constructor() {
     // `afterNextRender`: GIS toca `document`, y `/auth/**` se prerenderiza.
-    afterNextRender(() => {
-      if (!this.googleEnabled()) return;
-      const host = this.googleHost();
-      if (!host) return;
+    afterNextRender(() => this.tryRenderGoogle());
 
-      // `load()` resuelve en `null` cuando no hay consentimiento para la
-      // categoría funcional. Ahí no es un fallo: el botón simplemente no se
-      // pinta y el login por correo sigue igual de disponible.
-      this.google
-        .load()
-        .then(() => {
-          if (!this.cookieConsent.allows('functional')) {
-            this.googleBlocked.set(true);
-            return;
-          }
-          this.google.renderButton(host.nativeElement, {
-            clientId: environment.googleClientId,
-            lang: this.language.current(),
-            onCredential: (credential) =>
-              this.googleCredential.emit({
-                credential,
-                legal: { documents: this.acceptanceDocuments() },
-              }),
-          });
-        })
-        .catch(() => this.googleFailed.set(true));
+    // Reactivo a la decisión de cookies: cuando la persona acepta la categoría
+    // funcional (o cambia sus preferencias) se pinta el botón sin recargar.
+    effect(() => {
+      this.cookieConsent.current?.();
+      this.googleHost();
+      this.googleEnabled();
+      if (!isPlatformBrowser(this.platformId)) return;
+      this.tryRenderGoogle();
     });
+  }
+
+  /**
+   * Intenta cargar GIS y pintar el botón. Es idempotente: no repinta si ya se
+   * pintó, y actualiza `googleBlocked` según el consentimiento vigente.
+   */
+  private tryRenderGoogle(): void {
+    if (!this.googleEnabled() || this.googleFailed() || this.googleRendered()) {
+      return;
+    }
+    const host = this.googleHost();
+
+    if (!this.cookieConsent.allows('functional')) {
+      this.googleBlocked.set(true);
+      return;
+    }
+
+    if (!host) return;
+
+    this.googleBlocked.set(false);
+
+    this.google
+      .load()
+      .then(() => {
+        if (!this.cookieConsent.allows('functional')) {
+          this.googleBlocked.set(true);
+          return;
+        }
+        this.googleBlocked.set(false);
+        this.google.renderButton(host.nativeElement, {
+          clientId: environment.googleClientId,
+          lang: this.language.current(),
+          onCredential: (credential) =>
+            this.googleCredential.emit({
+              credential,
+              legal: { documents: this.acceptanceDocuments() },
+            }),
+        });
+        this.googleRendered.set(true);
+      })
+      .catch(() => this.googleFailed.set(true));
   }
 
   protected readonly isLoading = computed(() => this.status() === 'loading');

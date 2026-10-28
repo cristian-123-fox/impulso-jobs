@@ -34,6 +34,8 @@ import {
   StartCheckoutDto,
 } from '@/modules/billing/dto/billing.dto';
 import { CompanyPaymentsUseCase } from '@/modules/billing/use-cases/company-payments.use-case';
+import { AppException } from '@/common/exceptions/app.exception';
+import { ErrorCode } from '@/common/types/error-code.enum';
 import { CompanySubscriptionUseCase } from '@/modules/billing/use-cases/company-subscription.use-case';
 import { BillingActor } from '@/modules/billing/use-cases/plan-catalog.use-case';
 import { VacancyPromotionUseCase } from '@/modules/billing/use-cases/vacancy-promotion.use-case';
@@ -65,6 +67,7 @@ export class CompanyBillingController {
     return this.promotions.create(
       vacancyId,
       dto.planId,
+      dto.useSubscriptionCredit ?? false,
       this.actor(user, client),
     );
   }
@@ -92,6 +95,61 @@ export class CompanyBillingController {
       this.actor(user, client),
       query.page ?? 1,
       query.limit ?? 10,
+    );
+  }
+
+  @Get('promotions/summary')
+  @RequirePermissions('promotions.read')
+  @ResponseMessage('Resumen de promociones obtenido.')
+  promotionsSummary(
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<any> {
+    return this.promotions.summary(this.actor(user, client));
+  }
+
+  @Get('promotions/eligible-vacancies')
+  @RequirePermissions('promotions.read')
+  @ResponseMessage('Vacantes elegibles obtenidas.')
+  eligibleVacancies(
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<any[]> {
+    return this.promotions.eligibleVacancies(this.actor(user, client));
+  }
+
+  @Get('promotions/:id')
+  @RequirePermissions('promotions.read')
+  @ResponseMessage('Promoción obtenida.')
+  getPromotion(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<any> {
+    return this.promotions.getById(id, this.actor(user, client));
+  }
+
+  @Post('promotions')
+  @RequirePermissions('promotions.create')
+  @HttpCode(HttpStatus.CREATED)
+  @ResponseMessage('Promoción creada.')
+  createPromotionFromBody(
+    @Body() dto: CreatePromotionDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @ClientInfo() client: ClientInfoPayload,
+  ): Promise<PromotionResponseDto> {
+    if (!dto.vacancyId) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.PROMOTION_NOT_FOUND,
+        'Debes indicar la vacante a promocionar.',
+      );
+    }
+    return this.promotions.create(
+      dto.vacancyId,
+      dto.planId,
+      dto.useSubscriptionCredit ?? false,
+      this.actor(user, client),
     );
   }
 

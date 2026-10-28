@@ -46,4 +46,21 @@ export class CompanySubscription extends BaseEntity {
 
   @Column({ name: 'auto_renew', type: 'boolean', default: true })
   autoRenew!: boolean;
+
+  /** Créditos de publicación incluidos en el periodo. */
+  @Column({ name: 'posting_credits', type: 'int', default: 0 })
+  postingCredits!: number;
+
+  /** Créditos de publicación ya consumidos en el periodo. */
+  @Column({ name: 'used_posting_credits', type: 'int', default: 0 })
+  usedPostingCredits!: number;
+
+  /** Cupos de promoción incluidos en el periodo. */
+  @Column({ name: 'promotion_credits', type: 'int', default: 0 })
+  promotionCredits!: number;
+
+  /** Cupos de promoción ya consumidos en el periodo. */
+  @Column({ name: 'used_promotion_credits', type: 'int', default: 0 })
+  usedPromotionCredits!: number;
 }
+

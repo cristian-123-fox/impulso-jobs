@@ -218,6 +218,15 @@ export class SettlePaymentUseCase {
       subscription.status = SubscriptionStatus.ACTIVE;
       subscription.startsAt ??= now;
       subscription.currentPeriodEnd = periodEnd;
+      subscription.postingCredits =
+        plan.postingQuota ?? subscription.postingCredits ?? 0;
+      subscription.usedPostingCredits = 0;
+
+      const planValues = await this.plans.findValuesByPlanIds([plan.id], manager);
+      const promoted = planValues.find((v) => v.featureCode === 'promoted_vacancies');
+      const promotedCount = promoted && promoted.isIncluded ? Number(promoted.value ?? 0) : 0;
+      subscription.promotionCredits = Number.isFinite(promotedCount) ? promotedCount : subscription.promotionCredits ?? 0;
+      subscription.usedPromotionCredits = 0;
       // Con una pasarela recurrente, su id es lo que reconoce las renovaciones
       // (`invoice.paid`) y lo que se cancela al quitar la renovación.
       if (event.providerSubscriptionId) {

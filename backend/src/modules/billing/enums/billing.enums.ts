@@ -8,6 +8,7 @@ export enum PlanType {
 
 export enum BillingPeriod {
   ONE_TIME = 'ONE_TIME',
+  MONTHLY = 'MONTHLY',
   ANNUAL = 'ANNUAL',
 }
 
@@ -85,6 +86,7 @@ export enum PlanFeatureCode {
   SCREENING_QUESTIONS = 'screening_questions',
   AUTO_REJECTION_MESSAGE = 'auto_rejection_message',
   APPLICANT_CONTACT_DATA = 'applicant_contact_data',
+  APPLICANT_CV_ACCESS = 'applicant_cv_access',
   FEATURED_RANKING = 'featured_ranking',
   URGENT_CONFIDENTIAL_BADGE = 'urgent_confidential_badge',
   SOCIAL_MEDIA_DISTRIBUTION = 'social_media_distribution',
@@ -94,6 +96,7 @@ export enum PlanFeatureCode {
   PAUSE_REACTIVATE = 'pause_reactivate',
   EDIT_TITLE_ON_REACTIVATE = 'edit_title_on_reactivate',
   PUBLICATION_DAYS = 'publication_days',
+  PROMOTED_VACANCIES = 'promoted_vacancies',
 }
 
 /** IVA mexicano. Se guarda por plan (`tax_rate`) por si cambia la tasa. */

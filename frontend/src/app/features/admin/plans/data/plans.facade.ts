@@ -90,6 +90,12 @@ export class PlansFacade {
       .pipe(tap((plan) => this.upsert(plan)));
   }
 
+  delete(id: string): Observable<void> {
+    return this.api.delete(id).pipe(
+      tap(() => this.plans.update((list) => list.filter((p) => p.id !== id))),
+    );
+  }
+
   setFeatures(
     id: string,
     features: PlanFeatureValuePayload[],

@@ -39,6 +39,8 @@ import {
   orderFolio,
 } from '@/features/company/billing/models/billing.models';
 import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
+import { CandidatesApi } from '@/features/company/candidates/data/candidates.api';
+import { TalentQuota } from '@/features/company/candidates/models/candidates.models';
 import { VacancyStatus } from '@/features/company/vacancies/models/vacancies.models';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -76,7 +78,7 @@ interface ExpiryNotice {
             Promociona tus vacantes
           </h1>
           <p class="mt-1.5 text-[14px] font-medium text-muted">
-            Destaca una vacante o contrata la suscripción anual de la empresa.
+            Gestiona la visibilidad de tus ofertas laborales.
           </p>
         </div>
         <div class="flex flex-wrap gap-2.5">
@@ -90,17 +92,6 @@ interface ExpiryNotice {
               Contratar suscripción
             </button>
           }
-          <button
-            ij-button
-            type="button"
-            variant="primary"
-            shape="rounded"
-            size="md"
-            (click)="openForm()"
-          >
-            <ij-icon name="award" [size]="16" />
-            Promocionar vacante
-          </button>
         </div>
       </div>
 
@@ -125,154 +116,45 @@ interface ExpiryNotice {
 
       @if (facade.subscription(); as subscription) {
         <section class="mb-6 rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h2 class="text-base font-bold text-ink-900">
-                Suscripción {{ subscription.planName || '' }}
-              </h2>
-              <p class="mt-1 text-[13.5px] text-muted">
-                {{ statusOf(subscription.status) }}
-                @if (subscription.currentPeriodEnd) {
-                  · vigente hasta
-                  {{ subscription.currentPeriodEnd | date: 'dd MMM yyyy' }}
-                }
-              </p>
-              @if (subscription.status === 'PENDING_PAYMENT') {
-                @if (subscription.order; as order) {
-                  <div class="mt-3 rounded-xl bg-amber-50 px-3.5 py-3 text-[13px] text-amber-800">
-                    <p class="font-semibold">
-                      Pago pendiente:
-                      {{ order.total | currency: order.currency : 'symbol-narrow' : '1.2-2' }}
-                      · {{ methodOf(order.paymentMethod) }} · folio
-                      <span class="font-mono">{{ folio(order.id) }}</span>
-                    </p>
-                    <p class="mt-1 text-[12.5px]">{{ pendingHint(order) }}</p>
-                    @if (isOpen(order)) {
-                      <button
-                        type="button"
-                        class="mt-2 text-[12.5px] font-bold text-amber-900 underline hover:no-underline disabled:opacity-50"
-                        [disabled]="cancellingId() === order.id"
-                        (click)="cancelPayment(order)"
-                      >
-                        {{ isManual(order) ? 'Retirar solicitud' : 'Cancelar pago' }}
-                      </button>
-                    }
-                  </div>
-                }
-              } @else {
-                <p class="mt-1 text-[12.5px] text-muted">
-                  Renovación automática: {{ subscription.autoRenew ? 'activada' : 'cancelada' }}
-                </p>
-              }
-              @if (expiry(); as expiry) {
-                <p
-                  role="status"
-                  class="mt-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold"
-                  [class]="
-                    expiry.urgent
-                      ? 'bg-red-50 text-red-700'
-                      : 'bg-amber-50 text-amber-700'
-                  "
-                >
-                  <ij-icon name="clock" [size]="16" class="mt-px flex-shrink-0" />
-                  <span>{{ expiry.message }}</span>
-                </p>
-              }
+          <h2 class="text-base font-bold text-ink-900 mb-3">Mi plan {{ subscription.planName || "" }}</h2>
+          <p class="text-[13.5px] text-muted mb-3">Estado: <span class="inline-block rounded-md px-2 py-0.5 text-[11.5px] font-bold bg-accent-green-soft text-accent-green">{{ statusOf(subscription.status) }}</span></p>
+          <div class="grid grid-cols-3 gap-3 mb-3">
+            <div class="rounded-xl bg-surface px-3 py-2 text-center">
+              <p class="text-[18px] font-extrabold text-ink-900">{{ subscription.promotionCredits }}</p>
+              <p class="text-[11px] text-muted">Incluidas</p>
             </div>
-            @if (subscription.autoRenew && subscription.status !== 'PENDING_PAYMENT') {
-              <button
-                type="button"
-                class="rounded-xl border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-body transition-colors hover:bg-red-50 hover:text-red-600"
-                (click)="onCancelRenewal()"
-              >
-                Cancelar renovación
-              </button>
-            }
+            <div class="rounded-xl bg-surface px-3 py-2 text-center">
+              <p class="text-[18px] font-extrabold text-ink-900">{{ subscription.usedPromotionCredits }}</p>
+              <p class="text-[11px] text-muted">Utilizadas</p>
+            </div>
+            <div class="rounded-xl bg-surface px-3 py-2 text-center">
+              <p class="text-[18px] font-extrabold text-ink-900">{{ subscription.promotionCredits - subscription.usedPromotionCredits }}</p>
+              <p class="text-[11px] text-muted">Disponible{{ (subscription.promotionCredits - subscription.usedPromotionCredits) === 1 ? "" : "s" }}</p>
+            </div>
           </div>
+          <p class="text-[13px] text-muted">Duración de cada promoción: {{ subscriptionDuration() ?? "—" }} días</p>
+          <p class="text-[13px] text-muted">Vigencia: {{ subscription.currentPeriodEnd ? (subscription.currentPeriodEnd | date: "dd/MM/yyyy") : "Según suscripción" }}</p>
+          <div class="mt-3 h-2 w-full rounded-full bg-surface">
+            <div class="h-2 rounded-full bg-brand" [style.width.%]="subscription.promotionCredits > 0 ? (subscription.usedPromotionCredits / subscription.promotionCredits) * 100 : 0"></div>
+          </div>
+          <p class="mt-1 text-[12px] text-muted">Renovación automática: {{ subscription.autoRenew ? "activada" : "desactivada" }}</p>
+          @if (subscription.autoRenew && subscription.status !== "PENDING_PAYMENT") {
+            <button type="button" class="mt-3 rounded-xl border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-body hover:bg-red-50 hover:text-red-600" (click)="onCancelRenewal()">Cancelar renovación</button>
+          }
         </section>
       }
 
-      <section class="mb-8">
-        <h2 class="mb-3 text-lg font-bold text-ink-900">Planes disponibles</h2>
-        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          @for (plan of facade.plans(); track plan.id) {
-            <article
-              class="flex flex-col rounded-2xl border border-line bg-white p-5 shadow-card"
-              [class.ring-2]="plan.isPopular"
-              [class.ring-brand]="plan.isPopular"
-            >
-              <div class="flex items-baseline justify-between gap-2">
-                <h3 class="text-[15px] font-bold text-ink-900">{{ plan.name }}</h3>
-                @if (plan.isPopular) {
-                  <span
-                    class="rounded-md bg-accent-amber-soft px-2 py-0.5 text-[11px] font-bold text-[#b26a15]"
-                  >
-                    Más popular
-                  </span>
-                }
-              </div>
-              @if (plan.description) {
-                <p class="mt-1 text-[12.5px] text-muted">{{ plan.description }}</p>
-              }
-              <div class="mt-3 text-[24px] font-extrabold leading-none text-brand">
-                {{ plan.price.total | currency: plan.price.currency : 'symbol-narrow' : '1.2-2' }}
-              </div>
-              <div class="mt-1 text-[12px] text-muted">
-                IVA incluido ·
-                {{ plan.planType === 'PER_PUBLICATION' ? 'pago único' : 'anual' }}
-              </div>
-
-              <ul class="mt-4 flex flex-col gap-1.5">
-                @for (feature of includedFeatures(plan.features); track feature.code) {
-                  <li class="flex items-start gap-2 text-[12.5px] text-body">
-                    <span class="mt-0.5 flex-shrink-0 text-accent-green">
-                      <ij-icon name="check" [size]="14" [strokeWidth]="2.6" />
-                    </span>
-                    <span>
-                      {{ feature.name }}@if (feature.value) {
-                        <span class="text-muted"> · {{ valueOf(feature.value) }}</span>
-                      }
-                    </span>
-                  </li>
-                }
-              </ul>
-
-              <div class="mt-auto pt-5">
-                @if (plan.planType === 'PER_PUBLICATION') {
-                  <button
-                    type="button"
-                    class="w-full rounded-xl border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
-                    (click)="openForm(plan.id)"
-                  >
-                    Promocionar con {{ plan.name }}
-                  </button>
-                } @else if (canSubscribe()) {
-                  <button
-                    type="button"
-                    class="w-full rounded-xl border border-line bg-white px-4 py-2.5 text-[13px] font-bold text-brand-strong transition-colors hover:bg-brand-50"
-                    (click)="openSubscriptionForm(plan.id)"
-                  >
-                    Contratar {{ plan.name }}
-                  </button>
-                } @else {
-                  <p class="text-center text-[12px] font-medium text-muted">
-                    Ya tienes una suscripción en curso.
-                  </p>
-                }
-              </div>
-            </article>
-          } @empty {
-            <p
-              class="rounded-2xl border border-line bg-white p-10 text-center text-[13.5px] text-muted shadow-card md:col-span-2 xl:col-span-3"
-            >
-              El administrador aún no ha publicado planes.
-            </p>
-          }
-        </div>
+      <section class="mb-6 rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
+        <h2 class="text-base font-bold text-ink-900 mb-2">Promocionar una vacante</h2>
+        <p class="mb-4 text-[13.5px] text-muted">Selecciona una vacante publicada y aumenta su visibilidad utilizando las promociones incluidas en tu plan.</p>
+        <button ij-button type="button" variant="primary" shape="rounded" size="md" [disabled]="!hasActiveSubscription()" (click)="openForm()">
+          <ij-icon name="award" [size]="16" />
+          Promocionar vacante
+        </button>
       </section>
 
       <div>
-        <h2 class="text-[19px] font-extrabold tracking-tight text-ink-900">Mis promociones</h2>
+        <h2 class="text-[19px] font-extrabold tracking-tight text-ink-900">Mis promociones activas</h2>
         <p class="mt-1.5 text-[14px] font-medium text-muted">
           Historial de lo contratado y hasta cuándo está vigente.
         </p>
@@ -303,61 +185,25 @@ interface ExpiryNotice {
                   </tr>
                 </thead>
                 <tbody>
-                  @for (promo of facade.promotions(); track promo.id) {
+                  @for (promo of activePromotions(); track promo.id) {
                     <tr class="border-b border-line/70 transition-colors hover:bg-surface">
                       <td class="px-5 py-3.5 text-sm font-semibold text-ink-900">
-                        {{ promo.planName || '—' }}
-                      </td>
-                      <td class="px-5 py-3.5">
-                        <span
-                          class="inline-block rounded-md px-2 py-1 text-[11.5px] font-bold"
-                          [class]="statusBadge(promo.status)"
-                        >
-                          {{ statusOf(promo.status) }}
-                        </span>
-                      </td>
-                      <td class="px-5 py-3.5 text-[13.5px] text-body">
-                        {{ promo.pricePaid | currency: promo.currency : 'symbol-narrow' : '1.2-2' }}
+                        {{ promo.vacancyTitle || promo.planName || "—" }}
                       </td>
                       <td class="px-5 py-3.5 text-[13px] text-muted">
-                        @if (promo.order; as order) {
-                          {{ methodOf(order.paymentMethod) }}
-                          <div class="text-[12px]">
-                            {{ paymentOf(order.paymentStatus) }} · folio
-                            <span class="font-mono">{{ folio(order.id) }}</span>
-                          </div>
-                        } @else {
-                          —
-                        }
+                        {{ promo.startsAt ? (promo.startsAt | date: "dd/MM/yyyy") : "—" }}
                       </td>
                       <td class="px-5 py-3.5 text-[13px] text-muted">
-                        @if (promo.endsAt) {
-                          {{ promo.endsAt | date: 'dd MMM yyyy' }}
-                        } @else {
-                          —
-                        }
+                        {{ promo.endsAt ? (promo.endsAt | date: "dd/MM/yyyy") : "—" }}
+                      </td>
+                      <td class="px-5 py-3.5 text-[13px] text-muted">
+                        {{ daysRemaining(promo) }} días
                       </td>
                       <td class="px-5 py-3.5">
-                        @if (promo.order?.voucherUrl; as url) {
-                          <a
-                            [href]="url"
-                            target="_blank"
-                            rel="noopener"
-                            class="text-[12.5px] font-bold text-brand hover:underline"
-                          >
-                            Ver ficha de pago
-                          </a>
-                        }
-                        @if (promo.status === 'PENDING_PAYMENT' && promo.order && isOpen(promo.order)) {
-                          <button
-                            type="button"
-                            class="text-[12.5px] font-bold text-body hover:text-red-600 disabled:opacity-50"
-                            [disabled]="cancellingId() === promo.order.id"
-                            (click)="cancelPayment(promo.order)"
-                          >
-                            {{ isManual(promo.order) ? 'Retirar solicitud' : 'Cancelar' }}
-                          </button>
-                        }
+                        <span class="inline-block rounded-md px-2 py-1 text-[11.5px] font-bold bg-accent-green-soft text-accent-green">Activa</span>
+                      </td>
+                      <td class="px-5 py-3.5">
+                        <button type="button" class="text-[12.5px] font-bold text-brand hover:underline" (click)="facade.loadPromotions(facade.page())">Ver detalles</button>
                       </td>
                     </tr>
                   } @empty {
@@ -382,6 +228,60 @@ interface ExpiryNotice {
       </section>
     </div>
 
+      <!-- Historial de promociones -->
+      <section class="mb-6 rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
+        <h2 class="text-base font-bold text-ink-900 mb-2">Historial de promociones</h2>
+        <p class="mb-4 text-[13.5px] text-muted">Consulta las promociones utilizadas anteriormente y su estado.</p>
+        @if (historyPromotions().length === 0) {
+          <div class="p-6 text-center text-[13.5px] text-muted">Sin historial de promociones.</div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[640px] border-collapse text-left">
+              <thead>
+                <tr class="border-b border-line bg-surface/60">
+                  <th class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted">Vacante</th>
+                  <th class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted">Plan</th>
+                  <th class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted">Inicio</th>
+                  <th class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted">Finalización</th>
+                  <th class="px-5 py-3.5 text-[11.5px] font-bold uppercase tracking-wide text-muted">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (promo of historyPromotions(); track promo.id) {
+                  <tr class="border-b border-line/70 hover:bg-surface">
+                    <td class="px-5 py-3.5 text-sm font-semibold text-ink-900">{{ promo.vacancyTitle || promo.planName || '—' }}</td>
+                    <td class="px-5 py-3.5 text-[13px] text-muted">{{ promo.planName || '—' }}</td>
+                    <td class="px-5 py-3.5 text-[13px] text-muted">{{ promo.startsAt ? (promo.startsAt | date: 'dd/MM/yyyy') : '—' }}</td>
+                    <td class="px-5 py-3.5 text-[13px] text-muted">{{ promo.endsAt ? (promo.endsAt | date: 'dd/MM/yyyy') : '—' }}</td>
+                    <td class="px-5 py-3.5 text-[13px] text-muted">{{ statusOf(promo.status) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <!-- ¿Cómo funcionan las promociones? -->
+      <section class="mb-6 rounded-2xl border border-line bg-white p-5 shadow-card sm:p-6">
+        <h2 class="text-base font-bold text-ink-900 mb-3">¿Cómo funcionan las promociones?</h2>
+        <div class="grid gap-4 md:grid-cols-3">
+          <div class="rounded-xl bg-surface p-4">
+            <h3 class="text-[14px] font-bold text-ink-900">Selecciona tu vacante</h3>
+            <p class="mt-1 text-[12.5px] text-muted">Elige una de tus vacantes activas para promocionarla.</p>
+          </div>
+          <div class="rounded-xl bg-surface p-4">
+            <h3 class="text-[14px] font-bold text-ink-900">Activa tu promoción</h3>
+            <p class="mt-1 text-[12.5px] text-muted">Utiliza uno de los cupos disponibles incluidos en tu suscripción.</p>
+          </div>
+          <div class="rounded-xl bg-surface p-4">
+            <h3 class="text-[14px] font-bold text-ink-900">Obtén mayor visibilidad</h3>
+            <p class="mt-1 text-[12.5px] text-muted">Tu vacante se mostrará como destacada durante los días establecidos en tu plan.</p>
+          </div>
+        </div>
+        <p class="mt-4 text-[12.5px] text-muted">Al finalizar la promoción, tu vacante continuará publicada normalmente hasta su fecha de vencimiento, siempre que siga activa.</p>
+      </section>
+
     @if (showForm()) {
       <ij-modal
         title="Promocionar una vacante"
@@ -394,6 +294,9 @@ interface ExpiryNotice {
           [plans]="facade.perPublicationPlans()"
           [paymentOptions]="facade.paymentOptions()"
           [initialPlanId]="initialPlanId()"
+          [creditMode]="hasActiveSubscription()"
+          [promotionDays]="subscriptionDuration()"
+          [availableCredits]="availableCredits()"
           [submitting]="saving()"
           [error]="formError()"
           (save)="onPromote($event)"
@@ -495,6 +398,7 @@ interface ExpiryNotice {
 export class PromotionsPage {
   protected readonly facade = inject(BillingFacade);
   private readonly vacanciesApi = inject(VacanciesApi);
+  private readonly candidatesApi = inject(CandidatesApi);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly route = inject(ActivatedRoute);
@@ -518,6 +422,30 @@ export class PromotionsPage {
   protected readonly notice = signal<string | null>(null);
   /** Orden que se está retirando: evita el doble clic. */
   protected readonly cancellingId = signal<string | null>(null);
+  protected readonly talentQuota = signal<TalentQuota | null>(null);
+
+  protected readonly subscriptionPlan = computed(() => {
+    const sub = this.facade.subscription();
+    if (!sub) return null;
+    return this.facade.plans().find((plan) => plan.id === sub.planId) ?? null;
+  });
+
+  protected readonly subscriptionDuration = computed(() => {
+    const plan = this.subscriptionPlan();
+    if (!plan) return null;
+    const feat = plan.features?.find((f) => f.code === "publication_days");
+    if (feat && feat.isIncluded && feat.value) {
+      const n = Number(feat.value);
+      if (Number.isFinite(n)) return n;
+    }
+    return plan.validityDays ?? null;
+  });
+
+  protected readonly availableCredits = computed(() => {
+    const sub = this.facade.subscription();
+    if (!sub) return 0;
+    return (sub.promotionCredits ?? 0) - (sub.usedPromotionCredits ?? 0);
+  });
 
   private readonly requestedPlanId = signal<string | null>(
     this.route.snapshot.queryParamMap.get('plan'),
@@ -533,18 +461,38 @@ export class PromotionsPage {
       this.facade.subscriptionLoaded() &&
       this.facade.subscription() === null,
   );
+  protected readonly hasActiveSubscription = computed(
+    () => this.facade.subscription()?.status === 'ACTIVE',
+  );
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
 
   protected readonly headers = [
-    'Plan',
+    'Vacante',
+    'Inicio',
+    'Finalización',
+    'Días restantes',
     'Estado',
-    'Importe',
-    'Pago',
-    'Vence',
-    '',
+    'Acciones',
   ];
+
+  protected readonly activePromotions = computed(() =>
+    this.facade
+      .promotions()
+      .filter((p) => p.status === 'ACTIVE'),
+  );
+  protected readonly historyPromotions = computed(() =>
+    this.facade
+      .promotions()
+      .filter((p) => p.status !== 'ACTIVE'),
+  );
+
+  protected daysRemaining(promo: Promotion): number {
+    if (!promo.endsAt) return 0;
+    const end = new Date(promo.endsAt).getTime();
+    return Math.max(0, Math.ceil((end - Date.now()) / DAY_MS));
+  }
 
   private readonly vacancies = signal<readonly IjOption[]>([]);
   protected readonly vacancyOptions = computed(() => this.vacancies());
@@ -554,6 +502,10 @@ export class PromotionsPage {
     this.facade.loadPromotions(1);
     this.facade.loadSubscription();
     this.facade.loadPaymentOptions();
+    this.candidatesApi
+      .quota()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((q) => this.talentQuota.set(q));
     this.handleCheckoutReturn();
 
     effect(() => {
@@ -836,6 +788,28 @@ export class PromotionsPage {
   protected onPromote(request: PromotionRequest): void {
     this.saving.set(true);
     this.formError.set(null);
+
+    if (this.hasActiveSubscription()) {
+      this.facade
+        .createPromotion(request.vacancyId, null, true)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.saving.set(false);
+            this.closeForm();
+            this.notice.set('Vacante promocionada con un crédito de tu suscripción.');
+            this.facade.loadPromotions(1);
+          },
+          error: (error: unknown) => {
+            this.saving.set(false);
+            this.formError.set(
+              this.messageOf(error, 'No se pudo promocionar la vacante.'),
+            );
+          },
+        });
+      return;
+    }
+
     this.facade
       .createPromotion(request.vacancyId, request.planId)
       .pipe(

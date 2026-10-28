@@ -151,8 +151,8 @@ export interface PlanActionEvent {
               <button
                 type="button"
                 class="flex h-8 w-8 items-center justify-center rounded-lg border border-danger text-danger transition-colors hover:bg-danger-100 hover:text-danger-800 active:translate-y-[1px]"
-                title="Eliminar beneficio"
-                aria-label="Eliminar beneficio"
+                title="Eliminar plan"
+                aria-label="Eliminar plan"
                 (click)="emit('delete', plan)"
               >
                 <ij-icon name="trash" [size]="15" />

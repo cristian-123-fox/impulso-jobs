@@ -48,6 +48,7 @@ export interface PlanResponseDto {
 export interface PromotionResponseDto {
   id: string;
   vacancyId: string;
+  vacancyTitle: string | null;
   planId: string;
   planName: string | null;
   status: string;
@@ -67,6 +68,10 @@ export interface SubscriptionResponseDto {
   startsAt: string | null;
   currentPeriodEnd: string | null;
   autoRenew: boolean;
+  postingCredits: number;
+  usedPostingCredits: number;
+  promotionCredits: number;
+  usedPromotionCredits: number;
   order: OrderResponseDto | null;
 }
 
@@ -175,10 +180,12 @@ export function toPromotionResponse(
   promotion: VacancyPromotion,
   planName: string | null,
   order: PromotionOrder | null,
+  vacancyTitle: string | null = null,
 ): PromotionResponseDto {
   return {
     id: promotion.id,
     vacancyId: promotion.vacancyId,
+    vacancyTitle,
     planId: promotion.planId,
     planName,
     status: promotion.status,
@@ -204,6 +211,10 @@ export function toSubscriptionResponse(
     startsAt: subscription.startsAt?.toISOString() ?? null,
     currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
     autoRenew: subscription.autoRenew,
+    postingCredits: subscription.postingCredits ?? 0,
+    usedPostingCredits: subscription.usedPostingCredits ?? 0,
+    promotionCredits: subscription.promotionCredits ?? 0,
+    usedPromotionCredits: subscription.usedPromotionCredits ?? 0,
     order: order ? toOrderResponse(order) : null,
   };
 }

@@ -1,4 +1,5 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
 import {
   PaginatedResponse,
   toPaginated,
@@ -14,6 +15,7 @@ import {
 } from '@/modules/billing/dto/billing-response.dto';
 import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entity';
 import { VacancyPromotion } from '@/modules/billing/entities/vacancy-promotion.entity';
+import { Plan } from '@/modules/billing/entities/plan.entity';
 import {
   BILLING_CURRENCY,
   PaymentMethod,
@@ -21,6 +23,7 @@ import {
   PaymentStatus,
   PlanType,
   PromotionStatus,
+  SubscriptionStatus,
 } from '@/modules/billing/enums/billing.enums';
 import {
   type IBillingRepository,
@@ -35,8 +38,13 @@ import { checkoutReturnUrls } from '@/modules/billing/services/checkout-return-u
 import { PaymentProviderRegistry } from '@/modules/billing/services/payment-provider.registry';
 import { PaymentQueueNotifier } from '@/modules/billing/services/payment-queue-notifier.service';
 import { PricingService } from '@/modules/billing/services/pricing.service';
+import { EntitlementService } from '@/modules/billing/services/entitlement.service';
 import { BillingActor } from '@/modules/billing/use-cases/plan-catalog.use-case';
 import { VacancyStatus } from '@/modules/vacancies/enums/vacancy.enums';
+import type { IVacancyRepository } from '@/modules/vacancies/repositories/vacancy.repository.interface';
+import { VACANCY_REPOSITORY } from '@/modules/vacancies/repositories/vacancy.repository.interface';
+import { DataSource } from 'typeorm';
+import { runInTransaction } from '@/common/utils/transaction.util';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
 
 /**
@@ -56,11 +64,15 @@ export class VacancyPromotionUseCase {
     private readonly ownership: VacancyOwnershipService,
     private readonly audit: AuditService,
     private readonly paymentQueue: PaymentQueueNotifier,
+    private readonly entitlements: EntitlementService,
+    @Inject(VACANCY_REPOSITORY) private readonly vacancies: IVacancyRepository,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async create(
     vacancyId: string,
-    planId: string,
+    planId: string | undefined,
+    useSubscriptionCredit: boolean,
     actor: BillingActor,
   ): Promise<PromotionResponseDto> {
     const company = await this.ownership.requireCompany(actor.userId);
@@ -69,11 +81,133 @@ export class VacancyPromotionUseCase {
       company.id,
     );
 
-    if (vacancy.status === VacancyStatus.CLOSED) {
+    if (vacancy.status !== VacancyStatus.ACTIVE) {
       throw new AppException(
         HttpStatus.CONFLICT,
-        ErrorCode.VACANCY_CLOSED,
-        'No se puede promocionar una vacante cerrada.',
+        ErrorCode.VACANCY_INVALID_STATUS_CHANGE,
+        'Solo se pueden promocionar vacantes publicadas y activas.',
+      );
+    }
+
+    const live = await this.billing.findLivePromotionByVacancy(vacancy.id);
+    if (live) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.PROMOTION_ALREADY_EXISTS,
+        live.status === PromotionStatus.ACTIVE
+          ? 'Esta vacante ya tiene una promoción activa.'
+          : 'Esta vacante ya tiene una promoción pendiente de pago.',
+      );
+    }
+
+    if (useSubscriptionCredit) {
+      let saved: VacancyPromotion | null = null;
+      let planName: string | null = null;
+      let planCode: string | null = null;
+
+      await runInTransaction(this.dataSource, async (manager) => {
+        const subscription = await this.billing.findLiveSubscriptionByCompany(
+          company.id,
+          new Date(),
+          manager,
+        );
+        if (
+          !subscription ||
+          subscription.status !== SubscriptionStatus.ACTIVE ||
+          (subscription.promotionCredits ?? 0) -
+            (subscription.usedPromotionCredits ?? 0) <=
+            0
+        ) {
+          throw new AppException(
+            HttpStatus.CONFLICT,
+            ErrorCode.PROMOTION_NOT_PAYABLE,
+            'No tienes créditos de promoción disponibles en tu suscripción.',
+          );
+        }
+
+        // Revalidar que no haya promoción viva (control de concurrencia).
+        const live = await this.billing.findLivePromotionByVacancy(
+          vacancy.id,
+          manager,
+        );
+        if (live) {
+          throw new AppException(
+            HttpStatus.CONFLICT,
+            ErrorCode.PROMOTION_ALREADY_EXISTS,
+            'Esta vacante ya tiene una promoción activa.',
+          );
+        }
+
+        const plan = await this.plans.findById(subscription.planId, manager);
+        if (!plan) {
+          throw new AppException(
+            HttpStatus.NOT_FOUND,
+            ErrorCode.PLAN_NOT_FOUND,
+            'El plan de la suscripción ya no existe.',
+          );
+        }
+
+        subscription.usedPromotionCredits =
+          (subscription.usedPromotionCredits ?? 0) + 1;
+        await this.billing.saveSubscription(subscription, manager);
+
+        const entitlements = await this.entitlements.resolve(plan, manager);
+        const days = entitlements.publicationDays ?? plan.validityDays ?? null;
+        const startsAt = new Date();
+        const endsAt = days === null ? null : this.addDays(startsAt, days);
+
+        if (endsAt && vacancy.expiresAt && endsAt > vacancy.expiresAt) {
+          throw new AppException(
+            HttpStatus.CONFLICT,
+            ErrorCode.PROMOTION_NOT_PAYABLE,
+            'La vacante vence antes de completar la duración de la promoción.',
+          );
+        }
+
+        const promotion = new VacancyPromotion();
+        promotion.vacancyId = vacancy.id;
+        promotion.planId = plan.id;
+        promotion.companyId = company.id;
+        promotion.purchasedBy = actor.userId;
+        promotion.status = PromotionStatus.ACTIVE;
+        promotion.pricePaid = '0';
+        promotion.currency = plan.currency || BILLING_CURRENCY;
+        promotion.startsAt = startsAt;
+        promotion.endsAt = endsAt ?? null;
+
+        await this.entitlements.applyToVacancy(
+          vacancy.id,
+          plan,
+          entitlements,
+          startsAt,
+          manager,
+        );
+
+        saved = await this.billing.savePromotion(promotion, manager);
+        planName = plan.name;
+        planCode = plan.code;
+      });
+
+      const vacancyRecord = await this.vacancies.findById(saved!.vacancyId);
+
+      await this.audit.record({
+        action: 'promotions.create_credit',
+        actorUserId: actor.userId,
+        entity: 'vacancy_promotion',
+        entityId: saved!.id,
+        ip: actor.ip,
+        userAgent: actor.userAgent,
+        metadata: { vacancyId: saved!.vacancyId, planCode, credit: true },
+      });
+
+      return toPromotionResponse(saved!, planName, null, vacancyRecord?.title ?? null);
+    }
+
+    if (!planId) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.PLAN_NOT_FOUND,
+        'Debes elegir un plan para promocionar la vacante.',
       );
     }
 
@@ -97,17 +231,6 @@ export class VacancyPromotionUseCase {
         HttpStatus.BAD_REQUEST,
         ErrorCode.PLAN_WRONG_TYPE,
         'Ese plan es una suscripción de empresa, no se aplica a una vacante.',
-      );
-    }
-
-    const live = await this.billing.findLivePromotionByVacancy(vacancy.id);
-    if (live) {
-      throw new AppException(
-        HttpStatus.CONFLICT,
-        ErrorCode.PROMOTION_ALREADY_EXISTS,
-        live.status === PromotionStatus.ACTIVE
-          ? 'Esta vacante ya tiene una promoción activa.'
-          : 'Esta vacante ya tiene una promoción pendiente de pago.',
       );
     }
 
@@ -137,7 +260,7 @@ export class VacancyPromotionUseCase {
       },
     });
 
-    return toPromotionResponse(saved, plan.name, null);
+    return toPromotionResponse(saved, plan.name, null, vacancy.title ?? null);
   }
 
   /**
@@ -319,6 +442,104 @@ export class VacancyPromotionUseCase {
     return toPaginated(items, total, page, limit);
   }
 
+  /** Resumen de suscripción y cupos de promoción de la empresa. */
+  async summary(actor: BillingActor): Promise<any> {
+    const company = await this.ownership.requireCompany(actor.userId);
+    const subscription = await this.billing.findLiveSubscriptionByCompany(
+      company.id,
+      new Date(),
+    );
+
+    let plan: Plan | null = null;
+    if (subscription) {
+      plan = await this.plans.findById(subscription.planId);
+    }
+
+    const entitlements = plan ? await this.entitlements.resolve(plan) : null;
+    const durationDays =
+      entitlements?.publicationDays ?? plan?.validityDays ?? null;
+
+    const included = subscription ? (subscription.promotionCredits ?? 0) : 0;
+    const used = subscription ? (subscription.usedPromotionCredits ?? 0) : 0;
+
+    const [rows] = await this.billing.findAndCountPromotionsByCompany({
+      companyId: company.id,
+      page: 1,
+      limit: 1000,
+    });
+
+    return {
+      subscription: subscription
+        ? {
+            id: subscription.id,
+            planId: subscription.planId,
+            planName: plan?.name ?? null,
+            status: subscription.status,
+            startsAt: subscription.startsAt ?? null,
+            currentPeriodEnd: subscription.currentPeriodEnd ?? null,
+            autoRenew: subscription.autoRenew,
+            promotionCredits: subscription.promotionCredits ?? 0,
+            usedPromotionCredits: subscription.usedPromotionCredits ?? 0,
+            availableCredits:
+              (subscription.promotionCredits ?? 0) -
+              (subscription.usedPromotionCredits ?? 0),
+            promotionDurationDays: durationDays,
+          }
+        : null,
+      promotionsIncluded: included,
+      promotionsUsed: used,
+      promotionsAvailable: subscription
+        ? (subscription.promotionCredits ?? 0) -
+          (subscription.usedPromotionCredits ?? 0)
+        : 0,
+      promotionDurationDays: durationDays,
+      promotionsCount: rows.length,
+    };
+  }
+
+  /** Vacantes activas de la empresa sin promoción viva. */
+  async eligibleVacancies(actor: BillingActor): Promise<any[]> {
+    const company = await this.ownership.requireCompany(actor.userId);
+    const [vacancies] = await this.vacancies.findAndCountByCompany({
+      companyId: company.id,
+      status: VacancyStatus.ACTIVE,
+      page: 1,
+      limit: 100,
+    });
+
+    const result: any[] = [];
+    for (const vacancy of vacancies) {
+      const live = await this.billing.findLivePromotionByVacancy(vacancy.id);
+      if (!live) {
+        result.push({
+          id: vacancy.id,
+          title: vacancy.title,
+          status: vacancy.status,
+          expiresAt: vacancy.expiresAt ?? null,
+        });
+      }
+    }
+    return result;
+  }
+
+  /** Promoción por id (propia de la empresa). */
+  async getById(id: string, actor: BillingActor): Promise<any> {
+    const company = await this.ownership.requireCompany(actor.userId);
+    const promotion = await this.billing.findPromotionByIdAndCompany(
+      id,
+      company.id,
+    );
+    if (!promotion) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.PROMOTION_NOT_FOUND,
+        'La promoción no existe.',
+      );
+    }
+    const [item] = await this.decorate([promotion]);
+    return item;
+  }
+
   /** Promoción vigente de una vacante concreta, si la tiene. */
   async getForVacancy(
     vacancyId: string,
@@ -334,6 +555,12 @@ export class VacancyPromotionUseCase {
     return item;
   }
 
+  private addDays(from: Date, days: number): Date {
+    const result = new Date(from);
+    result.setDate(result.getDate() + days);
+    return result;
+  }
+
   private async decorate(
     rows: VacancyPromotion[],
   ): Promise<PromotionResponseDto[]> {
@@ -341,14 +568,16 @@ export class VacancyPromotionUseCase {
 
     return Promise.all(
       rows.map(async (promotion) => {
-        const [plan, orders] = await Promise.all([
+        const [plan, orders, vacancy] = await Promise.all([
           this.plans.findById(promotion.planId),
           this.billing.findOrdersByPromotionId(promotion.id),
+          this.vacancies.findById(promotion.vacancyId),
         ]);
         return toPromotionResponse(
           promotion,
           plan?.name ?? null,
           orders[0] ?? null,
+          vacancy?.title ?? null,
         );
       }),
     );

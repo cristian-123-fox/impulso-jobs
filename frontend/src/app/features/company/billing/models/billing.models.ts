@@ -126,6 +126,7 @@ export interface Order {
 export interface Promotion {
   id: string;
   vacancyId: string;
+  vacancyTitle: string | null;
   planId: string;
   planName: string | null;
   status: string;
@@ -145,6 +146,10 @@ export interface Subscription {
   startsAt: string | null;
   currentPeriodEnd: string | null;
   autoRenew: boolean;
+  postingCredits: number;
+  usedPostingCredits: number;
+  promotionCredits: number;
+  usedPromotionCredits: number;
   order: Order | null;
 }
 

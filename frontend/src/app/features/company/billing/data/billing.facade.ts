@@ -111,9 +111,13 @@ export class BillingFacade {
       });
   }
 
-  createPromotion(vacancyId: string, planId: string): Observable<Promotion> {
+  createPromotion(
+    vacancyId: string,
+    planId: string | null,
+    useSubscriptionCredit = false,
+  ): Observable<Promotion> {
     return this.api
-      .createPromotion(vacancyId, planId)
+      .createPromotion(vacancyId, planId, useSubscriptionCredit)
       .pipe(tap(() => this.loadPromotions(1)));
   }
 

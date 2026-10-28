@@ -387,10 +387,10 @@ export class PlansListPage {
         this.deactivating.set(plan);
         return;
       case 'delete':
-        this.run(
-          this.facade.setFeatures(plan.id, []),
-          'No se pudo eliminar el beneficio.',
-        );
+        if (!confirm(`¿Eliminar el plan "${plan.name}"? Esta acción no se puede deshacer.`)) {
+          return;
+        }
+        this.run(this.facade.delete(plan.id), 'No se pudo eliminar el plan.');
         return;
     }
   }

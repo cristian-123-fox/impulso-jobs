@@ -56,11 +56,18 @@ export class BillingApi {
       .pipe(map((r) => r.content));
   }
 
-  createPromotion(vacancyId: string, planId: string): Observable<Promotion> {
+  createPromotion(
+    vacancyId: string,
+    planId: string | null,
+    useSubscriptionCredit = false,
+  ): Observable<Promotion> {
     return this.http
       .post<
         ApiSuccessResponse<Promotion>
-      >(`${this.base}/vacancies/${vacancyId}/promotions`, { planId })
+      >(`${this.base}/vacancies/${vacancyId}/promotions`, {
+        planId,
+        useSubscriptionCredit,
+      })
       .pipe(map((r) => r.content));
   }
 
@@ -106,6 +113,24 @@ export class BillingApi {
       .post<
         ApiSuccessResponse<Order>
       >(`${this.base}/payments/${orderId}/cancel`, {})
+      .pipe(map((r) => r.content));
+  }
+
+  summary(): Observable<any> {
+    return this.http
+      .get<ApiSuccessResponse<any>>(`${this.base}/promotions/summary`)
+      .pipe(map((r) => r.content));
+  }
+
+  eligibleVacancies(): Observable<any[]> {
+    return this.http
+      .get<ApiSuccessResponse<any[]>>(`${this.base}/promotions/eligible-vacancies`)
+      .pipe(map((r) => r.content));
+  }
+
+  getPromotion(id: string): Observable<Promotion> {
+    return this.http
+      .get<ApiSuccessResponse<Promotion>>(`${this.base}/promotions/${id}`)
       .pipe(map((r) => r.content));
   }
 
