@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -9,6 +10,12 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { RegisterLegalDto } from '@/modules/iam/registration/dto/register.dto';
+
+/** Pestaña elegida en el login: candidato o empresa. */
+export enum LoginAccountType {
+  CANDIDATE = 'candidate',
+  COMPANY = 'company',
+}
 
 export class LoginDto {
   @ApiProperty({ example: 'persona@empresa.com' })
@@ -21,6 +28,19 @@ export class LoginDto {
   @IsNotEmpty({ message: 'La contraseña es obligatoria.' })
   @MaxLength(200)
   password!: string;
+
+  /**
+   * Pestaña desde la que se intenta entrar. El backend comprueba que coincida
+   * con el rol real de la cuenta: así el selector Candidato/Empresa no es sólo
+   * cosmético y una cuenta de empresa no entra por la pestaña de candidato.
+   * Los ADMIN se aceptan desde cualquiera de las dos.
+   */
+  @ApiPropertyOptional({ enum: LoginAccountType })
+  @IsOptional()
+  @IsEnum(LoginAccountType, {
+    message: 'El tipo de cuenta no es válido.',
+  })
+  accountType?: LoginAccountType;
 
   /**
    * Documentos aceptados, sólo cuando el backend los exige.

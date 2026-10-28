@@ -40,6 +40,11 @@ export interface LoginRequest {
   email: string;
   password: string;
   /**
+   * Pestaña desde la que se intenta entrar. El backend valida que coincida con
+   * el rol real de la cuenta; no es sólo copy de la pantalla.
+   */
+  accountType?: 'candidate' | 'company';
+  /**
    * Sólo viaja cuando el backend pidió aceptar una versión nueva
    * (LEGAL_VERSION_OUTDATED). En un login normal se omite entero.
    */

@@ -170,6 +170,38 @@ describe('LoginUseCase', () => {
     );
   });
 
+  it('rechaza una cuenta de empresa desde la pestaña de candidato', async () => {
+    const user = buildUser({ role: Role.EMPLOYER });
+    users.findByEmail.mockResolvedValue(user);
+    hasher.compare.mockResolvedValue(true);
+
+    let error: unknown;
+    try {
+      await useCase.execute(command({ accountType: 'candidate' }));
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(errorCodeOf(error)).toBe(ErrorCode.AUTH_WRONG_ACCOUNT_TYPE);
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'auth.login.wrong_account_type',
+        actorUserId: user.id,
+      }),
+    );
+    expect(tokens.create).not.toHaveBeenCalled();
+  });
+
+  it('permite entrar a un ADMIN desde cualquiera de las dos pestañas', async () => {
+    const user = buildUser({ role: Role.ADMIN });
+    users.findByEmail.mockResolvedValue(user);
+    hasher.compare.mockResolvedValue(true);
+
+    const result = await useCase.execute(command({ accountType: 'company' }));
+
+    expect(result.user.role).toBe(Role.ADMIN);
+  });
+
   it('bloquea la cuenta por 3 minutos tras 3 intentos fallidos', async () => {
     const user = buildUser();
     users.findByEmail.mockResolvedValue(user);

@@ -126,9 +126,13 @@ export class ConsentService {
 
   private persist(preferences: CookiePreferences): void {
     if (!this.isBrowser) return;
+    // `Secure` sólo en HTTPS: en local por HTTP el navegador descartaría la
+    // cookie y el banner reaparecería en cada recarga.
+    const secure =
+      this.document.location?.protocol === 'https:' ? '; Secure' : '';
     this.document.cookie =
       `${CONSENT_COOKIE}=${encodeURIComponent(JSON.stringify(preferences))}; ` +
-      `path=/; max-age=${CONSENT_COOKIE_MAX_AGE}; SameSite=Lax`;
+      `path=/; max-age=${CONSENT_COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
   }
 
   private readCookie(): CookiePreferences | null {

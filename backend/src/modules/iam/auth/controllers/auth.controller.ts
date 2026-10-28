@@ -58,6 +58,7 @@ export class AuthController {
     return this.loginUseCase.execute({
       email: dto.email,
       password: dto.password,
+      accountType: dto.accountType,
       ip: client.ip,
       userAgent: client.userAgent,
       legal: dto.legal,

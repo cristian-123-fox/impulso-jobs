@@ -697,6 +697,8 @@
       "invalidCredentials": "Wrong email or password.",
       "blocked": "Your account is temporarily locked. Wait a few minutes and try again.",
       "inactive": "Your account is not active. Please contact support.",
+      "wrongAccountTypeCandidate": "That email belongs to a company account. Switch to the Company tab.",
+      "wrongAccountTypeCompany": "That email belongs to a candidate account. Switch to the Candidate tab.",
       "notVerified": "You need to verify your email before signing in.",
       "googleInvalid": "We could not sign you in with Google. Please try again.",
       "googleNotConfigured": "Signing in with Google is not available right now.",

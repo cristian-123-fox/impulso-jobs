@@ -21,6 +21,7 @@ import { filter, map } from 'rxjs';
 import { AuthService } from '@/core/auth/auth.service';
 import { NotificationBell } from '@/shared/notifications/notification-bell';
 import { IconName, IjAvatar, IjIcon, IjLogo } from '@/shared/ui';
+import { IjCookieBanner } from '@/shared/ui/cookie-banner/cookie-banner';
 
 export interface ShellNavItem {
   readonly path: string;
@@ -68,6 +69,7 @@ export interface ShellMenuItem {
     IjAvatar,
     IjLogo,
     IjIcon,
+    IjCookieBanner,
     NotificationBell,
   ],
   template: `
@@ -346,6 +348,9 @@ export interface ShellMenuItem {
         </main>
       </div>
     </div>
+
+    <!-- Aviso de cookies también al entrar directo al área privada. -->
+    <ij-cookie-banner />
   `,
 })
 export class AppShell {

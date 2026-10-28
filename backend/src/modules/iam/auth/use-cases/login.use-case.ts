@@ -1,7 +1,9 @@
 import { HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
+import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
+import { LoginAccountType } from '@/modules/iam/auth/dto/login.dto';
 import { AuditService } from '@/modules/audit/audit.service';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import {
@@ -19,6 +21,8 @@ import { LegalReconsentService } from '@/modules/legal/services/legal-reconsent.
 export interface LoginCommand {
   email: string;
   password: string;
+  /** Pestaña Candidato/Empresa desde la que se intenta entrar. */
+  accountType?: LoginAccountType;
   ip: string;
   userAgent: string;
   /** Sólo llega cuando el backend pidió aceptar una versión nueva. */
@@ -95,6 +99,34 @@ export class LoginUseCase {
     );
     if (!passwordOk) {
       return this.registerFailedAttempt(user, command);
+    }
+
+    // La pestaña elegida tiene que coincidir con el rol real. Se comprueba
+    // después de la contraseña: antes, cualquiera podría averiguar si un correo
+    // es de empresa o de candidato.
+    if (command.accountType && user.role !== Role.ADMIN) {
+      const expected =
+        command.accountType === LoginAccountType.COMPANY
+          ? Role.EMPLOYER
+          : Role.CANDIDATE;
+      if (user.role !== expected) {
+        await this.audit.record({
+          action: 'auth.login.wrong_account_type',
+          actorUserId: user.id,
+          entity: 'user',
+          entityId: user.id,
+          ip: command.ip,
+          userAgent: command.userAgent,
+          metadata: { accountType: command.accountType, role: user.role },
+        });
+        throw new AppException(
+          HttpStatus.FORBIDDEN,
+          ErrorCode.AUTH_WRONG_ACCOUNT_TYPE,
+          user.role === Role.EMPLOYER
+            ? 'Esta cuenta es de empresa. Entra desde la pestaña Empresa.'
+            : 'Esta cuenta es de candidato. Entra desde la pestaña Candidato.',
+        );
+      }
     }
 
     // Credenciales correctas pero correo sin verificar → se bloquea el login.

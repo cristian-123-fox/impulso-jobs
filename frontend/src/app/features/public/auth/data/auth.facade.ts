@@ -44,9 +44,11 @@ export class LoginFacade {
   readonly needsReconsent = signal(false);
 
   private pendingEmail = '';
+  private pendingAccountType: 'candidate' | 'company' = 'candidate';
 
   login(credentials: LoginCredentials, legal?: LegalAcceptancePayload): void {
     this.pendingEmail = credentials.email;
+    this.pendingAccountType = credentials.accountType;
     this.start();
     // `legal` puede venir como segundo argumento (compatibilidad) o embebido
     // dentro de `credentials` (lo que hace el formulario al re-consentir). Si se
@@ -54,7 +56,12 @@ export class LoginFacade {
     // en un bucle pidiendo aceptar una y otra vez.
     const legalToSend = legal ?? credentials.legal;
     this.api
-      .login({ email: credentials.email, password: credentials.password, legal: legalToSend })
+      .login({
+        email: credentials.email,
+        password: credentials.password,
+        accountType: credentials.accountType,
+        legal: legalToSend,
+      })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.onSuccess(response),
@@ -125,6 +132,16 @@ export class LoginFacade {
         break;
       case AuthErrorCode.ACCOUNT_INACTIVE:
         this.errorMessage.set(this.i18n.t('auth.errors.inactive'));
+        break;
+      case AuthErrorCode.WRONG_ACCOUNT_TYPE:
+        // El mensaje dice a qué pestaña tiene que ir, no sólo que falló.
+        this.errorMessage.set(
+          this.i18n.t(
+            this.pendingAccountType === 'company'
+              ? 'auth.errors.wrongAccountTypeCompany'
+              : 'auth.errors.wrongAccountTypeCandidate',
+          ),
+        );
         break;
       case AuthErrorCode.EMAIL_NOT_VERIFIED:
         this.errorMessage.set(this.i18n.t('auth.errors.notVerified'));

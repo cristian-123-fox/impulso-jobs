@@ -697,6 +697,8 @@
       "invalidCredentials": "Correo o contraseña incorrectos.",
       "blocked": "Tu cuenta está bloqueada temporalmente. Espera unos minutos e intenta de nuevo.",
       "inactive": "Tu cuenta no está activa. Contacta a soporte.",
+      "wrongAccountTypeCandidate": "Ese correo pertenece a una cuenta de empresa. Cambia a la pestaña Empresa.",
+      "wrongAccountTypeCompany": "Ese correo pertenece a una cuenta de candidato. Cambia a la pestaña Candidato.",
       "notVerified": "Debes verificar tu correo antes de iniciar sesión.",
       "googleInvalid": "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
       "googleNotConfigured": "El inicio de sesión con Google no está disponible por ahora.",

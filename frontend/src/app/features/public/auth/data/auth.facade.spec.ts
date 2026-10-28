@@ -81,8 +81,19 @@ describe('LoginFacade · re-consentimiento', () => {
     expect(api.login).toHaveBeenCalledWith({
       email: credentials.email,
       password: credentials.password,
+      accountType: 'candidate',
       legal: undefined,
     });
+  });
+
+  it('traduce el error de tipo de cuenta y dice a qué pestaña ir', () => {
+    api.login.and.returnValue(
+      throwError(() => apiError(403, 'AUTH_WRONG_ACCOUNT_TYPE')),
+    );
+
+    facade.login(credentials);
+
+    expect(facade.errorMessage()).toBe('auth.errors.wrongAccountTypeCandidate');
   });
 
   it('activa el re-consentimiento cuando el backend pide la versión nueva', () => {

@@ -21,10 +21,9 @@ import { IjCookieBanner } from '@/shared/ui/cookie-banner/cookie-banner';
     <app-scroll-top />
 
     <!--
-      El aviso de cookies va en el layout y no en cada página: así aparece en
-      todas, incluidas las que se sirven por SSR, y no depende de que cada
-      feature se acuerde de montarlo. Se queda fijo en pantalla para no alterar el
-      flujo de la página.
+      El aviso de cookies va en cada shell, no en la raíz: así aparece en todas
+      las áreas sin cargarlo en el bundle inicial. Empresa, candidato y admin lo
+      montan desde app-shell; público y acceso, aquí.
     -->
     <ij-cookie-banner />
   `,

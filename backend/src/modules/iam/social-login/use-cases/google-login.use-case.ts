@@ -144,6 +144,18 @@ export class GoogleLoginUseCase {
     }
 
     await this.assertUsable(existing, client);
+
+    // El botón de Google vive sólo en la pestaña Candidato y este endpoint crea
+    // cuentas de candidato. Si el correo ya pertenece a una empresa, dejarlo
+    // entrar aquí saltaría la diferenciación Candidato/Empresa del login.
+    if (existing.role !== Role.CANDIDATE) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.AUTH_WRONG_ACCOUNT_TYPE,
+        'Esta cuenta es de empresa. Entra desde la pestaña Empresa con tu contraseña.',
+      );
+    }
+
     await this.linkIdentity(existing, identity, email);
     await this.ensureCandidateProfile(existing, identity);
 

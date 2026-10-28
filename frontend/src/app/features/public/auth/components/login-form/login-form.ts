@@ -247,7 +247,7 @@ import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
       @if (googleEnabled() && !googleFailed()) {
         <!-- Se oculta en la pestaña Empresa: el backend crea cuentas de
              candidato, así que ofrecerlo ahí prometería algo que no hace. -->
-        @if (googleBlocked()) {
+        @if (googleBlocked() && accountType() !== 'company') {
           <!--
             Sin consentimiento funcional no se descarga nada de Google, así que no
             hay botón que pintar. En vez de esconderlo sin más, se explica por qué

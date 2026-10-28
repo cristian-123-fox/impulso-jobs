@@ -45,10 +45,9 @@ import { IjCookieBanner } from '@/shared/ui/cookie-banner/cookie-banner';
     </main>
 
     <!--
-      También aquí, y es especialmente importante: la ruta /auth/login es donde se
-      carga Google Identity Services. Sin este aviso, el script de Google se
-      descargaría antes de que nadie hubiera dicho nada, y además a una altura
-      de 440 px el banner taparía el botón de Google, que está justo debajo.
+      En esta ruta se carga Google Identity Services; el banner debe estar antes
+      de que exista consentimiento funcional. Va aquí y no en la raíz para no
+      meterlo en el bundle inicial de toda la app.
     -->
     <ij-cookie-banner />
   `,
