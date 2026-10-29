@@ -153,6 +153,7 @@ export class CompanyDashboardUseCase {
           ? daysUntil(plan.currentPeriodEnd, now)
           : null,
         autoRenew: plan.autoRenew,
+        provider: plan.provider,
       },
     };
   }

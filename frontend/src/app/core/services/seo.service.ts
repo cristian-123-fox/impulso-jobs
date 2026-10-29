@@ -49,7 +49,7 @@ export class SeoService {
 
   setPage(page: SeoPage): void {
     this.title.setTitle(page.title);
-    const description = page.description.trim().slice(0, 160);
+    const description = this.truncateDescription(page.description);
     const image = page.image ?? this.absolute('/assets/images/logos/logo_naranja.png');
     const lang = this.language.current();
 
@@ -114,6 +114,21 @@ export class SeoService {
 
   private absolute(path: string): string {
     return path.startsWith('http') ? path : `${environment.siteUrl}${path}`;
+  }
+
+  /**
+   * Recorta la descripción al límite que los buscadores muestran (~160), pero
+   * **cortando en un espacio**. Un `slice` a secas partía palabras
+   * ("Llevamos 11 a"), que es lo que enseñaba la vista previa de Google.
+   */
+  private truncateDescription(text: string, max = 160): string {
+    const clean = text.trim();
+    if (clean.length <= max) return clean;
+
+    const cut = clean.slice(0, max - 1);
+    const lastSpace = cut.lastIndexOf(' ');
+    const head = lastSpace > 0 ? cut.slice(0, lastSpace) : cut;
+    return `${head.replace(/[\s,;:.]+$/, '')}…`;
   }
 
   /**

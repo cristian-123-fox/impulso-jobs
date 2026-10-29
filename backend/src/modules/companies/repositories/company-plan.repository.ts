@@ -69,6 +69,7 @@ export class CompanyPlanRepository implements ICompanyPlanRepository {
         status: subscription.status,
         currentPeriodEnd: subscription.currentPeriodEnd ?? null,
         autoRenew: subscription.autoRenew,
+        provider: subscription.providerSubscriptionId ? 'stripe' : 'manual',
       });
     }
     return summaries;

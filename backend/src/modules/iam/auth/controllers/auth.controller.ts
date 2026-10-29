@@ -61,7 +61,6 @@ export class AuthController {
       accountType: dto.accountType,
       ip: client.ip,
       userAgent: client.userAgent,
-      legal: dto.legal,
     });
   }
 

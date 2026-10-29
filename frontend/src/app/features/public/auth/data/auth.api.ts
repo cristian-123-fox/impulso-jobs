@@ -34,14 +34,10 @@ export class AuthApi {
    * que hay consentimiento que recabar — y también el único en el que se guarda
    * una fotografía de Google sin que nadie la haya autorizado.
    */
-  googleLogin(
-    credential: string,
-    legal: LegalAcceptancePayload,
-  ): Observable<LoginResponse> {
+  googleLogin(credential: string): Observable<LoginResponse> {
     return this.http
       .post<ApiSuccessResponse<LoginResponse>>(`${this.base}/auth/google`, {
         credential,
-        legal,
       })
       .pipe(map((response) => response.content));
   }

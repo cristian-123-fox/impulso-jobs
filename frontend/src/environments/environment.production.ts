@@ -8,7 +8,7 @@ export const environment = {
   production: true,
   apiBaseUrl: 'https://api.impulsojobs.com/api/v1',
   /** Base absoluta del sitio: canonical, og:url y JSON-LD (T16). */
-  siteUrl: 'https://demo.impulsojobs.com',
+  siteUrl: 'https://impulsojobs.com',
   /**
    * Client ID de Google para el login con Google (mismo valor que
    * `GOOGLE_CLIENT_ID` en el `.env` del backend). Mientras esté vacío, el

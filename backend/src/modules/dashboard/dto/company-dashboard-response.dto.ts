@@ -124,6 +124,13 @@ export class DashboardPlanDto {
 
   @ApiProperty()
   autoRenew!: boolean;
+
+  @ApiProperty({
+    enum: ['stripe', 'manual'],
+    description:
+      'stripe = cobro recurrente real; manual = el equipo mantiene el periodo.',
+  })
+  provider!: 'stripe' | 'manual';
 }
 
 export class CompanyDashboardResponseDto {

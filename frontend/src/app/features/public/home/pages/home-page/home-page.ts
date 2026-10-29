@@ -112,7 +112,7 @@ export class HomePage {
     this.seo.setLocalizedPage({
       titleKey: 'seo.home.title',
       descriptionKey: 'seo.home.description',
-      canonicalPath: '/inicio',
+      canonicalPath: '/',
     });
 
     afterNextRender(() => this.facade.load());

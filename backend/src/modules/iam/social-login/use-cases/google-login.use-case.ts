@@ -43,7 +43,6 @@ import {
   LegalDocumentCode,
 } from '@/modules/legal/enums/legal.enums';
 import { RecordConsentUseCase } from '@/modules/legal/use-cases/record-consent.use-case';
-import { LegalReconsentService } from '@/modules/legal/services/legal-reconsent.service';
 
 export interface GoogleLoginCommand {
   credential: string;
@@ -104,7 +103,6 @@ export class GoogleLoginUseCase {
     @Inject(CANDIDATE_PROFILE_REPOSITORY)
     private readonly candidates: ICandidateProfileRepository,
     private readonly recordConsent: RecordConsentUseCase,
-    private readonly reconsent: LegalReconsentService,
     private readonly verifier: GoogleTokenVerifier,
     private readonly hasher: PasswordHasherService,
     private readonly session: SessionService,
@@ -139,8 +137,19 @@ export class GoogleLoginUseCase {
       (await this.users.findByEmail(email));
 
     if (!existing) {
+      // El login ya no pide Términos: si la cuenta no existe, no se crea por
+      // esta vía. El alta va por el registro normal, donde sí se aceptan los
+      // documentos. Se mantiene el alta por Google sólo para clientes antiguos
+      // que todavía mandan el bloque legal.
+      if (!legal || legal.documents.length === 0) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.AUTH_GOOGLE_SIGNUP_REQUIRED,
+          'No existe una cuenta con ese correo. Crea una cuenta para registrarte.',
+        );
+      }
       this.assertLegalAcceptance(legal);
-      return this.createCandidate(identity, email, client, legal!);
+      return this.createCandidate(identity, email, client, legal);
     }
 
     await this.assertUsable(existing, client);
@@ -159,17 +168,8 @@ export class GoogleLoginUseCase {
     await this.linkIdentity(existing, identity, email);
     await this.ensureCandidateProfile(existing, identity);
 
-    // Mismo criterio que el login por correo: si se publicó una versión nueva de
-    // los documentos obligatorios, esta cuenta tiene que aceptarla antes de
-    // entrar. Va después de `assertUsable` para no responder a un desconocido.
-    await this.reconsent.requireCurrentVersions({
-      userId: existing.id,
-      email: existing.email,
-      legal,
-      ip: client.ip,
-      userAgent: client.userAgent,
-    });
-
+    // El login no recaba consentimiento; el alta con Google sólo se conserva
+    // para clientes antiguos que todavía mandan el bloque legal.
     return existing;
   }
 

@@ -7,14 +7,7 @@ import { AuthApi } from '@/features/public/auth/data/auth.api';
 import { AuthService } from '@/core/auth/auth.service';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
 
-/**
- * El re-consentimiento por versión nueva (art. 7 LFPDPPP).
- *
- * La puerta vive en el backend, pero es la fachada quien tiene que entender el
- * `errorCode`: si lo tratara como un error genérico, la persona vería «algo salió
- * mal» y volvería a pulsar sin saber que hay que aceptar unos documentos.
- */
-describe('LoginFacade · re-consentimiento', () => {
+describe('LoginFacade', () => {
   let api: { login: jasmine.Spy; googleLogin: jasmine.Spy };
   let facade: LoginFacade;
 
@@ -69,11 +62,7 @@ describe('LoginFacade · re-consentimiento', () => {
     facade = TestBed.inject(LoginFacade);
   });
 
-  it('arranca sin pedir re-consentimiento', () => {
-    expect(facade.needsReconsent()).toBe(false);
-  });
-
-  it('no manda el bloque legal en un login normal', () => {
+  it('manda la pestaña y no manda documentos legales', () => {
     api.login.and.returnValue(of(session));
 
     facade.login(credentials);
@@ -82,66 +71,38 @@ describe('LoginFacade · re-consentimiento', () => {
       email: credentials.email,
       password: credentials.password,
       accountType: 'candidate',
-      legal: undefined,
     });
   });
 
-  it('traduce el error de tipo de cuenta y dice a qué pestaña ir', () => {
-    api.login.and.returnValue(
+  it('reintenta una vez en la pestaña correcta si la cuenta es del otro tipo', () => {
+    api.login.and.returnValues(
       throwError(() => apiError(403, 'AUTH_WRONG_ACCOUNT_TYPE')),
+      of(session),
     );
 
     facade.login(credentials);
 
-    expect(facade.errorMessage()).toBe('auth.errors.wrongAccountTypeCandidate');
+    expect(api.login).toHaveBeenCalledTimes(2);
+    expect(api.login.calls.argsFor(0)[0].accountType).toBe('candidate');
+    expect(api.login.calls.argsFor(1)[0].accountType).toBe('company');
+    expect(facade.status()).toBe('success');
   });
 
-  it('activa el re-consentimiento cuando el backend pide la versión nueva', () => {
-    api.login.and.returnValue(
-      throwError(() => apiError(409, 'LEGAL_VERSION_OUTDATED')),
-    );
-
-    facade.login(credentials);
-
-    expect(facade.needsReconsent()).toBe(true);
-    // Y no es el mensaje genérico: la persona tiene que saber qué hacer.
-    expect(facade.errorMessage()).toBe('auth.errors.legalOutdated');
-  });
-
-  it('también lo activa viniendo de Google', () => {
-    api.googleLogin.and.returnValue(
-      throwError(() => apiError(409, 'LEGAL_VERSION_OUTDATED')),
-    );
-
-    facade.loginWithGoogle('credential', { documents: [] });
-
-    expect(facade.needsReconsent()).toBe(true);
-  });
-
-  it('lo limpia cuando el reintento sí entra', () => {
-    api.login.and.returnValue(
-      throwError(() => apiError(409, 'LEGAL_VERSION_OUTDATED')),
-    );
-    facade.login(credentials);
-    expect(facade.needsReconsent()).toBe(true);
-
-    api.login.and.returnValue(of(session));
-    facade.login({
-      ...credentials,
-      legal: { documents: [{ code: 'TERMS', version: '1.1.0', granted: true }] },
-    });
-
-    expect(facade.needsReconsent()).toBe(false);
-  });
-
-  it('un error de credenciales NO activa el re-consentimiento', () => {
+  it('un error de credenciales muestra el mensaje traducido', () => {
     api.login.and.returnValue(
       throwError(() => apiError(401, 'AUTH_INVALID_CREDENTIALS')),
     );
 
     facade.login(credentials);
 
-    expect(facade.needsReconsent()).toBe(false);
     expect(facade.errorMessage()).toBe('auth.errors.invalidCredentials');
+  });
+
+  it('Google manda solo el credential, sin bloque legal', () => {
+    api.googleLogin.and.returnValue(of(session));
+
+    facade.loginWithGoogle('credential');
+
+    expect(api.googleLogin).toHaveBeenCalledWith('credential');
   });
 });

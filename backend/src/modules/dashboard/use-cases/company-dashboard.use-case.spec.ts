@@ -172,6 +172,7 @@ describe('CompanyDashboardUseCase', () => {
             status: 'ACTIVE',
             currentPeriodEnd: new Date('2026-10-05T15:00:00.000Z'),
             autoRenew: true,
+            provider: 'stripe',
           },
         ],
       ]),
@@ -185,6 +186,7 @@ describe('CompanyDashboardUseCase', () => {
       endsAt: '2026-10-05T15:00:00.000Z',
       daysLeft: 15,
       autoRenew: true,
+      provider: 'stripe',
     });
   });
 });

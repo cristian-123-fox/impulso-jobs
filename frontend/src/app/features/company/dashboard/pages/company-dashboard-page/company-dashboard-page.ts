@@ -230,6 +230,14 @@ const VACANCY_STATUS_COLORS: Record<string, string> = {
                 </span>
                 <p class="text-[17px] font-extrabold text-ink-900">Ilimitado</p>
                 <p class="text-[12.5px] text-muted">Tu plan no limita las consultas.</p>
+              } @else if (d.talentQuota.totalVisits === 0) {
+                <span class="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface text-muted">
+                  <ij-icon name="search" [size]="26" />
+                </span>
+                <p class="text-[14px] font-bold text-ink-900">Sin consultas incluidas</p>
+                <p class="max-w-[240px] text-center text-[12.5px] leading-relaxed text-muted">
+                  Tu plan actual no incluye acceso a la base de talento.
+                </p>
               } @else {
                 <ij-chart
                   [options]="quotaOptions()"
@@ -254,7 +262,7 @@ const VACANCY_STATUS_COLORS: Record<string, string> = {
               subtitle="Las cinco que más candidaturas acumulan"
               link="/empresa/vacantes"
             >
-              @if (d.topVacancies.length > 0) {
+              @if (d.kpis.totalApplications > 0 && d.topVacancies.length > 0) {
                 <ij-chart
                   [options]="topVacanciesOptions()"
                   [height]="280"
@@ -391,8 +399,18 @@ const VACANCY_STATUS_COLORS: Record<string, string> = {
                     </p>
                   }
                   <p class="mt-3 flex items-center gap-1.5 text-[12.5px] font-semibold" [class]="plan.autoRenew ? 'text-accent-green-strong' : 'text-muted'">
-                    <ij-icon [name]="plan.autoRenew ? 'check' : 'pause'" [size]="14" [strokeWidth]="2.4" />
-                    {{ plan.autoRenew ? 'Se renueva automáticamente' : 'No se renueva solo' }}
+                    <ij-icon
+                      [name]="plan.provider === 'stripe' && plan.autoRenew ? 'check' : 'calendar'"
+                      [size]="14"
+                      [strokeWidth]="2.4"
+                    />
+                    {{
+                      plan.autoRenew
+                        ? (plan.provider === 'stripe'
+                          ? 'Se renueva automáticamente'
+                          : 'Renovación manual: te avisaremos antes de vencer')
+                        : 'No se renueva solo'
+                    }}
                   </p>
                 </div>
               } @else {

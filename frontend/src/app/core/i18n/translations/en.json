@@ -587,8 +587,8 @@
   },
   "seo": {
     "home": {
-      "title": "Impulso Jobs | Job board in Mexico",
-      "description": "Find a job in Mexico by field, state and work mode. Applying is free and you can follow every process from your account."
+      "title": "Impulso Jobs | Connecting Talent and Companies",
+      "description": "At Impulso Jobs we believe the right human capital transforms companies and the right job transforms lives. We have spent 11 years connecting talent with the best companies."
     },
     "about": {
       "title": "About us | Impulso Jobs",
@@ -702,6 +702,7 @@
       "notVerified": "You need to verify your email before signing in.",
       "googleInvalid": "We could not sign you in with Google. Please try again.",
       "googleNotConfigured": "Signing in with Google is not available right now.",
+      "googleSignupRequired": "No account exists with that email. Create an account to sign up.",
       "generic": "We could not sign you in. Please try again later.",
       "legalOutdated": "We updated our legal documents. Review them and accept the current version to continue.",
       "legalFirstTime": "Before signing in you must accept the Terms and the Privacy Notice. You accept them once."
@@ -848,8 +849,7 @@
       "and": "and the",
       "marketingLabel": "I agree to receive commercial messages and similar vacancies. I can cancel at any time.",
       "imageLabel": "I authorise the use of my profile photo to appear in the talent bank.",
-      "requiredError": "You must read and accept the Terms and the Privacy notice to continue.",
-      "signupNotice": "If you do not have an account yet, signing in with Google will create one and you accept the Terms and the Privacy Notice."
+      "requiredError": "You must read and accept the Terms and the Privacy notice to continue."
     },
     "cookies": {
       "banner": {

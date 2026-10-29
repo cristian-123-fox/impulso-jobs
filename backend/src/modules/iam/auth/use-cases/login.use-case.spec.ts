@@ -1,11 +1,9 @@
-import { HttpStatus } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { AuditService } from '@/modules/audit/audit.service';
-import { LegalReconsentService } from '@/modules/legal/services/legal-reconsent.service';
 import { User } from '@/modules/iam/users/entities/user.entity';
 import { IUserRepository } from '@/modules/iam/users/repositories/user.repository.interface';
 import { ITokenUserRepository } from '@/modules/iam/users/repositories/token-user.repository.interface';
@@ -40,7 +38,6 @@ describe('LoginUseCase', () => {
   let hasher: jest.Mocked<PasswordHasherService>;
   let tokenService: jest.Mocked<TokenService>;
   let audit: jest.Mocked<AuditService>;
-  let reconsent: jest.Mocked<LegalReconsentService>;
   let dataSource: DataSource;
   let useCase: LoginUseCase;
 
@@ -95,56 +92,7 @@ describe('LoginUseCase', () => {
       audit,
       dataSource,
     );
-    reconsent = {
-      requireCurrentVersions: jest.fn().mockResolvedValue(undefined),
-    } as unknown as jest.Mocked<LegalReconsentService>;
-
-    useCase = new LoginUseCase(users, hasher, session, audit, reconsent);
-  });
-
-  it('pide aceptar la versión vigente antes de emitir la sesión', async () => {
-    const user = buildUser();
-    users.findByEmail.mockResolvedValue(user);
-    hasher.compare.mockResolvedValue(true);
-
-    reconsent.requireCurrentVersions.mockRejectedValue(
-      new AppException(
-        HttpStatus.CONFLICT,
-        ErrorCode.LEGAL_VERSION_OUTDATED,
-        'Actualizamos los Términos.',
-      ),
-    );
-
-    await expect(
-      useCase.execute({
-        email: user.email,
-        password: 'Secreta#123',
-        ip: '127.0.0.1',
-        userAgent: 'jest',
-      }),
-    ).rejects.toThrow(AppException);
-
-    expect(reconsent.requireCurrentVersions).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: user.id, email: user.email }),
-    );
-  });
-
-  it('no consulta el re-consentimiento si la contraseña es incorrecta', async () => {
-    const user = buildUser();
-    users.findByEmail.mockResolvedValue(user);
-    hasher.compare.mockResolvedValue(false);
-
-    await expect(
-      useCase.execute({
-        email: user.email,
-        password: 'mala',
-        ip: '127.0.0.1',
-        userAgent: 'jest',
-      }),
-    ).rejects.toThrow(AppException);
-
-    // No se le dice a un desconocido que tiene documentos desactualizados.
-    expect(reconsent.requireCurrentVersions).not.toHaveBeenCalled();
+    useCase = new LoginUseCase(users, hasher, session, audit);
   });
 
   it('emite tokens en login exitoso y reinicia los intentos', async () => {

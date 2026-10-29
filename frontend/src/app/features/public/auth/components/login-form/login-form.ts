@@ -24,7 +24,6 @@ import { environment } from '@env';
 import { GoogleIdentityService } from '@/core/auth/google-identity.service';
 import { ConsentService } from '@/core/consent/consent.service';
 import { LegalDocCode, legalDocument } from '@/shared/catalogs/legal.catalogs';
-import type { LegalAcceptancePayload } from '@/features/public/auth/models/auth.models';
 import { AppTranslateService } from '@/core/i18n/app-translate.service';
 import { LanguageService } from '@/core/i18n/language.service';
 import {
@@ -33,7 +32,7 @@ import {
   LoginStatus,
   ResendStatus,
 } from '@/features/public/auth/models/auth.models';
-import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
+import { IjButton, IjIcon, IjInput } from '@/shared/ui';
 
 /**
  * Tarjeta del formulario de acceso (presentacional). Incluye el selector
@@ -54,7 +53,6 @@ import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
     IjButton,
     IjIcon,
     IjInput,
-    IjLegalConsent,
     TranslocoDirective,
   ],
   template: `
@@ -206,25 +204,7 @@ import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
         </a>
       </div>
 
-      <!--
-          Re-consentimiento por versión nueva.
-
-          Sólo aparece cuando el backend respondió LEGAL_VERSION_OUTDATED: la
-          cuenta existe y los documentos obligatorios ya no son los que esa
-          persona aceptó. No es un alta, así que aquí no se saca la casilla de
-          cesión de imagen —esa se concede en el perfil, no en el login— ni se
-          pide aceptar de nuevo lo que no cambió.
-        -->
-        @if (needsReconsent()) {
-          <div class="mt-6 rounded-xl border border-line bg-surface p-4">
-            <p class="text-[13px] font-semibold text-body">
-              {{ t('auth.login.reconsentTitle') }}
-            </p>
-            <ij-legal-consent #reconsent class="mt-3 block" />
-          </div>
-        }
-
-        <!-- Enviar -->
+      <!-- Enviar -->
       <button
         ij-button
         type="submit"
@@ -267,37 +247,10 @@ import { IjButton, IjIcon, IjInput, IjLegalConsent } from '@/shared/ui';
 
         <div class="mt-7" [class.hidden]="accountType() === 'company' || googleBlocked()">
           <!--
-            Aviso legal del acceso con Google.
-
-            Va sobre el botón, no debajo, y es una casilla por el mismo motivo que
-            en el registro: el endpoint de Google CREA la cuenta si no existe, y
-            además guarda la fotografía que viene en el perfil de Google. Sin
-            esta casilla habría una segunda puerta de alta por la que la ley no
-            pasa, y una foto usada sin que nadie la autorizara.
-
-            El texto lo dice: aceptarlos aquí es aceptar el alta que puede
-            ocurrir al entrar. En una cuenta ya existente el backend descarta
-            este bloque, y decirlo evita que alguien crea que está firmando algo
-            que no se le guarda.
-
-            Vive dentro de este bloque a propósito: sólo hay algo que consentir
-            cuando hay botón de Google. Por eso la consulta al componente es
-            tolerante y no "required"; mírese legalConsent en la clase.
+            El login no recaba consentimiento: Google sólo entra a cuentas ya
+            existentes. El alta va por el registro, donde sí se aceptan Términos
+            y Aviso. Por eso aquí no hay bloque legal.
           -->
-          <!--
-            Al pedir un re-consentimiento se oculta: quedaría una segunda tanda
-            de casillas compitiendo con la de arriba, y marcarla no serviría
-            de nada porque el envío lee el otro bloque.
-          -->
-          @if (!needsReconsent() && !googleBlocked()) {
-            <ij-legal-consent
-              #consent
-              [imageRights]="true"
-              [signupNotice]="true"
-              class="mb-5 block"
-            />
-          }
-
           @if (!googleBlocked()) {
             <div class="flex items-center gap-3.5">
               <span class="whitespace-nowrap text-[13.5px] font-semibold text-body">
@@ -338,23 +291,10 @@ export class LoginForm {
    * funcionar, y un botón muerto en la pantalla más crítica del embudo es
    * peor que no tener botón.
    */
-  /**
-   * El backend pidió aceptar una versión nueva de los documentos. Enseña las
-   * casillas y las exige antes de reintentar: no es un alta, es un cambio de
-   * versión sobre una cuenta que ya existe.
-   */
-  readonly needsReconsent = input(false);
-
   readonly googleEnabled = input(false);
   readonly submitted = output<LoginCredentials>();
-  /**
-   * ID token que GIS entrega al elegir cuenta, junto con los documentos
-   * aceptados. El backend los exige cuando la cuenta no existe.
-   */
-  readonly googleCredential = output<{
-    credential: string;
-    legal: LegalAcceptancePayload;
-  }>();
+  /** ID token que GIS entrega al elegir cuenta. El login no pide documentos. */
+  readonly googleCredential = output<string>();
   readonly resendRequested = output<void>();
 
   private readonly fb = inject(NonNullableFormBuilder);
@@ -366,47 +306,6 @@ export class LoginForm {
   private readonly googleHost = viewChild<ElementRef<HTMLElement>>(
     'googleButton',
   );
-  /**
-   * Bloque de casillas del acceso con Google.
-   *
-   * Va dentro del bloque que se dibuja sólo cuando hay botón de Google, así que
-   * la consulta **no** es `required`: con `viewChild.required` el login normal
-   * —sin error previo— no encuentra el elemento y Angular lanza NG0951 al
-   * pulsar Google, que es exactamente lo que rompía el acceso con Google.
-   */
-  private readonly legalConsent = viewChild<IjLegalConsent>('consent');
-
-  /**
-   * Casillas del re-consentimiento, sobre el botón de entrar. Son un bloque
-   * aparte del de Google porque cada uno aparece sólo cuando aplica: el de
-   * Google por un posible alta, éste por una versión nueva.
-   */
-  private readonly reconsentConsent = viewChild<IjLegalConsent>('reconsent');
-
-  private readonly requiredConsentError = computed(() =>
-    this.i18n.t('legal.consent.requiredError'),
-  );
-
-  /**
-   * Mapea las casillas al payload que espera el registro de consentimiento.
-   *
-   * El componente tipa el código con su enum del catálogo, que incluye códigos
-   * que el endpoint de autenticación no acepta; el cast es el punto donde se
-   * recorta esa diferencia y conviene que haya uno solo.
-   *
-   * Si hay bloque de re-consentimiento manda él, no el de alta: cuando el
-   * backend pidió aceptar una versión nueva **sólo hay un bloque en pantalla**,
-   * y leer el otro sería mandar casillas que la persona no marcó.
-   */
-  private acceptanceDocuments(source?: IjLegalConsent): LegalAcceptancePayload['documents'] {
-    const consent = source ?? this.reconsentConsent() ?? this.legalConsent();
-    return (consent?.acceptance() ?? []).map((doc) => ({
-      code: doc.code as LegalAcceptancePayload['documents'][number]['code'],
-      version: doc.version,
-      granted: doc.granted,
-    }));
-  }
-
   protected readonly form = this.fb.group({
     email: this.fb.control('', [Validators.required, Validators.email]),
     password: this.fb.control('', [Validators.required, Validators.minLength(6)]),
@@ -476,11 +375,7 @@ export class LoginForm {
         this.google.renderButton(host.nativeElement, {
           clientId: environment.googleClientId,
           lang: this.language.current(),
-          onCredential: (credential) =>
-            this.googleCredential.emit({
-              credential,
-              legal: { documents: this.acceptanceDocuments() },
-            }),
+          onCredential: (credential) => this.googleCredential.emit(credential),
         });
         this.googleRendered.set(true);
       })
@@ -523,20 +418,6 @@ export class LoginForm {
       return;
     }
     const value = this.form.getRawValue();
-
-    if (this.needsReconsent()) {
-      // Se exige la casilla antes de gastar el intento: el backend responde
-      // 409 igual, pero así quien no ha marcado no ve un error de servidor.
-      const consent = this.reconsentConsent();
-      if (!consent || !consent.validate(this.requiredConsentError())) return;
-      this.submitted.emit({
-        ...value,
-        accountType: this.accountType(),
-        legal: { documents: this.acceptanceDocuments(consent) },
-      });
-      return;
-    }
-
     this.submitted.emit({ ...value, accountType: this.accountType() });
   }
 }

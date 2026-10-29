@@ -41,10 +41,9 @@ import { LoginForm } from '@/features/public/auth/components/login-form/login-fo
         [errorMessage]="facade.errorMessage()"
         [showResend]="facade.showResend()"
         [resendStatus]="facade.resendStatus()"
-        [needsReconsent]="facade.needsReconsent()"
         [googleEnabled]="googleEnabled"
         (submitted)="facade.login($event)"
-        (googleCredential)="facade.loginWithGoogle($event.credential, $event.legal)"
+        (googleCredential)="facade.loginWithGoogle($event)"
         (resendRequested)="facade.resendVerification()"
       />
     </ng-container>

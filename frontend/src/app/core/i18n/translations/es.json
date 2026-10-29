@@ -587,8 +587,8 @@
   },
   "seo": {
     "home": {
-      "title": "Impulso Jobs | Bolsa de trabajo en México",
-      "description": "Encuentra empleo en México por área, estado y modalidad. Postularte es gratis y puedes dar seguimiento a cada proceso desde tu cuenta."
+      "title": "Impulso Jobs | Conectando Talento y Empresas",
+      "description": "En Impulso Jobs creemos que el capital humano correcto transforma empresas y el empleo correcto transforma vidas. Llevamos 11 años conectando talento con las mejores empresas."
     },
     "about": {
       "title": "Nosotros | Impulso Jobs",
@@ -702,6 +702,7 @@
       "notVerified": "Debes verificar tu correo antes de iniciar sesión.",
       "googleInvalid": "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
       "googleNotConfigured": "El inicio de sesión con Google no está disponible por ahora.",
+      "googleSignupRequired": "No existe una cuenta con ese correo. Crea una cuenta para registrarte.",
       "generic": "No pudimos iniciar sesión. Inténtalo más tarde.",
       "legalOutdated": "Actualizamos nuestros documentos legales. Revísalos y acepta la versión vigente para entrar.",
       "legalFirstTime": "Antes de entrar tienes que aceptar los Términos y el Aviso de privacidad. Los aceptas una sola vez."
@@ -848,8 +849,7 @@
       "and": "y el",
       "marketingLabel": "Autorizo que me envíen comunicaciones comerciales y vacantes similares. Puedo cancelar cuando quiera.",
       "imageLabel": "Autorizo el uso de mi fotografía de perfil para mostrarme en el banco de talento.",
-      "requiredError": "Debes leer y aceptar los Términos y el Aviso de privacidad para continuar.",
-      "signupNotice": "Si aún no tienes cuenta, al entrar con Google se creará y aceptas los Términos y el Aviso de privacidad."
+      "requiredError": "Debes leer y aceptar los Términos y el Aviso de privacidad para continuar."
     },
     "cookies": {
       "banner": {

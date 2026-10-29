@@ -8,11 +8,6 @@ export interface LoginCredentials {
   password: string;
   remember: boolean;
   accountType: AccountType;
-  /**
-   * Sólo se rellena cuando el backend pidió aceptar una versión nueva. En un
-   * login normal viaja `undefined` y la petición no lleva el bloque.
-   */
-  legal?: LegalAcceptancePayload;
 }
 
 export type LoginStatus = 'idle' | 'loading' | 'success' | 'error';

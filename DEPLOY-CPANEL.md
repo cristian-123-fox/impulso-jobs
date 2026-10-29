@@ -234,7 +234,7 @@ Igual que la API: cPanel → **Setup Node.js App** sobre la carpeta del subdomin
 
 Sube el contenido de `dist/frontend/browser/` a `~/demo` **incluyendo el `.htaccess`**, que ya viene con el fallback correcto (`index.csr.html`). No hay ningún paso manual.
 
-> ⚠️ **No cambies ese fallback a `index.html`.** Con `outputMode: server`, el `index.html` de la raíz **no** es el cascarón de la app: son 249 bytes con un `<meta http-equiv="refresh" url="/vacantes">`, resultado de prerenderizar la ruta `''` que redirige a `vacantes`. Como `/vacantes` es `RenderMode.Server` y **no se prerenderiza**, el fallback lo atiende: devuelve el stub, el stub redirige a `/vacantes`, y así indefinidamente. Es un **bucle infinito de redirecciones** y el sitio no carga nunca.
+> ⚠️ **No cambies ese fallback a `index.html`.** `index.html` es la **portada prerenderizada** (la home completa, con título, descripción, Open Graph y JSON-LD), y Apache la sirve sola en `/` por `DirectoryIndex`. Las demás rutas (`/vacantes`, `/vacantes/<id>`, `/trabajo/<landing>`) necesitan el cascarón `index.csr.html`: si el fallback devolviera `index.html`, `/vacantes` recibiría el HTML de la home y la hidratación de Angular fallaría, porque el router espera la vista de vacantes.
 
 > ⚠️ **HTTPS por duplicado.** Si activas *Force HTTPS Redirect* en cPanel, deja comentado el bloque `RewriteCond %{HTTPS} off` del `.htaccess`. Las dos reglas a la vez producen otro bucle.
 

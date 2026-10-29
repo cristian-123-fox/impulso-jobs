@@ -4,3 +4,6 @@ Disallow: /admin
 Disallow: /empresa
 Disallow: /candidato
 Disallow: /auth
+
+# Sitemap público. Debe responder application/xml, no el cascarón HTML.
+Sitemap: https://impulsojobs.com/sitemap.xml

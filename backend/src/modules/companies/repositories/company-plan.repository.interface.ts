@@ -9,6 +9,12 @@ export interface CompanyPlanSummary {
   status: string;
   currentPeriodEnd: Date | null;
   autoRenew: boolean;
+  /**
+   * Cómo se cobra: `stripe` si hay suscripción en la pasarela; `manual` si el
+   * periodo lo mantiene el equipo. Sirve para no prometer una renovación
+   * automática que con pago manual no existe.
+   */
+  provider: 'stripe' | 'manual';
 }
 
 /**

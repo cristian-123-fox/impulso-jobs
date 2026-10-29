@@ -7,20 +7,16 @@
 # ##########################################################################
 # EL FALLBACK ES index.csr.html, NO index.html. NO LO CAMBIES.
 #
-# Con `outputMode: server` en angular.json, `index.html` de la raiz NO es el
-# cascaron de la aplicacion: es un stub de 249 bytes con un
-# <meta http-equiv="refresh" url="/vacantes">, generado al prerenderizar la
-# ruta '' que redirige a 'vacantes'.
+# `index.html` es la PORTADA prerenderizada (la home completa: contenido,
+# título, descripción, Open Graph y JSON-LD). Apache la sirve sola en `/` por
+# DirectoryIndex.
 #
-# Si el fallback apunta a index.html se produce un BUCLE INFINITO de
-# redirecciones y el sitio no carga nunca:
-#   1. el navegador pide /vacantes
-#   2. /vacantes no existe como archivo (es RenderMode.Server, no se
-#      prerenderiza), asi que entra el fallback
-#   3. el fallback devuelve index.html, que es el stub
-#   4. el stub redirige a /vacantes -> volver al paso 1
+# El resto de rutas (/vacantes, /vacantes/<id>, /trabajo/<landing>) tiene que
+# recibir el cascarón CSR, no la portada. Si el fallback apuntara a index.html,
+# `/vacantes` devolvería el HTML de la home y la hidratación de Angular
+# fallaría: el router espera la vista de vacantes, no la portada.
 #
-# index.csr.html si es el cascaron CSR y arranca Angular con normalidad.
+# index.csr.html sí es el cascarón y arranca Angular con normalidad.
 # ##########################################################################
 
 RewriteEngine On

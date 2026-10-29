@@ -9,7 +9,6 @@ import { LoginResponse } from '@/core/models/auth.models';
 import { AuthErrorCode } from '@/core/models/error-code.enum';
 import { AuthApi } from '@/features/public/auth/data/auth.api';
 import {
-  type LegalAcceptancePayload,
   LoginCredentials,
   LoginStatus,
   ResendStatus,
@@ -33,50 +32,61 @@ export class LoginFacade {
   readonly showResend = signal(false);
   readonly resendStatus = signal<ResendStatus>('idle');
 
-  /**
-   * La cuenta existe pero hay documentos obligatorios en una versión que esta
-   * persona todavía no aceptó.
-   *
-   * Cuando está activo, el formulario enseña las casillas y las exige: no es un
-   * alta, es un re-consentimiento sobre el mismo contrato. Con Google se
-   * resuelve volviendo a pulsar el botón, que pide un token nuevo a Google.
-   */
-  readonly needsReconsent = signal(false);
-
   private pendingEmail = '';
+  private pendingPassword = '';
   private pendingAccountType: 'candidate' | 'company' = 'candidate';
+  /** Evita reintentar en bucle si el backend vuelve a rechazar el tipo. */
+  private accountTypeRetried = false;
 
-  login(credentials: LoginCredentials, legal?: LegalAcceptancePayload): void {
+  login(credentials: LoginCredentials): void {
     this.pendingEmail = credentials.email;
+    this.pendingPassword = credentials.password;
     this.pendingAccountType = credentials.accountType;
+    this.accountTypeRetried = false;
     this.start();
-    // `legal` puede venir como segundo argumento (compatibilidad) o embebido
-    // dentro de `credentials` (lo que hace el formulario al re-consentir). Si se
-    // ignora el segundo, el bloque legal nunca llega al backend y el login entra
-    // en un bucle pidiendo aceptar una y otra vez.
-    const legalToSend = legal ?? credentials.legal;
+    this.sendLogin();
+  }
+
+  private sendLogin(): void {
     this.api
       .login({
-        email: credentials.email,
-        password: credentials.password,
-        accountType: credentials.accountType,
-        legal: legalToSend,
+        email: this.pendingEmail,
+        password: this.pendingPassword,
+        accountType: this.pendingAccountType,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.onSuccess(response),
-        error: (error: unknown) => this.handleError(error),
+        error: (error: unknown) => this.handleLoginError(error),
       });
   }
 
+  /**
+   * Si la cuenta es del otro tipo, se reintenta una vez en la pestaña correcta
+   * en lugar de dejar al usuario fuera. El backend ya validó la contraseña y
+   * auditó el intento; el reintento sólo corrige la pestaña elegida.
+   */
+  private handleLoginError(error: unknown): void {
+    if (
+      this.errorCodeOf(error) === AuthErrorCode.WRONG_ACCOUNT_TYPE &&
+      !this.accountTypeRetried
+    ) {
+      this.accountTypeRetried = true;
+      this.pendingAccountType =
+        this.pendingAccountType === 'company' ? 'candidate' : 'company';
+      this.status.set('loading');
+      this.errorMessage.set(null);
+      this.sendLogin();
+      return;
+    }
+    this.handleError(error);
+  }
+
   /** El ID token de Google sigue el mismo camino que cualquier login. */
-  loginWithGoogle(
-    credential: string,
-    legal: LegalAcceptancePayload,
-  ): void {
+  loginWithGoogle(credential: string): void {
     this.start();
     this.api
-      .googleLogin(credential, legal)
+      .googleLogin(credential)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response) => this.onSuccess(response),
@@ -92,9 +102,9 @@ export class LoginFacade {
   }
 
   private onSuccess(response: LoginResponse): void {
+    this.pendingPassword = '';
     this.auth.setSession(response);
     this.status.set('success');
-    this.needsReconsent.set(false);
     // Sólo rutas internas: un returnUrl externo sería un open redirect.
     const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     const target =
@@ -122,6 +132,7 @@ export class LoginFacade {
    * que T26 traduce los errores en el cliente.
    */
   private handleError(error: unknown): void {
+    this.pendingPassword = '';
     this.status.set('error');
     switch (this.errorCodeOf(error)) {
       case AuthErrorCode.INVALID_CREDENTIALS:
@@ -153,17 +164,13 @@ export class LoginFacade {
       case AuthErrorCode.GOOGLE_NOT_CONFIGURED:
         this.errorMessage.set(this.i18n.t('auth.errors.googleNotConfigured'));
         break;
+      case AuthErrorCode.GOOGLE_SIGNUP_REQUIRED:
+        this.errorMessage.set(this.i18n.t('auth.errors.googleSignupRequired'));
+        break;
       case AuthErrorCode.LEGAL_CONSENT_REQUIRED:
-        // Cuenta anterior al registro de consentimiento: no se actualizó nada,
-        // sencillamente nunca quedó constancia de lo que aceptó.
-        this.needsReconsent.set(true);
         this.errorMessage.set(this.i18n.t('auth.errors.legalFirstTime'));
         break;
       case AuthErrorCode.LEGAL_VERSION_OUTDATED:
-        // No es un error de credenciales: es una versión nueva que hay que
-        // aceptar. La vista muestra las casillas y el siguiente intento ya
-        // manda el bloque legal.
-        this.needsReconsent.set(true);
         this.errorMessage.set(this.i18n.t('auth.errors.legalOutdated'));
         break;
       default:

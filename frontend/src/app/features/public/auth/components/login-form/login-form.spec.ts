@@ -9,22 +9,12 @@ import { LoginFacade } from '@/features/public/auth/data/auth.facade';
 import { LoginForm } from '@/features/public/auth/components/login-form/login-form';
 
 /**
- * Regresión de NG0951 en el acceso con Google.
- *
- * Google devuelve la credencial por un callback asíncrono que invoca
- * `acceptanceDocuments()`. Ese método consultaba un `viewChild.required` cuyo
- * bloque vive dentro del tramo de Google: cuando el tramo no se dibuja —sin
- * botón, con cookies que lo bloquean, o en la pestaña de empresa— la consulta
- * no encuentra el elemento y Angular lanza «Child query result is required but
- * no value is available». El botón de Google dejaba de funcionar y la página se
- * quedaba en blanco.
- *
- * La consulta debe ser tolerante: sin bloque dibujado devuelve una lista vacía
- * y el backend rechaza el alta con su propio mensaje de consentimiento, que es
- * el resultado correcto.
+ * El login no recaba consentimiento: los Términos y el Aviso se aceptan al
+ * crear la cuenta. Este test evita que vuelva a colarse el bloque legal en la
+ * pantalla de acceso.
  */
-describe('LoginForm · consentimiento en el acceso con Google', () => {
-  const buildWithoutView = (): { acceptanceDocuments: () => unknown[] } => {
+describe('LoginForm · sin consentimiento legal', () => {
+  it('no renderiza el componente de casillas legales', () => {
     TestBed.configureTestingModule({
       imports: [LoginForm],
       providers: [
@@ -34,7 +24,7 @@ describe('LoginForm · consentimiento en el acceso con Google', () => {
           config: { availableLangs: ['es', 'en'], defaultLang: 'es' },
           loader: InlineTranslocoLoader,
         }),
-        { provide: ConsentService, useValue: { allows: () => true } },
+        { provide: ConsentService, useValue: { allows: () => false } },
         {
           provide: GoogleIdentityService,
           useValue: {
@@ -46,16 +36,11 @@ describe('LoginForm · consentimiento en el acceso con Google', () => {
       ],
     });
 
-    // Sin `detectChanges`: la vista no se crea, que es el estado que reventaba.
     const fixture = TestBed.createComponent(LoginForm);
-    return fixture.componentInstance as unknown as {
-      acceptanceDocuments: () => unknown[];
-    };
-  };
+    fixture.detectChanges();
 
-  it('no lanza cuando el bloque de consentimiento no está montado', () => {
-    const form = buildWithoutView();
-    expect(() => form.acceptanceDocuments()).not.toThrow();
-    expect(form.acceptanceDocuments()).toEqual([]);
+    expect(
+      fixture.nativeElement.querySelector('ij-legal-consent'),
+    ).toBeNull();
   });
 });

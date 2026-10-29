@@ -57,6 +57,7 @@ export interface DashboardPlan {
   endsAt: string | null;
   daysLeft: number | null;
   autoRenew: boolean;
+  provider: 'stripe' | 'manual';
 }
 
 export interface CompanyDashboard {

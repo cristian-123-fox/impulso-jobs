@@ -86,9 +86,6 @@ const DEFAULT_REQUIRED: readonly LegalDocCode[] = [
         />
         <span>
           {{ t('legal.consent.requiredLabel') }}
-          @if (signupNotice()) {
-            <span class="mt-1 block" [class]="noteClass()">{{ t('legal.consent.signupNotice') }}</span>
-          }
           <a
             [routerLink]="routeOf(LegalDocCode.TERMS)"
             target="_blank"
@@ -109,25 +106,27 @@ const DEFAULT_REQUIRED: readonly LegalDocCode[] = [
       </label>
 
       <!-- Accesoria: comunicaciones comerciales -->
-      <label class="flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug"
-        [class]="labelClass()">
-        <input
-          type="checkbox"
-          class="mt-[3px] h-[18px] w-[18px] shrink-0 rounded-[5px] border-[1.5px] border-muted bg-white text-brand focus:ring-2 focus:ring-brand-600"
-          [checked]="marketingChecked()"
-          (change)="onMarketingChange($event)"
-        />
-        <span>
-          {{ t('legal.consent.marketingLabel') }}
-          <a
-            [routerLink]="routeOf(LegalDocCode.MARKETING)"
-            target="_blank"
-            rel="noopener"
-            [class]="linkClass()"
-            >{{ t(titleKeyOf(LegalDocCode.MARKETING)) }}</a
-          >
-        </span>
-      </label>
+      @if (showMarketing()) {
+        <label class="flex cursor-pointer items-start gap-2.5 text-[13px] leading-snug"
+          [class]="labelClass()">
+          <input
+            type="checkbox"
+            class="mt-[3px] h-[18px] w-[18px] shrink-0 rounded-[5px] border-[1.5px] border-muted bg-white text-brand focus:ring-2 focus:ring-brand-600"
+            [checked]="marketingChecked()"
+            (change)="onMarketingChange($event)"
+          />
+          <span>
+            {{ t('legal.consent.marketingLabel') }}
+            <a
+              [routerLink]="routeOf(LegalDocCode.MARKETING)"
+              target="_blank"
+              rel="noopener"
+              [class]="linkClass()"
+              >{{ t(titleKeyOf(LegalDocCode.MARKETING)) }}</a
+            >
+          </span>
+        </label>
+      }
 
       <!-- Opcional: cesión de derechos de imagen -->
       @if (imageRights()) {
@@ -198,12 +197,11 @@ export class IjLegalConsent {
   readonly imageRights = input<boolean>(false);
 
   /**
-   * El bloque aparece en el login, donde aceptar puede significar **crear la
-   * cuenta**. El texto lo dice en voz alta en lugar de dejar que alguien crea
-   * que está firmando algo que no se le guarda: en una cuenta ya existente el
-   * backend descarta este bloque.
+   * Muestra la casilla opcional de comunicaciones comerciales. En el registro
+   * se oculta: el alta sólo debe pedir el consentimiento necesario de Términos
+   * y Aviso, no una finalidad accesoria.
    */
-  readonly signupNotice = input<boolean>(false);
+  readonly showMarketing = input<boolean>(true);
 
   readonly consentChange = output<LegalConsentChange>();
 

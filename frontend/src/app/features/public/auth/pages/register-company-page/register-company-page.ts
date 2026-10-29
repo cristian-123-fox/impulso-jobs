@@ -196,7 +196,7 @@ const STEP_CONTROLS: string[][] = [
             el alta de candidato pero sin la casilla de cesión de imagen: una
             empresa no sube una foto de persona al registrarse.
           -->
-          <ij-legal-consent #consent class="mt-6 block" />
+          <ij-legal-consent #consent [showMarketing]="false" class="mt-6 block" />
 
           <!-- Navegación -->
           <div class="mt-7 flex items-center gap-3">

@@ -2,12 +2,76 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <title>Impulso Jobs — Encuentra el empleo que se ajusta a tu vida</title>
+  <title>Impulso Jobs | Conectando Talento y Empresas</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="/assets/images/logos/logo_naranja.png">
   <link rel="apple-touch-icon" href="/assets/images/logos/logo_naranja.png">
   <meta name="theme-color" content="#e47c3f">
+
+  <!--
+    Identidad base para buscadores. Producción sirve HTML estático, así que
+    estas etiquetas son las que ve Google antes de ejecutar Angular; las
+    páginas pueden sobrescribirlas con SeoService, pero el nombre del sitio y
+    la organización deben estar aquí desde el primer byte.
+  -->
+  <meta name="application-name" content="Impulso Jobs">
+  <meta name="apple-mobile-web-app-title" content="Impulso Jobs">
+  <meta name="description" content="En Impulso Jobs creemos que el capital humano correcto transforma empresas y el empleo correcto transforma vidas. Llevamos 11 años conectando talento con las mejores empresas.">
+  <meta name="robots" content="index,follow">
+  <!--
+    Sin `canonical` fijo a propósito.
+
+    Este archivo es también el cascarón que Apache sirve en `/vacantes`,
+    `/vacantes/<id>` y `/trabajo/<landing>`. Un canonical fijo a `/` diría que
+    esas páginas son duplicados de la portada; SeoService pone el correcto en
+    cuanto arranca la vista. `og:url` sí va aquí porque las redes sociales leen
+    el HTML sin ejecutar JavaScript, y SeoService lo reescribe por página.
+  -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Impulso Jobs">
+  <meta property="og:title" content="Impulso Jobs | Conectando Talento y Empresas">
+  <meta property="og:description" content="En Impulso Jobs creemos que el capital humano correcto transforma empresas y el empleo correcto transforma vidas. Llevamos 11 años conectando talento con las mejores empresas.">
+  <meta property="og:url" content="https://impulsojobs.com/">
+  <meta property="og:image" content="https://impulsojobs.com/assets/images/logos/logo_naranja.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Impulso Jobs | Conectando Talento y Empresas">
+  <meta name="twitter:description" content="En Impulso Jobs creemos que el capital humano correcto transforma empresas y el empleo correcto transforma vidas.">
+  <meta name="twitter:image" content="https://impulsojobs.com/assets/images/logos/logo_naranja.png">
+
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://impulsojobs.com/#website",
+      "name": "Impulso Jobs",
+      "alternateName": ["ImpulsoJobs", "Impulso Jobs México"],
+      "url": "https://impulsojobs.com/",
+      "inLanguage": "es-MX",
+      "description": "En Impulso Jobs creemos que el capital humano correcto transforma empresas y el empleo correcto transforma vidas. Llevamos 11 años conectando talento con las mejores empresas.",
+      "publisher": { "@id": "https://impulsojobs.com/#organization" }
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": "https://impulsojobs.com/#organization",
+      "name": "Impulso Jobs",
+      "url": "https://impulsojobs.com/",
+      "logo": "https://impulsojobs.com/assets/images/logos/logo_naranja.png",
+      "email": "hola@impulsojobs.mx",
+      "telephone": "+52 55 4160 3820",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Av. Alemania 1294, Interior 1, Col. Moderna",
+        "addressLocality": "Guadalajara",
+        "addressRegion": "Jalisco",
+        "postalCode": "44190",
+        "addressCountry": "MX"
+      }
+    }
+  </script>
 
   <!--
     La tipografía NO se pide aquí a propósito.

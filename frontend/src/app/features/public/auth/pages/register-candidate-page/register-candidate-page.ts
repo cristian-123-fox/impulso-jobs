@@ -248,7 +248,12 @@ const STEP_CONTROLS: string[][] = [
             validación se hace con validate() desde onSubmit(), antes de tocar
             la API.
           -->
-          <ij-legal-consent #consent [imageRights]="true" class="mt-6 block" />
+          <ij-legal-consent
+            #consent
+            [imageRights]="true"
+            [showMarketing]="false"
+            class="mt-6 block"
+          />
 
           <!-- Navegación -->
           <div class="mt-7 flex items-center gap-3">

@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable, forwardRef } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
@@ -15,9 +15,6 @@ import {
   SessionResult,
   SessionService,
 } from '@/modules/iam/auth/services/session.service';
-import type { RegisterLegalDto } from '@/modules/iam/registration/dto/register.dto';
-import { LegalReconsentService } from '@/modules/legal/services/legal-reconsent.service';
-
 export interface LoginCommand {
   email: string;
   password: string;
@@ -25,8 +22,6 @@ export interface LoginCommand {
   accountType?: LoginAccountType;
   ip: string;
   userAgent: string;
-  /** Sólo llega cuando el backend pidió aceptar una versión nueva. */
-  legal?: RegisterLegalDto;
 }
 
 export type LoginResult = SessionResult;
@@ -42,8 +37,6 @@ export class LoginUseCase {
     private readonly hasher: PasswordHasherService,
     private readonly session: SessionService,
     private readonly audit: AuditService,
-    @Inject(forwardRef(() => LegalReconsentService))
-    private readonly legal: LegalReconsentService,
   ) {}
 
   async execute(command: LoginCommand): Promise<LoginResult> {
@@ -150,18 +143,8 @@ export class LoginUseCase {
       );
     }
 
-    // Re-consentimiento, y sólo después de que la contraseña sea correcta: no
-    // se le dice a alguien que tiene una versión desactualizada antes de
-    // saber quién es. Si hay documentos nuevos por aceptar, esto responde 409
-    // con `LEGAL_VERSION_OUTDATED` y el formulario vuelve a preguntar.
-    await this.legal.requireCurrentVersions({
-      userId: user.id,
-      email: user.email,
-      legal: command.legal,
-      ip: command.ip,
-      userAgent: command.userAgent,
-    });
-
+    // El login no recaba consentimiento. La aceptación de Términos y Aviso se
+    // hace al crear la cuenta; una versión nueva no bloquea la entrada.
     return this.session.issue(user, command);
   }
 

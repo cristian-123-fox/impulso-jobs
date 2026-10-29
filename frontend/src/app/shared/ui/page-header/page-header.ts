@@ -30,7 +30,7 @@ import { TranslocoDirective } from '@jsverse/transloco';
           [attr.aria-label]="t('common.breadcrumbNav')"
           class="mb-5 flex items-center gap-2 text-sm text-muted"
         >
-          <a routerLink="/inicio" class="transition-colors hover:text-brand-strong">
+          <a routerLink="/" class="transition-colors hover:text-brand-strong">
             {{ t('common.home') }}
           </a>
           <span aria-hidden="true">/</span>

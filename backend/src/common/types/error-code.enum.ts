@@ -34,6 +34,8 @@ export enum ErrorCode {
   AUTH_GOOGLE_INVALID_TOKEN = 'AUTH_GOOGLE_INVALID_TOKEN',
   /** Falta `GOOGLE_CLIENT_ID`: el proveedor está apagado en esta instancia. */
   AUTH_GOOGLE_NOT_CONFIGURED = 'AUTH_GOOGLE_NOT_CONFIGURED',
+  /** Google verificó el correo, pero no hay cuenta: hay que registrarse. */
+  AUTH_GOOGLE_SIGNUP_REQUIRED = 'AUTH_GOOGLE_SIGNUP_REQUIRED',
   // RBAC
   ROLE_NOT_FOUND = 'ROLE_NOT_FOUND',
   ROLE_ALREADY_EXISTS = 'ROLE_ALREADY_EXISTS',

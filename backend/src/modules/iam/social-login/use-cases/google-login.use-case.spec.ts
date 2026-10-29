@@ -5,7 +5,6 @@ import { ErrorCode } from '@/common/types/error-code.enum';
 import { Role } from '@/common/types/role.enum';
 import { UserStatus } from '@/common/types/user-status.enum';
 import { AuditService } from '@/modules/audit/audit.service';
-import { LegalReconsentService } from '@/modules/legal/services/legal-reconsent.service';
 import { CandidateProfile } from '@/modules/candidates/entities/candidate-profile.entity';
 import { ICandidateProfileRepository } from '@/modules/candidates/repositories/candidate-profile.repository.interface';
 import { PasswordHasherService } from '@/modules/iam/auth/services/password-hasher.service';
@@ -51,7 +50,6 @@ describe('GoogleLoginUseCase', () => {
   let hasher: jest.Mocked<PasswordHasherService>;
   let session: jest.Mocked<SessionService>;
   let recordConsent: jest.Mocked<RecordConsentUseCase>;
-  let reconsent: jest.Mocked<LegalReconsentService>;
   let audit: jest.Mocked<AuditService>;
   let dataSource: DataSource;
   let useCase: GoogleLoginUseCase;
@@ -132,23 +130,33 @@ describe('GoogleLoginUseCase', () => {
       execute: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<RecordConsentUseCase>;
 
-    reconsent = {
-      requireCurrentVersions: jest.fn().mockResolvedValue(undefined),
-    } as unknown as jest.Mocked<LegalReconsentService>;
-
     useCase = new GoogleLoginUseCase(
       users,
       userRoles,
       roles,
       candidates,
       recordConsent,
-      reconsent,
       verifier,
       hasher,
       session,
       audit,
       dataSource,
     );
+  });
+
+  it('no crea cuenta desde el login si no hay consentimiento de registro', async () => {
+    users.findByGoogleId.mockResolvedValue(null);
+    users.findByEmail.mockResolvedValue(null);
+
+    let error: unknown;
+    try {
+      await useCase.execute(command());
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(errorCodeOf(error)).toBe(ErrorCode.AUTH_GOOGLE_SIGNUP_REQUIRED);
+    expect(users.save).not.toHaveBeenCalled();
   });
 
   it('crea la cuenta de candidato cuando el correo no existe', async () => {
@@ -215,42 +223,6 @@ describe('GoogleLoginUseCase', () => {
       ip: '127.0.0.1',
       userAgent: 'jest',
     });
-  });
-
-  it('exige aceptar la versión vigente si la cuenta existe y hay documentos nuevos', async () => {
-    const existing = new User();
-    existing.id = 'user-9';
-    existing.email = 'persona@gmail.com';
-    existing.role = Role.CANDIDATE;
-    existing.status = UserStatus.ACTIVE;
-    existing.passwordHash = 'hash.de.la.clave';
-    users.findByGoogleId.mockResolvedValue(null);
-    users.findByEmail.mockResolvedValue(existing);
-    candidates.findByUserId.mockResolvedValue({} as CandidateProfile);
-
-    reconsent.requireCurrentVersions.mockRejectedValue(
-      new AppException(
-        HttpStatus.CONFLICT,
-        ErrorCode.LEGAL_VERSION_OUTDATED,
-        'Actualizamos los Términos.',
-      ),
-    );
-
-    await expect(useCase.execute(command())).rejects.toThrow(AppException);
-
-    expect(reconsent.requireCurrentVersions).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user-9', email: 'persona@gmail.com' }),
-    );
-    expect(session.issue).not.toHaveBeenCalled();
-  });
-
-  it('no exige re-consentimiento al crear la cuenta: ya se aceptó en el alta', async () => {
-    users.findByGoogleId.mockResolvedValue(null);
-    users.findByEmail.mockResolvedValue(null);
-
-    await useCase.execute(commandCreatingAccount());
-
-    expect(reconsent.requireCurrentVersions).not.toHaveBeenCalled();
   });
 
   it('prioriza el sub de Google cuando el correo cambió', async () => {

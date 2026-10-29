@@ -1,5 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
@@ -7,9 +6,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
-  ValidateNested,
 } from 'class-validator';
-import { RegisterLegalDto } from '@/modules/iam/registration/dto/register.dto';
 
 /** Pestaña elegida en el login: candidato o empresa. */
 export enum LoginAccountType {
@@ -42,18 +39,4 @@ export class LoginDto {
   })
   accountType?: LoginAccountType;
 
-  /**
-   * Documentos aceptados, sólo cuando el backend los exige.
-   *
-   * En un login normal no se manda nada: si la versión vigente de los
-   * documentos obligatorios es la que esta persona ya aceptó, entrar no genera
-   * ninguna fila nueva. Si se publicó una versión nueva, el backend responde
-   * `LEGAL_VERSION_OUTDATED` y el formulario lo repite con las casillas puestas
-   * sobre la versión que ahora está vigente.
-   */
-  @ApiPropertyOptional({ type: RegisterLegalDto })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => RegisterLegalDto)
-  legal?: RegisterLegalDto;
 }
