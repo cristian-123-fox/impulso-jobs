@@ -25,6 +25,19 @@ const angularApp = new AngularNodeAppEngine();
  */
 
 /**
+ * La entrada de la plataforma es el listado de vacantes.
+ *
+ * Se redirige aquí, en el servidor, y no en el router: una redirección de
+ * Angular obliga a prerenderizar un `index.html` de 249 bytes con
+ * `<title>Redirecting</title>` y sin metadatos, y ese era el HTML que Google
+ * recibía en la raíz del dominio. Con un 301 el rastreo llega directo a
+ * `/vacantes`, que sí trae título, descripción, Open Graph y JSON-LD.
+ */
+app.get('/', (_req, res) => {
+  res.redirect(301, '/vacantes');
+});
+
+/**
  * Serve static files from /browser
  */
 app.use(

@@ -22,6 +22,15 @@
 RewriteEngine On
 RewriteBase /
 
+# Si el rewrite no corre (AllowOverride), que `/` al menos sirva el cascarón
+# correcto y no un 403.
+DirectoryIndex index.csr.html
+
+# La entrada de la plataforma es el listado de vacantes: quien llega nuevo
+# viene a postularse. Va antes que nada para que `/` no caiga en el
+# DirectoryIndex y sirva el cascarón vacío.
+RewriteRule ^$ /vacantes [R=301,L]
+
 # Redirige HTTP -> HTTPS (opcional; deja comentado si usas otro metodo de SSL).
 # OJO: si en cPanel ya activaste "Force HTTPS Redirect", NO descomentes esto,
 # porque las dos reglas juntas tambien producen un bucle de redirecciones.

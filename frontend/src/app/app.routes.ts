@@ -49,26 +49,20 @@ export const routes: Routes = [
     children: [
       {
         /**
-         * La portada **es** la página de inicio, no una redirección.
+         * La entrada de la plataforma es el listado de vacantes: quien llega
+         * nuevo viene a postularse.
          *
-         * Antes esta ruta redirigía a `/vacantes`, y el prerender de una
-         * redirección genera `index.html` como un stub de ~249 bytes con
-         * `<title>Redirecting</title>` y sin metadatos. Eso es lo que recibía
-         * Google en `impulsojobs.com`, y por eso el nombre del sitio dependía
-         * de una caché vieja ("My Blog") en lugar de la identidad de marca.
-         *
-         * Ahora `/` se prerenderiza con la home completa: título, descripción,
-         * Open Graph y JSON-LD desde el primer byte.
+         * La redirección **real** (301) la hacen el servidor y el `.htaccess`
+         * antes de que Angular arranque; esta de aquí cubre `ng serve` y la
+         * navegación interna. Si se dejara sólo ésta, el prerender generaría
+         * un `index.html` de 249 bytes con `<title>Redirecting</title>` y sin
+         * metadatos, que es justo lo que no queremos que vea Google.
          */
         path: '',
         pathMatch: 'full',
-        loadComponent: () =>
-          import('@/features/public/home/pages/home-page/home-page').then(
-            (m) => m.HomePage,
-          ),
+        redirectTo: 'vacantes',
       },
       {
-        // Alias histórico: la misma home, con canonical a `/`.
         path: 'inicio',
         loadChildren: () =>
           import('@/features/public/home/home.routes').then((m) => m.routes),

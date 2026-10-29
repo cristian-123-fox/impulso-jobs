@@ -1,6 +1,19 @@
 import { RenderMode, ServerRoute } from '@angular/ssr';
 
 export const serverRoutes: ServerRoute[] = [
+  {
+    /**
+     * `/` no se prerenderiza a propósito.
+     *
+     * La ruta redirige a `/vacantes`, y prerenderizar una redirección produce
+     * un `index.html` de ~249 bytes con `<title>Redirecting</title>` y sin
+     * metadatos. Ese archivo era el que se servía en la raíz del dominio.
+     * La redirección real la hacen `server.ts` (301) y el `.htaccess`; aquí
+     * sólo se evita generar el stub.
+     */
+    path: '',
+    renderMode: RenderMode.Client,
+  },
   // T26: el portal público se renderiza **por petición**, no se prerenderiza.
   // Un HTML estático se congela en un idioma en tiempo de build, así que con
   // prerender la cookie `ij_lang` no podía influir y el portal salía siempre en

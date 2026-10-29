@@ -77,7 +77,7 @@ interface AccountSummary {
     <div
       class="mx-auto flex max-w-container items-center justify-between gap-6 px-6 py-4 lg:px-[60px]"
     >
-      <a routerLink="/" [attr.aria-label]="t('nav.brandHome')">
+      <a routerLink="/inicio" [attr.aria-label]="t('nav.brandHome')">
         <ij-logo />
       </a>
 
@@ -269,7 +269,7 @@ export class Navbar {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly items: readonly NavItem[] = [
-    { labelKey: 'nav.home', path: '/' },
+    { labelKey: 'nav.home', path: '/inicio' },
     { labelKey: 'nav.about', path: '/nosotros' },
     { labelKey: 'nav.jobs', path: '/vacantes' },
     { labelKey: 'nav.plans', path: '/planes' },

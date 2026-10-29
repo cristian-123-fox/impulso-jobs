@@ -22,7 +22,7 @@ export const LANGUAGE_COOKIE = 'ij_lang';
 export const LANGUAGE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 /**
- * Parámetro que da **URL propia a cada idioma**: `/?lang=en`.
+ * Parámetro que da **URL propia a cada idioma**: `/inicio?lang=en`.
  *
  * Existe por el SEO. Con el idioma sólo en una cookie, la misma URL devuelve
  * dos contenidos distintos y no hay forma honesta de emitir `hreflang`: los
