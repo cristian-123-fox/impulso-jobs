@@ -14,5 +14,5 @@ export const environment = {
    * ofrece. En Google Cloud hay que declarar este origen en "Orígenes de
    * JavaScript autorizados" (http://localhost:4200).
    */
-  googleClientId: '346875649935-iidcr4041osdva1u4ak01k3ifaiqss8u.apps.googleusercontent.com',
+  googleClientId: '137355028824-pnrlrhge6ma3hf9rdfjbtmoqgtsn3mfe.apps.googleusercontent.com',
 };

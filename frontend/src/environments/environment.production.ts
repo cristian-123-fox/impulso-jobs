@@ -15,5 +15,5 @@ export const environment = {
    * botón no se ofrece; al rellenarlo, declarar `siteUrl` como origen de
    * JavaScript autorizado en Google Cloud Console.
    */
-  googleClientId: '346875649935-iidcr4041osdva1u4ak01k3ifaiqss8u.apps.googleusercontent.com',
+  googleClientId: '137355028824-pnrlrhge6ma3hf9rdfjbtmoqgtsn3mfe.apps.googleusercontent.com',
 };
