@@ -77,8 +77,9 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 | Permiso (`component.action`) | ADMIN | EMPLOYER | CANDIDATE | Semilla |
 |---|:--:|:--:|:--:|:--:|
 | `users.read` / `users.create` / `users.update` / `users.block` / `users.delete` | ✓ (global) | — | — | ✅ |
-| `roles.read` / `roles.create` / `roles.update` / `roles.assign` | ✓ | — | — | ✅ |
+| `roles.read` / `roles.create` / `roles.update` / `roles.delete` / `roles.assign` | ✓ | — | — | ✅ |
 | `permissions.assign` | ✓ | — | — | ✅ |
+| `legal.consents.read` (consultar consentimientos legales) | ✓ (global) | — | — | ✅ |
 | `catalogs.read` | ✓ | ✓ (público) | ✓ (público) | 🌱 |
 | `catalogs.manage` | ✓ | — | — | 🌱 |
 | `audit.read` | ✓ | — | — | 🌱 |
@@ -101,6 +102,7 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 | `candidate_profile.read` / `.update` | ✓ (global) | — | ✓ (propio) | ✅ |
 | `experiences/educations/languages/skills.manage` | — | — | ✓ (propio) | ✅ |
 | `resumes.manage` | — | — | ✓ (propio) | ✅ |
+| `saved_vacancies.manage` (vacantes guardadas) | — | — | ✓ (propio) | ✅ |
 | `settings.read` / `settings.update` | — | — | ✓ (propio) | ✅ |
 | `ai.job_draft` (crear oferta con IA) | ✓ | ⊕ (propio) | — | 🕓 |
 | `ai.match` (matching con IA) | ✓ | ⊕ (propio) | — | 🕓 |
@@ -111,9 +113,10 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 | `subscriptions.create` / `subscriptions.manage` | — | ✓ (propio) | — | ✅ |
 | `subscriptions.read` | ✓ (global) | ✓ (propio) | — | ✅ |
 | `invoices.read` (CFDI) | ✓ (global) | ✓ (propio) | — | 🕓 |
-| `notifications.read` | ✓ | ✓ (propio) | ✓ (propio) | 🕓 |
+| `notifications.read` | ✓ | ✓ (propio) | ✓ (propio) | ✅ |
 | `account.delete` (ARCO — Cancelación) | ✓ | ✓ (propio) | ✓ (propio) | ✅ |
 | `account.data_export` (ARCO — Acceso) | ✓ | ✓ (propio) | ✓ (propio) | ✅ |
+| `account.profile_manage` (datos de la propia cuenta) | ✓ | ✓ (propio) | ✓ (propio) | ✅ |
 
 **Notas de implementación:**
 
@@ -130,6 +133,9 @@ La columna **Semilla** dice qué existe hoy en `backend/src/database/seed-rbac.t
 - **`plans.read` sigue sin exigirse:** `GET /plans` es público (como el listado de vacantes), así que el permiso está sembrado pero ningún endpoint lo pide.
 - **Los permisos `subscriptions.*` se añadieron en M14**: hace falta volver a correr `pnpm seed` tras desplegar esa versión.
 - **Restaurar** (`POST /account/:id/restore`) exige `users.delete`, el mismo permiso que permite provocar la baja desde el back-office. Para *encontrar* las cuentas dadas de baja: `GET /admin/users?deleted=true`.
+- **`POST /permissions/refresh`** recarga la caché `rol → permisos` del proceso. Requiere `permissions.assign` y rol `ADMIN`. Después de `pnpm seed` o de una migración de permisos ya no hay que reiniciar la app… salvo con varios workers: cada proceso mantiene su propia copia en memoria, así que hay que llamar al endpoint contra cada uno o reiniciar la app completa.
+- **Permisos documentados pero aún inexistentes:** `applications.answers.read`, `applications.contact.read`, `vacancy_questions.manage`, `ai.job_draft`, `ai.match`, `invoices.read`. Hoy las respuestas de filtrado se sirven con `applications.read`; el cuestionario se edita con `vacancies.update`; el contacto de los postulados va incluido en `applications.read`; y no hay IA ni CFDI. Las filas marcadas `🕓` son objetivo de producto, no implementación actual.
+- **`catalogs.manage` y `audit.read`** están sembrados pero sin endpoint/pantalla: los catálogos de México son constantes y la auditoría no tiene consulta en el back-office.
 
 ---
 

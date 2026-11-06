@@ -82,6 +82,18 @@ export class SetUserRolesUseCase {
       );
     }
 
+    // Este endpoint pertenece al back-office de usuarios de plataforma. Un rol
+    // creado por una empresa (companyId != null) se asigna desde el equipo de
+    // esa empresa, que valida pertenencia; aquí no debe poder cruzarse.
+    const companyRole = roles.find((role) => role.companyId);
+    if (companyRole) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.COMPANY_ROLE_NOT_ASSIGNABLE,
+        `El rol ${companyRole.code} pertenece a una empresa: se asigna desde su equipo.`,
+      );
+    }
+
     // Sólo se sincronizan los personalizados; los base se conservan intactos.
     const currentIds = await this.userRoles.findRoleIdsByUserId(user.id);
     const current = await this.roles.findByIds(currentIds);

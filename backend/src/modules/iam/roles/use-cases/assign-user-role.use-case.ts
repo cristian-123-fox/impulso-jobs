@@ -56,6 +56,24 @@ export class AssignUserRoleUseCase {
       );
     }
 
+    // Mismo contrato que `SetUserRolesUseCase`: este endpoint es aditivo y sólo
+    // reparte roles personalizados de plataforma. Los base se cambian desde el
+    // rol del usuario, y los de empresa desde el equipo de la empresa.
+    if (role.isSystem) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.ROLE_IMMUTABLE,
+        `El rol ${role.code} es un rol base: se cambia desde el rol del usuario.`,
+      );
+    }
+    if (role.companyId) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.COMPANY_ROLE_NOT_ASSIGNABLE,
+        'Los roles de empresa se asignan desde el equipo de la empresa, no desde el back-office de usuarios.',
+      );
+    }
+
     if (await this.userRoles.exists(command.userId, command.roleId)) {
       return; // idempotente
     }
@@ -69,12 +87,17 @@ export class AssignUserRoleUseCase {
     ]);
     const primary = derivePrimaryRole(roles.map((r) => r.code));
 
+    // El access token emitido lleva los `roleIds` antiguos. Sin renovar
+    // `tokensValidFrom`, el rol nuevo no surte efecto hasta que caduque el
+    // token (15 min) o el usuario vuelva a entrar.
+    user.tokensValidFrom = new Date();
+
     await runInTransaction(this.dataSource, async (manager) => {
       await this.userRoles.add(command.userId, command.roleId, manager);
       if (primary && primary !== user.role) {
         user.role = primary;
-        await this.users.save(user, manager);
       }
+      await this.users.save(user, manager);
     });
 
     await this.audit.record({

@@ -2,6 +2,7 @@ import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { RoleScope } from '@/common/types/role-scope.enum';
 import { AuditService } from '@/modules/audit/audit.service';
+import { PermissionsService } from '@/modules/iam/permissions/services/permissions.service';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
 import { IRoleRepository } from '@/modules/iam/roles/repositories/role.repository.interface';
 import { CreateRoleUseCase } from '@/modules/iam/roles/use-cases/create-role.use-case';
@@ -9,6 +10,7 @@ import { CreateRoleUseCase } from '@/modules/iam/roles/use-cases/create-role.use
 describe('CreateRoleUseCase', () => {
   let roles: jest.Mocked<IRoleRepository>;
   let audit: jest.Mocked<AuditService>;
+  let permissionsService: jest.Mocked<PermissionsService>;
   let useCase: CreateRoleUseCase;
 
   beforeEach(() => {
@@ -25,7 +27,10 @@ describe('CreateRoleUseCase', () => {
       ),
     };
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
-    useCase = new CreateRoleUseCase(roles, audit);
+    permissionsService = {
+      invalidate: jest.fn(),
+    } as unknown as jest.Mocked<PermissionsService>;
+    useCase = new CreateRoleUseCase(roles, audit, permissionsService);
   });
 
   const command = {
@@ -46,6 +51,7 @@ describe('CreateRoleUseCase', () => {
     expect(role.isSystem).toBe(false);
     expect(role.scope).toBe(RoleScope.PLATFORM);
     expect(roles.save).toHaveBeenCalledTimes(1);
+    expect(permissionsService.invalidate).toHaveBeenCalledTimes(1);
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'roles.create' }),
     );

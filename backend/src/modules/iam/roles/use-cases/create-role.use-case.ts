@@ -6,6 +6,7 @@ import {
   RoleScope,
 } from '@/common/types/role-scope.enum';
 import { AuditService } from '@/modules/audit/audit.service';
+import { PermissionsService } from '@/modules/iam/permissions/services/permissions.service';
 import { Role } from '@/modules/iam/roles/entities/role.entity';
 import {
   type IRoleRepository,
@@ -27,6 +28,7 @@ export class CreateRoleUseCase {
   constructor(
     @Inject(ROLE_REPOSITORY) private readonly roles: IRoleRepository,
     private readonly audit: AuditService,
+    private readonly permissionsService: PermissionsService,
   ) {}
 
   async execute(command: CreateRoleCommand): Promise<Role> {
@@ -55,6 +57,11 @@ export class CreateRoleUseCase {
     role.isSystem = false;
     role.scope = command.scope;
     const saved = await this.roles.save(role);
+
+    // El mapa rol→permisos vive en memoria. Un rol recién creado tiene que
+    // entrar en él (aunque sólo sea con la base de su ámbito); si no se
+    // invalida, sus permisos no aplican hasta reiniciar el proceso.
+    this.permissionsService.invalidate();
 
     await this.audit.record({
       action: 'roles.create',

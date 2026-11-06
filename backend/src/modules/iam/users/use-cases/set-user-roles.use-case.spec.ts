@@ -25,6 +25,9 @@ function role(id: string, code: string, isSystem = false): Role {
 const ADMIN_ROLE = role('role-admin', 'ADMIN', true);
 const SUPPORT_ROLE = role('role-support', 'SOPORTE');
 const CONTENT_ROLE = role('role-content', 'CONTENIDOS');
+const COMPANY_ROLE = Object.assign(role('role-company', 'VENTAS'), {
+  companyId: 'company-1',
+});
 
 const command = {
   userId: 'user-1',
@@ -43,7 +46,7 @@ describe('SetUserRolesUseCase', () => {
   let useCase: SetUserRolesUseCase;
 
   /** Catálogo de roles conocido por el repositorio simulado. */
-  const catalog = [ADMIN_ROLE, SUPPORT_ROLE, CONTENT_ROLE];
+  const catalog = [ADMIN_ROLE, SUPPORT_ROLE, CONTENT_ROLE, COMPANY_ROLE];
 
   beforeEach(() => {
     users = {
@@ -161,6 +164,15 @@ describe('SetUserRolesUseCase', () => {
       .catch((e: unknown) => e);
 
     expect(errorCodeOf(thrown)).toBe(ErrorCode.ROLE_IMMUTABLE);
+    expect(userRoles.add).not.toHaveBeenCalled();
+  });
+
+  it('rechaza un rol de empresa en el back-office de plataforma', async () => {
+    const thrown = await useCase
+      .execute({ ...command, roleIds: ['role-company'] })
+      .catch((e: unknown) => e);
+
+    expect(errorCodeOf(thrown)).toBe(ErrorCode.COMPANY_ROLE_NOT_ASSIGNABLE);
     expect(userRoles.add).not.toHaveBeenCalled();
   });
 
