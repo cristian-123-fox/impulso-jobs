@@ -296,6 +296,26 @@
         "detail": "Crear cuenta, armar tu currículum y postularte no cuesta nada."
       }
     },
+    "team": {
+      "eyebrow": "Equipo",
+      "title": "Detrás de Impulso Jobs",
+      "lead": "Un equipo pequeño que construye una forma más clara de conectar talento y empresas en México.",
+      "linkedin": "Ver el perfil de LinkedIn de {{name}}",
+      "members": {
+        "direccion": {
+          "role": "Dirección general",
+          "bio": "Define la estrategia y cuida que el producto resuelva problemas reales de candidatos y empresas."
+        },
+        "producto": {
+          "role": "Producto y experiencia",
+          "bio": "Traduce las necesidades de quienes buscan empleo y de quienes contratan en flujos simples y claros."
+        },
+        "tecnologia": {
+          "role": "Tecnología",
+          "bio": "Construye y mantiene la plataforma, con foco en rendimiento, seguridad y accesibilidad."
+        }
+      }
+    },
     "cta": {
       "title": "Empieza por donde te toque",
       "description": "Si buscas trabajo, crear tu cuenta toma un par de minutos. Si contratas, puedes publicar tu primera vacante hoy mismo.",

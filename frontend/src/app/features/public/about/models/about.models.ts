@@ -31,3 +31,23 @@ export interface AboutFact {
   readonly labelKey: string;
   readonly detailKey: string;
 }
+
+/**
+ * Miembro del equipo. El nombre es un nombre propio; el puesto y la bio van
+ * por clave de traducción para mantener es/en como el resto de la web.
+ *
+ * `isPlaceholder` marca los datos de ejemplo: `AboutFacade` los oculta cuando
+ * `environment.production` es true, así que nunca se publican.
+ */
+export interface AboutTeamMember {
+  readonly id: string;
+  readonly name: string;
+  readonly roleKey: string;
+  readonly bioKey: string;
+  /** Ruta pública en `/assets/images/team/...`; sin foto se pintan iniciales. */
+  readonly photo?: string;
+  readonly linkedin?: string;
+  /** Orden de aparición en el grid. */
+  readonly order: number;
+  readonly isPlaceholder?: boolean;
+}

@@ -296,6 +296,26 @@
         "detail": "Creating an account, building your resume and applying cost nothing."
       }
     },
+    "team": {
+      "eyebrow": "Team",
+      "title": "Behind Impulso Jobs",
+      "lead": "A small team building a clearer way to connect talent and companies in Mexico.",
+      "linkedin": "View {{name}}'s LinkedIn profile",
+      "members": {
+        "direccion": {
+          "role": "General management",
+          "bio": "Sets the strategy and makes sure the product solves real problems for candidates and companies."
+        },
+        "producto": {
+          "role": "Product and experience",
+          "bio": "Turns the needs of job seekers and hiring teams into simple, clear flows."
+        },
+        "tecnologia": {
+          "role": "Technology",
+          "bio": "Builds and maintains the platform, focused on performance, security and accessibility."
+        }
+      }
+    },
     "cta": {
       "title": "Start wherever you stand",
       "description": "If you are looking for work, creating your account takes a couple of minutes. If you are hiring, you can post your first opening today.",

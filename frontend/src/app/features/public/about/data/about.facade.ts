@@ -1,11 +1,14 @@
 import { Injectable, signal } from '@angular/core';
+import { environment } from '@env';
 import { MX_STATES } from '@/shared/catalogs/mx.catalogs';
 import { PROFESSIONAL_AREAS } from '@/shared/catalogs/professional-areas.catalogs';
 import {
   AboutAudience,
   AboutFact,
   AboutStep,
+  AboutTeamMember,
 } from '@/features/public/about/models/about.models';
+import { TEAM_MEMBERS } from '@/features/public/about/data/team.catalog';
 
 /**
  * Facade de "Nosotros".
@@ -22,9 +25,9 @@ import {
  * El texto va por clave de traducción (T26); el hero y el cierre no pasan por
  * aquí porque no tienen más dato que su propio texto.
  *
- * TODO(negocio): falta la parte que sólo la empresa puede escribir (historia,
- * misión, equipo). Cuando exista, entra como una sección más entre el hero y
- * "para quién es".
+ * La sección de equipo vive en `AboutTeam` y se alimenta de `TEAM_MEMBERS`.
+ * Los datos de ejemplo se ocultan en producción hasta que el negocio entregue
+ * nombres, cargos, bios y fotos reales.
  */
 @Injectable({ providedIn: 'root' })
 export class AboutFacade {
@@ -114,7 +117,18 @@ export class AboutFacade {
     },
   ]);
 
+  /**
+   * Equipo. Los registros marcados `isPlaceholder` sólo se muestran en
+   * desarrollo: en producción se filtran para no publicar un equipo ficticio.
+   */
+  private readonly _team = signal<readonly AboutTeamMember[]>(
+    TEAM_MEMBERS.filter(
+      (member) => !member.isPlaceholder || !environment.production,
+    ).sort((a, b) => a.order - b.order),
+  );
+
   readonly audiences = this._audiences.asReadonly();
   readonly steps = this._steps.asReadonly();
   readonly facts = this._facts.asReadonly();
+  readonly team = this._team.asReadonly();
 }
