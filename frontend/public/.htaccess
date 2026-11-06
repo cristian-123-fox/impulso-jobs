@@ -5,18 +5,16 @@
 # recomendada) el ruteo lo hace Node y este archivo se ignora.
 #
 # ##########################################################################
-# EL FALLBACK ES index.csr.html, NO index.html. NO LO CAMBIES.
+# EL FALLBACK ES index.csr.html. NO LO CAMBIES.
 #
-# `index.html` es la PORTADA prerenderizada (la home completa: contenido,
-# título, descripción, Open Graph y JSON-LD). Apache la sirve sola en `/` por
-# DirectoryIndex.
+# El build actual NO genera `index.html` en la raíz: `/` se resuelve con el
+# 301 de la regla de abajo (y, en SSR, con el redirect de server.ts).
+# `index.csr.html` es el cascarón que arranca Angular para /vacantes,
+# /vacantes/<id> y /trabajo/<landing>.
 #
-# El resto de rutas (/vacantes, /vacantes/<id>, /trabajo/<landing>) tiene que
-# recibir el cascarón CSR, no la portada. Si el fallback apuntara a index.html,
-# `/vacantes` devolvería el HTML de la home y la hidratación de Angular
-# fallaría: el router espera la vista de vacantes, no la portada.
-#
-# index.csr.html sí es el cascarón y arranca Angular con normalidad.
+# Si el fallback apuntara a otro HTML prerenderizado, esas rutas recibirían
+# contenido equivocado y la hidratación de Angular fallaría: el router espera
+# la vista de vacantes, no la portada.
 # ##########################################################################
 
 RewriteEngine On

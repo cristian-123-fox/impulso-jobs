@@ -232,9 +232,35 @@ Igual que la API: cPanel → **Setup Node.js App** sobre la carpeta del subdomin
 
 ### 6.2-B Despliegue estático (sin SSR)
 
-Sube el contenido de `dist/frontend/browser/` a `~/demo` **incluyendo el `.htaccess`**, que ya viene con el fallback correcto (`index.csr.html`). No hay ningún paso manual.
+Sube el contenido de `dist/frontend/browser/` a `~/demo` **incluyendo el `.htaccess`**. El build actual **no genera `index.html` en la raíz**: `/` se resuelve con la regla 301 del `.htaccess` y las rutas dinámicas con `index.csr.html`.
 
-> ⚠️ **No cambies ese fallback a `index.html`.** `index.html` es la **portada prerenderizada** (la home completa, con título, descripción, Open Graph y JSON-LD), y Apache la sirve sola en `/` por `DirectoryIndex`. Las demás rutas (`/vacantes`, `/vacantes/<id>`, `/trabajo/<landing>`) necesitan el cascarón `index.csr.html`: si el fallback devolviera `index.html`, `/vacantes` recibiría el HTML de la home y la hidratación de Angular fallaría, porque el router espera la vista de vacantes.
+> ⚠️ **Reemplaza el directorio; no copies encima.** Un deploy incremental deja en el servidor archivos que ya no existen en el build: el `index.html` viejo (el que producía el `200` de 249 bytes en `/`) y los PDF de `legal/` (CIF y versiones antiguas). Si no puedes reemplazar el directorio completo, borra explícitamente esos archivos en §6.2-C.
+
+### 6.2-C Limpieza obligatoria del deploy anterior
+
+Antes de publicar (o justo después, si el deploy es por copia), elimina en el servidor los archivos que el build nuevo ya no contiene:
+
+```bash
+cd ~/demo            # ruta real del subdominio
+rm -f index.html
+rm -f "legal/CIF CHRISTIAN-8.pdf"
+rm -f legal/politica-privacidad.pdf
+rm -f legal/terminos-condiciones.pdf
+```
+
+Comprueba desde tu máquina:
+
+```bash
+curl -sI https://demo.impulsojobs.com/ | head -n 3
+# HTTP/1.1 301 Moved Permanently  +  Location: /vacantes
+
+curl -sI "https://demo.impulsojobs.com/legal/CIF%20CHRISTIAN-8.pdf" | head -n 1
+curl -sI https://demo.impulsojobs.com/legal/politica-privacidad.pdf | head -n 1
+curl -sI https://demo.impulsojobs.com/legal/terminos-condiciones.pdf | head -n 1
+# los tres deben responder 404
+```
+
+> `pnpm build` termina con `scripts/check-dist.mjs`, que **falla** si `dist` contiene PDFs, un `index.html` raíz o le falta el 301. Si ves ese error, no despliegues.
 
 > ⚠️ **HTTPS por duplicado.** Si activas *Force HTTPS Redirect* en cPanel, deja comentado el bloque `RewriteCond %{HTTPS} off` del `.htaccess`. Las dos reglas a la vez producen otro bucle.
 
@@ -246,6 +272,9 @@ cPanel → **SSL/TLS Status** → **Run AutoSSL** para `demo.impulsojobs.com` **
 
 ## 7) Verificación final
 
+- `curl -sI https://demo.impulsojobs.com/` responde **301** con `Location: /vacantes` (no 200 con el stub de 249 bytes).
+- `https://demo.impulsojobs.com/legal/CIF%20CHRISTIAN-8.pdf`, `.../legal/politica-privacidad.pdf` y `.../legal/terminos-condiciones.pdf` responden **404**.
+- El build local pasó el guardia: `pnpm build` termina con `✔ Build limpio…` (sin PDFs, sin `index.html` raíz y con 301 en `.htaccess` y `server.mjs`).
 - `https://demo.impulsojobs.com` carga y **recargar en rutas internas** (`/vacantes`, `/nosotros`, `/planes`) **no da 404 ni entra en bucle de redirecciones**.
 - **Las tres áreas privadas abren en su panel** y las gráficas se pintan: `/admin`, `/empresa` y `/candidato`. Si los indicadores salen pero el hueco de la gráfica se queda vacío, el chunk de ApexCharts no se está sirviendo — revisa que `browser/` se subió completo (son ~950 KB en su propio fichero, no van en el bundle inicial).
 - Comprueba el modo desde tu máquina: `curl -sI https://demo.impulsojobs.com/vacantes` debe responder `200`, y `curl -s https://demo.impulsojobs.com/vacantes | head -c 200` **no** debe contener `http-equiv="refresh"`. Si lo contiene, el fallback del `.htaccess` está mal (§6.2-B).
