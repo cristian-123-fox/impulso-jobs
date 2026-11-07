@@ -2,7 +2,76 @@
 
 **Fecha:** 28 de octubre de 2026
 **Alcance:** backend NestJS, frontend Angular SSR, módulo `billing` (Stripe) y módulo `legal` (LFPDPPP / LFPC).
-**Entorno de entrega confirmado:** `demo.impulsojobs.com`, con Stripe en **modo prueba**.
+**Entorno original de la revisión:** `demo.impulsojobs.com`, con Stripe en **modo prueba**.
+
+> **Actualización 7-nov-2026:** la entrega se despliega en **DigitalOcean**. La guía paso a paso está en [`DEPLOY-DIGITALOCEAN.md`](DEPLOY-DIGITALOCEAN.md); las referencias a cPanel de este documento quedan como historial.
+
+---
+
+## 0. Pendientes de entrega — 7 de noviembre de 2026
+
+### 0.1. Estado del código
+
+| Comprobación | Estado |
+|---|---|
+| Backend | ✅ 574 tests / 69 suites; `pnpm build` correcto |
+| Frontend | ✅ 116 tests; `pnpm build` limpio (sin PDFs, sin `index.html`, 301) |
+| Sección de equipo | ✅ Implementada con los 5 integrantes reales; falta desplegar |
+| Login con Google | ✅ Client ID nuevo en frontend y `.env` local; falta el `.env` del servidor |
+| Stripe | 🟠 Clave `sk_test_` nueva en `.env` local; falta el `whsec_` y completar el onboarding |
+| Guardia de build | ✅ `frontend/scripts/check-dist.mjs` falla si vuelven PDFs o el stub |
+| Repositorio | ❌ Sigue público y con el CIF en el historial |
+
+### 0.2. P0 — bloquean la entrega
+
+- [ ] **Desplegar el backend en DigitalOcean** (ver `DEPLOY-DIGITALOCEAN.md`).
+- [ ] **Desplegar el frontend** (SSR o estático) con el build del 7-nov.
+- [ ] **Poner el repositorio privado** y purgar el historial del CIF.
+- [ ] **Verificar 404** de `CIF CHRISTIAN-8.pdf`, `politica-privacidad.pdf` y `terminos-condiciones.pdf`.
+- [ ] **Verificar 301** de `/` a `/vacantes`.
+- [ ] **Corregir el plan `ANUAL`** en `/admin/planes`: nombre, descripción y beneficios que el código no entrega.
+- [ ] **Stripe:** `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET` en el `.env` del servidor; webhook con los 6 eventos; onboarding completo (`charges_enabled=true`).
+- [ ] **Correo:** `SMTP_*` con `impulsowebjobs@gmail.com` y contraseña de aplicación; probar registro, verificación y recuperación.
+- [ ] **Crons:** `billing:expire`, `vacancies:expire` y `views:consolidate` diarios.
+- [ ] **Respaldos:** base de datos y `uploads/`.
+- [ ] **Datos de demo:** limpiar vacantes con *lorem ipsum* y cuentas de prueba.
+
+### 0.3. Verificación post-deploy
+
+- [ ] `https://impulsojobs.com/` → 301 a `/vacantes`.
+- [ ] Los 3 PDFs legales → 404.
+- [ ] `/nosotros` muestra el equipo y el JSON-LD `Organization`.
+- [ ] `/planes` sin datos de prueba.
+- [ ] Login con correo y con Google.
+- [ ] Registro → verificación → recuperación.
+- [ ] Flujo candidato: perfil, CV, postulación y guardadas.
+- [ ] Flujo empresa: publicar, postulaciones, talento y promociones.
+- [ ] Flujo admin: usuarios, empresas, roles, planes, pagos y legal.
+- [ ] Compra de prueba con `4242 4242 4242 4242` y OXXO.
+- [ ] `GET /api/v1/payments/options` → `stripe` con `CARD, MSI, OXXO`.
+- [ ] Permisos negativos: empresa en `/admin` → 403; candidato en `/empresa` → 403.
+
+### 0.4. Pendiente post-entrega (no bloquea)
+
+- e2e de ownership en applications/billing/talent.
+- Cupo de CV en banco de talento.
+- Stripe: `invoice.payment_failed`, `charge.refunded`, `customer.subscription.updated`, vale OXXO y reconciliación automática.
+- Purga de archivos (CV/fotos/logos) al eliminar cuentas.
+- CFDI con PAC.
+- Pantalla de auditoría y catálogos administrables.
+- Filtro de navegación admin por permiso.
+- Módulo de equipo administrable (hoy es catálogo estático).
+- IA y difusión en redes.
+- Licencia comercial de CKEditor.
+- Revisión legal final.
+
+### 0.5. Lo que falta del cliente/proveedor
+
+- Acceso al Droplet de DigitalOcean o ejecución del despliegue.
+- Contraseña de aplicación de `impulsowebjobs@gmail.com`.
+- `whsec_` del webhook nuevo de Stripe.
+- Decisión de planes: nombre, descripción y beneficios del plan Anual.
+- Confirmación de roles/bios del equipo y, si aplica, fotos.
 
 ---
 

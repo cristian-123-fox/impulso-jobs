@@ -2,6 +2,8 @@
 
 **Fecha:** 11 de agosto de 2026 · **Destinatario:** Dirección · **Preparado por:** equipo de desarrollo
 
+> **Actualización 7-nov-2026:** este documento es de agosto y está desactualizado. El estado vigente y el checklist de entrega están en [`REVISION-ENTREGA.md`](REVISION-ENTREGA.md) §0 y la guía de despliegue en [`DEPLOY-DIGITALOCEAN.md`](DEPLOY-DIGITALOCEAN.md).
+
 ---
 
 ## 1. Resumen ejecutivo

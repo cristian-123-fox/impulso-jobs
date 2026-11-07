@@ -2,6 +2,8 @@
 
 Guía para publicar el proyecto en cPanel con **Node.js (Passenger) + SSH**.
 
+> ⚠️ **Entrega de noviembre de 2026: el despliegue es en DigitalOcean.** Este documento se conserva como referencia del hosting anterior. Usa [`DEPLOY-DIGITALOCEAN.md`](DEPLOY-DIGITALOCEAN.md).
+
 ## Arquitectura
 
 | Parte | Qué es | Dónde va |
