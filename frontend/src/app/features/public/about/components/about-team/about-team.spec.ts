@@ -1,5 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { TranslocoService, provideTransloco } from '@jsverse/transloco';
 import { firstValueFrom } from 'rxjs';
 import { InlineTranslocoLoader } from '@/core/i18n/transloco.loader';
@@ -13,6 +14,8 @@ function member(overrides: Partial<AboutTeamMember> = {}): AboutTeamMember {
     roleKey: 'about.team.members.direccion.role',
     bioKey: 'about.team.members.direccion.bio',
     order: 1,
+    tone: 'brand',
+    icon: 'user',
     ...overrides,
   };
 }
@@ -23,6 +26,7 @@ describe('AboutTeam', () => {
       imports: [AboutTeam],
       providers: [
         provideZonelessChangeDetection(),
+        provideRouter([]),
         provideTransloco({
           config: { availableLangs: ['es', 'en'], defaultLang: 'es' },
           loader: InlineTranslocoLoader,

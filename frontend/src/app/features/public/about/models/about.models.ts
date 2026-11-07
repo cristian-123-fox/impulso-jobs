@@ -49,5 +49,10 @@ export interface AboutTeamMember {
   readonly linkedin?: string;
   /** Orden de aparición en el grid. */
   readonly order: number;
+  /** Acento visual de la tarjeta (avatar, badge y barra superior). */
+  readonly tone: Tone;
+  /** Icono que resume el área de la persona. */
+  readonly icon: IconName;
+  /** Sólo para datos de ejemplo: el facade los oculta en producción. */
   readonly isPlaceholder?: boolean;
 }

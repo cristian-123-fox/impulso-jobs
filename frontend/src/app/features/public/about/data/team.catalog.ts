@@ -1,44 +1,62 @@
 import { AboutTeamMember } from '@/features/public/about/models/about.models';
 
 /**
- * Equipo de Impulso Jobs.
+ * Equipo real de Impulso Jobs.
  *
- * ⚠️ **Los tres registros de abajo son de ejemplo.** `AboutFacade` los filtra
- * cuando `environment.production` es true, así que no llegan al sitio público.
+ * Las fotos todavía no están: el componente pinta las iniciales con el color
+ * del `tone`. Cuando lleguen, añade `photo: '/assets/images/team/<id>.webp'`
+ * (cuadrada, 800×800, WebP, <200 KB) y la tarjeta la usará sola.
  *
- * Para publicar a una persona real:
- *   1. Sube su foto a `public/assets/images/team/<id>.webp` (cuadrada, 800×800,
- *      WebP, <200 KB, mismo fondo y encuadre que el resto).
- *   2. Duplica una entrada, **quita `isPlaceholder`** y rellena `name`,
- *      `roleKey`, `bioKey`, `photo` (opcional), `linkedin` (opcional) y `order`.
+ * Para añadir a alguien:
+ *   1. Sube su foto a `public/assets/images/team/<id>.webp`.
+ *   2. Añade una entrada con `name`, `roleKey`, `bioKey`, `tone`, `icon`,
+ *      `order` y, si aplica, `photo` y `linkedin`.
  *   3. Añade `about.team.members.<id>.role` y `.bio` en `es.json` y `en.json`.
- *
- * No inventes nombres ni cargos en producción. Un equipo ficticio es peor que
- * no tener la sección.
  */
 export const TEAM_MEMBERS: readonly AboutTeamMember[] = [
   {
-    id: 'direccion',
-    name: 'Nombre Apellido',
-    roleKey: 'about.team.members.direccion.role',
-    bioKey: 'about.team.members.direccion.bio',
+    id: 'cristian-galaviz',
+    name: 'Cristian Galaviz',
+    roleKey: 'about.team.members.cristian-galaviz.role',
+    bioKey: 'about.team.members.cristian-galaviz.bio',
     order: 1,
-    isPlaceholder: true,
+    tone: 'brand',
+    icon: 'award',
   },
   {
-    id: 'producto',
-    name: 'Nombre Apellido',
-    roleKey: 'about.team.members.producto.role',
-    bioKey: 'about.team.members.producto.bio',
+    id: 'karla-garcia',
+    name: 'Karla García',
+    roleKey: 'about.team.members.karla-garcia.role',
+    bioKey: 'about.team.members.karla-garcia.bio',
     order: 2,
-    isPlaceholder: true,
+    tone: 'pink',
+    icon: 'headset',
   },
   {
-    id: 'tecnologia',
-    name: 'Nombre Apellido',
-    roleKey: 'about.team.members.tecnologia.role',
-    bioKey: 'about.team.members.tecnologia.bio',
+    id: 'sebastian-tovar',
+    name: 'Sebastián Tovar Chávez',
+    roleKey: 'about.team.members.sebastian-tovar.role',
+    bioKey: 'about.team.members.sebastian-tovar.bio',
     order: 3,
-    isPlaceholder: true,
+    tone: 'blue',
+    icon: 'code',
+  },
+  {
+    id: 'oscar-ruiz',
+    name: 'Óscar Daniel Ruiz',
+    roleKey: 'about.team.members.oscar-ruiz.role',
+    bioKey: 'about.team.members.oscar-ruiz.bio',
+    order: 4,
+    tone: 'green',
+    icon: 'code',
+  },
+  {
+    id: 'cristian-medina',
+    name: 'Cristian Medina',
+    roleKey: 'about.team.members.cristian-medina.role',
+    bioKey: 'about.team.members.cristian-medina.bio',
+    order: 5,
+    tone: 'amber',
+    icon: 'search',
   },
 ];

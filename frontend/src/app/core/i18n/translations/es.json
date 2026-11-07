@@ -301,18 +301,29 @@
       "title": "Detrás de Impulso Jobs",
       "lead": "Un equipo pequeño que construye una forma más clara de conectar talento y empresas en México.",
       "linkedin": "Ver el perfil de LinkedIn de {{name}}",
+      "count": "{{count}} personas · un mismo objetivo",
+      "join": "¿Quieres construir esto con nosotros?",
+      "joinCta": "Ver vacantes",
       "members": {
-        "direccion": {
-          "role": "Dirección general",
-          "bio": "Define la estrategia y cuida que el producto resuelva problemas reales de candidatos y empresas."
+        "cristian-galaviz": {
+          "role": "Dueño y dirección general",
+          "bio": "Lidera la visión de Impulso Jobs y la relación con empresas y candidatos."
         },
-        "producto": {
-          "role": "Producto y experiencia",
-          "bio": "Traduce las necesidades de quienes buscan empleo y de quienes contratan en flujos simples y claros."
+        "karla-garcia": {
+          "role": "Asistente",
+          "bio": "Coordina la operación diaria y da soporte al equipo y a quienes usan la plataforma."
         },
-        "tecnologia": {
-          "role": "Tecnología",
-          "bio": "Construye y mantiene la plataforma, con foco en rendimiento, seguridad y accesibilidad."
+        "sebastian-tovar": {
+          "role": "Desarrollador de software",
+          "bio": "Desarrolla y mantiene el frontend y las funciones que usan candidatos y empresas."
+        },
+        "oscar-ruiz": {
+          "role": "Desarrollador de software",
+          "bio": "Desarrolla el backend, la base de datos y las integraciones de la plataforma."
+        },
+        "cristian-medina": {
+          "role": "Ingeniero de sistemas · SEO",
+          "bio": "Cuida la infraestructura, el rendimiento técnico y la visibilidad del portal en buscadores."
         }
       }
     },

@@ -301,18 +301,29 @@
       "title": "Behind Impulso Jobs",
       "lead": "A small team building a clearer way to connect talent and companies in Mexico.",
       "linkedin": "View {{name}}'s LinkedIn profile",
+      "count": "{{count}} people · one goal",
+      "join": "Want to build this with us?",
+      "joinCta": "See open roles",
       "members": {
-        "direccion": {
-          "role": "General management",
-          "bio": "Sets the strategy and makes sure the product solves real problems for candidates and companies."
+        "cristian-galaviz": {
+          "role": "Owner and general manager",
+          "bio": "Leads Impulso Jobs' vision and its relationship with companies and candidates."
         },
-        "producto": {
-          "role": "Product and experience",
-          "bio": "Turns the needs of job seekers and hiring teams into simple, clear flows."
+        "karla-garcia": {
+          "role": "Assistant",
+          "bio": "Coordinates day-to-day operations and supports the team and platform users."
         },
-        "tecnologia": {
-          "role": "Technology",
-          "bio": "Builds and maintains the platform, focused on performance, security and accessibility."
+        "sebastian-tovar": {
+          "role": "Software developer",
+          "bio": "Builds and maintains the frontend and the features used by candidates and companies."
+        },
+        "oscar-ruiz": {
+          "role": "Software developer",
+          "bio": "Builds the backend, database and platform integrations."
+        },
+        "cristian-medina": {
+          "role": "Systems engineer · SEO",
+          "bio": "Looks after infrastructure, technical performance and the site's search visibility."
         }
       }
     },

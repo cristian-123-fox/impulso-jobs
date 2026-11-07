@@ -28,4 +28,8 @@ describe('TEAM_MEMBERS', () => {
       expect(member.linkedin).toMatch(/^https:\/\//);
     }
   });
+
+  it('el equipo real no está marcado como placeholder', () => {
+    expect(TEAM_MEMBERS.some((member) => member.isPlaceholder)).toBe(false);
+  });
 });

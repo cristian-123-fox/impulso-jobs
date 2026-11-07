@@ -26,8 +26,8 @@ import { TEAM_MEMBERS } from '@/features/public/about/data/team.catalog';
  * aquí porque no tienen más dato que su propio texto.
  *
  * La sección de equipo vive en `AboutTeam` y se alimenta de `TEAM_MEMBERS`.
- * Los datos de ejemplo se ocultan en producción hasta que el negocio entregue
- * nombres, cargos, bios y fotos reales.
+ * Las fotos todavía no están: se pintan las iniciales. Si alguna vez se añaden
+ * datos de ejemplo, `isPlaceholder` los oculta en producción.
  */
 @Injectable({ providedIn: 'root' })
 export class AboutFacade {
