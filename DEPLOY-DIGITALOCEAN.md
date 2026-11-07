@@ -34,7 +34,9 @@
 - Dominio `impulsojobs.com` con acceso al DNS.
 - Droplet con Ubuntu 24.04 y llave SSH.
 - Repositorio privado en GitHub.
-- Secretos listos: JWT, base de datos, SMTP, Stripe y Google Client ID.
+- Secretos listos: JWT, base de datos, Stripe y Google Client ID.
+- **Pendiente con el cliente:** contraseña de aplicación de `impulsowebjobs@gmail.com`
+  (la genera el dueño; sin ella no hay correo saliente).
 - Registros DNS (apuntando al IP del Droplet):
 
 | Tipo | Nombre | Valor |
@@ -385,7 +387,14 @@ crontab -e
 ## 9. Correo y Google
 
 - **Correo:** `SMTP_USER=impulsowebjobs@gmail.com` y contraseña de aplicación de
-  16 caracteres. Prueba registro, verificación y recuperación.
+  16 caracteres. Prueba registro, verificación, recuperación y aviso de plan activo.
+
+> ⏳ **Bloqueado por el cliente.** La contraseña de aplicación la debe generar el
+> **dueño** de la cuenta: activar verificación en 2 pasos en
+> `myaccount.google.com/security`, entrar a `myaccount.google.com/apppasswords`
+> y crear una llamada `Impulso Jobs SMTP`. Son 16 caracteres, sin espacios.
+> Entregarla por un canal privado; nunca se commitea. Sin ella, el correo sale
+> con la cuenta anterior o no sale.
 - **Google:** el Client ID debe coincidir en `backend/.env` y en
   `frontend/src/environments/environment.production.ts`. En Google Cloud,
   declara como orígenes autorizados:
@@ -439,7 +448,7 @@ curl -s https://impulsojobs.com/nosotros | grep "Cristian Galaviz"
 - [ ] Compra de prueba en Stripe.
 - [ ] Webhook de Stripe responde 200 (revisa el log de PM2).
 - [ ] `GET /api/v1/payments/options` → `stripe` con `CARD, MSI, OXXO`.
-- [ ] Correo de verificación y reset.
+- [ ] Correo de verificación, reset y aviso de plan activo.
 - [ ] Crons ejecutados (revisa `/var/log/impulso-*.log`).
 - [ ] Respaldos generados.
 

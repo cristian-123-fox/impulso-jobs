@@ -14,11 +14,12 @@
 
 | Comprobación | Estado |
 |---|---|
-| Backend | ✅ 574 tests / 69 suites; `pnpm build` correcto |
-| Frontend | ✅ 116 tests; `pnpm build` limpio (sin PDFs, sin `index.html`, 301) |
+| Backend | ✅ 579 tests / 69 suites; `pnpm build` correcto |
+| Frontend | ✅ 117 tests; `pnpm build` limpio (sin PDFs, sin `index.html`, 301) |
 | Sección de equipo | ✅ Implementada con los 5 integrantes reales; falta desplegar |
 | Login con Google | ✅ Client ID nuevo en frontend y `.env` local; falta el `.env` del servidor |
 | Stripe | 🟠 Clave `sk_test_` nueva en `.env` local; falta el `whsec_` y completar el onboarding |
+| Correo saliente | 🟠 Pendiente la contraseña de aplicación de `impulsowebjobs@gmail.com`; la debe generar y entregar el dueño |
 | Guardia de build | ✅ `frontend/scripts/check-dist.mjs` falla si vuelven PDFs o el stub |
 | Repositorio | ❌ Sigue público y con el CIF en el historial |
 
@@ -31,7 +32,7 @@
 - [ ] **Verificar 301** de `/` a `/vacantes`.
 - [ ] **Corregir el plan `ANUAL`** en `/admin/planes`: nombre, descripción y beneficios que el código no entrega.
 - [ ] **Stripe:** `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET` en el `.env` del servidor; webhook con los 6 eventos; onboarding completo (`charges_enabled=true`).
-- [ ] **Correo:** `SMTP_*` con `impulsowebjobs@gmail.com` y contraseña de aplicación; probar registro, verificación y recuperación.
+- [ ] **Correo (bloqueado por el dueño):** pedir la contraseña de aplicación de `impulsowebjobs@gmail.com` —requiere verificación en 2 pasos activa—, configurar `SMTP_*` y probar registro, verificación, recuperación y aviso de plan activo.
 - [ ] **Crons:** `billing:expire`, `vacancies:expire` y `views:consolidate` diarios.
 - [ ] **Respaldos:** base de datos y `uploads/`.
 - [ ] **Datos de demo:** limpiar vacantes con *lorem ipsum* y cuentas de prueba.
@@ -68,7 +69,7 @@
 ### 0.5. Lo que falta del cliente/proveedor
 
 - Acceso al Droplet de DigitalOcean o ejecución del despliegue.
-- Contraseña de aplicación de `impulsowebjobs@gmail.com`.
+- **Contraseña de aplicación de `impulsowebjobs@gmail.com`.** La genera el **dueño** de la cuenta: activar verificación en 2 pasos en `myaccount.google.com/security`, entrar a `myaccount.google.com/apppasswords` y crear una llamada `Impulso Jobs SMTP`. Son 16 caracteres, sin espacios. Entregarla por un canal privado; nunca commitearla.
 - `whsec_` del webhook nuevo de Stripe.
 - Decisión de planes: nombre, descripción y beneficios del plan Anual.
 - Confirmación de roles/bios del equipo y, si aplica, fotos.
