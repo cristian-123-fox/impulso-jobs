@@ -43,8 +43,6 @@ import {
   isManualOrder,
   orderFolio,
 } from '@/features/company/billing/models/billing.models';
-import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
-import { VacancyStatus } from '@/features/company/vacancies/models/vacancies.models';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -590,7 +588,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
         (close)="closeForms()"
       >
         <app-promotion-form
-          [vacancies]="vacancyOptions()"
+          [vacancies]="eligibleOptions()"
           [plans]="facade.perPublicationPlans()"
           [paymentOptions]="facade.paymentOptions()"
           [initialPlanId]="initialPlanId()"
@@ -671,7 +669,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 })
 export class PromotionsPage {
   protected readonly facade = inject(BillingFacade);
-  private readonly vacanciesApi = inject(VacanciesApi);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -774,28 +771,12 @@ export class PromotionsPage {
       !this.activating(),
   );
 
-  private readonly vacancies = signal<readonly IjOption[]>([]);
-  protected readonly vacancyOptions = computed(() => this.vacancies());
-
   constructor() {
     this.facade.loadSummary();
     this.facade.loadPromotions(1);
     this.facade.loadPlans();
     this.facade.loadPaymentOptions();
     this.handleCheckoutReturn();
-
-    // Vacantes para la compra puntual desde /planes (no para el modal de cupos).
-    this.vacanciesApi
-      .list({ page: 1, limit: 100, status: VacancyStatus.ACTIVE })
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((result) =>
-        this.vacancies.set(
-          result.items.map((vacancy) => ({
-            value: vacancy.id,
-            label: vacancy.title,
-          })),
-        ),
-      );
 
     effect(() => {
       const planId = this.requestedPlanId();
@@ -900,6 +881,8 @@ export class PromotionsPage {
         return;
       }
       this.initialPlanId.set(plan.id);
+      // El modal de compra solo debe ofrecer vacantes sin promoción viva.
+      this.facade.loadEligibleVacancies();
       this.showPromotionPurchase.set(true);
       return;
     }

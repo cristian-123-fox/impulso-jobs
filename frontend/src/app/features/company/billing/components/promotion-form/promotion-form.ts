@@ -1,4 +1,5 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -39,6 +40,7 @@ export interface PromotionRequest {
     FormsModule,
     CurrencyPipe,
     DatePipe,
+    RouterLink,
     IjButton,
     IjProviderInfo,
     IjSelect,
@@ -60,9 +62,22 @@ export interface PromotionRequest {
         name="vacancy"
         [required]="true"
         [options]="vacancies()"
-        [hint]="vacancies().length ? '' : 'Publica una vacante activa primero.'"
+        [hint]="'Solo aparecen vacantes activas sin una promoción vigente.'"
         [(ngModel)]="vacancyId"
       />
+
+      @if (!vacancies().length) {
+        <p class="text-[12.5px] leading-relaxed text-muted">
+          No hay vacantes elegibles.
+          <a
+            routerLink="/empresa/vacantes"
+            class="font-semibold text-brand-strong hover:text-brand-600"
+          >
+            Publica una vacante nueva
+          </a>
+          o espera a que termine la promoción vigente.
+        </p>
+      }
 
       @if (!creditMode()) {
       <div>
