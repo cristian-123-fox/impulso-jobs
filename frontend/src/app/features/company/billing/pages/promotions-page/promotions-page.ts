@@ -587,6 +587,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
           [submitting]="saving()"
           [error]="formError()"
           (save)="onSubscribe($event)"
+          (reload)="facade.loadPlans(true)"
           (cancel)="closeForms()"
         />
       </ij-modal>

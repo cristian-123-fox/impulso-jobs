@@ -57,14 +57,26 @@ export class BillingFacade {
     this.plans().filter((plan) => plan.planType === 'ANNUAL_SUBSCRIPTION'),
   );
 
-  loadPlans(): void {
-    if (this.plans().length > 0) return;
+  loadPlans(force = false): void {
+    if (!force && this.plans().length > 0) return;
     this.api
       .listPlans()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (plans) => {
-          this.plans.set(Array.isArray(plans) ? plans : []);
+          // Un plan sin nombre/precio no se puede pintar: si llega de una
+          // respuesta vieja o de una caché, se descarta y se muestra el estado
+          // vacío con "Reintentar" en lugar de tarjetas en blanco.
+          const valid = Array.isArray(plans)
+            ? plans.filter(
+                (plan) =>
+                  plan &&
+                  typeof plan.name === 'string' &&
+                  plan.price &&
+                  typeof plan.price.total === 'number',
+              )
+            : [];
+          this.plans.set(valid);
           this.plansLoaded.set(true);
         },
         error: () => this.plansLoaded.set(true),

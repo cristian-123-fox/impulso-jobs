@@ -85,9 +85,18 @@ export interface SubscriptionRequest {
               </div>
             </button>
           } @empty {
-            <p class="rounded-xl bg-surface px-4 py-5 text-center text-[13px] text-muted sm:col-span-2">
-              Todavía no hay planes disponibles.
-            </p>
+            <div
+              class="rounded-xl bg-surface px-4 py-5 text-center text-[13px] text-muted sm:col-span-2"
+            >
+              <p>Todavía no hay planes disponibles.</p>
+              <button
+                type="button"
+                class="mt-2 font-bold text-brand-strong underline"
+                (click)="reload.emit()"
+              >
+                Reintentar
+              </button>
+            </div>
           }
         </div>
       </div>
@@ -197,6 +206,8 @@ export class SubscriptionForm implements OnInit {
   readonly error = input<string | null>(null);
   readonly save = output<SubscriptionRequest>();
   readonly cancel = output<void>();
+  /** Fuerza una recarga del catálogo si llegó vacío o inválido. */
+  readonly reload = output<void>();
 
   private readonly choice = viewChild(PaymentChoice);
 
