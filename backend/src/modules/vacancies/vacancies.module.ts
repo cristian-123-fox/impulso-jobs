@@ -4,6 +4,8 @@ import { LocalPublicFileStorageAdapter } from '@/common/storage/local-public-fil
 import { PUBLIC_FILE_STORAGE } from '@/common/storage/public-file-storage.port';
 import { ApplicationsModule } from '@/modules/applications/applications.module';
 import { AuditModule } from '@/modules/audit/audit.module';
+import { CompanySubscription } from '@/modules/billing/entities/company-subscription.entity';
+import { Plan } from '@/modules/billing/entities/plan.entity';
 import { CompaniesModule } from '@/modules/companies/companies.module';
 import { AuthModule } from '@/modules/iam/auth/auth.module';
 import { PermissionsModule } from '@/modules/iam/permissions/permissions.module';
@@ -33,6 +35,7 @@ import { SkillRepository } from '@/modules/vacancies/repositories/skill.reposito
 import { VACANCY_SKILL_REPOSITORY } from '@/modules/vacancies/repositories/vacancy-skill.repository.interface';
 import { VacancySkillRepository } from '@/modules/vacancies/repositories/vacancy-skill.repository';
 import { VacancyOwnershipService } from '@/modules/vacancies/services/vacancy-ownership.service';
+import { PublicationQuotaService } from '@/modules/vacancies/services/publication-quota.service';
 import { CompanyVacanciesUseCase } from '@/modules/vacancies/use-cases/company-vacancies.use-case';
 import { ConsolidateVacancyViewsUseCase } from '@/modules/vacancies/use-cases/consolidate-vacancy-views.use-case';
 import { ExpireVacanciesUseCase } from '@/modules/vacancies/use-cases/expire-vacancies.use-case';
@@ -54,6 +57,8 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
       VacancyViewEvent,
       Skill,
       VacancySkill,
+      CompanySubscription,
+      Plan,
     ]),
     AuditModule,
     AuthModule,
@@ -86,6 +91,7 @@ import { VacancyStatusUseCase } from '@/modules/vacancies/use-cases/vacancy-stat
     { provide: VACANCY_SKILL_REPOSITORY, useClass: VacancySkillRepository },
     { provide: PUBLIC_FILE_STORAGE, useClass: LocalPublicFileStorageAdapter },
     VacancyOwnershipService,
+    PublicationQuotaService,
     CompanyVacanciesUseCase,
     VacancyStatusUseCase,
     PublicVacanciesUseCase,

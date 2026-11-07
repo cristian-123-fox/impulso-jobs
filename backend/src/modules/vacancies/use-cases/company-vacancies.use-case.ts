@@ -1,4 +1,6 @@
 import { HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import {
   PaginatedResponse,
   toPaginated,
@@ -6,7 +8,9 @@ import {
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { todayAsDateOnly } from '@/common/utils/date-only.util';
+import { runInTransaction } from '@/common/utils/transaction.util';
 import { AuditService } from '@/modules/audit/audit.service';
+import { PublicationQuotaService } from '@/modules/vacancies/services/publication-quota.service';
 import {
   VacancyResponseDto,
   toVacancyResponse,
@@ -97,6 +101,8 @@ export class CompanyVacanciesUseCase {
     private readonly ownership: VacancyOwnershipService,
     private readonly audit: AuditService,
     private readonly skillsUseCase: VacancySkillsUseCase,
+    private readonly publicationQuota: PublicationQuotaService,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async list(
@@ -158,6 +164,7 @@ export class CompanyVacanciesUseCase {
     this.assertDeadline(data);
 
     const now = new Date();
+    const lifetimeDays = vacancyLifetimeDays();
     const vacancy = new Vacancy();
     vacancy.companyId = company.id;
     this.apply(vacancy, data);
@@ -165,11 +172,8 @@ export class CompanyVacanciesUseCase {
     vacancy.publishedAt = now;
     // Vigencia (T20): se fija y se comunica desde el día 1. Con el reloj
     // desactivado (VACANCY_LIFETIME_DAYS=0) la vacante nace sin vencimiento.
-    const lifetimeDays = vacancyLifetimeDays();
-    vacancy.expiresAt =
-      lifetimeDays > 0
-        ? new Date(now.getTime() + lifetimeDays * 86_400_000)
-        : null;
+    // El alta consume un cupo del plan; la vigencia sale del plan cuando la
+    // define (Básico 30, Premium 60) y, si no, del valor global.
     // Se rellena desde el alta para que el orden del portal no dependa de nulos.
     vacancy.refreshedAt = now;
     vacancy.pauseCount = 0;
@@ -187,15 +191,32 @@ export class CompanyVacanciesUseCase {
     // Al crear aún no hay promoción, así que pedir confidencialidad falla aquí.
     this.applyConfidentiality(vacancy, data.isConfidential);
 
-    const saved = await this.vacancies.save(vacancy);
-    await this.audit.record({
-      action: 'vacancies.create',
-      actorUserId: actor.userId,
-      entity: 'vacancy',
-      entityId: saved.id,
-      ip: actor.ip,
-      userAgent: actor.userAgent,
-      metadata: { companyId: company.id, title: saved.title },
+    const saved = await runInTransaction(this.dataSource, async (manager) => {
+      // Publicar consume un cupo del plan; sin plan o sin cupos, 402.
+      const quota = await this.publicationQuota.consume(company.id, now, manager);
+      const planDays = quota.plan.validityDays;
+      const days = planDays && planDays > 0 ? planDays : lifetimeDays;
+      vacancy.expiresAt =
+        days > 0 ? new Date(now.getTime() + days * 86_400_000) : null;
+
+      const created = await this.vacancies.save(vacancy, manager);
+      await this.audit.record(
+        {
+          action: 'vacancies.create',
+          actorUserId: actor.userId,
+          entity: 'vacancy',
+          entityId: created.id,
+          ip: actor.ip,
+          userAgent: actor.userAgent,
+          metadata: {
+            companyId: company.id,
+            title: created.title,
+            planId: quota.plan.id,
+          },
+        },
+        manager,
+      );
+      return created;
     });
 
     // Guardar skills si se proporcionaron

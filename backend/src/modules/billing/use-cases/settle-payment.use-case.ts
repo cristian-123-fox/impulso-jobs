@@ -11,6 +11,7 @@ import { PromotionOrder } from '@/modules/billing/entities/promotion-order.entit
 import {
   OPEN_PAYMENT_STATUSES,
   PaymentStatus,
+  PlanType,
   PromotionStatus,
   SubscriptionStatus,
 } from '@/modules/billing/enums/billing.enums';
@@ -212,14 +213,23 @@ export class SettlePaymentUseCase {
       if (!plan) return;
 
       const entitlements = await this.entitlements.resolve(plan, manager);
-      // El proveedor manda el fin de periodo; si no lo trae, un año.
-      const periodEnd = event.currentPeriodEnd ?? this.addYear(now);
+      // El proveedor manda el fin de periodo; si no lo trae, un año (anual) o
+      // la vigencia del plan (Básico 30 / Premium 60).
+      const periodEnd =
+        event.currentPeriodEnd ??
+        (plan.planType === PlanType.PER_PUBLICATION && plan.validityDays
+          ? this.addDays(now, plan.validityDays)
+          : this.addYear(now));
 
       subscription.status = SubscriptionStatus.ACTIVE;
       subscription.startsAt ??= now;
       subscription.currentPeriodEnd = periodEnd;
+      // Publicaciones incluidas: el plan manda. En los planes por publicación
+      // el valor por defecto es 1; en la anual, `null` = ilimitadas (-1).
       subscription.postingCredits =
-        plan.postingQuota ?? subscription.postingCredits ?? 0;
+        plan.planType === PlanType.PER_PUBLICATION
+          ? Math.max(0, plan.postingQuota ?? 1)
+          : (plan.postingQuota ?? -1);
       subscription.usedPostingCredits = 0;
 
       // El plan es la fuente de verdad: `promoted_vacancies` se resuelve en el
@@ -305,6 +315,12 @@ export class SettlePaymentUseCase {
   private addYear(from: Date): Date {
     const result = new Date(from);
     result.setFullYear(result.getFullYear() + 1);
+    return result;
+  }
+
+  private addDays(from: Date, days: number): Date {
+    const result = new Date(from);
+    result.setDate(result.getDate() + days);
     return result;
   }
 }

@@ -9,11 +9,12 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import { IjButton, IjIcon, IjModal, IjOption, IjSelect } from '@/shared/ui';
 import { AdminPagination } from '@/features/admin/shared/admin-pagination/admin-pagination';
+import { BillingApi } from '@/features/company/billing/data/billing.api';
 import { VacanciesApi } from '@/features/company/vacancies/data/vacancies.api';
 import { VacanciesFacade } from '@/features/company/vacancies/data/vacancies.facade';
 import { VacancyQuestionsForm } from '@/features/company/vacancies/components/vacancy-questions-form/vacancy-questions-form';
@@ -41,6 +42,7 @@ import {
     IjIcon,
     IjModal,
     IjSelect,
+    RouterLink,
   ],
   template: `
     <div class="mx-auto max-w-[1240px]">
@@ -63,6 +65,24 @@ import {
           Nueva vacante
         </button>
       </div>
+
+      @if (postingsText(); as text) {
+        <div
+          [class]="
+            'mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-[13px] ' +
+            (postingsAvailable() === 0
+              ? 'border-amber-200 bg-amber-50 text-amber-800'
+              : 'border-line bg-surface text-body')
+          "
+        >
+          <p>{{ text }}</p>
+          @if (postingsAvailable() === 0) {
+            <a routerLink="/planes" class="font-bold underline">
+              Ver planes
+            </a>
+          }
+        </div>
+      }
 
       <div class="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         @for (card of statCards(); track card.label) {
@@ -189,12 +209,25 @@ import {
 export class VacanciesListPage {
   protected readonly facade = inject(VacanciesFacade);
   private readonly vacanciesApi = inject(VacanciesApi);
+  private readonly billingApi = inject(BillingApi);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly saving = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
+  /** `null` = aún no se sabe; `-1` = publicaciones ilimitadas. */
+  protected readonly postingsAvailable = signal<number | null>(null);
+
+  protected readonly postingsText = computed(() => {
+    const value = this.postingsAvailable();
+    if (value === null) return null;
+    if (value < 0) return 'Publicaciones ilimitadas con tu plan.';
+    if (value === 0) {
+      return 'No tienes publicaciones disponibles. Compra un plan para publicar una vacante.';
+    }
+    return `Publicaciones disponibles en tu plan: ${value}.`;
+  });
   protected readonly questionsFor = signal<Vacancy | null>(null);
   protected readonly questionsData = signal<VacancyQuestion[]>([]);
   protected readonly questionsSaving = signal(false);
@@ -244,6 +277,15 @@ export class VacanciesListPage {
 
   constructor() {
     this.facade.load(1);
+    this.billingApi
+      .summary()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (summary) =>
+          this.postingsAvailable.set(summary.postingsAvailable),
+        // Si falla, no se bloquea la vista: el backend sigue siendo la autoridad.
+        error: () => this.postingsAvailable.set(null),
+      });
   }
 
   /**
@@ -253,6 +295,10 @@ export class VacanciesListPage {
    * excepción que CLAUDE.md contempla para sacar un formulario a ruta propia.
    */
   protected openCreate(): void {
+    if (this.postingsAvailable() === 0) {
+      void this.router.navigate(['/planes']);
+      return;
+    }
     void this.router.navigate(['/empresa/vacantes/nueva']);
   }
 

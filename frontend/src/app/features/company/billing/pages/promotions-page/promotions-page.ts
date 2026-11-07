@@ -13,7 +13,6 @@ import {
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
 import { ApiErrorResponse } from '@/core/models/api-response.models';
 import {
   IjButton,
@@ -25,10 +24,6 @@ import {
 } from '@/shared/ui';
 import { BillingFacade } from '@/features/company/billing/data/billing.facade';
 import {
-  PromotionForm,
-  PromotionRequest,
-} from '@/features/company/billing/components/promotion-form/promotion-form';
-import {
   SubscriptionForm,
   SubscriptionRequest,
 } from '@/features/company/billing/components/subscription-form/subscription-form';
@@ -37,7 +32,6 @@ import {
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
   PROMOTION_STATUS_LABELS,
-  Promotion,
   PromotionListItem,
   SUBSCRIPTION_STATUS_LABELS,
   isManualOrder,
@@ -68,7 +62,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
     DatePipe,
     FormsModule,
     RouterLink,
-    PromotionForm,
     SubscriptionForm,
     IjButton,
     IjIcon,
@@ -144,7 +137,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
                   </span>
                 </div>
 
-                <div class="mt-5 grid grid-cols-3 gap-3">
+                <p class="mt-5 text-[11px] font-bold uppercase tracking-wide text-muted">
+                  Promociones
+                </p>
+                <div class="mt-2 grid grid-cols-3 gap-3">
                   <div class="rounded-xl bg-surface px-3 py-3 text-center">
                     <p class="text-[22px] font-extrabold leading-none text-ink-900">
                       {{ summary.promotionsIncluded }}
@@ -189,6 +185,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
                     </p>
                   </div>
                 </div>
+
+                <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-xl bg-surface px-4 py-3 text-[12.5px] text-muted">
+                  <span class="font-bold text-ink-900">Publicaciones</span>
+                  <span>Incluidas: {{ postingLabel(summary.postingsIncluded) }}</span>
+                  <span>Utilizadas: {{ summary.postingsUsed }}</span>
+                  <span class="font-bold text-brand-strong">Disponibles: {{ postingLabel(summary.postingsAvailable) }}</span>
+                </div>
               } @else {
                 <div class="flex flex-wrap items-center gap-2.5">
                   <h2 class="text-[18px] font-extrabold text-ink-900">Mi plan</h2>
@@ -197,7 +200,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
                   </span>
                 </div>
 
-                <div class="mt-5 grid grid-cols-3 gap-3">
+                <p class="mt-5 text-[11px] font-bold uppercase tracking-wide text-muted">
+                  Promociones
+                </p>
+                <div class="mt-2 grid grid-cols-3 gap-3">
                   <div class="rounded-xl bg-surface px-3 py-3 text-center">
                     <p class="text-[22px] font-extrabold leading-none text-ink-900">0</p>
                     <p class="mt-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
@@ -233,9 +239,16 @@ const DAY_MS = 24 * 60 * 60 * 1000;
                   </div>
                 </div>
 
+                <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1 rounded-xl bg-surface px-4 py-3 text-[12.5px] text-muted">
+                  <span class="font-bold text-ink-900">Publicaciones</span>
+                  <span>Incluidas: 0</span>
+                  <span>Utilizadas: 0</span>
+                  <span class="font-bold text-brand-strong">Disponibles: 0</span>
+                </div>
+
                 <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-surface px-4 py-3">
                   <p class="text-[12.5px] text-muted">
-                    Contrata un plan con promociones incluidas para activarlas desde aquí.
+                    Contrata un plan para publicar tus vacantes y promocionarlas.
                   </p>
                   <a
                     routerLink="/planes"
@@ -568,34 +581,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
         (close)="closeForms()"
       >
         <app-subscription-form
-          [plans]="facade.subscriptionPlans()"
+          [plans]="facade.plans()"
           [paymentOptions]="facade.paymentOptions()"
           [initialPlanId]="initialPlanId()"
           [submitting]="saving()"
           [error]="formError()"
           (save)="onSubscribe($event)"
-          (cancel)="closeForms()"
-        />
-      </ij-modal>
-    }
-
-    <!-- Compra puntual de una promoción (plan por publicación) desde /planes. -->
-    @if (showPromotionPurchase()) {
-      <ij-modal
-        title="Promocionar una vacante"
-        subtitle="Elige la vacante, el plan y cómo pagarlo."
-        size="lg"
-        (close)="closeForms()"
-      >
-        <app-promotion-form
-          [vacancies]="eligibleOptions()"
-          [plans]="facade.perPublicationPlans()"
-          [paymentOptions]="facade.paymentOptions()"
-          [initialPlanId]="initialPlanId()"
-          [creditMode]="false"
-          [submitting]="saving()"
-          [error]="formError()"
-          (save)="onPromote($event)"
           (cancel)="closeForms()"
         />
       </ij-modal>
@@ -691,7 +682,6 @@ export class PromotionsPage {
 
   protected readonly showActivate = signal(false);
   protected readonly showSubscriptionForm = signal(false);
-  protected readonly showPromotionPurchase = signal(false);
   protected readonly checkout = signal<Checkout | null>(null);
   protected readonly notice = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
@@ -794,6 +784,11 @@ export class PromotionsPage {
     );
   }
 
+  /** `-1` es la convención de "ilimitadas" para publicaciones. */
+  protected postingLabel(value: number): string {
+    return value < 0 ? 'Ilimitadas' : String(value);
+  }
+
   protected planStatusLabel(status: string): string {
     const labels: Record<string, string> = {
       ACTIVE: 'Activo',
@@ -874,26 +869,12 @@ export class PromotionsPage {
       return;
     }
 
-    if (plan.planType === 'PER_PUBLICATION') {
-      // Si hay cupos, se usa la promoción del plan; si no, se compra puntual.
-      if (this.canPromote()) {
-        this.openActivate();
-        return;
-      }
-      this.initialPlanId.set(plan.id);
-      // El modal de compra solo debe ofrecer vacantes sin promoción viva.
-      this.facade.loadEligibleVacancies();
-      this.showPromotionPurchase.set(true);
-      return;
-    }
-
     this.initialPlanId.set(plan.id);
     this.showSubscriptionForm.set(true);
   }
 
   protected closeForms(): void {
     this.showSubscriptionForm.set(false);
-    this.showPromotionPurchase.set(false);
     this.formError.set(null);
   }
 
@@ -914,28 +895,6 @@ export class PromotionsPage {
           this.saving.set(false);
           this.formError.set(
             this.messageOf(error, 'No se pudo contratar la suscripción.'),
-          );
-        },
-      });
-  }
-
-  protected onPromote(request: PromotionRequest): void {
-    this.saving.set(true);
-    this.formError.set(null);
-    this.facade
-      .createPromotion(request.vacancyId, request.planId)
-      .pipe(
-        switchMap((promotion: Promotion) =>
-          this.facade.checkout(promotion.id, request.method, request.provider),
-        ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (result) => this.onCheckoutOpened(result),
-        error: (error: unknown) => {
-          this.saving.set(false);
-          this.formError.set(
-            this.messageOf(error, 'No se pudo contratar la promoción.'),
           );
         },
       });

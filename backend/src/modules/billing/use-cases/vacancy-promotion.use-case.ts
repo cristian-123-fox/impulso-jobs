@@ -102,6 +102,17 @@ export class VacancyPromotionUseCase {
       );
     }
 
+    // Modelo B: las promociones salen de los cupos del plan. La compra
+    // puntual sin plan se retiró del producto; el backend la rechaza también
+    // para que no se pueda saltar la regla llamando a la API.
+    if (!useSubscriptionCredit) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.PROMOTION_NOT_PAYABLE,
+        'Las promociones se incluyen en tu plan. Compra un plan para promocionar tus vacantes.',
+      );
+    }
+
     if (useSubscriptionCredit) {
       let saved: VacancyPromotion | null = null;
       let planName: string | null = null;
@@ -492,6 +503,19 @@ export class VacancyPromotionUseCase {
     const used = subscription ? (subscription.usedPromotionCredits ?? 0) : 0;
     const available = Math.max(0, included - used);
 
+    // Publicaciones: el plan también limita cuántas vacantes se publican.
+    // `-1` es la convención de "ilimitadas" (igual que `talent_db_access`).
+    const postingsIncluded = subscription
+      ? (subscription.postingCredits ?? 0)
+      : 0;
+    const postingsUsed = subscription
+      ? (subscription.usedPostingCredits ?? 0)
+      : 0;
+    const postingsAvailable =
+      postingsIncluded < 0
+        ? -1
+        : Math.max(0, postingsIncluded - postingsUsed);
+
     const [rows] = await this.billing.findAndCountPromotionsByCompany({
       companyId: company.id,
       page: 1,
@@ -512,12 +536,18 @@ export class VacancyPromotionUseCase {
             usedPromotionCredits: used,
             availableCredits: available,
             promotionDurationDays: durationDays,
+            postingCredits: postingsIncluded,
+            usedPostingCredits: postingsUsed,
+            availablePostingCredits: postingsAvailable,
           }
         : null,
       promotionsIncluded: included,
       promotionsUsed: used,
       promotionsAvailable: available,
       promotionDurationDays: durationDays,
+      postingsIncluded,
+      postingsUsed,
+      postingsAvailable,
       promotionsCount: rows.length,
     };
   }

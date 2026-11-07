@@ -73,11 +73,20 @@ export interface SubscriptionRequest {
               <div class="mt-1 text-[17px] font-extrabold text-brand">
                 {{ plan.price.total | currency: plan.price.currency : 'symbol-narrow' : '1.2-2' }}
               </div>
-              <div class="text-[12px] text-muted">IVA incluido · anual</div>
+              <div class="text-[12px] text-muted">
+                IVA incluido ·
+                {{
+                  plan.planType === 'ANNUAL_SUBSCRIPTION'
+                    ? 'anual'
+                    : plan.validityDays
+                      ? plan.validityDays + ' días'
+                      : 'según plan'
+                }}
+              </div>
             </button>
           } @empty {
             <p class="rounded-xl bg-surface px-4 py-5 text-center text-[13px] text-muted sm:col-span-2">
-              Todavía no hay planes de suscripción disponibles.
+              Todavía no hay planes disponibles.
             </p>
           }
         </div>
@@ -95,16 +104,24 @@ export interface SubscriptionRequest {
               {{ plan.price.total | currency: plan.price.currency : 'symbol-narrow' : '1.2-2' }}
             </span>
           </div>
-          <p class="mt-2 text-[12px] text-muted">
-            Vigencia de un año desde que se confirma el pago. Puedes cancelar la renovación
-            automática cuando quieras y conservarás el periodo pagado.
-          </p>
+          @if (isAnnual()) {
+            <p class="mt-2 text-[12px] text-muted">
+              Vigencia de un año desde que se confirma el pago. Puedes cancelar la
+              renovación automática cuando quieras y conservarás el periodo pagado.
+            </p>
+          } @else {
+            <p class="mt-2 text-[12px] text-muted">
+              Vigencia de {{ plan.validityDays ?? 30 }} días desde que se confirma
+              el pago. Incluye {{ plan.postingQuota ?? 1 }} publicación(es) y las
+              promociones configuradas en el plan.
+            </p>
+          }
         </div>
 
         <app-payment-choice
           [plan]="selectedPlan()"
           [options]="paymentOptions()"
-          [recurring]="true"
+          [recurring]="isAnnual()"
           [(provider)]="provider"
           [(method)]="method"
         />
@@ -114,7 +131,7 @@ export interface SubscriptionRequest {
           [currency]="plan.price.currency"
         />
 
-        @if (isOnline()) {
+        @if (isAnnual() && isOnline()) {
           <label class="flex items-start gap-2.5 rounded-xl border border-line bg-white px-4 py-3 text-[12.5px] leading-relaxed text-body">
             <input
               type="checkbox"
@@ -144,7 +161,9 @@ export interface SubscriptionRequest {
         {{
           isOnline()
             ? 'Te llevaremos a la página segura de Stripe.'
-            : 'La suscripción se activa cuando confirmemos el pago.'
+            : isAnnual()
+              ? 'La suscripción se activa cuando confirmemos el pago.'
+              : 'El plan se activa cuando confirmemos el pago.'
         }}
       </p>
       <button
@@ -195,6 +214,11 @@ export class SubscriptionForm implements OnInit {
     () => this.provider() === PaymentProvider.STRIPE,
   );
 
+  /** Sólo el plan anual renueva solo y exige consentimiento de cobro. */
+  protected readonly isAnnual = computed(
+    () => this.selectedPlan()?.planType === 'ANNUAL_SUBSCRIPTION',
+  );
+
   protected readonly submitLabel = computed(() => {
     if (this.submitting()) return 'Procesando…';
     return this.isOnline() ? 'Ir a pagar' : 'Enviar solicitud';
@@ -204,7 +228,7 @@ export class SubscriptionForm implements OnInit {
     () =>
       Boolean(this.selectedPlan()) &&
       (this.choice()?.allowedMethods().includes(this.method()) ?? false) &&
-      (!this.isOnline() || this.recurringConsent()),
+      (!this.isOnline() || !this.isAnnual() || this.recurringConsent()),
   );
 
   ngOnInit(): void {
@@ -222,7 +246,7 @@ export class SubscriptionForm implements OnInit {
       planId: this.planId(),
       method: this.method(),
       provider: this.provider(),
-      recurringConsent: this.recurringConsent(),
+      recurringConsent: this.isAnnual() ? this.recurringConsent() : false,
     });
   }
 }

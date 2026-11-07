@@ -56,6 +56,15 @@ Uniendo **Alta + Alta‑Premium** en un solo plan (superconjunto = el de Premium
 
 > **Diferencia estructural clave:** Media y Alta se compran **por publicación** (promocionan *una* vacante). La **Anual** es una **suscripción de la empresa**, no de una vacante: cambia el modelo de datos (ver §5).
 
+> **Implementación 7-nov-2026 — modelo B (pagar antes de publicar).**
+> El plan es ahora **requisito para publicar**:
+> - La empresa compra el plan **sin elegir vacante** desde `/planes` (Básico, Premium o Anual).
+> - Al liquidarse el pago, `company_subscriptions` recibe los cupos: `posting_credits` (publicaciones) y `promotion_credits` (promociones).
+> - El alta de una vacante **consume 1 publicación**; sin plan o sin cupos responde `402 PUBLICATION_CREDIT_REQUIRED`.
+> - Promocionar una vacante **consume 1 promoción** del plan; se retiró la compra puntual de promociones.
+> - Básico: 1 publicación, 1 promoción, 30 días. Premium: 1 publicación, 4 promociones, 60 días. Anual: `posting_quota` configurable (12 en la configuración actual) y 12 promociones.
+> - `posting_credits = -1` significa **publicaciones ilimitadas** (la anual sin cupo definido).
+
 ## 4. Catálogo de beneficios (para `plan_features`)
 
 | `feature.code` | Tipo | Media | Alta | Anual |

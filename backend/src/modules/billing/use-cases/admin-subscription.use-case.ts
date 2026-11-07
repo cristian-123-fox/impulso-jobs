@@ -164,7 +164,7 @@ export class AdminSubscriptionUseCase {
     const plan = await this.requirePlan(command.planId);
 
     const now = new Date();
-    const periodEnd = this.resolvePeriodEnd(command.currentPeriodEnd, now);
+    const periodEnd = this.resolvePeriodEnd(command.currentPeriodEnd, now, plan);
     const price = this.priceFor(plan, command.amount);
     const method = command.method ?? DEFAULT_METHOD;
 
@@ -195,7 +195,10 @@ export class AdminSubscriptionUseCase {
     subscription.companyId = company.id;
     subscription.planId = plan.id;
     subscription.status = SubscriptionStatus.PENDING_PAYMENT;
-    subscription.autoRenew = command.autoRenew ?? true;
+    subscription.autoRenew =
+      plan.planType === PlanType.ANNUAL_SUBSCRIPTION
+        ? (command.autoRenew ?? true)
+        : false;
     const savedSubscription = await this.billing.saveSubscription(subscription);
 
     const order = new PromotionOrder();
@@ -219,7 +222,7 @@ export class AdminSubscriptionUseCase {
       currency: price.currency,
       method,
       installments: 1,
-      recurring: true,
+      recurring: plan.planType === PlanType.ANNUAL_SUBSCRIPTION,
       providerPriceId: plan.providerPriceId,
     });
 
@@ -494,9 +497,17 @@ export class AdminSubscriptionUseCase {
     };
   }
 
-  /** Un año desde hoy salvo que el administrador diga otra cosa. */
-  private resolvePeriodEnd(raw: string | undefined, now: Date): Date {
-    if (raw === undefined) return addYear(now);
+  /** Un año desde hoy, o la vigencia del plan si es por publicación. */
+  private resolvePeriodEnd(
+    raw: string | undefined,
+    now: Date,
+    plan?: Plan,
+  ): Date {
+    if (raw === undefined) {
+      return plan?.planType === PlanType.PER_PUBLICATION && plan.validityDays
+        ? addDays(now, plan.validityDays)
+        : addYear(now);
+    }
 
     const parsed = new Date(raw);
     if (Number.isNaN(parsed.getTime())) {
@@ -584,6 +595,12 @@ function round2(value: number): number {
 function addYear(from: Date): Date {
   const result = new Date(from);
   result.setFullYear(result.getFullYear() + 1);
+  return result;
+}
+
+function addDays(from: Date, days: number): Date {
+  const result = new Date(from);
+  result.setDate(result.getDate() + days);
   return result;
 }
 

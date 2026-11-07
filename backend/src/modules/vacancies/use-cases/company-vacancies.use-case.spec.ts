@@ -1,7 +1,11 @@
+import { HttpStatus } from '@nestjs/common';
 import { AppException } from '@/common/exceptions/app.exception';
 import { ErrorCode } from '@/common/types/error-code.enum';
 import { AuditService } from '@/modules/audit/audit.service';
+import { Plan } from '@/modules/billing/entities/plan.entity';
 import { Vacancy } from '@/modules/vacancies/entities/vacancy.entity';
+import { PublicationQuotaService } from '@/modules/vacancies/services/publication-quota.service';
+import { DataSource } from 'typeorm';
 import {
   ContractType,
   DEFAULT_MAX_PAUSES,
@@ -45,6 +49,8 @@ describe('CompanyVacanciesUseCase', () => {
   let ownership: jest.Mocked<VacancyOwnershipService>;
   let audit: jest.Mocked<AuditService>;
   let skillsUseCase: jest.Mocked<VacancySkillsUseCase>;
+  let publicationQuota: jest.Mocked<PublicationQuotaService>;
+  let dataSource: DataSource;
   let useCase: CompanyVacanciesUseCase;
 
   beforeEach(() => {
@@ -66,12 +72,28 @@ describe('CompanyVacanciesUseCase', () => {
       listForCompany: jest.fn().mockResolvedValue([]),
       replace: jest.fn().mockResolvedValue([]),
     } as unknown as jest.Mocked<VacancySkillsUseCase>;
+    publicationQuota = {
+      consume: jest.fn().mockResolvedValue({
+        plan: Object.assign(new Plan(), {
+          id: 'plan-1',
+          validityDays: 60,
+        }),
+        periodEnd: null,
+      }),
+    } as unknown as jest.Mocked<PublicationQuotaService>;
+    dataSource = {
+      transaction: jest.fn((work: (manager: unknown) => Promise<unknown>) =>
+        work({}),
+      ),
+    } as unknown as DataSource;
 
     useCase = new CompanyVacanciesUseCase(
       vacancies,
       ownership,
       audit,
       skillsUseCase,
+      publicationQuota,
+      dataSource,
     );
   });
 
@@ -90,7 +112,23 @@ describe('CompanyVacanciesUseCase', () => {
     expect(result.publishedAt).not.toBeNull();
     expect(audit.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'vacancies.create' }),
+      expect.anything(),
     );
+  });
+
+  it('no publica sin plan o sin cupos: 402 y no guarda la vacante', async () => {
+    publicationQuota.consume.mockRejectedValue(
+      new AppException(
+        HttpStatus.PAYMENT_REQUIRED,
+        ErrorCode.PUBLICATION_CREDIT_REQUIRED,
+        'Necesitas un plan activo para publicar.',
+      ),
+    );
+
+    const thrown = await useCase.create(data(), actor).catch((e: unknown) => e);
+
+    expect(errorCodeOf(thrown)).toBe(ErrorCode.PUBLICATION_CREDIT_REQUIRED);
+    expect(vacancies.save).not.toHaveBeenCalled();
   });
 
   it('nace sin distintivos: los otorga el plan, no el formulario', async () => {

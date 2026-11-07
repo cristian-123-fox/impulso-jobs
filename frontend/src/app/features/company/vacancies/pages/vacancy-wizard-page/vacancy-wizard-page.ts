@@ -168,12 +168,20 @@ const DRAFT_PREFIX = 'ij:vacancy-draft:';
           (ngSubmit)="onSubmit()"
         >
           @if (error(); as message) {
-            <p
-              role="alert"
+            <div
               class="mb-5 rounded-xl bg-red-50 px-4 py-3 text-[13.5px] font-medium text-red-700"
             >
-              {{ message }}
-            </p>
+              <p role="alert">{{ message }}</p>
+              @if (needsPlan()) {
+                <a
+                  routerLink="/planes"
+                  target="_blank"
+                  class="mt-2 inline-block font-bold underline"
+                >
+                  Ver planes para publicar
+                </a>
+              }
+            </div>
           }
 
           <!-- ---------------------------------------------- Paso 1 -->
@@ -465,6 +473,8 @@ export class VacancyWizardPage {
   protected readonly loading = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
+  /** El alta falló por falta de plan/cupos: se ofrece comprar uno. */
+  protected readonly needsPlan = signal(false);
   protected readonly piiNotice = signal<string | null>(null);
   protected readonly imagePreview = signal<string | null>(null);
   protected readonly imageError = signal<string | null>(null);
@@ -829,6 +839,7 @@ export class VacancyWizardPage {
 
     this.saving.set(true);
     this.error.set(null);
+    this.needsPlan.set(false);
     const id = this.vacancyId;
     const request$ = id
       ? this.api.update(id, payload)
@@ -838,6 +849,9 @@ export class VacancyWizardPage {
       next: (saved) => this.afterSave(saved),
       error: (err: unknown) => {
         this.saving.set(false);
+        this.needsPlan.set(
+          errorCodeOf(err) === 'PUBLICATION_CREDIT_REQUIRED',
+        );
         this.error.set(
           messageOf(err, 'No se pudo guardar la vacante. Revisa los datos.'),
         );
@@ -885,4 +899,8 @@ function numberOrNull(value: string | number | null): number | null {
 function messageOf(error: unknown, fallback: string): string {
   const body = (error as { error?: { message?: string } })?.error;
   return body?.message ?? fallback;
+}
+
+function errorCodeOf(error: unknown): string | undefined {
+  return (error as { error?: { errorCode?: string } })?.error?.errorCode;
 }

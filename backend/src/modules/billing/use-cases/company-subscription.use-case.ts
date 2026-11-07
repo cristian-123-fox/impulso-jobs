@@ -60,19 +60,6 @@ export class CompanySubscriptionUseCase {
     recurringConsent = false,
   ): Promise<CheckoutResponseDto> {
     const provider = this.providers.require(providerName);
-    this.providers.assertSupports(provider, method, true);
-
-    // La LFPC exige consentimiento expreso e informado para el cobro
-    // recurrente. Con la solicitud de pago no hay cargo automático, así que
-    // sólo se exige cuando la pasarela va a cobrar sola.
-    if (providerName === PaymentProvider.STRIPE && !recurringConsent) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.SUBSCRIPTION_CONSENT_REQUIRED,
-        'Debes aceptar expresamente la renovación automática para pagar en línea.',
-      );
-    }
-
     const company = await this.ownership.requireCompany(actor.userId);
 
     const plan = await this.plans.findById(planId);
@@ -90,11 +77,32 @@ export class CompanySubscriptionUseCase {
         'Ese plan no está disponible.',
       );
     }
-    if (plan.planType !== PlanType.ANNUAL_SUBSCRIPTION) {
+    if (
+      plan.planType !== PlanType.ANNUAL_SUBSCRIPTION &&
+      plan.planType !== PlanType.PER_PUBLICATION
+    ) {
       throw new AppException(
         HttpStatus.BAD_REQUEST,
         ErrorCode.PLAN_WRONG_TYPE,
-        'Ese plan se compra por vacante, no es una suscripción.',
+        'Ese plan no se puede contratar como plan de empresa.',
+      );
+    }
+
+    // Un plan por publicación es pago único; sólo el anual es recurrente.
+    const recurring = plan.planType === PlanType.ANNUAL_SUBSCRIPTION;
+    this.providers.assertSupports(provider, method, recurring);
+
+    // La LFPC exige consentimiento expreso e informado para el cobro
+    // recurrente. Un plan de publicación no renueva solo, así que no lo pide.
+    if (
+      recurring &&
+      providerName === PaymentProvider.STRIPE &&
+      !recurringConsent
+    ) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.SUBSCRIPTION_CONSENT_REQUIRED,
+        'Debes aceptar expresamente la renovación automática para pagar en línea.',
       );
     }
 
@@ -103,11 +111,40 @@ export class CompanySubscriptionUseCase {
       new Date(),
     );
     if (live) {
-      throw new AppException(
-        HttpStatus.CONFLICT,
-        ErrorCode.SUBSCRIPTION_ALREADY_EXISTS,
-        'Tu empresa ya tiene una suscripción vigente o pendiente de pago.',
+      const livePlan = await this.plans.findById(live.planId);
+      // Un plan pendiente o vencido no debe permitir abrir otro cobro: primero
+      // se resuelve ese (pago o expiración).
+      if (live.status !== SubscriptionStatus.ACTIVE) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.SUBSCRIPTION_ALREADY_EXISTS,
+          'Tu empresa tiene un plan pendiente o vencido. Resuélvelo antes de comprar otro.',
+        );
+      }
+      const availablePostings =
+        (live.postingCredits ?? 0) < 0
+          ? Number.POSITIVE_INFINITY
+          : Math.max(
+              0,
+              (live.postingCredits ?? 0) - (live.usedPostingCredits ?? 0),
+            );
+      const availablePromotions = Math.max(
+        0,
+        (live.promotionCredits ?? 0) - (live.usedPromotionCredits ?? 0),
       );
+      // Un plan por publicación agotado no debe bloquear la compra del
+      // siguiente. Un anual vigente sí: su renovación es otro flujo.
+      if (
+        livePlan?.planType === PlanType.ANNUAL_SUBSCRIPTION ||
+        availablePostings > 0 ||
+        availablePromotions > 0
+      ) {
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.SUBSCRIPTION_ALREADY_EXISTS,
+          'Tu empresa ya tiene un plan vigente con cupos disponibles. Úsalo antes de comprar otro.',
+        );
+      }
     }
 
     const price = this.pricing.breakdown(plan);
@@ -115,7 +152,7 @@ export class CompanySubscriptionUseCase {
     const availability = this.pricing.isMethodAvailable(
       method,
       price.total,
-      true,
+      recurring,
     );
     if (!availability.available) {
       throw new AppException(
@@ -129,7 +166,7 @@ export class CompanySubscriptionUseCase {
     subscription.companyId = company.id;
     subscription.planId = plan.id;
     subscription.status = SubscriptionStatus.PENDING_PAYMENT;
-    subscription.autoRenew = true;
+    subscription.autoRenew = recurring;
     const savedSubscription = await this.billing.saveSubscription(subscription);
 
     const order = new PromotionOrder();
@@ -150,12 +187,12 @@ export class CompanySubscriptionUseCase {
       checkout = await provider.createCheckout({
         orderId: savedOrder.id,
         companyId: company.id,
-        concept: `${plan.name} · suscripción anual · Impulso Jobs`,
+        concept: `${plan.name} · ${recurring ? 'suscripción anual' : 'plan de publicación'} · Impulso Jobs`,
         total: price.total,
         currency: price.currency,
         method,
         installments: 1,
-        recurring: true,
+        recurring,
         providerPriceId: plan.providerPriceId,
         returnUrls: checkoutReturnUrls(savedOrder.id),
       });
@@ -182,16 +219,18 @@ export class CompanySubscriptionUseCase {
       userAgent: actor.userAgent,
       metadata: {
         planCode: plan.code,
+        planType: plan.planType,
         method,
         total: withReference.total,
         provider: providerName,
+        recurring,
         recurringConsent,
       },
     });
 
     await this.paymentQueue.notifyPending(
       withReference,
-      `${company.businessName} · suscripción ${plan.name}`,
+      `${company.businessName} · ${plan.name}`,
     );
 
     return {

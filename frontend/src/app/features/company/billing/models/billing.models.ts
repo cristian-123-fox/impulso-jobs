@@ -171,6 +171,11 @@ export interface PromotionSummarySubscription {
   availableCredits: number;
   /** Días que dura cada promoción; null si el plan no lo define. */
   promotionDurationDays: number | null;
+  /** Publicaciones incluidas; `-1` = ilimitadas. */
+  postingCredits: number;
+  usedPostingCredits: number;
+  /** `-1` = ilimitadas; en otro caso, max(0, incluidas - usadas). */
+  availablePostingCredits: number;
 }
 
 export interface PromotionSummary {
@@ -179,6 +184,10 @@ export interface PromotionSummary {
   promotionsUsed: number;
   promotionsAvailable: number;
   promotionDurationDays: number | null;
+  /** Publicaciones incluidas; `-1` = ilimitadas. */
+  postingsIncluded: number;
+  postingsUsed: number;
+  postingsAvailable: number;
   promotionsCount: number;
 }
 
