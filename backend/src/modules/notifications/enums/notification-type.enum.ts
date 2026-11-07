@@ -13,6 +13,8 @@ export enum NotificationType {
   NEW_APPLICATION_RECEIVED = 'NEW_APPLICATION_RECEIVED',
   /** Un plan de la empresa está por vencer */
   SUBSCRIPTION_EXPIRING = 'SUBSCRIPTION_EXPIRING',
+  /** La empresa pagó su plan y quedó activo (pago con pasarela) */
+  SUBSCRIPTION_ACTIVATED = 'SUBSCRIPTION_ACTIVATED',
   /** Un administrador asignó (o cambió) el plan de la empresa (T34) */
   SUBSCRIPTION_ASSIGNED = 'SUBSCRIPTION_ASSIGNED',
   /** Un administrador ajustó la vigencia o la renovación del plan (T34) */

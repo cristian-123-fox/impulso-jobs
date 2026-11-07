@@ -16,12 +16,14 @@ import {
 } from '@/modules/billing/enums/billing.enums';
 import { IBillingRepository } from '@/modules/billing/repositories/billing.repository.interface';
 import { IPlanRepository } from '@/modules/billing/repositories/plan.repository.interface';
+import { CompanySubscriptionNotifier } from '@/modules/billing/services/company-subscription-notifier.service';
 import {
   EntitlementService,
   PlanEntitlements,
 } from '@/modules/billing/services/entitlement.service';
 import { PaymentEvent } from '@/modules/billing/services/payment-provider.port';
 import { SettlePaymentUseCase } from '@/modules/billing/use-cases/settle-payment.use-case';
+import { NotificationType } from '@/modules/notifications/enums/notification-type.enum';
 import { TalentGrantSource } from '@/modules/talent/enums/talent-access.enum';
 
 function errorCodeOf(e: unknown): string | undefined {
@@ -112,6 +114,7 @@ describe('SettlePaymentUseCase', () => {
   let plans: jest.Mocked<IPlanRepository>;
   let entitlements: jest.Mocked<EntitlementService>;
   let audit: jest.Mocked<AuditService>;
+  let notifier: jest.Mocked<CompanySubscriptionNotifier>;
   let useCase: SettlePaymentUseCase;
   let currentOrder: PromotionOrder;
   let currentPromotion: VacancyPromotion;
@@ -157,12 +160,16 @@ describe('SettlePaymentUseCase', () => {
     } as unknown as jest.Mocked<EntitlementService>;
 
     audit = { record: jest.fn() } as unknown as jest.Mocked<AuditService>;
+    notifier = {
+      notifyCompany: jest.fn().mockResolvedValue(1),
+    } as unknown as jest.Mocked<CompanySubscriptionNotifier>;
 
     useCase = new SettlePaymentUseCase(
       billing,
       plans,
       entitlements,
       audit,
+      notifier,
       dataSource,
     );
   });
@@ -196,6 +203,9 @@ describe('SettlePaymentUseCase', () => {
         new Date('2026-10-10'),
         expect.anything(),
       );
+
+      // Una promoción no activa un plan: no hay aviso de suscripción.
+      expect(notifier.notifyCompany).not.toHaveBeenCalled();
     });
 
     it('todo se aplica dentro de una sola transacción', async () => {
@@ -323,6 +333,88 @@ describe('SettlePaymentUseCase', () => {
 
       const end = subscription.currentPeriodEnd as Date;
       expect(end.getFullYear()).toBe(new Date().getFullYear() + 1);
+    });
+
+    it('avisa que el plan quedó activo cuando el pago viene de la pasarela', async () => {
+      const subscription = Object.assign(new CompanySubscription(), {
+        id: 'sub-1',
+        companyId: 'company-1',
+        planId: 'plan-1',
+        status: SubscriptionStatus.PENDING_PAYMENT,
+        autoRenew: true,
+      });
+      currentOrder = order({
+        promotionId: null,
+        subscriptionId: 'sub-1',
+        provider: 'stripe',
+      });
+      billing.findSubscriptionById.mockResolvedValue(subscription);
+
+      await useCase.execute(
+        paidEvent({
+          provider: 'stripe',
+          currentPeriodEnd: new Date('2027-08-11'),
+        }),
+      );
+
+      expect(notifier.notifyCompany).toHaveBeenCalledWith(
+        'company-1',
+        expect.objectContaining({
+          type: NotificationType.SUBSCRIPTION_ACTIVATED,
+          title: 'Tu plan ya está activo',
+          link: '/empresa/promociones',
+        }),
+      );
+      const notice = notifier.notifyCompany.mock.calls[0][1];
+      expect(notice.body).toContain('Tu plan Alta');
+      expect(notice.body).toContain('Incluye');
+    });
+
+    it('en una renovación avisa que el plan se renovó', async () => {
+      const subscription = Object.assign(new CompanySubscription(), {
+        id: 'sub-1',
+        companyId: 'company-1',
+        planId: 'plan-1',
+        status: SubscriptionStatus.ACTIVE,
+        autoRenew: true,
+      });
+      currentOrder = order({
+        promotionId: null,
+        subscriptionId: 'sub-1',
+        provider: 'stripe',
+      });
+      billing.findSubscriptionById.mockResolvedValue(subscription);
+
+      await useCase.execute(paidEvent({ provider: 'stripe' }));
+
+      expect(notifier.notifyCompany).toHaveBeenCalledWith(
+        'company-1',
+        expect.objectContaining({
+          type: NotificationType.SUBSCRIPTION_ACTIVATED,
+          title: 'Tu plan se renovó',
+        }),
+      );
+    });
+
+    it('no duplica el aviso cuando el pago lo confirma un administrador', async () => {
+      const subscription = Object.assign(new CompanySubscription(), {
+        id: 'sub-1',
+        companyId: 'company-1',
+        planId: 'plan-1',
+        status: SubscriptionStatus.PENDING_PAYMENT,
+        autoRenew: true,
+      });
+      currentOrder = order({
+        promotionId: null,
+        subscriptionId: 'sub-1',
+        provider: 'manual',
+      });
+      billing.findSubscriptionById.mockResolvedValue(subscription);
+
+      await useCase.execute(paidEvent());
+
+      // `AdminPaymentsUseCase` ya envía PAYMENT_CONFIRMED en ese flujo.
+      expect(notifier.notifyCompany).not.toHaveBeenCalled();
     });
   });
 

@@ -23,8 +23,10 @@ import {
   type IPlanRepository,
   PLAN_REPOSITORY,
 } from '@/modules/billing/repositories/plan.repository.interface';
+import { CompanySubscriptionNotifier } from '@/modules/billing/services/company-subscription-notifier.service';
 import { EntitlementService } from '@/modules/billing/services/entitlement.service';
 import { PaymentEvent } from '@/modules/billing/services/payment-provider.port';
+import { NotificationType } from '@/modules/notifications/enums/notification-type.enum';
 import { TalentGrantSource } from '@/modules/talent/enums/talent-access.enum';
 
 /** Resultado de aplicar un evento de pago. */
@@ -33,6 +35,17 @@ export interface SettlementResult {
   applied: boolean;
   orderId: string | null;
   paymentStatus: PaymentStatus | null;
+}
+
+/** Datos que necesita el aviso de "plan activo", capturados dentro de la transacción. */
+interface SubscriptionActivation {
+  companyId: string;
+  planName: string;
+  periodEnd: Date;
+  postingCredits: number;
+  promotionCredits: number;
+  /** `true` si la suscripción ya estaba activa: fue una renovación. */
+  renewal: boolean;
 }
 
 /**
@@ -59,6 +72,7 @@ export class SettlePaymentUseCase {
     @Inject(PLAN_REPOSITORY) private readonly plans: IPlanRepository,
     private readonly entitlements: EntitlementService,
     private readonly audit: AuditService,
+    private readonly notifier: CompanySubscriptionNotifier,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
@@ -122,22 +136,27 @@ export class SettlePaymentUseCase {
       );
     }
 
-    await runInTransaction(this.dataSource, async (manager) => {
-      order.paymentStatus = event.status;
-      if (event.status === PaymentStatus.PAID) {
-        order.paidAt = new Date();
-      }
-      await this.billing.saveOrder(order, manager);
+    const activation = await runInTransaction(
+      this.dataSource,
+      async (manager) => {
+        order.paymentStatus = event.status;
+        if (event.status === PaymentStatus.PAID) {
+          order.paidAt = new Date();
+        }
+        await this.billing.saveOrder(order, manager);
 
-      if (event.status === PaymentStatus.PAID) {
-        await this.activate(order, event, manager);
-      } else if (
-        event.status === PaymentStatus.FAILED ||
-        event.status === PaymentStatus.REFUNDED
-      ) {
-        await this.cancel(order, manager);
-      }
-    });
+        if (event.status === PaymentStatus.PAID) {
+          return this.activate(order, event, manager);
+        }
+        if (
+          event.status === PaymentStatus.FAILED ||
+          event.status === PaymentStatus.REFUNDED
+        ) {
+          await this.cancel(order, manager);
+        }
+        return null;
+      },
+    );
 
     await this.audit.record({
       action: 'payments.settle',
@@ -151,6 +170,13 @@ export class SettlePaymentUseCase {
       },
     });
 
+    // Aviso de plan activo **sólo para pagos de pasarela**. En la confirmación
+    // manual, `AdminPaymentsUseCase` ya envía `PAYMENT_CONFIRMED` con el mismo
+    // mensaje; avisar también aquí duplicaría la notificación.
+    if (activation && order.provider !== 'manual') {
+      await this.notifyActivated(activation);
+    }
+
     return {
       applied: true,
       orderId: order.id,
@@ -158,12 +184,43 @@ export class SettlePaymentUseCase {
     };
   }
 
+  /** Aviso best-effort: el plan ya está activo y auditado. */
+  private async notifyActivated(
+    activation: SubscriptionActivation,
+  ): Promise<void> {
+    const postings =
+      activation.postingCredits < 0
+        ? 'publicaciones ilimitadas'
+        : `${activation.postingCredits} ${
+            activation.postingCredits === 1 ? 'publicación' : 'publicaciones'
+          }`;
+    const promotions =
+      activation.promotionCredits > 0
+        ? ` y ${activation.promotionCredits} ${
+            activation.promotionCredits === 1 ? 'promoción' : 'promociones'
+          }`
+        : '';
+    const body =
+      `Tu plan ${activation.planName} ` +
+      (activation.renewal
+        ? `se renovó hasta el ${formatDate(activation.periodEnd)}.`
+        : `ya está activo hasta el ${formatDate(activation.periodEnd)}.`) +
+      ` Incluye ${postings}${promotions}.`;
+
+    await this.notifier.notifyCompany(activation.companyId, {
+      type: NotificationType.SUBSCRIPTION_ACTIVATED,
+      title: activation.renewal ? 'Tu plan se renovó' : 'Tu plan ya está activo',
+      body,
+      link: '/empresa/promociones',
+    });
+  }
+
   /** Pago confirmado: activa lo comprado y reparte los beneficios. */
   private async activate(
     order: PromotionOrder,
     event: PaymentEvent,
     manager: EntityManager,
-  ): Promise<void> {
+  ): Promise<SubscriptionActivation | null> {
     const now = new Date();
 
     if (order.promotionId) {
@@ -171,10 +228,10 @@ export class SettlePaymentUseCase {
         order.promotionId,
         manager,
       );
-      if (!promotion) return;
+      if (!promotion) return null;
 
       const plan = await this.plans.findById(promotion.planId, manager);
-      if (!plan) return;
+      if (!plan) return null;
 
       const entitlements = await this.entitlements.resolve(plan, manager);
       const { endsAt } = await this.entitlements.applyToVacancy(
@@ -199,7 +256,7 @@ export class SettlePaymentUseCase {
         endsAt,
         manager,
       );
-      return;
+      return null;
     }
 
     if (order.subscriptionId) {
@@ -207,10 +264,13 @@ export class SettlePaymentUseCase {
         order.subscriptionId,
         manager,
       );
-      if (!subscription) return;
+      if (!subscription) return null;
 
       const plan = await this.plans.findById(subscription.planId, manager);
-      if (!plan) return;
+      if (!plan) return null;
+
+      // Si ya estaba activa, este pago es una renovación, no el alta inicial.
+      const renewal = subscription.status === SubscriptionStatus.ACTIVE;
 
       const entitlements = await this.entitlements.resolve(plan, manager);
       // El proveedor manda el fin de periodo; si no lo trae, un año (anual) o
@@ -256,7 +316,18 @@ export class SettlePaymentUseCase {
         periodEnd,
         manager,
       );
+
+      return {
+        companyId: subscription.companyId,
+        planName: plan.name,
+        periodEnd,
+        postingCredits: subscription.postingCredits,
+        promotionCredits: subscription.promotionCredits,
+        renewal,
+      };
     }
+
+    return null;
   }
 
   /**
@@ -323,4 +394,12 @@ export class SettlePaymentUseCase {
     result.setDate(result.getDate() + days);
     return result;
   }
+}
+
+function formatDate(value: Date): string {
+  return value.toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 }
