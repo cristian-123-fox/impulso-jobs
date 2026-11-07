@@ -871,6 +871,9 @@ export class PromotionsPage {
     }
 
     this.initialPlanId.set(plan.id);
+    // Forzar catálogo fresco al abrir: una respuesta vieja en memoria dejaba
+    // las tarjetas de plan sin nombre/precio hasta recargar la página.
+    this.facade.loadPlans(true);
     this.showSubscriptionForm.set(true);
   }
 
