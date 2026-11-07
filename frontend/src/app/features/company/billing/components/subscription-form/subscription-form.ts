@@ -2,15 +2,20 @@ import { CurrencyPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   computed,
+  effect,
+  inject,
   input,
   output,
   signal,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { IjButton, IjProviderInfo } from '@/shared/ui';
+import { BillingApi } from '@/features/company/billing/data/billing.api';
 import { PaymentChoice } from '@/features/company/billing/components/payment-choice/payment-choice';
 import {
   PaymentMethod,
@@ -51,7 +56,7 @@ export interface SubscriptionRequest {
       <div>
         <span class="mb-2 block text-[13px] font-bold text-ink-900">Plan</span>
         <div class="grid gap-3 sm:grid-cols-2">
-          @for (plan of plans(); track plan.id) {
+          @for (plan of effectivePlans(); track plan.id) {
             <button
               type="button"
               class="rounded-xl border-2 p-4 text-left transition-colors"
@@ -92,7 +97,7 @@ export interface SubscriptionRequest {
               <button
                 type="button"
                 class="mt-2 font-bold text-brand-strong underline"
-                (click)="reload.emit()"
+                (click)="retry()"
               >
                 Reintentar
               </button>
@@ -129,7 +134,7 @@ export interface SubscriptionRequest {
 
         <app-payment-choice
           [plan]="selectedPlan()"
-          [options]="paymentOptions()"
+          [options]="effectiveOptions()"
           [recurring]="isAnnual()"
           [(provider)]="provider"
           [(method)]="method"
@@ -197,7 +202,7 @@ export interface SubscriptionRequest {
   `,
 })
 export class SubscriptionForm implements OnInit {
-  /** Planes de tipo suscripción anual. */
+  /** Planes contratables. Si llegan vacíos o incompletos, el formulario los pide. */
   readonly plans = input.required<readonly Plan[]>();
   readonly paymentOptions = input.required<readonly PaymentProviderOption[]>();
   /** Plan con el que abrir el formulario (p. ej. el elegido en `/planes`). */
@@ -209,7 +214,12 @@ export class SubscriptionForm implements OnInit {
   /** Fuerza una recarga del catálogo si llegó vacío o inválido. */
   readonly reload = output<void>();
 
+  private readonly api = inject(BillingApi);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly choice = viewChild(PaymentChoice);
+  /** Copia local: el modal no depende de que el padre tenga el estado fresco. */
+  private readonly localPlans = signal<readonly Plan[]>([]);
+  private readonly localOptions = signal<readonly PaymentProviderOption[]>([]);
 
   protected readonly planId = signal('');
   protected readonly provider = signal<PaymentProvider>(PaymentProvider.MANUAL);
@@ -217,8 +227,19 @@ export class SubscriptionForm implements OnInit {
   /** Debe empezar en `false`: la ley prohíbe la casilla premarcada. */
   protected readonly recurringConsent = signal(false);
 
+  /** Planes del padre si son válidos; si no, los que cargó el formulario. */
+  protected readonly effectivePlans = computed(() => {
+    const fromInput = this.validPlans(this.plans());
+    return fromInput.length > 0 ? fromInput : this.localPlans();
+  });
+
+  protected readonly effectiveOptions = computed(() => {
+    const fromInput = this.paymentOptions();
+    return fromInput.length > 0 ? fromInput : this.localOptions();
+  });
+
   protected readonly selectedPlan = computed(() =>
-    this.plans().find((plan) => plan.id === this.planId()),
+    this.effectivePlans().find((plan) => plan.id === this.planId()),
   );
 
   protected readonly isOnline = computed(
@@ -242,13 +263,77 @@ export class SubscriptionForm implements OnInit {
       (!this.isOnline() || !this.isAnnual() || this.recurringConsent()),
   );
 
+  constructor() {
+    // Cuando llegan los planes (del padre o de la API), selecciona el plan
+    // solicitado o el único disponible. Si el usuario ya eligió, no lo pisa.
+    effect(() => {
+      const plans = this.effectivePlans();
+      const initial = this.initialPlanId();
+      if (this.planId() || plans.length === 0) return;
+
+      const start =
+        plans.find((plan) => plan.id === initial) ??
+        (plans.length === 1 ? plans[0] : undefined);
+      if (start) this.planId.set(start.id);
+    });
+  }
+
   ngOnInit(): void {
-    const initial = this.initialPlanId();
-    const plans = this.plans();
-    const start =
-      plans.find((plan) => plan.id === initial) ??
-      (plans.length === 1 ? plans[0] : undefined);
-    if (start) this.planId.set(start.id);
+    // El catálogo del padre puede venir vacío o con datos viejos; en ese caso
+    // el modal lo pide por su cuenta para no quedarse en blanco.
+    if (this.validPlans(this.plans()).length === 0) this.loadPlans();
+    if (this.paymentOptions().length === 0) this.loadOptions();
+  }
+
+  protected retry(): void {
+    this.loadPlans();
+    this.loadOptions();
+    this.reload.emit();
+  }
+
+  private validPlans(plans: readonly Plan[]): readonly Plan[] {
+    return plans.filter(
+      (plan) =>
+        plan &&
+        typeof plan.name === 'string' &&
+        plan.price &&
+        typeof plan.price.total === 'number',
+    );
+  }
+
+  private loadPlans(): void {
+    this.api
+      .listPlans()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (plans) => this.localPlans.set(this.validPlans(plans)),
+        error: () => this.localPlans.set([]),
+      });
+  }
+
+  private loadOptions(): void {
+    this.api
+      .paymentOptions()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (options) =>
+          this.localOptions.set(
+            Array.isArray(options) && options.length > 0
+              ? options
+              : this.fallbackOptions(),
+          ),
+        error: () => this.localOptions.set(this.fallbackOptions()),
+      });
+  }
+
+  private fallbackOptions(): PaymentProviderOption[] {
+    return [
+      {
+        provider: PaymentProvider.MANUAL,
+        methods: [PaymentMethod.SPEI],
+        recurringMethods: [PaymentMethod.SPEI],
+      },
+    ];
   }
 
   protected onSubmit(): void {
