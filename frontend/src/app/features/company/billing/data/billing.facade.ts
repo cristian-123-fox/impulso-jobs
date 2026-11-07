@@ -64,7 +64,7 @@ export class BillingFacade {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (plans) => {
-          this.plans.set(plans);
+          this.plans.set(Array.isArray(plans) ? plans : []);
           this.plansLoaded.set(true);
         },
         error: () => this.plansLoaded.set(true),
@@ -76,7 +76,19 @@ export class BillingFacade {
       .paymentOptions()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (options) => this.paymentOptions.set(options),
+        next: (options) => {
+          if (Array.isArray(options) && options.length > 0) {
+            this.paymentOptions.set(options);
+            return;
+          }
+          this.paymentOptions.set([
+            {
+              provider: PaymentProvider.MANUAL,
+              methods: [PaymentMethod.SPEI],
+              recurringMethods: [PaymentMethod.SPEI],
+            },
+          ]);
+        },
         // Sin respuesta queda al menos la solicitud de pago, que no depende
         // de ningún servicio externo.
         error: () =>
@@ -98,6 +110,10 @@ export class BillingFacade {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
+          if (!result) {
+            this.state.set('error');
+            return;
+          }
           this.promotions.set(result.items);
           this.total.set(result.total);
           this.pages.set(result.pages);
@@ -133,6 +149,10 @@ export class BillingFacade {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (summary) => {
+          if (!summary) {
+            this.summaryState.set('error');
+            return;
+          }
           this.summary.set(summary);
           this.summaryState.set('loaded');
         },
@@ -148,7 +168,9 @@ export class BillingFacade {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (vacancies) => {
-          this.eligibleVacancies.set(vacancies);
+          this.eligibleVacancies.set(
+            Array.isArray(vacancies) ? vacancies : [],
+          );
           this.eligibleState.set('loaded');
         },
         error: () => this.eligibleState.set('error'),

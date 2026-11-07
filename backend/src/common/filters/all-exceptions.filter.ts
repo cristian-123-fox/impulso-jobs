@@ -88,6 +88,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       errors: normalized.errors,
     };
 
+    response.setHeader('Cache-Control', 'no-store');
     response.status(normalized.statusCode).json(body);
   }
 

@@ -30,6 +30,11 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1');
 
+  // La API devuelve datos por usuario (planes, cupos, sesión). El ETag de
+  // Express producía 304 con cuerpos viejos en el navegador y la UI mostraba
+  // listas vacías. Se desactiva el ETag; el interceptor añade `no-store`.
+  app.disable('etag');
+
   // Imágenes subidas (foto de perfil, logo): estáticas bajo /uploads, fuera
   // del prefijo /api/v1. Solo se expone el subárbol `public/` — los CV viven
   // en uploads/candidate-resumes y bajan por endpoint autenticado.

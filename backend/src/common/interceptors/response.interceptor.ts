@@ -31,6 +31,11 @@ export class ResponseInterceptor<T> implements NestInterceptor<
         context.getHandler(),
       ) ?? 'Success';
 
+    // Datos de sesión, catálogo y cupos: el navegador no debe reutilizarlos.
+    // Sin esto, un 304 con un body viejo dejaba `/plans` o `/payments/options`
+    // vacíos en la UI aunque la API sí tuviera datos.
+    response.setHeader('Cache-Control', 'no-store');
+
     return next.handle().pipe(
       map((content: T): ApiSuccessResponse<T> | T | undefined => {
         // Nest detecta StreamableFile en el valor FINAL de la cadena; si se
