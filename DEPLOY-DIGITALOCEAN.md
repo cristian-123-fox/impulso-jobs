@@ -3,6 +3,9 @@
 **Última actualización:** 7 de noviembre de 2026
 **Sustituye a:** [`DEPLOY-CPANEL.md`](DEPLOY-CPANEL.md) para esta entrega.
 **Checklist de entrega:** [`REVISION-ENTREGA.md`](REVISION-ENTREGA.md) §0.
+**Alternativa con contenedores:** [`DEPLOY-DOCKER.md`](DEPLOY-DOCKER.md) — mismo
+Droplet y mismo Nginx, pero la app corre con Docker Compose (imágenes de GHCR,
+CI/CD con GitHub Actions) en lugar de PM2. Esta guía sigue siendo válida tal cual.
 
 ---
 

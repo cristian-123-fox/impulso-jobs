@@ -1,0 +1,23 @@
+# Contexto mínimo para `docker build`: el Dockerfile copia explícitamente lo
+# que necesita; esto evita mandar al daemon cientos de MB que no se usan.
+
+node_modules/
+dist/
+.angular/
+coverage/
+out-tsc/
+tmp/
+*.log
+
+# Documentos privados nunca entran en una imagen (ver scripts/check-dist.mjs)
+private/
+
+.env
+.env.*
+.git/
+.gitignore
+.vscode/
+.idea/
+Dockerfile
+.dockerignore
+README.md

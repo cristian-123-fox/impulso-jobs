@@ -1,0 +1,20 @@
+# Capa opcional para construir las imágenes desde el código en vez de
+# bajarlas de GHCR (pruebas locales de la imagen de producción):
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.build.yml up -d --build
+#
+# En el servidor NO se usa: allí sólo hay compose + .env, sin código fuente.
+
+services:
+  migrate:
+    image: impulso-jobs-backend:local
+    build:
+      context: ./backend
+  backend:
+    image: impulso-jobs-backend:local
+    build:
+      context: ./backend
+  frontend:
+    image: impulso-jobs-frontend:local
+    build:
+      context: ./frontend

@@ -1,0 +1,112 @@
+# Impulso Jobs — despliegue de producción con Docker. Guía: DEPLOY-DOCKER.md
+#
+# En el servidor, junto a este archivo, vive `.env` (plantilla en
+# deploy/.env.example). Ese mismo archivo da las variables a Compose (TAG,
+# credenciales de PostgreSQL) y el entorno de la API (env_file).
+#
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Ninguna aplicación publica puertos hacia fuera: escuchan en 127.0.0.1 y las
+# expone el Nginx del host (TLS con Certbot). PostgreSQL no publica ninguno.
+
+name: impulso-jobs
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# Contenedores de aplicación: sistema de archivos de sólo lectura (lo único
+# escribible es el volumen de uploads y /tmp), sin capabilities y sin escalada
+# de privilegios.
+x-hardening: &hardening
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+
+x-backend-image: &backend-image ${IMAGE_REGISTRY:-ghcr.io/cristian-123-fox}/impulso-jobs-backend:${TAG:-latest}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:?Define DB_USERNAME en .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
+      POSTGRES_DB: ${DB_NAME:?Define DB_NAME en .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *logging
+
+  # Tarea de una sola vez: migraciones + semillas de catálogo idempotentes
+  # (las mismas que DEPLOY-DIGITALOCEAN.md §12 corre en cada actualización).
+  # Va ANTES de la API para que arranque ya con los permisos nuevos en BD
+  # (PermissionsService los cachea al arrancar). MIGRATE_SEEDS= (vacío) en
+  # .env desactiva las semillas.
+  migrate:
+    image: *backend-image
+    <<: *hardening
+    restart: "no"
+    env_file: .env
+    environment:
+      MIGRATE_SEEDS: ${MIGRATE_SEEDS-rbac,applications,plan-features}
+    command:
+      - sh
+      - -c
+      - >-
+        node dist/database/run-migrations run &&
+        if [ -n "$$MIGRATE_SEEDS" ]; then node dist/database/seed --only="$$MIGRATE_SEEDS"; fi
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *logging
+
+  backend:
+    image: *backend-image
+    <<: *hardening
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-3000}:3000"
+    volumes:
+      # CV, fotos y logos. El storage de CV usa <cwd>/uploads fijo: no cambies
+      # el punto de montaje.
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    stop_grace_period: 30s
+    logging: *logging
+
+  frontend:
+    image: ${IMAGE_REGISTRY:-ghcr.io/cristian-123-fox}/impulso-jobs-frontend:${TAG:-latest}
+    <<: *hardening
+    restart: unless-stopped
+    environment:
+      # Hosts extra para el SSR, además de los de angular.json (opcional).
+      NG_ALLOWED_HOSTS: ${NG_ALLOWED_HOSTS:-}
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-4000}:4000"
+    stop_grace_period: 15s
+    logging: *logging
+
+volumes:
+  pgdata:
+    name: impulso-jobs-pgdata
+  uploads:
+    name: impulso-jobs-uploads

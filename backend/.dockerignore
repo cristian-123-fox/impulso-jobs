@@ -1,0 +1,32 @@
+# Contexto mínimo para `docker build`: sólo manifiestos, configuración de
+# compilación y `src/`. Todo lo demás se queda fuera — en especial `.env`
+# (secretos reales) y `uploads/` (CV y fotos de usuarios).
+
+# Secretos y datos locales
+.env
+.env.*
+!.env.example
+uploads/
+.tmp/
+.atl/
+vid.txt
+
+# Dependencias y salidas: se reconstruyen dentro de la imagen
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+*.log
+
+# Lockfile de npm: la imagen instala con pnpm-lock.yaml
+package-lock.json
+
+# Tests e2e, editores y git
+test/
+.git/
+.gitignore
+.vscode/
+.idea/
+Dockerfile
+.dockerignore
+README.md

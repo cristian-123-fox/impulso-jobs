@@ -1,0 +1,101 @@
+# CI: lint, tests y build de cada app, sólo si cambió esa app.
+#
+# Corre en cada pull request y, como workflow reutilizable, al principio de
+# cd.yml en cada push a main — así un push a main ejecuta CI una sola vez y el
+# despliegue depende de que pase.
+name: CI
+
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PNPM_VERSION: 10.24.0
+  NODE_VERSION: 22
+
+jobs:
+  changes:
+    name: Detectar cambios
+    runs-on: ubuntu-latest
+    outputs:
+      # En un lanzamiento manual no hay diff contra el que comparar: se
+      # verifica todo.
+      backend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.backend == 'true' }}
+      frontend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci.yml'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/ci.yml'
+
+  backend:
+    name: Backend · lint, test, build
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # `pnpm run lint` lleva --fix: en CI se llama a eslint sin él, para que
+      # falle en vez de reescribir el árbol.
+      - name: Lint
+        run: pnpm exec eslint "{src,apps,libs,test}/**/*.ts"
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm run build
+
+  frontend:
+    name: Frontend · test, build
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # Ubuntu 24.04 restringe los user namespaces sin privilegios (AppArmor) y
+      # el sandbox de Chrome no arranca; sin esto Karma se queda sin navegador.
+      - name: Permitir el sandbox de Chrome
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Test (Karma, Chrome headless)
+        run: pnpm exec ng test --watch=false --browsers=ChromeHeadless --no-progress
+      - name: Build (SSR, production)
+        run: pnpm run build

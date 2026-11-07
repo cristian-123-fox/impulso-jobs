@@ -1,0 +1,156 @@
+# CD: en cada push a main (o a mano) pasa CI, construye las dos imágenes,
+# las publica en GHCR y despliega en el Droplet por SSH. Guía: DEPLOY-DOCKER.md
+#
+# Tags publicados: `sha-<commit corto>` (inmutable, el que se despliega) y
+# `latest`. El despliegue se omite —sin fallar— si faltan los secretos
+# DEPLOY_* del environment `production`.
+name: CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un despliegue a la vez y nunca se cancela a medias: el siguiente espera.
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      pull-requests: read
+
+  images:
+    name: Imagen · ${{ matrix.app }}
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        app: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/impulso-jobs-${{ matrix.app }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.app }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            REVISION=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  deploy:
+    name: Desplegar en el Droplet
+    needs: images
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+      DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+    steps:
+      # Los secretos no se pueden usar en un `if:` de job: se comprueban aquí y
+      # el resto de pasos depende de esta salida.
+      - name: Comprobar secretos de despliegue
+        id: check
+        run: |
+          missing=""
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_PATH; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::notice title=Despliegue omitido::Faltan secretos en el environment production:$missing. Las imágenes sí se publicaron."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.check.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+
+      - name: Preparar SSH
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            echo "::warning::DEPLOY_KNOWN_HOSTS no está definido: se confía en la huella que devuelva ssh-keyscan."
+            ssh-keyscan -p "${DEPLOY_PORT:-22}" -H "$DEPLOY_HOST" > ~/.ssh/known_hosts
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Subir docker-compose.prod.yml
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          scp -i ~/.ssh/id_deploy -P "${DEPLOY_PORT:-22}" -o BatchMode=yes \
+            docker-compose.prod.yml "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/docker-compose.prod.yml"
+
+      # Fija TAG en el .env del servidor (así un `docker compose up` manual
+      # posterior usa la misma versión), baja las imágenes y recrea. `--wait`
+      # espera a que `migrate` termine y a que backend y frontend estén sanos:
+      # si algo falla, el job falla. Después borra imágenes sin usar de más de
+      # 7 días (las recientes quedan para un rollback rápido).
+      - name: Desplegar
+        if: steps.check.outputs.enabled == 'true'
+        run: |
+          TAG="sha-${GITHUB_SHA::7}"
+          ssh -i ~/.ssh/id_deploy -p "${DEPLOY_PORT:-22}" -o BatchMode=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" bash -s -- "$DEPLOY_PATH" "$TAG" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+          TAG="$2"
+          test -f .env || { echo "No existe $1/.env (ver DEPLOY-DOCKER.md)"; exit 1; }
+          if grep -q '^TAG=' .env; then
+            sed -i "s/^TAG=.*/TAG=${TAG}/" .env
+          else
+            echo "TAG=${TAG}" >> .env
+          fi
+          docker compose -f docker-compose.prod.yml pull
+          docker compose -f docker-compose.prod.yml up -d --remove-orphans --wait --wait-timeout 300
+          docker compose -f docker-compose.prod.yml ps
+          docker image prune -af --filter "until=168h"
+          REMOTE
+
+      - name: Limpiar llave
+        if: always() && steps.check.outputs.enabled == 'true'
+        run: rm -f ~/.ssh/id_deploy
